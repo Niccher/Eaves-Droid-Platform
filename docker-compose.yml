@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  php:
+    build: ./site
+    container_name: codei-php-v4
+    restart: always
+    ports:
+      - "8070:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    container_name: codei-mysql-v4
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: karball_psw
+      MYSQL_DATABASE: chegecac_prj_imgs_v4
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: appuser_psw
+      MYSQL_INITDB_SKIP_TZINFO: 1
+    command: --sql-mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    volumes:
+      - my_vol:/var/lib/mysql
+      - ./my_db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+
+volumes:
+  my_vol:
