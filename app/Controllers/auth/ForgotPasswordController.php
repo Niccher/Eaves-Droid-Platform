@@ -186,43 +186,4 @@ class ForgotPasswordController extends Controller
                 ]
             ],
             'password' => [
-                'label' => 'New Password',
-                'rules' => $passwordRules,
-                'errors' => [
-                    'required' => 'New password is required',
-                    'min_length' => 'Password must be at least 8 characters',
-                ]
-            ],
-            'password_confirm' => [
-                'label' => 'Confirm Password',
-                'rules' => 'required|matches[password]',
-                'errors' => [
-                    'required' => 'Please confirm your new password',
-                    'matches' => 'Passwords do not match',
-                ]
-            ],
-        ];
-    }
-
-    /**
-     * Send password reset email
-     */
-    protected function sendResetEmail(string $email, string $token, string $username): bool
-    {
-        $emailService = \Config\Services::email();
-
-        $resetLink = site_url('reset-password?token=' . $token);
-
-        $message = view('auth/email_password', [
-            'username' => $username,
-            'reset_link' => $resetLink,
-            'token' => $token,
-        ]);
-
-        $emailService->setTo($email);
-        $emailService->setSubject('Password Reset Request - Prj Imgs');
-        $emailService->setMessage($message);
-
-        return $emailService->send();
-    }
-}
+                'label' => 'New Password'

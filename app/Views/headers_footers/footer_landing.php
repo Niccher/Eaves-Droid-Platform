@@ -1,5 +1,5 @@
 <!-- Footer Start -->
-<footer class="footer bg-dark">
+<footer class="footer bg-primary">
     <div class="container">
         <div class="row">
             <!-- Company Info -->
@@ -264,10 +264,10 @@
 <!-- javascript -->
 <script src="<?= base_url('assets/landing/js/bootstrap.bundle.min.js') ?>"></script>
 <!-- SLIDER -->
-<script src="<?= base_url('assets/landing/js/tiny-slider.js') ?>"></script>
-<script src="<?= base_url('assets/landing/js/tiny-slider-init.js') ?>"></script>
-<!-- Icons -->
-<script src="<?= base_url('assets/landing/js/feather.min.js') ?>"></script>
+<!--<script src="--><?//= base_url('assets/landing/js/tiny-slider.js') ?><!--"></script>-->
+<!--<script src="--><?//= base_url('assets/landing/js/tiny-slider-init.js') ?><!--"></script>-->
+<!--<!-- Icons -->-->
+<!--<script src="--><?//= base_url('assets/landing/js/feather.min.js') ?><!--"></script>-->
 <!-- Main Js -->
 <script src="<?= base_url('assets/landing/js/app.js') ?>"></script>
 
@@ -373,8 +373,8 @@
 <style>
     /* Footer Styles */
     .footer {
-        background: #1a1a2e !important;
-        color: #a0a0b8;
+        /*background: #1a1a2e !important;*/
+        /*color: #a0a0b8;*/
         position: relative;
         padding-top: 60px;
         padding-bottom: 40px;

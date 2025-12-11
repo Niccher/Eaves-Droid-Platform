@@ -47,35 +47,6 @@
                 </div>
             </div>
             <!--end col-->
-            <div class="col-lg-5 col-md-6 mt-4 pt-2">
-                <div class="home-img position-relative">
-                    <!-- App Phone Mockup -->
-                    <div class="phone-mockup">
-                        <img src="<?= base_url('assets/landing/images/app/mobile01.png') ?>" class="img-fluid d-block mx-auto" alt="Prj Images Android App">
-                        <!-- App Screen Preview -->
-                        <div class="app-screen-preview">
-                            <div class="screen-slider owl-carousel">
-                                <div class="screen-item">
-                                    <img src="<?= base_url('assets/landing/images/app/screens/dashboard.png') ?>" alt="Dashboard">
-                                </div>
-                                <div class="screen-item">
-                                    <img src="<?= base_url('assets/landing/images/app/screens/analytics.png') ?>" alt="Analytics">
-                                </div>
-                                <div class="screen-item">
-                                    <img src="<?= base_url('assets/landing/images/app/screens/settings.png') ?>" alt="Settings">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="play-icon">
-                        <a href="#video-demo" data-bs-toggle="modal" data-bs-target="#videoModal" class="play-btn video-play-icon">
-                            <i class="mdi mdi-play-circle-outline text-white rounded-pill bg-primary shadow"></i>
-                            <span class="text-white small d-block mt-1">Watch Demo</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <!--end col-->
         </div>
         <!--end row-->
     </div>
@@ -86,21 +57,6 @@
 </section>
 <!--end section-->
 <!-- Hero End -->
-
-<!-- App Screenshots Carousel -->
-<section class="section bg-light" id="screenshots">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-12 text-center">
-                <div class="section-title mb-4 pb-2">
-                    <h4 class="title mb-4">App Screenshots</h4>
-                    <p class="text-muted para-desc mx-auto mb-0">See the powerful features in action</p>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</section>
 
 <!-- Feature Start -->
 <section class="section pt-5" id="features">
@@ -241,54 +197,6 @@
             <!--end col-->
         </div>
         <!--end row-->
-
-        <!-- Download CTA -->
-        <div class="row justify-content-center mt-5" id="downloadnow">
-            <div class="col-lg-8 text-center">
-                <div class="download-cta bg-gradient-primary p-5 rounded shadow">
-                    <h3 class="text-white mb-3">Ready to Get Started?</h3>
-                    <p class="text-light mb-4">Download the app now and get 7-day free trial of premium features</p>
-
-                    <div class="row justify-content-center">
-                        <div class="col-auto">
-                            <a href="https://play.google.com/store/apps/details?id=com.prjimages" target="_blank" class="btn btn-light btn-lg mb-2">
-                                <i class="fab fa-google-play me-2"></i> Google Play
-                            </a>
-                        </div>
-                        <div class="col-auto">
-                            <a href="#" class="btn btn-outline-light btn-lg mb-2">
-                                <i class="fab fa-apple me-2"></i> App Store (Coming Soon)
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="row justify-content-center mt-4">
-                        <div class="col-lg-8">
-                            <div class="app-info bg-white p-3 rounded">
-                                <div class="row">
-                                    <div class="col-4 text-center">
-                                        <i class="fas fa-download text-primary mb-2"></i>
-                                        <small class="d-block text-muted">15MB Size</small>
-                                    </div>
-                                    <div class="col-4 text-center">
-                                        <i class="fas fa-mobile-alt text-primary mb-2"></i>
-                                        <small class="d-block text-muted">Android 8.0+</small>
-                                    </div>
-                                    <div class="col-4 text-center">
-                                        <i class="fas fa-globe text-primary mb-2"></i>
-                                        <small class="d-block text-muted">10 Languages</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p class="text-light small mt-3 mb-0">
-                        <i class="fas fa-info-circle me-1"></i> No credit card required • Cancel anytime
-                    </p>
-                </div>
-            </div>
-        </div>
     </div>
     <!--end container-->
     <!-- End Feature -->
@@ -379,81 +287,10 @@
 </section>
 <!--end section-->
 
-<!-- Video Modal -->
-<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">App Demo & Tutorial</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="ratio ratio-16x9">
-                    <iframe src="https://www.youtube.com/embed/demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                </div>
-                <div class="mt-3">
-                    <h6>What you'll learn:</h6>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-check text-success me-2"></i> App installation and setup</li>
-                        <li><i class="fas fa-check text-success me-2"></i> Data collection configuration</li>
-                        <li><i class="fas fa-check text-success me-2"></i> Privacy settings explained</li>
-                        <li><i class="fas fa-check text-success me-2"></i> Dashboard synchronization</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
     /* Enhanced Styles */
     .app-stats .stat-item {
         text-align: center;
-    }
-
-    .phone-mockup {
-        position: relative;
-        max-width: 300px;
-        margin: 0 auto;
-    }
-
-    .app-screen-preview {
-        position: absolute;
-        top: 12%;
-        left: 10%;
-        right: 10%;
-        bottom: 12%;
-        background: white;
-        border-radius: 25px;
-        overflow: hidden;
-    }
-
-    .screen-slider .screen-item {
-        height: 100%;
-    }
-
-    .screen-slider .screen-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .play-icon {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        text-align: center;
-    }
-
-    .play-icon .play-btn {
-        display: block;
-        text-decoration: none;
-    }
-
-    .play-icon i {
-        font-size: 3rem;
-        background: rgba(78, 115, 223, 0.9);
-        padding: 15px;
     }
 
     .hover-lift {
@@ -471,23 +308,6 @@
 
     .hover-lift:hover .icon-wrapper {
         transform: scale(1.1);
-    }
-
-    .download-cta {
-        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .download-cta:before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 100%;
-        height: 200%;
-        background: rgba(255,255,255,0.1);
-        transform: rotate(45deg);
     }
 
     .requirements-card {
@@ -511,38 +331,10 @@
     .requirement-item:hover {
         transform: translateX(5px);
     }
-
-    .screenshot-carousel .item {
-        padding: 15px;
-    }
-
-    .screenshot-carousel .card {
-        transition: all 0.3s;
-    }
-
-    .screenshot-carousel .card:hover {
-        transform: scale(1.05);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
-    }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-
-        // Initialize screen slider inside phone mockup
-        if (typeof $ !== 'undefined' && $('.screen-slider').length) {
-            $('.screen-slider').owlCarousel({
-                loop: true,
-                margin: 0,
-                nav: false,
-                dots: false,
-                autoplay: true,
-                autoplayTimeout: 2000,
-                animateOut: 'fadeOut',
-                items: 1
-            });
-        }
-
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
@@ -566,15 +358,6 @@
             playStoreBtn.addEventListener('click', function() {
                 // You can add analytics tracking here
                 console.log('Play Store download clicked');
-            });
-        }
-
-        // Video modal enhancement
-        const videoModal = document.getElementById('videoModal');
-        if (videoModal) {
-            videoModal.addEventListener('show.bs.modal', function() {
-                // You can add video tracking here
-                console.log('Video modal opened');
             });
         }
     });

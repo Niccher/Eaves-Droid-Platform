@@ -1,6 +1,6 @@
         <!-- Start  -->
         <!-- Contact Methods -->
-        <section class="section bg-light">
+        <section class="section bg-primary">
             <div class="container">
                 <div class="row">
                     <div class="col-lg-4 col-md-6 mt-4">
