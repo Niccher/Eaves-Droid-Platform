@@ -1,175 +1,545 @@
 
         <!-- Start  -->
-        <section class="section">
+        <!-- FAQ Search & Categories -->
+        <section class="section bg-light">
             <div class="container">
-                <div class="row mt-5 justify-content-center">
-                    <div class="col-lg-12 col-md-12">
-                        <div class="section-title">
-                            <h4 class="title mb-4">Frequently asked Questions:</h4>
-                            <p class="text-muted">This are among the most  raised questions on our platform, if you go any other question, please use <a href="<?php echo base_url('contactus'); ?>">this</a> link to send your question.</p>
-                            <div class="accordion mt-4 pt-2" id="accordionExampletwo">
-                                <div class="accordion-item rounded">
-                                    <h2 class="accordion-header" id="headingfive">
-                                        <button class="accordion-button border-0 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapsefive"
-                                            aria-expanded="true" aria-controls="collapsefive">
-                                        Is my data stored forever?
-                                        </button>
-                                    </h2>
-                                    <div id="collapsefive" class="accordion-collapse border-0 collapse show" aria-labelledby="headingfive"
-                                        data-bs-parent="#accordionExampletwo">
-                                        <div class="accordion-body">Once the android client uploads the data, you can use the web client to delete the account and all the data that is associated to you.</div>
-                                    </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="faq-search bg-primary p-5 rounded shadow text-center">
+                            <h4 class="text-white mb-3">How can we help you?</h4>
+                            <p class="text-light mb-4">Search our FAQ database or browse by category</p>
+
+                            <div class="input-group input-group-lg mb-4">
+                                <input type="text" class="form-control" id="faqSearch" placeholder="Type your question here...">
+                                <button class="btn btn-light" type="button" id="searchFaq">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-3 col-6 mb-3">
+                                    <a href="#general" class="faq-category d-block p-3 bg-white rounded text-center text-decoration-none">
+                                        <i class="fas fa-question-circle fa-2x text-primary mb-2"></i>
+                                        <h6 class="mb-0">General</h6>
+                                    </a>
                                 </div>
-                                <div class="accordion-item rounded mt-2">
-                                    <h2 class="accordion-header" id="headingsix">
-                                        <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse"
-                                            data-bs-target="#collapsesix" aria-expanded="false" aria-controls="collapsesix">
-                                        Can I upgrade later on?
-                                        </button>
-                                    </h2>
-                                    <div id="collapsesix" class="accordion-collapse border-0 collapse" aria-labelledby="headingsix"
-                                        data-bs-parent="#accordionExampletwo">
-                                        <div class="accordion-body">There are no any restrictions that will let anyone stay away from upgrading toa better service rate.</div>
-                                    </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <a href="#technical" class="faq-category d-block p-3 bg-white rounded text-center text-decoration-none">
+                                        <i class="fas fa-cogs fa-2x text-primary mb-2"></i>
+                                        <h6 class="mb-0">Technical</h6>
+                                    </a>
                                 </div>
-                                <div class="accordion-item rounded mt-2">
-                                    <h2 class="accordion-header" id="headingseven">
-                                        <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse"
-                                            data-bs-target="#collapseseven" aria-expanded="false" aria-controls="collapseseven">
-                                        Can I download my data?
-                                        </button>
-                                    </h2>
-                                    <div id="collapseseven" class="accordion-collapse border-0 collapse" aria-labelledby="headingseven"
-                                        data-bs-parent="#accordionExampletwo">
-                                        <div class="accordion-body">This feature is still under active development. once finshed, anyone can export data to any format provided.</div>
-                                    </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <a href="#privacy" class="faq-category d-block p-3 bg-white rounded text-center text-decoration-none">
+                                        <i class="fas fa-shield-alt fa-2x text-primary mb-2"></i>
+                                        <h6 class="mb-0">Privacy</h6>
+                                    </a>
                                 </div>
-                                <div class="accordion-item rounded mt-2">
-                                    <h2 class="accordion-header" id="headingeight">
-                                        <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse"
-                                            data-bs-target="#collapseeight" aria-expanded="false" aria-controls="collapseeight">
-                                        Are plugins applicable here?
-                                        </button>
-                                    </h2>
-                                    <div id="collapseeight" class="accordion-collapse border-0 collapse" aria-labelledby="headingeight"
-                                        data-bs-parent="#accordionExampletwo">
-                                        <div class="accordion-body">Support for plugins is yet to be implemented but all in all the most basic functionality are executed here.</div>
-                                    </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <a href="#billing" class="faq-category d-block p-3 bg-white rounded text-center text-decoration-none">
+                                        <i class="fas fa-credit-card fa-2x text-primary mb-2"></i>
+                                        <h6 class="mb-0">Billing</h6>
+                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <!--end col-->
                 </div>
-                <!--end row-->
             </div>
-            <!--end container-->
         </section>
-        <!--end section-->
 
-		<!-- Start  -->
-		<section class="section">
-			<div class="container">
-                <h4 class="title mb-4">Website Terms of Use:</h4>
+        <!-- FAQ Section -->
+        <section class="section" id="faq">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="section-title">
+                            <h4 class="title mb-4">Frequently Asked Questions</h4>
+                            <p class="text-muted">These are among the most raised questions on our platform. If you have any other question, please use <a href="<?= url_to('contactus') ?>" class="text-primary">this link</a> to send your question.</p>
+                        </div>
 
-                <p>Version 1.0</p>
+                        <!-- FAQ Categories Navigation -->
+                        <div class="faq-nav mb-4">
+                            <div class="nav nav-pills justify-content-center" id="faqTab" role="tablist">
+                                <button class="nav-link active" id="general-tab" data-bs-toggle="pill" data-bs-target="#general" type="button">
+                                    <i class="fas fa-question-circle me-2"></i> General
+                                </button>
+                                <button class="nav-link" id="technical-tab" data-bs-toggle="pill" data-bs-target="#technical" type="button">
+                                    <i class="fas fa-cogs me-2"></i> Technical
+                                </button>
+                                <button class="nav-link" id="privacy-tab" data-bs-toggle="pill" data-bs-target="#privacy" type="button">
+                                    <i class="fas fa-shield-alt me-2"></i> Privacy
+                                </button>
+                                <button class="nav-link" id="billing-tab" data-bs-toggle="pill" data-bs-target="#billing" type="button">
+                                    <i class="fas fa-credit-card me-2"></i> Billing
+                                </button>
+                            </div>
+                        </div>
 
-                <p>The Prj Images website located at prj.tendollarwriters.com is a copyrighted work belonging to Prj Images. Certain features of the Site may be subject to additional guidelines, terms, or rules, which will be posted on the Site in connection with such features.</p>
+                        <!-- FAQ Content -->
+                        <div class="tab-content" id="faqTabContent">
+                            <!-- General FAQ -->
+                            <div class="tab-pane fade show active" id="general">
+                                <div class="accordion" id="generalAccordion">
+                                    <div class="accordion-item rounded shadow-sm mb-3">
+                                        <h2 class="accordion-header" id="headingDataStorage">
+                                            <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDataStorage">
+                                                <i class="fas fa-database text-primary me-3"></i>
+                                                Is my data stored forever?
+                                            </button>
+                                        </h2>
+                                        <div id="collapseDataStorage" class="accordion-collapse border-0 collapse">
+                                            <div class="accordion-body">
+                                                <p>Once the Android client uploads data to our servers, you maintain complete control over your information. You can:</p>
+                                                <ul>
+                                                    <li>Delete individual data points from your dashboard</li>
+                                                    <li>Schedule automatic data purging after a set period</li>
+                                                    <li>Completely delete your account and all associated data</li>
+                                                    <li>Request immediate data deletion through our support team</li>
+                                                </ul>
+                                                <p class="mb-0"><strong>Note:</strong> Account deletion is permanent and irreversible. All associated data will be permanently removed from our servers within 30 days.</p>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                <p>All such additional terms, guidelines, and rules are incorporated by reference into these Terms.</p>
+                                    <div class="accordion-item rounded shadow-sm mb-3">
+                                        <h2 class="accordion-header" id="headingUpgrade">
+                                            <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUpgrade">
+                                                <i class="fas fa-level-up-alt text-primary me-3"></i>
+                                                Can I upgrade my plan later?
+                                            </button>
+                                        </h2>
+                                        <div id="collapseUpgrade" class="accordion-collapse border-0 collapse">
+                                            <div class="accordion-body">
+                                                <p>Absolutely! We've designed our pricing to be flexible and user-friendly:</p>
+                                                <ul>
+                                                    <li><strong>Upgrade Anytime:</strong> Move to a higher tier whenever you need more features</li>
+                                                    <li><strong>Pro-rated Billing:</strong> Only pay for the remaining time in your billing cycle</li>
+                                                    <li><strong>No Downtime:</strong> Upgrades happen instantly with no service interruption</li>
+                                                    <li><strong>Feature Preview:</strong> Test premium features before committing</li>
+                                                </ul>
+                                                <div class="alert alert-info mt-3">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    <strong>Tip:</strong> All paid plans include a 14-day money-back guarantee.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                <p>These Terms of Use described the legally binding terms and conditions that oversee your use of the Site. BY LOGGING INTO THE SITE, YOU ARE BEING COMPLIANT THAT THESE TERMS and you represent that you have the authority and capacity to enter into these Terms. YOU SHOULD BE AT LEAST 18 YEARS OF AGE TO ACCESS THE SITE. IF YOU DISAGREE WITH ALL OF THE PROVISION OF THESE TERMS, DO NOT LOG INTO AND/OR USE THE SITE.<p>
+                                    <div class="accordion-item rounded shadow-sm mb-3">
+                                        <h2 class="accordion-header" id="headingDataExport">
+                                            <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDataExport">
+                                                <i class="fas fa-download text-primary me-3"></i>
+                                                Can I download/export my data?
+                                            </button>
+                                        </h2>
+                                        <div id="collapseDataExport" class="accordion-collapse border-0 collapse">
+                                            <div class="accordion-body">
+                                                <div class="d-flex align-items-start mb-3">
+                                                    <div class="me-3">
+                                                        <span class="badge bg-success">Available Now</span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-1">Basic Export Features</h6>
+                                                        <p class="text-muted mb-0">Export your data in CSV format directly from your dashboard</p>
+                                                    </div>
+                                                </div>
 
-                <p>These terms require the use of arbitration Section 10.2 on an individual basis to resolve disputes and also limit the remedies available to you in the event of a dispute. These Terms of Use were created with the help of the <a href="https://www.termsofusegenerator.net">Terms Of Use Generator</a>.</p>
+                                                <div class="d-flex align-items-start mb-3">
+                                                    <div class="me-3">
+                                                        <span class="badge bg-warning">Coming Soon</span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-1">Advanced Export Options</h6>
+                                                        <p class="text-muted mb-0">JSON, XML, PDF, and Excel formats with custom templates</p>
+                                                    </div>
+                                                </div>
 
+                                                <div class="d-flex align-items-start">
+                                                    <div class="me-3">
+                                                        <span class="badge bg-info">Planned</span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-1">API Access</h6>
+                                                        <p class="text-muted mb-0">Direct API access for automated data retrieval</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                <h2>Access to the Site</h2>
+                                    <div class="accordion-item rounded shadow-sm mb-3">
+                                        <h2 class="accordion-header" id="headingPlugins">
+                                            <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePlugins">
+                                                <i class="fas fa-puzzle-piece text-primary me-3"></i>
+                                                Are plugins or integrations available?
+                                            </button>
+                                        </h2>
+                                        <div id="collapsePlugins" class="accordion-collapse border-0 collapse">
+                                            <div class="accordion-body">
+                                                <p>We're constantly expanding our integration capabilities:</p>
 
-                <p><strong>Subject to these Terms.</strong> Company grants you a non-transferable, non-exclusive, revocable, limited license to access the Site solely for your own personal, noncommercial use.</p>
+                                                <div class="row mt-3">
+                                                    <div class="col-md-6">
+                                                        <div class="integration-card p-3 border rounded mb-3">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                                <h6 class="mb-0">Current Integrations</h6>
+                                                            </div>
+                                                            <ul class="text-muted small mb-0">
+                                                                <li>Google Drive export</li>
+                                                                <li>Dropbox backup</li>
+                                                                <li>Email report delivery</li>
+                                                                <li>Webhook notifications</li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="integration-card p-3 border rounded mb-3">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <i class="fas fa-clock text-warning me-2"></i>
+                                                                <h6 class="mb-0">Coming Soon</h6>
+                                                            </div>
+                                                            <ul class="text-muted small mb-0">
+                                                                <li>Slack notifications</li>
+                                                                <li>Zapier integration</li>
+                                                                <li>Custom plugin API</li>
+                                                                <li>Third-party app store</li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                <p><strong>Certain Restrictions.</strong> The rights approved to you in these Terms are subject to the following restrictions: (a) you shall not sell, rent, lease, transfer, assign, distribute, host, or otherwise commercially exploit the Site; (b) you shall not change, make derivative works of, disassemble, reverse compile or reverse engineer any part of the Site; (c) you shall not access the Site in order to build a similar or competitive website; and (d) except as expressly stated herein, no part of the Site may be copied, reproduced, distributed, republished, downloaded, displayed, posted or transmitted in any form or by any means unless otherwise indicated, any future release, update, or other addition to functionality of the Site shall be subject to these Terms.  All copyright and other proprietary notices on the Site must be retained on all copies thereof.</p>
+                                                <div class="mt-3">
+                                                    <a href="<?= url_to('contactus') ?>" class="text-primary">
+                                                        <i class="fas fa-lightbulb me-1"></i> Have a specific integration request?
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                <p>Company reserves the right to change, suspend, or cease the Site with or without notice to you.  You approved that Company will not be held liable to you or any third-party for any change, interruption, or termination of the Site or any part.</p>
+                            <!-- Technical FAQ -->
+                            <div class="tab-pane fade" id="technical">
+                                <div class="accordion" id="technicalAccordion">
+                                    <!-- Add technical FAQs here -->
+                                    <div class="accordion-item rounded shadow-sm mb-3">
+                                        <h2 class="accordion-header" id="headingAndroidVersion">
+                                            <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAndroidVersion">
+                                                <i class="fab fa-android text-primary me-3"></i>
+                                                What Android versions are supported?
+                                            </button>
+                                        </h2>
+                                        <div id="collapseAndroidVersion" class="accordion-collapse border-0 collapse">
+                                            <div class="accordion-body">
+                                                <p>Our Android app supports Android 8.0 (Oreo) and above. This covers over 95% of active Android devices.</p>
+                                                <div class="compatibility-chart mt-3">
+                                                    <h6>Version Compatibility:</h6>
+                                                    <div class="progress mb-2" style="height: 20px;">
+                                                        <div class="progress-bar bg-success" style="width: 95%">95% Compatible</div>
+                                                    </div>
+                                                    <small class="text-muted">Based on active Android device distribution</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                <p><strong>No Support or Maintenance.</strong> You agree that Company will have no obligation to provide you with any support in connection with the Site.</p>
+                            <!-- Privacy FAQ -->
+                            <div class="tab-pane fade" id="privacy">
+                                <div class="accordion" id="privacyAccordion">
+                                    <!-- Add privacy FAQs here -->
+                                    <div class="accordion-item rounded shadow-sm mb-3">
+                                        <h2 class="accordion-header" id="headingDataEncryption">
+                                            <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDataEncryption">
+                                                <i class="fas fa-lock text-primary me-3"></i>
+                                                How is my data encrypted?
+                                            </button>
+                                        </h2>
+                                        <div id="collapseDataEncryption" class="accordion-collapse border-0 collapse">
+                                            <div class="accordion-body">
+                                                <p>We use industry-standard encryption protocols to protect your data:</p>
+                                                <ul>
+                                                    <li><strong>Transport:</strong> TLS 1.3 encryption for all data in transit</li>
+                                                    <li><strong>Storage:</strong> AES-256 encryption for data at rest</li>
+                                                    <li><strong>End-to-End:</strong> Optional end-to-end encryption for sensitive data</li>
+                                                    <li><strong>Key Management:</strong> Secure key management with regular rotation</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                <p>Excluding any User Content that you may provide, you are aware that all the intellectual property rights, including copyrights, patents, trademarks, and trade secrets, in the Site and its content are owned by Company or Company’s suppliers. Note that these Terms and access to the Site do not give you any rights, title or interest in or to any intellectual property rights, except for the limited access rights expressed in Section 2.1. Company and its suppliers reserve all rights not granted in these Terms.</p>
+                            <!-- Billing FAQ -->
+                            <div class="tab-pane fade" id="billing">
+                                <div class="accordion" id="billingAccordion">
+                                    <!-- Add billing FAQs here -->
+                                    <div class="accordion-item rounded shadow-sm mb-3">
+                                        <h2 class="accordion-header" id="headingRefunds">
+                                            <button class="accordion-button border-0 bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRefunds">
+                                                <i class="fas fa-money-bill-wave text-primary me-3"></i>
+                                                What is your refund policy?
+                                            </button>
+                                        </h2>
+                                        <div id="collapseRefunds" class="accordion-collapse border-0 collapse">
+                                            <div class="accordion-body">
+                                                <p>We offer a 14-day money-back guarantee on all paid plans. If you're not satisfied with our service, contact our support team within 14 days of purchase for a full refund.</p>
+                                                <div class="alert alert-info mt-3">
+                                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                                    Refunds are processed within 5-7 business days and will be issued to your original payment method.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                <h2>User Content</h2>
+                        <!-- Still Have Questions -->
+                        <div class="card border-0 bg-light mt-5">
+                            <div class="card-body p-5 text-center">
+                                <i class="fas fa-headset fa-3x text-primary mb-3"></i>
+                                <h4 class="mb-3">Still Have Questions?</h4>
+                                <p class="text-muted mb-4">Can't find the answer you're looking for? Our support team is here to help.</p>
+                                <div class="d-flex flex-wrap justify-content-center gap-3">
+                                    <a href="<?= url_to('contactus') ?>" class="btn btn-primary">
+                                        <i class="fas fa-envelope me-2"></i> Contact Support
+                                    </a>
+                                    <a href="<?= base_url('documentation') ?>" class="btn btn-outline-primary">
+                                        <i class="fas fa-book me-2"></i> View Documentation
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-                <p><strong>User Content.</strong> "User Content" means any and all information and content that a user submits to the Site. You are exclusively responsible for your User Content. You bear all risks associated with use of your User Content.  You hereby certify that your User Content does not violate our Acceptable Use Policy.  You may not represent or imply to others that your User Content is in any way provided, sponsored or endorsed by Company. Because you alone are responsible for your User Content, you may expose yourself to liability. Company is not obliged to backup any User Content that you post; also, your User Content may be deleted at any time without prior notice to you. You are solely responsible for making your own backup copies of your User Content if you desire.</p>
+        <!-- Terms of Use Section -->
+        <section class="section bg-light" id="terms">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="card border-0 shadow">
+                            <div class="card-body p-5">
+                                <!-- Terms Navigation -->
+                                <div class="terms-nav mb-5">
+                                    <h4 class="title mb-4">Website Terms of Use</h4>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="#terms-overview" class="btn btn-sm btn-outline-primary">Overview</a>
+                                        <a href="#terms-access" class="btn btn-sm btn-outline-primary">Access</a>
+                                        <a href="#terms-content" class="btn btn-sm btn-outline-primary">User Content</a>
+                                        <a href="#terms-privacy" class="btn btn-sm btn-outline-primary">Privacy</a>
+                                        <a href="#terms-disclaimer" class="btn btn-sm btn-outline-primary">Disclaimer</a>
+                                        <a href="#terms-liability" class="btn btn-sm btn-outline-primary">Liability</a>
+                                    </div>
+                                </div>
 
-                <p>You hereby grant to Company an irreversible, nonexclusive, royalty-free and fully paid, worldwide license to reproduce, distribute, publicly display and perform, prepare derivative works of, incorporate into other works, and otherwise use and exploit your User Content, and to grant sublicenses of the foregoing rights, solely for the purposes of including your User Content in the Site.  You hereby irreversibly waive any claims and assertions of moral rights or attribution with respect to your User Content.</p>
+                                <!-- Version Info -->
+                                <div class="alert alert-info mb-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-info-circle fa-2x me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Version 2.1 • Last Updated: <?= date('F j, Y') ?></h6>
+                                            <p class="mb-0">These terms were last updated on the date shown above. Please review them regularly.</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <p><strong>Acceptable Use Policy.</strong> The following terms constitute our "Acceptable Use Policy":
-                You agree not to use the Site to collect, upload, transmit, display, or distribute any User Content (i) that violates any third-party right or any intellectual property or proprietary right; (ii) that is unlawful, harassing, abusive, tortious, threatening, harmful, invasive of another’s privacy, vulgar, defamatory, false, intentionally misleading, trade libelous, pornographic, obscene, patently offensive, promotes racism, bigotry, hatred, or physical harm of any kind against any group or individual; (iii) that is harmful to minors in any way; or (iv) that is in violation of any law, regulation, or obligations or restrictions imposed by any third party.</p>
+                                <!-- Terms Content -->
+                                <div class="terms-content">
+                                    <!-- Overview -->
+                                    <div id="terms-overview" class="mb-5">
+                                        <h5 class="mb-3">Overview</h5>
+                                        <p>The Prj Images website located at <strong><?= base_url() ?></strong> is a copyrighted work belonging to Prj Images. Certain features of the Site may be subject to additional guidelines, terms, or rules, which will be posted on the Site in connection with such features.</p>
+                                        <p>All such additional terms, guidelines, and rules are incorporated by reference into these Terms.</p>
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>Important:</strong> These Terms of Use describe the legally binding terms and conditions that oversee your use of the Site. BY LOGGING INTO THE SITE, YOU ARE BEING COMPLIANT THAT THESE TERMS and you represent that you have the authority and capacity to enter into these Terms. YOU SHOULD BE AT LEAST 18 YEARS OF AGE TO ACCESS THE SITE. IF YOU DISAGREE WITH ALL OF THE PROVISION OF THESE TERMS, DO NOT LOG INTO AND/OR USE THE SITE.
+                                        </div>
+                                    </div>
 
-                <p>In addition, you agree not to: (i) upload, transmit, or distribute to or through the Site any software intended to damage or alter a computer system or data; (ii) send through the Site unsolicited or unauthorized advertising, promotional materials, junk mail, spam, chain letters, pyramid schemes, or any other form of duplicative or unsolicited messages; (iii) use the Site to harvest, collect, gather or assemble information or data regarding other users without their consent; (iv) interfere with, disrupt, or create an undue burden on servers or networks connected to the Site, or violate the regulations, policies or procedures of such networks; (v) attempt to gain unauthorized access to the Site, whether through password mining or any other means; (vi) harass or interfere with any other user’s use and enjoyment of the Site; or (vi) use software or automated agents or scripts to produce multiple accounts on the Site, or to generate automated searches, requests, or queries to the Site.</p>
+                                    <!-- Access -->
+                                    <div id="terms-access" class="mb-5">
+                                        <h5 class="mb-3">Access to the Site</h5>
+                                        <p><strong>Subject to these Terms.</strong> Company grants you a non-transferable, non-exclusive, revocable, limited license to access the Site solely for your own personal, noncommercial use.</p>
 
-                <p>We reserve the right to review any User Content, and to investigate and/or take appropriate action against you in our sole discretion if you violate the Acceptable Use Policy or any other provision of these Terms or otherwise create liability for us or any other person. Such action may include removing or modifying your User Content, terminating your Account in accordance with Section 8, and/or reporting you to law enforcement authorities.</p>
-                    
-                <p>If you provide Company with any feedback or suggestions regarding the Site, you hereby assign to Company all rights in such Feedback and agree that Company shall have the right to use and fully exploit such Feedback and related information in any manner it believes appropriate.  Company will treat any Feedback you provide to Company as non-confidential and non-proprietary.</p>
+                                        <div class="card border-warning mb-3">
+                                            <div class="card-header bg-warning text-dark">
+                                                <i class="fas fa-ban me-2"></i> Certain Restrictions
+                                            </div>
+                                            <div class="card-body">
+                                                <p>The rights approved to you in these Terms are subject to the following restrictions:</p>
+                                                <ul>
+                                                    <li>You shall not sell, rent, lease, transfer, assign, distribute, host, or otherwise commercially exploit the Site</li>
+                                                    <li>You shall not change, make derivative works of, disassemble, reverse compile or reverse engineer any part of the Site</li>
+                                                    <li>You shall not access the Site in order to build a similar or competitive website</li>
+                                                    <li>Except as expressly stated herein, no part of the Site may be copied, reproduced, distributed, republished, downloaded, displayed, posted or transmitted in any form or by any means</li>
+                                                </ul>
+                                                <p class="mb-0">All copyright and other proprietary notices on the Site must be retained on all copies thereof.</p>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                <p>You agree to indemnify and hold Company and its officers, employees, and agents harmless, including costs and attorneys’ fees, from any claim or demand made by any third-party due to or arising out of (a) your use of the Site, (b) your violation of these Terms, (c) your violation of applicable laws or regulations or (d) your User Content.  Company reserves the right to assume the exclusive defense and control of any matter for which you are required to indemnify us, and you agree to cooperate with our defense of these claims.  You agree not to settle any matter without the prior written consent of Company.  Company will use reasonable efforts to notify you of any such claim, action or proceeding upon becoming aware of it.</p>
+                                    <!-- User Content -->
+                                    <div id="terms-content" class="mb-5">
+                                        <h5 class="mb-3">User Content & Acceptable Use</h5>
+                                        <p><strong>User Content.</strong> "User Content" means any and all information and content that a user submits to the Site. You are exclusively responsible for your User Content.</p>
 
-                <p><strong>Third-Party Links & Ads.</strong> The Site may contain links to third-party websites and services, and/or display advertisements for third-parties.  Such Third-Party Links & Ads are not under the control of Company, and Company is not responsible for any Third-Party Links & Ads.  Company provides access to these Third-Party Links & Ads only as a convenience to you, and does not review, approve, monitor, endorse, warrant, or make any representations with respect to Third-Party Links & Ads.  You use all Third-Party Links & Ads at your own risk, and should apply a suitable level of caution and discretion in doing so. When you click on any of the Third-Party Links & Ads, the applicable third party’s terms and policies apply, including the third party’s privacy and data gathering practices.</p>
+                                        <div class="row mt-4">
+                                            <div class="col-md-6">
+                                                <div class="card border-success h-100">
+                                                    <div class="card-header bg-success text-white">
+                                                        <i class="fas fa-check-circle me-2"></i> Acceptable Use
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="mb-0">
+                                                            <li>Your own original content</li>
+                                                            <li>Properly licensed material</li>
+                                                            <li>Respectful communication</li>
+                                                            <li>Lawful purposes only</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card border-danger h-100">
+                                                    <div class="card-header bg-danger text-white">
+                                                        <i class="fas fa-times-circle me-2"></i> Prohibited Content
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="mb-0">
+                                                            <li>Copyright infringement</li>
+                                                            <li>Harassing content</li>
+                                                            <li>Malicious software</li>
+                                                            <li>Spam or phishing</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                <p><strong>Other Users.</strong> Each Site user is solely responsible for any and all of its own User Content.  Because we do not control User Content, you acknowledge and agree that we are not responsible for any User Content, whether provided by you or by others.  You agree that Company will not be responsible for any loss or damage incurred as the result of any such interactions.  If there is a dispute between you and any Site user, we are under no obligation to become involved.</p>
+                                    <!-- Privacy -->
+                                    <div id="terms-privacy" class="mb-5">
+                                        <h5 class="mb-3">Privacy & Data Protection</h5>
+                                        <p><strong>Cookies and Web Beacons.</strong> Like any other website, Prj Images uses 'cookies'. These cookies are used to store information including visitors' preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users' experience by customizing our web page content based on visitors' browser type and/or other information.</p>
 
-                <p><strong>Cookies and Web Beacons.</strong> Like any other website, Prj Images uses ‘cookies’. These cookies are used to store information including visitors’ preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users’ experience by customizing our web page content based on visitors’ browser type and/or other information.</p>
+                                        <div class="privacy-highlights mt-4">
+                                            <h6 class="mb-3">Privacy Highlights:</h6>
+                                            <div class="row">
+                                                <div class="col-md-4 mb-3">
+                                                    <div class="text-center p-3 border rounded">
+                                                        <i class="fas fa-user-shield fa-2x text-primary mb-2"></i>
+                                                        <h6>Data Protection</h6>
+                                                        <p class="text-muted small mb-0">We protect your personal information</p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <div class="text-center p-3 border rounded">
+                                                        <i class="fas fa-cookie-bite fa-2x text-primary mb-2"></i>
+                                                        <h6>Cookie Control</h6>
+                                                        <p class="text-muted small mb-0">Manage cookie preferences anytime</p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <div class="text-center p-3 border rounded">
+                                                        <i class="fas fa-eye-slash fa-2x text-primary mb-2"></i>
+                                                        <h6>No Tracking</h6>
+                                                        <p class="text-muted small mb-0">We don't sell your data to third parties</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
+                                    <!-- Disclaimer -->
+                                    <div id="terms-disclaimer" class="mb-5">
+                                        <h5 class="mb-3">Disclaimers</h5>
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                                            <div>
+                                                <p class="mb-0">The site is provided on an "as-is" and "as available" basis, and company and our suppliers expressly disclaim any and all warranties and conditions of any kind, whether express, implied, or statutory, including all warranties or conditions of merchantability, fitness for a particular purpose, title, quiet enjoyment, accuracy, or non-infringement.</p>
+                                            </div>
+                                        </div>
+                                    </div>
 
+                                    <!-- Liability -->
+                                    <div id="terms-liability" class="mb-5">
+                                        <h5 class="mb-3">Limitation on Liability</h5>
+                                        <div class="card border-info">
+                                            <div class="card-header bg-info text-white">
+                                                <i class="fas fa-balance-scale me-2"></i> Liability Limitation
+                                            </div>
+                                            <div class="card-body">
+                                                <p>To the maximum extent permitted by law, in no event shall company or our suppliers be liable to you or any third-party for any lost profits, lost data, costs of procurement of substitute products, or any indirect, consequential, exemplary, incidental, special or punitive damages arising from or relating to these terms or your use of, or incapability to use the site even if company has been advised of the possibility of such damages.</p>
+                                                <div class="alert alert-warning mt-3">
+                                                    <i class="fas fa-dollar-sign me-2"></i>
+                                                    <strong>Maximum Liability:</strong> Our liability to you for any damages arising from or related to this agreement will at all times be limited to a maximum of fifty U.S. dollars (U.S. $50).
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                <h2>Disclaimers</h2>
+                                    <!-- Acceptance -->
+                                    <div class="acceptance-section text-center mt-5 pt-5 border-top">
+                                        <div class="acceptance-box p-4 bg-light rounded shadow-sm d-inline-block">
+                                            <i class="fas fa-file-contract fa-3x text-primary mb-3"></i>
+                                            <h5 class="mb-3">By using our service, you agree to these terms</h5>
+                                            <p class="text-muted mb-4">Please read these terms carefully before using our platform.</p>
+                                            <div class="d-flex flex-wrap justify-content-center gap-3">
+                                                <a href="<?= base_url('privacy-policy') ?>" class="btn btn-outline-primary">
+                                                    <i class="fas fa-user-shield me-2"></i> Privacy Policy
+                                                </a>
+                                                <button type="button" class="btn btn-primary" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                                                    <i class="fas fa-arrow-up me-2"></i> Back to Top
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                <p>The site is provided on an "as-is" and "as available" basis, and company and our suppliers expressly disclaim any and all warranties and conditions of any kind, whether express, implied, or statutory, including all warranties or conditions of merchantability, fitness for a particular purpose, title, quiet enjoyment, accuracy, or non-infringement.  We and our suppliers make not guarantee that the site will meet your requirements, will be available on an uninterrupted, timely, secure, or error-free basis, or will be accurate, reliable, free of viruses or other harmful code, complete, legal, or safe.  If applicable law requires any warranties with respect to the site, all such warranties are limited in duration to ninety (90) days from the date of first use.</p>
-
-                <p>Some jurisdictions do not allow the exclusion of implied warranties, so the above exclusion may not apply to you.  Some jurisdictions do not allow limitations on how long an implied warranty lasts, so the above limitation may not apply to you.</p>
-
-                <h2>Limitation on Liability</h2>
-
-                <p>To the maximum extent permitted by law, in no event shall company or our suppliers be liable to you or any third-party for any lost profits, lost data, costs of procurement of substitute products, or any indirect, consequential, exemplary, incidental, special or punitive damages arising from or relating to these terms or your use of, or incapability to use the site even if company has been advised of the possibility of such damages.  Access to and use of the site is at your own discretion and risk, and you will be solely responsible for any damage to your device or computer system, or loss of data resulting therefrom.</p>
-
-                <p>To the maximum extent permitted by law, notwithstanding anything to the contrary contained herein, our liability to you for any damages arising from or related to this agreement, will at all times be limited to a maximum of fifty U.S. dollars (u.s. $50). The existence of more than one claim will not enlarge this limit.  You agree that our suppliers will have no liability of any kind arising from or relating to this agreement.</p>
-
-                <p>Some jurisdictions do not allow the limitation or exclusion of liability for incidental or consequential damages, so the above limitation or exclusion may not apply to you.</p>
-
-                <p><strong>Term and Termination.</strong> Subject to this Section, these Terms will remain in full force and effect while you use the Site.  We may suspend or terminate your rights to use the Site at any time for any reason at our sole discretion, including for any use of the Site in violation of these Terms.  Upon termination of your rights under these Terms, your Account and right to access and use the Site will terminate immediately.  You understand that any termination of your Account may involve deletion of your User Content associated with your Account from our live databases.  Company will not have any liability whatsoever to you for any termination of your rights under these Terms.  Even after your rights under these Terms are terminated, the following provisions of these Terms will remain in effect: Sections 2 through 2.5, Section 3 and Sections 4 through 10.</p>
-
-                <h2>Copyright Policy.</h2>
-
-                <p>Company respects the intellectual property of others and asks that users of our Site do the same.  In connection with our Site, we have adopted and implemented a policy respecting copyright law that provides for the removal of any infringing materials and for the termination of users of our online Site who are repeated infringers of intellectual property rights, including copyrights.  If you believe that one of our users is, through the use of our Site, unlawfully infringing the copyright(s) in a work, and wish to have the allegedly infringing material removed, the following information in the form of a written notification (pursuant to 17 U.S.C. § 512(c)) must be provided to our designated Copyright Agent:</p>
-
-                <ul>
-                    <li>your physical or electronic signature;</li>
-                    <li>identification of the copyrighted work(s) that you claim to have been infringed;</li>
-                    <li>identification of the material on our services that you claim is infringing and that you request us to remove;</li>
-                    <li>sufficient information to permit us to locate such material;</li>
-                    <li>your address, telephone number, and e-mail address;</li>
-                    <li>a statement that you have a good faith belief that use of the objectionable material is not authorized by the copyright owner, its agent, or under the law; and</li>
-                    <li>a statement that the information in the notification is accurate, and under penalty of perjury, that you are either the owner of the copyright that has allegedly been infringed or that you are authorized to act on behalf of the copyright owner.</li>
-                </ul>
-
-                <p>Please note that, pursuant to 17 U.S.C. § 512(f), any misrepresentation of material fact in a written notification automatically subjects the complaining party to liability for any damages, costs and attorney’s fees incurred by us in connection with the written notification and allegation of copyright infringement.</p>
-
-                <h2>General</h2>
-
-                <p>These Terms are subject to occasional revision, and if we make any substantial changes, we may notify you by sending you an e-mail to the last e-mail address you provided to us and/or by prominently posting notice of the changes on our Site.  You are responsible for providing us with your most current e-mail address.  In the event that the last e-mail address that you have provided us is not valid our dispatch of the e-mail containing such notice will nonetheless constitute effective notice of the changes described in the notice.  Any changes to these Terms will be effective upon the earliest of thirty (30) calendar days following our dispatch of an e-mail notice to you or thirty (30) calendar days following our posting of notice of the changes on our Site.  These changes will be effective immediately for new users of our Site.  Continued use of our Site following notice of such changes shall indicate your acknowledgement of such changes and agreement to be bound by the terms and conditions of such changes.
-                Dispute Resolution. Please read this Arbitration Agreement carefully. It is part of your contract with Company and affects your rights.  It contains procedures for MANDATORY BINDING ARBITRATION AND A CLASS ACTION WAIVER.</p>
-
-
-                <p><strong>Electronic Communications.</strong> The communications between you and Company use electronic means, whether you use the Site or send us emails, or whether Company posts notices on the Site or communicates with you via email. For contractual purposes, you (a) consent to receive communications from Company in an electronic form; and (b) agree that all terms and conditions, agreements, notices, disclosures, and other communications that Company provides to you electronically satisfy any legal obligation that such communications would satisfy if it were be in a hard copy writing.</p>
-
-                <p><strong>Entire Terms.</strong> These Terms constitute the entire agreement between you and us regarding the use of the Site. Our failure to exercise or enforce any right or provision of these Terms shall not operate as a waiver of such right or provision. The section titles in these Terms are for convenience only and have no legal or contractual effect. The word "including" means "including without limitation". If any provision of these Terms is held to be invalid or unenforceable, the other provisions of these Terms will be unimpaired and the invalid or unenforceable provision will be deemed modified so that it is valid and enforceable to the maximum extent permitted by law.  Your relationship to Company is that of an independent contractor, and neither party is an agent or partner of the other.  These Terms, and your rights and obligations herein, may not be assigned, subcontracted, delegated, or otherwise transferred by you without Company’s prior written consent, and any attempted assignment, subcontract, delegation, or transfer in violation of the foregoing will be null and void.  Company may freely assign these Terms.  The terms and conditions set forth in these Terms shall be binding upon assignees.</p>
-
-                <p><strong>Your Privacy.</strong> Please read our Privacy Policy.</p>
-
-
-                ---------------
-			</div>
-			<!--end container-->
-		</section>
-		<!--end section-->
+                        <!-- Quick Links -->
+                        <div class="row mt-4">
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= base_url('privacy-policy') ?>" class="card border-0 shadow-sm text-decoration-none h-100">
+                                    <div class="card-body text-center p-4">
+                                        <i class="fas fa-user-shield fa-2x text-primary mb-3"></i>
+                                        <h6>Privacy Policy</h6>
+                                        <p class="text-muted small mb-0">How we protect your data</p>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= base_url('cookie-policy') ?>" class="card border-0 shadow-sm text-decoration-none h-100">
+                                    <div class="card-body text-center p-4">
+                                        <i class="fas fa-cookie-bite fa-2x text-primary mb-3"></i>
+                                        <h6>Cookie Policy</h6>
+                                        <p class="text-muted small mb-0">Our use of cookies</p>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= url_to('contactus') ?>" class="card border-0 shadow-sm text-decoration-none h-100">
+                                    <div class="card-body text-center p-4">
+                                        <i class="fas fa-question-circle fa-2x text-primary mb-3"></i>
+                                        <h6>Contact Legal</h6>
+                                        <p class="text-muted small mb-0">Questions about terms?</p>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <div class="position-relative">
             <div class="shape overflow-hidden text-footer">
@@ -178,5 +548,255 @@
                 </svg>
             </div>
         </div>
-        <!-- End  -->
+
+        <style>
+            /* FAQ Search */
+            .faq-search {
+                background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+                margin-top: -80px;
+                position: relative;
+                z-index: 1;
+            }
+
+            .faq-category {
+                transition: all 0.3s;
+            }
+
+            .faq-category:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            }
+
+            /* FAQ Navigation */
+            .faq-nav .nav-link {
+                border-radius: 30px;
+                padding: 10px 20px;
+                margin: 0 5px;
+                transition: all 0.3s;
+            }
+
+            .faq-nav .nav-link.active {
+                background: #4e73df;
+                color: white;
+                box-shadow: 0 5px 15px rgba(78, 115, 223, 0.3);
+            }
+
+            .faq-nav .nav-link:hover:not(.active) {
+                background: rgba(78, 115, 223, 0.1);
+            }
+
+            /* Accordion Improvements */
+            .accordion-item {
+                border: 1px solid #e9ecef;
+            }
+
+            .accordion-button {
+                font-weight: 500;
+                padding: 1.25rem;
+            }
+
+            .accordion-button:not(.collapsed) {
+                background-color: rgba(78, 115, 223, 0.05);
+                color: #4e73df;
+            }
+
+            .accordion-body {
+                padding: 1.5rem;
+            }
+
+            /* Terms Navigation */
+            .terms-nav {
+                position: sticky;
+                top: 20px;
+                z-index: 100;
+                background: white;
+                padding: 20px 0;
+                border-bottom: 2px solid #f8f9fa;
+            }
+
+            .terms-content h5 {
+                color: #4e73df;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #f8f9fa;
+                margin-bottom: 20px;
+            }
+
+            /* Smooth scrolling for anchor links */
+            html {
+                scroll-behavior: smooth;
+            }
+
+            /* Integration Cards */
+            .integration-card {
+                transition: transform 0.3s;
+            }
+
+            .integration-card:hover {
+                transform: translateY(-5px);
+            }
+
+            /* Progress Bar for Compatibility */
+            .compatibility-chart .progress {
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            /* Alert Improvements */
+            .alert {
+                border-radius: 10px;
+                border: none;
+            }
+
+            /* Card Hover Effects */
+            .card {
+                transition: transform 0.3s, box-shadow 0.3s;
+            }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+            }
+
+            /* Privacy Highlights */
+            .privacy-highlights .border {
+                border: 2px solid #e9ecef !important;
+                transition: all 0.3s;
+            }
+
+            .privacy-highlights .border:hover {
+                border-color: #4e73df !important;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            }
+        </style>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // FAQ Search Functionality
+                const faqSearch = document.getElementById('faqSearch');
+                const searchButton = document.getElementById('searchFaq');
+
+                if (faqSearch && searchButton) {
+                    searchButton.addEventListener('click', function() {
+                        const searchTerm = faqSearch.value.toLowerCase().trim();
+                        if (searchTerm) {
+                            // Find matching FAQ items
+                            const allAccordionButtons = document.querySelectorAll('.accordion-button');
+                            let foundMatch = false;
+
+                            allAccordionButtons.forEach(button => {
+                                const text = button.textContent.toLowerCase();
+                                const parentItem = button.closest('.accordion-item');
+
+                                if (text.includes(searchTerm)) {
+                                    foundMatch = true;
+                                    // Show and expand matching item
+                                    parentItem.style.display = 'block';
+                                    const collapseId = button.getAttribute('data-bs-target');
+                                    const collapseElement = document.querySelector(collapseId);
+                                    if (collapseElement) {
+                                        new bootstrap.Collapse(collapseElement, { toggle: true });
+                                    }
+
+                                    // Highlight the text
+                                    const regex = new RegExp(`(${searchTerm})`, 'gi');
+                                    button.innerHTML = button.textContent.replace(regex, '<mark class="bg-warning">$1</mark>');
+                                } else {
+                                    parentItem.style.display = 'none';
+                                }
+                            });
+
+                            // Show message if no matches found
+                            if (!foundMatch) {
+                                alert('No FAQ items found matching your search. Try different keywords or contact our support team.');
+                                // Reset display
+                                allAccordionButtons.forEach(button => {
+                                    button.closest('.accordion-item').style.display = 'block';
+                                });
+                            }
+                        }
+                    });
+
+                    // Clear search on escape key
+                    faqSearch.addEventListener('keyup', function(e) {
+                        if (e.key === 'Escape') {
+                            faqSearch.value = '';
+                            const allAccordionItems = document.querySelectorAll('.accordion-item');
+                            allAccordionItems.forEach(item => {
+                                item.style.display = 'block';
+                            });
+                        }
+                    });
+                }
+
+                // Smooth scroll for terms navigation
+                document.querySelectorAll('.terms-nav a').forEach(anchor => {
+                    anchor.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const targetId = this.getAttribute('href');
+                        const targetElement = document.querySelector(targetId);
+                        if (targetElement) {
+                            window.scrollTo({
+                                top: targetElement.offsetTop - 100,
+                                behavior: 'smooth'
+                            });
+                        }
+                    });
+                });
+
+                // FAQ category click handlers
+                document.querySelectorAll('.faq-category').forEach(category => {
+                    category.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const targetTab = this.getAttribute('href').substring(1);
+                        const tabButton = document.querySelector(`[data-bs-target="#${targetTab}"]`);
+                        if (tabButton) {
+                            tabButton.click();
+                        }
+                    });
+                });
+
+                // Auto-expand FAQ based on URL hash
+                const hash = window.location.hash;
+                if (hash) {
+                    const targetElement = document.querySelector(hash);
+                    if (targetElement) {
+                        // If it's an accordion item
+                        const accordionButton = targetElement.querySelector('.accordion-button');
+                        if (accordionButton) {
+                            setTimeout(() => {
+                                accordionButton.click();
+                            }, 500);
+                        }
+
+                        // Smooth scroll to element
+                        setTimeout(() => {
+                            window.scrollTo({
+                                top: targetElement.offsetTop - 100,
+                                behavior: 'smooth'
+                            });
+                        }, 100);
+                    }
+                }
+
+                // Track FAQ interactions (for analytics)
+                document.querySelectorAll('.accordion-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const question = this.textContent.trim();
+                        const isExpanding = this.classList.contains('collapsed');
+
+                        // You can send this data to your analytics service
+                        console.log(`FAQ ${isExpanding ? 'expanded' : 'collapsed'}: ${question}`);
+                    });
+                });
+
+                // Terms acceptance tracking
+                const acceptanceButton = document.querySelector('.acceptance-section button');
+                if (acceptanceButton) {
+                    acceptanceButton.addEventListener('click', function() {
+                        // You can add terms acceptance tracking here
+                        console.log('User scrolled to review terms');
+                    });
+                }
+            });
+        </script>
        
