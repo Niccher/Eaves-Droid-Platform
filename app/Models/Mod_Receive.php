@@ -4,91 +4,154 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-use Config\Encryption;
-use Config\Services;
-
-class Mod_Receive extends Model{
-
-    public function make_device_print($print_dump){
-        $builder = $this->db->table('tbl_Print');
-        $query_sent = $builder->select('*')
-            ->where('p_Board', $print_dump["p_Board"])
-            ->where('p_Brand', $print_dump["p_Brand"])
-            ->where('p_Device', $print_dump["p_Device"])
-            ->where('p_Display', $print_dump["p_Display"])
-            ->where('p_Hardware', $print_dump["p_Hardware"])
-            ->where('p_Manufacturer', $print_dump["p_Manufacturer"])
-            ->where('p_Model', $print_dump["p_Model"])
-            ->get();
-
-        $results = $query_sent->getResultArray();
-
-        if (count($results)==1) {
-            $pd_id = $results[0]['pd_id'];
-            return "{'pd_id':'$pd_id'}";
-        }else{
+class Mod_Receive extends Model
+{
+    /**
+     * Creates or gets device print ID.
+     *
+     * @param array $print_dump
+     * @return string|false
+     */
+    public function make_device_print(array $print_dump)
+    {
+        try {
             $builder = $this->db->table('tbl_Print');
-            $builder->insert($print_dump);
+            $result = $builder->where($print_dump)
+                ->limit(1)
+                ->get()
+                ->getRowArray();
 
-            $builder = $this->db->table('tbl_Print');
-            $query_dev = $builder->selectMax('pd_id', 'maxid')->get();
-            $query_dev->getRow();
-
-            if ($query_dev) {
-                $pd_id = $query_dev->maxid;
+            if ($result) {
+                log_message('info', 'Existing device print found: ' . $result['pd_id']);
+                return "{'pd_id':'" . $result['pd_id'] . "'}";
             }
-            return "{'pd_id':'$pd_id'}";
-        }
 
-    }
+            $builder->insert($print_dump);
+            $pd_id = $this->db->insertID();
+            if ($pd_id) {
+                log_message('info', 'New device print created: ' . $pd_id);
+                return "{'pd_id':'$pd_id'}";
+            }
 
-    public function make_test_token($var_sent_token , $var_time, $var_ip, $var_format){
-        $data = array(
-            'token_submitted' => $var_sent_token,
-            'token_senttime' => $var_time,
-            'token_received' => time(),
-            'token_ip' => $var_ip,
-            'token_format' => $var_format,
-        );
-        $builder = $this->db->table('tbl_Tokentest');
-        $builder->insert($data);
-    }
-
-    public function get_token_owner($token){
-        $builder = $this->db->table('tbl_Tokens');
-        $query_sent = $builder->where('Token', $token)
-            ->get();
-        $results = $query_sent->getResultArray();
-
-        if (count($results)==1) {
-            return  $results[0];
-        }else{
-            return "-0-";
+            log_message('error', 'Failed to insert device print');
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'make_device_print error: ' . $e->getMessage());
+            return false;
         }
     }
 
-    public function get_file_size($attachment_size){
-        $units = array( 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
+    /**
+     * Makes a test token entry.
+     *
+     * @param string $var_sent_token
+     * @param string $var_time
+     * @param string $var_ip
+     * @param string $var_format
+     * @return bool
+     */
+    public function make_test_token(string $var_sent_token, string $var_time, string $var_ip, string $var_format): bool
+    {
+        try {
+            $data = [
+                'token_submitted' => $var_sent_token,
+                'token_senttime' => $var_time,
+                'token_received' => time(),
+                'token_ip' => $var_ip,
+                'token_format' => $var_format,
+            ];
+
+            if ($this->db->table('tbl_Tokentest')->insert($data)) {
+                log_message('info', 'Test token created: ' . $var_sent_token);
+                return true;
+            }
+
+            log_message('error', 'Failed to insert test token');
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'make_test_token error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Gets token owner.
+     *
+     * @param string $token
+     * @return array|false
+     */
+    public function get_token_owner(string $token)
+    {
+        try {
+            $result = $this->db->table('tbl_Tokens')
+                ->where('Token', $token)
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+
+            if ($result) {
+                log_message('info', 'Token owner found for: ' . $token);
+                return $result;
+            }
+
+            log_message('error', 'No owner found for token: ' . $token);
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'get_token_owner error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Formats file size.
+     *
+     * @param int $attachment_size
+     * @return string
+     */
+    public function get_file_size(int $attachment_size): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
         $power = $attachment_size > 0 ? floor(log($attachment_size, 1024)) : 0;
         return number_format($attachment_size / pow(1024, $power), 2, '.', ',') . ' ' . $units[$power];
     }
 
-    public function make_upload($tr_token , $tr_namereal , $tr_namenew , $tr_size, $tr_ext, $tr_text){
-        $dated = date('Y-m-d H:i:s');
+    /**
+     * Makes an upload entry.
+     *
+     * @param string $tr_token
+     * @param string $tr_namereal
+     * @param string $tr_namenew
+     * @param int $tr_size
+     * @param string $tr_ext
+     * @param string $tr_text
+     * @return bool
+     */
+    public function make_upload(string $tr_token, string $tr_namereal, string $tr_namenew, int $tr_size, string $tr_ext, string $tr_text): bool
+    {
+        try {
+            $dated = date('Y-m-d H:i:s');
+            $data = [
+                'Up_time' => $dated,
+                'Up_token' => $tr_token,
+                'Up_file_name' => $tr_namenew,
+                'Up_file_realname' => $tr_namereal,
+                'Up_file_size' => $tr_size,
+                'Up_file_extension' => $tr_ext,
+                'Up_file_text' => $tr_text,
+                'Up_file_viewed' => 0,
+                'Up_fille_downloaded' => 0,
+            ];
 
-        $data = array(
-            'Up_time' => $dated,
-            'Up_token' => $tr_token,
-            'Up_file_name' => $tr_namenew,
-            'Up_file_realname' => $tr_namereal,
-            'Up_file_size' => $tr_size,
-            'Up_file_extension' => $tr_ext,
-            'Up_file_text' => $tr_text,
-            'Up_file_viewed' => 0,
-            'Up_fille_downloaded' => 0,
-        );
-        $builder = $this->db->table('tbl_Uploaded');
-        $builder->insert($data);
+            if ($this->db->table('tbl_Uploaded')->insert($data)) {
+                log_message('info', 'Upload entry created: ' . $tr_namenew);
+                return true;
+            }
+
+            log_message('error', 'Failed to insert upload entry');
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'make_upload error: ' . $e->getMessage());
+            return false;
+        }
     }
-
 }

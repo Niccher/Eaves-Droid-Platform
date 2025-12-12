@@ -4,45 +4,98 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-
-class Mod_Extract extends Model{
-
-    public function get_sms_between_contacts($user_id, $contactNumber1, $contactNumber2){
-        $builder = $this->db->table('tbl_Sms');
-        $query_sent = $builder
-            ->where('meta_Owner', $user_id)
-            ->where('sms_number', $contactNumber1)
-            ->orWhere('sms_number', $contactNumber2)
-            ->orderBy('sms_time', 'DESC')
-            ->get();
-        return $query_sent->getResultArray();
+class Mod_Extract extends Model
+{
+    /**
+     * Gets SMS between contacts.
+     *
+     * @param int $user_id
+     * @param string $contactNumber1
+     * @param string $contactNumber2
+     * @return array
+     */
+    public function get_sms_between_contacts(int $user_id, string $contactNumber1, string $contactNumber2): array
+    {
+        try {
+            return $this->db->table('tbl_Sms')
+                ->where('meta_Owner', $user_id)
+                ->where('sms_number', $contactNumber1)
+                ->orWhere('sms_number', $contactNumber2)
+                ->orderBy('sms_time', 'DESC')
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_sms_between_contacts error: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    public function get_logs_between_contacts($user_id, $contactNumber1, $contactNumber2){
-        $builder = $this->db->table('tbl_Logs');
-        $query_sent = $builder
-            ->where('meta_Owner', $user_id)
-            ->where('Caller', $contactNumber1)
-            ->orWhere('Caller', $contactNumber2)
-            ->orderBy('Timestamp', 'DESC')
-            ->get();
-        return $query_sent->getResultArray();
+    /**
+     * Gets logs between contacts.
+     *
+     * @param int $user_id
+     * @param string $contactNumber1
+     * @param string $contactNumber2
+     * @return array
+     */
+    public function get_logs_between_contacts(int $user_id, string $contactNumber1, string $contactNumber2): array
+    {
+        try {
+            return $this->db->table('tbl_Logs')
+                ->where('meta_Owner', $user_id)
+                ->where('Caller', $contactNumber1)
+                ->orWhere('Caller', $contactNumber2)
+                ->orderBy('Timestamp', 'DESC')
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_logs_between_contacts error: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    public function get_contact_at($contact_id){
-        $builder = $this->db->table('tbl_Contacts');
-        $query_sent = $builder
-            ->where('ID', $contact_id)
-            ->get();
-        return $query_sent->getRowArray();
+    /**
+     * Gets contact by ID.
+     *
+     * @param int $contact_id
+     * @return array|false
+     */
+    public function get_contact_at(int $contact_id)
+    {
+        try {
+            $result = $this->db->table('tbl_Contacts')
+                ->where('ID', $contact_id)
+                ->get()
+                ->getRowArray();
+            if ($result) {
+                return $result;
+            }
+            log_message('error', 'No contact found for ID ' . $contact_id);
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'get_contact_at error: ' . $e->getMessage());
+            return false;
+        }
     }
 
-    public function get_sms_from($user_id, $sender){
-        $builder = $this->db->table('tbl_Sms');
-        $query_sent = $builder
-            ->where('meta_Owner', $user_id)
-            ->where('sms_number', $sender)
-            ->get();
-        return $query_sent->getResultArray();
+    /**
+     * Gets SMS from a sender.
+     *
+     * @param int $user_id
+     * @param string $sender
+     * @return array
+     */
+    public function get_sms_from(int $user_id, string $sender): array
+    {
+        try {
+            return $this->db->table('tbl_Sms')
+                ->where('meta_Owner', $user_id)
+                ->where('sms_number', $sender)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_sms_from error: ' . $e->getMessage());
+            return [];
+        }
     }
 }

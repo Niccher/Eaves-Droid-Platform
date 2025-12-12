@@ -28,19 +28,25 @@ class LoginController extends Controller
      */
     public function loginAction(): RedirectResponse
     {
-        // Validate credentials
+        // 1. Define the validation rules
         $rules = $this->getValidationRules();
 
+        // 2. RUN VALIDATION FIRST! If data is missing/invalid, STOP here.
         if (!$this->validate($rules)) {
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
         }
 
+        // 3. ONLY NOW, after validation ensures data is present, create the credentials array
         $credentials = [
+            // Because validation passed, we know these fields contain non-empty, valid data
             'email'    => $this->request->getPost('email'),
             'password' => $this->request->getPost('password'),
         ];
+
+        // NOTE: The 'print_r("Vars as ", $credentials);' line should be removed.
+        // It disrupts the HTTP response flow in CI4. Use `log_message` or `dd()` instead for debugging.
 
         // Attempt to login
         $auth = auth()->setAuthenticator('session');
@@ -48,9 +54,11 @@ class LoginController extends Controller
         // Check if "remember me" is checked
         $remember = (bool) $this->request->getPost('remember');
 
+        // 4. Attempt authentication with guaranteed valid credentials
         $result = $auth->attempt($credentials, $remember);
 
         if (!$result->isOK()) {
+            // Login failed (e.g., bad password, user not found)
             return redirect()->route('login')
                 ->withInput()
                 ->with('error', $result->reason());

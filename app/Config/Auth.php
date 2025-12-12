@@ -298,8 +298,7 @@ class Auth extends ShieldAuth
 
     public array $validFields = [
         'email',
-        'username',
-        'password',
+        'username'
     ];
 
 //    public bool $allowRegistration = true;

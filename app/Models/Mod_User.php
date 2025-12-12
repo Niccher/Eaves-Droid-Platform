@@ -2,82 +2,185 @@
 
 namespace App\Models;
 
-use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Model;
 
-class Mod_User extends Model{
-    use ResponseTrait;
-
-    public function basic_user(){
-        if (auth()->loggedIn()){
-            $user_data = json_decode(json_encode(auth()->user()), true);
-            return $user_data;
+class Mod_User extends Model
+{
+    /**
+     * Gets basic user data if logged in.
+     *
+     * @return array|false
+     */
+    public function basic_user()
+    {
+        try {
+            if (auth()->loggedIn()) {
+                return json_decode(json_encode(auth()->user()), true);
+            }
+            log_message('error', 'User not logged in');
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'basic_user error: ' . $e->getMessage());
+            return false;
         }
     }
 
-	public function get_vars($user_id){//$device_id
-		$builder = $this->db->table('tbl_Users');
-		$query_sent = $builder->select('*')
-			->where('Person_ID', $user_id)
-			->limit(1)
-			->get();
+    /**
+     * Gets user variables.
+     *
+     * @param int $user_id
+     * @return array|false
+     */
+    public function get_vars(int $user_id)
+    {
+        try {
+            $result = $this->db->table('tbl_Users')
+                ->where('Person_ID', $user_id)
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+            if ($result) {
+                return $result;
+            }
+            log_message('error', 'No vars found for user ' . $user_id);
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'get_vars error: ' . $e->getMessage());
+            return false;
+        }
+    }
 
-		return $query_sent->getRowArray();
-	}
+    /**
+     * Creates a secure token with expiration.
+     *
+     * @param int $user_id
+     * @param string $token
+     * @param string $ip_add
+     * @return bool
+     */
+    public function create_token(int $user_id, string $token, string $ip_add): bool
+    {
+        try {
+            $dated = date('Y-m-d H:i:s');
+            $future_date = date('Y-m-d H:i:s', strtotime('+1 month', strtotime($dated)));
 
-	public function create_token($user_id, $token, $ip_add){
-		//Token_ID  Token_Created   Token_Owner     Token_Status    Token_Initiator     Token_Expiry
-        $dated = date('Y-m-d H:i:s');
-        $future_date = strtotime('+1 month', strtotime($dated));
-        $future_dated = date('Y-m-d H:i:s', $future_date);
-		$data = array(
-			'Token_Created' => $dated,
-			'Token_Owner' => $user_id,
-			'Token' => $token,
-			'Token_Status' => "00",
-			'Token_Initiator' => $ip_add,
-			//'Token_Expiry' => time() + (90 * 24 * 60 * 60)
-			'Token_Expiry' => $future_dated
-		);
-        return $this->db->table('tbl_Tokens')->insert($data);
-	}
+            $data = [
+                'Token_Created' => $dated,
+                'Token_Owner' => $user_id,
+                'Token' => $token,
+                'Token_Status' => "00",
+                'Token_Initiator' => $ip_add,
+                'Token_Expiry' => $future_date,
+            ];
 
-	public function token_mark($token_owner, $token, $token_id){
-		$builder = $this->db->table('tbl_Tokens');
-		$query_sent = $builder->set('Token_Status',  "11")
-			->where('Token', $token)
-			->where('Token_ID', $token_id)
-			->where('Token_Owner', $token_owner);
-		return $query_sent->update();
-	}
+            if ($this->db->table('tbl_Tokens')->insert($data)) {
+                log_message('info', 'Token created for user ' . $user_id);
+                return true;
+            }
 
-	public function get_token($user_id){
-		$builder = $this->db->table('tbl_Tokens');
-		$query_sent = $builder->select('*')
-			->where('Token_Owner', $user_id)
-			->orderBy('Token_ID', 'DESC')
-			->limit(1)
-			->get();
-		return $query_sent->getRowArray();
-	}
+            log_message('error', 'Token creation failed for user ' . $user_id);
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'create_token error: ' . $e->getMessage());
+            return false;
+        }
+    }
 
-	public function get_devices($user_id){
-		$builder = $this->db->table('tbl_Interactions');
-		$query_sent = $builder->select('*')
-			->where('User_ID', $user_id)
-			->orderBy('Interaction', 'DESC')
-			->groupBy("IP")
-			->get();
-		return $query_sent->getResultArray();
-	}
+    /**
+     * Marks a token as used.
+     *
+     * @param int $token_owner
+     * @param string $token
+     * @param int $token_id
+     * @return bool
+     */
+    public function token_mark(int $token_owner, string $token, int $token_id): bool
+    {
+        try {
+            $builder = $this->db->table('tbl_Tokens');
+            $builder->set('Token_Status', "11")
+                ->where('Token', $token)
+                ->where('Token_ID', $token_id)
+                ->where('Token_Owner', $token_owner);
 
-	public function get_interactions($user_id){
-		$builder = $this->db->table('tbl_Interactions');
-		$query_sent = $builder->select('*')
-			->where('User_ID', $user_id)
-			->orderBy('Interaction', 'DESC')
-			->groupBy("IP")
-			->get();
-		return $query_sent->getResultArray();
-	}
+            if ($builder->update()) {
+                log_message('info', 'Token marked for owner ' . $token_owner);
+                return true;
+            }
+
+            log_message('error', 'Token mark failed for owner ' . $token_owner);
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'token_mark error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Gets latest token for user.
+     *
+     * @param int $user_id
+     * @return array|false
+     */
+    public function get_token(int $user_id)
+    {
+        try {
+            $result = $this->db->table('tbl_Tokens')
+                ->where('Token_Owner', $user_id)
+                ->orderBy('Token_ID', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+            if ($result) {
+                return $result;
+            }
+            log_message('error', 'No token found for user ' . $user_id);
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'get_token error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Gets user devices.
+     *
+     * @param int $user_id
+     * @return array
+     */
+    public function get_devices(int $user_id): array
+    {
+        try {
+            return $this->db->table('tbl_Interactions')
+                ->where('User_ID', $user_id)
+                ->orderBy('Interaction', 'DESC')
+                ->groupBy('IP')
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_devices error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Gets user interactions.
+     *
+     * @param int $user_id
+     * @return array
+     */
+    public function get_interactions(int $user_id): array
+    {
+        try {
+            return $this->db->table('tbl_Interactions')
+                ->where('User_ID', $user_id)
+                ->orderBy('Interaction', 'DESC')
+                ->groupBy('IP')
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_interactions error: ' . $e->getMessage());
+            return [];
+        }
+    }
 }

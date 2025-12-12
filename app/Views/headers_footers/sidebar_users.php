@@ -75,7 +75,7 @@
 		                    <!-- Menu Footer-->
 		                    <li class="user-footer">
 		                        <a href="<?php echo base_url('accountprofile') ?>" class="btn btn-default btn-flat">Profile</a>
-		                        <a href="<?php echo base_url('auth/logout') ?>" class="btn btn-default btn-flat float-right">Sign out</a>
+		                        <a href="<?php echo base_url('logout') ?>" class="btn btn-default btn-flat float-right">Sign out</a>
 		                    </li>
 		                </ul>
 		            </li>
