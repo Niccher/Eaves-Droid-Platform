@@ -11,14 +11,6 @@ class Client extends BaseController
 {
 	use ResponseTrait;
 
-    public function index(): string{
-	    $titl['pag'] = 'landing';
-	    return view('headers_footers/head_landing')
-		    . view('headers_footers/sidebar_landing', $titl)
-		    . view('landing/landing')
-		    . view('headers_footers/footer_landing');
-    }
-
 	public function home(){
 		$model_finder = new Mod_Finder();
 		if (!auth()->loggedIn()){

@@ -16,7 +16,7 @@
                                         <h2 class="h4 mb-0"><?php echo $sms_head ?? 'SMS Messages' ?></h2>
                                         <p class="text-muted mb-0 mt-1">
                                             <i class="fas fa-envelope mr-1"></i> Total Messages:
-                                            <span class="font-weight-bold text-primary"><?php echo $totalSmsInbox ?? 0 ?></span>
+                                            <span class="font-weight-bold text-primary"><?php echo $totalSmsSent ?? 0 ?></span>
                                         </p>
                                     </div>
                                 </div>
@@ -72,25 +72,25 @@
                                         $dt = $smsinfo['sms_time'];
                                         $msg = base64_decode($smsinfo['sms_body']);
                                         echo '
-                                                                    <tr data-widget="expandable-table" aria-expanded="false">
-                                                                        <td>'.$smsinfo['sms_number'].'</td>
-                                                                        <td>'.$smsinfo['sms_type'].'</td>
-                                                                        <td>'.$dt.'</td>
-                                                                        <td class="expandable-body">
-                                                                            <a href="javascript:void(0)">
-                                                                                <b>'.character_limiter($msg, 30).'</b>
-                                                                            </a>
-                                                                            <div class="float-right"><i class="far fa-eye"></i><div>
-                                                                        </td>
-                                                                    </tr>
-                                                                    <tr class="expandable-body">
-                                                                        <td colspan="5">
-                                                                            <blockquote class="quote-secondary">
-                                                                                <p>'.$msg.'</p>
-                                                                            </blockquote>
-                                                                        </td>
-                                                                    </tr>
-                                                            ';
+                                                                        <tr data-widget="expandable-table" aria-expanded="false">
+                                                                            <td>'.$smsinfo['sms_number'].'</td>
+                                                                            <td>'.$smsinfo['sms_type'].'</td>
+                                                                            <td>'.$dt.'</td>
+                                                                            <td class="expandable-body">
+                                                                                <a href="javascript:void(0)">
+                                                                                    <b>'.character_limiter($msg, 30).'</b>
+                                                                                </a>
+                                                                                <div class="float-right"><i class="far fa-eye"></i><div>
+                                                                            </td>
+                                                                        </tr>
+                                                                        <tr class="expandable-body">
+                                                                            <td colspan="5">
+                                                                                <blockquote class="quote-secondary">
+                                                                                    <p>'.$msg.'</p>
+                                                                                </blockquote>
+                                                                            </td>
+                                                                        </tr>
+                                                                ';
                                     }
                                     ?>
                                     </tbody>
@@ -98,7 +98,7 @@
                                 </table>
                                 <br>
                                 <div class="d-flex justify-content-end">
-                                    <?php if ($totalSmsInbox > count($sms_dump)) {
+                                    <?php if ($totalSmsSent > count($sms_dump)) {
                                         echo $pager->links('bootstrap5_full', 'bootstrap5_full');
                                     } ?>
                                 </div>

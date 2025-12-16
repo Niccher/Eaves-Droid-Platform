@@ -32,7 +32,6 @@ $routes->match(['get', 'post'], 'contactus', 'Home::landing_contactus');
 // =================================================================
 
 // Shield's built-in routes. This loads many routes for registration, verification, etc.
-// Note: Uncommenting the custom group below can override or duplicate these.
 service('auth')->routes($routes);
 
 // Custom Authentication Routes:
@@ -46,7 +45,6 @@ $routes->group('', ['namespace' => 'App\Controllers'], static function ($routes)
 
     // Registration
     $routes->get('register', 'auth\RegisterController::registerView', ['as' => 'register']);
-    // FIX: Corrected namespace/controller name from 'Aauth' to 'auth'
     $routes->post('register', 'auth\RegisterController::registerAction');
 
     // Forgot Password
@@ -70,47 +68,79 @@ $routes->group('', ['namespace' => 'App\Controllers\clients', 'filter' => 'sessi
     $routes->get('home', 'Client::home', ['as' => 'client-home']);
     $routes->get('faqs', 'Client::faqs');
 
+    // =============================================================
+    // DATA VIEWS WITH PAGINATION
+    // =============================================================
+
     // --- Data Views (Apps) ---
     $routes->get('apps', 'Apps::apps');
-    $routes->get('apps/unique', 'Apps::apps');
+    $routes->get('apps/(:num)', 'Apps::apps/$1'); // Pagination
+    $routes->get('apps/unique', 'Apps::apps_unique');
+    $routes->get('apps/unique/(:num)', 'Apps::apps_unique/$1'); // Pagination
     $routes->get('apps/last_time', 'Apps::apps_last_time');
-    $routes->get('apps/all_apps', 'Apps::apps'); // Note: Duplicates above route, consider merging logic.
+    $routes->get('apps/last_time/(:num)', 'Apps::apps_last_time/$1'); // Pagination
+    $routes->get('apps/all_apps', 'Apps::apps_all');
+    $routes->get('apps/all_apps/(:num)', 'Apps::apps_all/$1'); // Pagination
 
     // --- Data Views (Call Logs) ---
     $routes->get('call_logs', 'Calls::call_logs');
+    $routes->get('call_logs/(:num)', 'Calls::call_logs/$1'); // Pagination
     $routes->get('call_logs/incoming', 'Calls::call_incoming');
+    $routes->get('call_logs/incoming/(:num)', 'Calls::call_incoming/$1'); // Pagination
     $routes->get('call_logs/outgoing', 'Calls::call_outgoing');
+    $routes->get('call_logs/outgoing/(:num)', 'Calls::call_outgoing/$1'); // Pagination
     $routes->get('call_logs/rejected', 'Calls::call_rejected');
+    $routes->get('call_logs/rejected/(:num)', 'Calls::call_rejected/$1'); // Pagination
     $routes->get('call_logs/blocked', 'Calls::call_blocked');
+    $routes->get('call_logs/blocked/(:num)', 'Calls::call_blocked/$1'); // Pagination
 
     // --- Data Views (SMS) ---
     $routes->get('sms', 'Sms::sms');
+    $routes->get('sms/(:num)', 'Sms::sms/$1'); // Pagination
     $routes->get('sms/inbox', 'Sms::sms_inbox');
+    $routes->get('sms/inbox/(:num)', 'Sms::sms_inbox/$1'); // Pagination
     $routes->get('sms/sent', 'Sms::sms_sent');
+    $routes->get('sms/sent/(:num)', 'Sms::sms_sent/$1'); // Pagination
 
     // --- Data Views (Contacts) ---
-    $routes->get('contacts', 'Contacts');
+    $routes->get('contacts', 'Contacts::index');
+    $routes->get('contacts/(:num)', 'Contacts::index/$1'); // Pagination
+
+    // =============================================================
+    // ANALYSIS/CORRELATION ROUTES (WITH PAGINATION)
+    // =============================================================
 
     // --- Analysis/Correlation ---
     $routes->get('analysis', 'Correlation::index');
+    $routes->get('analysis/(:num)', 'Correlation::index/$1'); // Pagination
+
     $routes->get('analysis/sms/finance', 'Correlation::sms_finance');
+    $routes->get('analysis/sms/finance/(:num)', 'Correlation::sms_finance/$1'); // Pagination
+
     $routes->get('analysis/sms/finance/(:any)', 'Correlation::sms_analyze_finance_from/$1');
+    $routes->get('analysis/sms/finance/(:any)/(:num)', 'Correlation::sms_analyze_finance_from/$1/$2'); // Pagination
 
     $routes->get('analysis/set_rules', 'Correlation::set_sms_rules');
+    $routes->get('analysis/set_rules/(:num)', 'Correlation::set_sms_rules/$1'); // Pagination
+
     $routes->post('analysis/set/set_sms_datapoints/(:any)', 'Correlation::set_sms_datapoints/$1');
 
     // --- Contact Analysis (Dynamic) ---
     $routes->get('contacts/analyze/sms/(:any)', 'Analyze::sms/$1');
-    $routes->get('contacts/analyze/calls/(:any)', 'Analyze::calls/$1');
+    $routes->get('contacts/analyze/sms/(:any)/(:num)', 'Analyze::sms/$1/$2'); // Pagination
 
-    // --- Account Management ---
-//    $routes->get('account/profile', 'clients\Account::index');
-//    $routes->get('account/setting', 'Account::setting');
-//    $routes->get('account/logs', 'Account::access_logs');
+    $routes->get('contacts/analyze/calls/(:any)', 'Analyze::calls/$1');
+    $routes->get('contacts/analyze/calls/(:any)/(:num)', 'Analyze::calls/$1/$2'); // Pagination
+
+    // =============================================================
+    // ACCOUNT MANAGEMENT ROUTES
+    // =============================================================
+
     $routes->group('account', ['namespace' => 'App\Controllers\clients'], function($routes) {
         $routes->get('profile', 'Account::home');
         $routes->get('setting', 'Account::setting');
         $routes->get('logs', 'Account::access_logs');
+        $routes->get('logs/(:num)', 'Account::access_logs/$1'); // Pagination for logs
     });
 
     // --- Account Actions ---
@@ -147,12 +177,11 @@ $routes->group('api', ['namespace' => 'App\Controllers\api'], static function ($
 });
 
 // =================================================================
-// Shield Action Controllers (Commented out - usually not needed if
-// you use `service('auth')->routes($routes)`)
+// CATCH-ALL ROUTE FOR 404 ERRORS
 // =================================================================
+$routes->set404Override(function() {
+    return redirect()->to('/error_404');
+});
 
-// $routes->group('', ['namespace' => 'CodeIgniter\Shield\Controllers'], static function ($routes) {
-//     $routes->get('auth/a/show', 'ActionController::show');
-//     $routes->post('auth/a/handle', 'ActionController::handle');
-//     $routes->get('auth/a/verify', 'ActionController::verify');
-// });
+// Alternatively, you can specify a controller method:
+// $routes->set404Override('Home::landing_error_404');

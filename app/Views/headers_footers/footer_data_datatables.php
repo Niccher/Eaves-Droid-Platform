@@ -26,8 +26,9 @@
     <script>
         $('.tabledump').DataTable(
             {
-                "pageLength": 75,
-                dom: 'Bfrtip',
+                "pageLength": 25,
+                // dom: 'Bfrtip',
+                dom: 'Bfrt',
                 buttons: [
                     'copyHtml5',
                     'excelHtml5',

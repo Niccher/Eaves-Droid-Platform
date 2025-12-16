@@ -2,111 +2,103 @@
 
 namespace App\Controllers\clients;
 
-use App\Controllers\BaseController;
-
 use App\Models\Mod_Finder;
 use CodeIgniter\API\ResponseTrait;
 
-class Sms extends BaseController
+class Sms extends BaseClientController
 {
-	use ResponseTrait;
+    use ResponseTrait;
 
-	public function sms(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
+    /**
+     * Display all SMS messages with pagination
+     * Route: /sms
+     */
+    public function index()
+    {
+        return $this->view('all');
+    }
 
-		$data['pag'] = 'sms';
-		$data['sms_head'] = 'All Sms';
-		$data["user_info"] = $model_finder->basic_user();
+    /**
+     * Display only received SMS messages
+     * Route: /sms/inbox
+     */
+    public function inbox()
+    {
+        return $this->view('inbox');
+    }
 
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
+    /**
+     * Display only sent SMS messages
+     * Route: /sms/sent
+     */
+    public function sent()
+    {
+        return $this->view('sent');
+    }
 
-		$data['sms_urls'] = '
-                        <a class="btn btn-primary" href="'.base_url("sms").'">All</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("sms/inbox").'">Inbox</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("sms/sent").'">Sent</a>
-                        &nbsp;&nbsp;';
+    /**
+     * Alternative: Single method with parameter
+     * Route: /sms/(all|inbox|sent)
+     */
+    public function view($type = 'all')
+    {
+        // Validate type parameter
+        $validTypes = ['all', 'inbox', 'sent'];
+        if (!in_array($type, $validTypes)) {
+            return redirect()->to('sms');
+        }
 
-		$data["sms_dump"] = $model_finder->get_sms($data["user_info"]['id']);
+        // Get SMS data based on type
+        switch ($type) {
+            case 'inbox':
+                $smsData = $this->finderModel->get_sms_type($this->userId, 'inbox');
+                $viewFile = 'users/sms/inbox';
+                break;
+            case 'sent':
+                $smsData = $this->finderModel->get_sms_type($this->userId, 'sent');
+                $viewFile = 'users/sms/sent';
+                break;
+            default: // 'all'
+                $smsData = $this->finderModel->get_sms($this->userId, $this->perPage);
+                $viewFile = 'users/sms/sms';
+                break;
+        }
 
-		return view('headers_footers/head_users')
-			. view('headers_footers/sidebar_users', $data)
-			. view('users/sms/sms', $data)
-			. view('headers_footers/footer_users');
-	}
+        // Get common data for SMS views
+        $commonData = $this->getSmsCommonData($type);
 
-	public function sms_inbox(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
+        // Prepare data for the view
+        $data = array_merge($commonData, [
+            'sms_dump' => $smsData,
+        ]);
 
-		$data['pag'] = 'sms';
-		$data['sms_head'] = 'Received Sms';
-		$data["user_info"] = $model_finder->basic_user();
+        return $this->renderSmsView($viewFile, $data);
+    }
 
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
+    /**
+     * Alternative method for backward compatibility
+     * Route: /sms/sms (maps to index)
+     */
+    public function sms()
+    {
+        return $this->index();
+    }
 
-		$data['sms_urls'] = '
-                        <a class="btn btn-outline-primary" href="'.base_url("sms").'">All</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-primary" href="'.base_url("sms/inbox").'">Inbox</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("sms/sent").'">Sent</a>
-                        &nbsp;&nbsp;';
+    /**
+     * Alternative method for backward compatibility
+     * Route: /sms/sms_inbox (maps to inbox)
+     */
+    public function sms_inbox()
+    {
+        return $this->inbox();
+    }
 
-		$data["sms_dump"] = $model_finder->get_sms_type($data["user_info"]['id'], 'inbox');
-
-		return view('headers_footers/head_users')
-			. view('headers_footers/sidebar_users', $data)
-			. view('users/sms/inbox', $data)
-			. view('headers_footers/footer_users');
-	}
-
-	public function sms_sent(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
-
-		$data['pag'] = 'sms';
-		$data['sms_head'] = 'Sent Sms';
-		$data["user_info"] = $model_finder->basic_user();
-
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
-
-		$data['sms_urls'] = '
-                        <a class="btn btn-outline-primary" href="'.base_url("sms").'">All</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("sms/inbox").'">Inbox</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-primary" href="'.base_url("sms/sent").'">Sent</a>
-                        &nbsp;&nbsp;';
-
-		$data["sms_dump"] = $model_finder->get_sms_type($data["user_info"]['id'], 'sent');
-
-		return view('headers_footers/head_users')
-			. view('headers_footers/sidebar_users', $data)
-			. view('users/sms/inbox', $data)
-			. view('headers_footers/footer_users');
-	}
+    /**
+     * Alternative method for backward compatibility
+     * Route: /sms/sms_sent (maps to sent)
+     */
+    public function sms_sent()
+    {
+        return $this->sent();
+    }
 }

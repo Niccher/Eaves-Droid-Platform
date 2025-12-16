@@ -45,10 +45,19 @@ class RegisterController extends Controller
             \CodeIgniter\Shield\Config\Auth::VALID_FIELDS,
             ['username']
         );
+
+        // Get form data
+        $postData = $this->request->getPost();
+
+        // Prepare user data for Shield
         $user = new User($this->request->getPost($allowedPostFields));
 
         try {
-            // Save user to database
+            // Start database transaction
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            // Save user to Shield users table
             $userId = $users->save($user);
 
             if (!$userId) {
@@ -61,8 +70,33 @@ class RegisterController extends Controller
             // Get the user entity
             $user = $users->findById($userId);
 
-            // Add to default group if needed
+            // Add to default group
             $user->addGroup('user');
+
+            // Prepare data for tbl_Users
+            $tblUsersData = [
+                'Person_ID' => $userId,
+                'Name' => $postData['username'] ?? '',
+                'Email' => $postData['email'] ?? '',
+                'Phone' => '',
+                'Password' => password_hash($postData['password'] ?? '', PASSWORD_DEFAULT), // Store hashed password
+                'Timestamp' => date('Y-m-d H:i:s'),
+                'Avatar' => '',
+                'Privilege' => 'user',
+                'Bio' => '',
+                'Status' => 'active',
+                'Activated' => 1
+            ];
+
+            // Save to tbl_Users table
+            $db->table('tbl_Users')->insert($tblUsersData);
+
+            // Commit transaction
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Failed to save user to tbl_Users table.');
+            }
 
             // Send email verification if enabled
             $auth = service('auth');
@@ -71,13 +105,18 @@ class RegisterController extends Controller
                 return redirect()->route('action-show')->with('message', 'Please check your email to activate your account.');
             }
 
-            // Auto-login after registration (optional)
+            // Auto-login after registration
             $auth->login($user);
 
             // Registration successful
             return redirect()->to('/dashboard')->with('message', 'Registration successful! Welcome to our platform.');
 
         } catch (\Exception $e) {
+            // Rollback on error
+            if (isset($db) && $db->transStatus() !== false) {
+                $db->transRollback();
+            }
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Registration failed: ' . $e->getMessage());

@@ -31,7 +31,7 @@ class Mod_User extends Model
      * @param int $user_id
      * @return array|false
      */
-    public function get_vars(int $user_id)
+    public function get_data_tbl_users(int $user_id)
     {
         try {
             $result = $this->db->table('tbl_Users')
@@ -39,11 +39,78 @@ class Mod_User extends Model
                 ->limit(1)
                 ->get()
                 ->getRowArray();
-            if ($result) {
+
+            if (is_array($result)) {
                 return $result;
             }
-            log_message('error', 'No vars found for user ' . $user_id);
+
+            log_message('info', 'No custom user data found in tbl_Users for user ID: ' . $user_id);
             return false;
+
+        } catch (\Exception $e) {
+            log_message('error', 'get_custom_user_data error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get user data from Shield's default 'users' table
+     *
+     * @param int $user_id
+     * @return array|false Returns user row as array or false if not found
+     */
+    public function get_data_users(int $user_id)
+    {
+        try {
+            $result = $this->db->table('users')
+                ->where('id', $user_id)
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+
+            if (is_array($result)) {
+                return $result;
+            }
+
+            log_message('info', 'No Shield user data found in users table for user ID: ' . $user_id);
+            return false;
+
+        } catch (\Exception $e) {
+            log_message('error', 'get_shield_user_data error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get combined user variables from both tables
+     * Merges data from tbl_Users and Shield's users table
+     *
+     * @param int $user_id
+     * @return array|false Merged data or false if nothing found
+     */
+    public function get_vars(int $user_id)
+    {
+        try {
+            $customData  = $this->get_data_tbl_users($user_id);
+            $shieldData  = $this->get_data_users($user_id);
+
+            $result = [];
+
+            if (is_array($customData)) {
+                $result = array_merge($result, $customData);
+            }
+
+            if (is_array($shieldData)) {
+                $result = array_merge($result, $shieldData);
+            }
+
+            if (!empty($result)) {
+                return $result;
+            }
+
+            log_message('info', 'No user variables found for user ID: ' . $user_id);
+            return false;
+
         } catch (\Exception $e) {
             log_message('error', 'get_vars error: ' . $e->getMessage());
             return false;

@@ -73,20 +73,39 @@ class Mod_Finder extends Model
         return $this->getCount('tbl_Logs', $user_id);
     }
 
+    public function get_contact_info($contactNumber1){
+        $user_id = json_decode(json_encode(auth()->user()), true)['id'];
+        $builder = $this->db->table('tbl_Contacts');
+        $query_sent = $builder->select('*')
+            ->where('meta_Owner', $user_id)
+            ->like('Number', $contactNumber1)
+            ->limit(1)
+            ->get();
+        return $query_sent->getRowArray();
+    }
+
     /**
      * Gets Contacts.
      *
      * @param int $user_id
      * @return array
      */
-    public function get_contacts(int $userId, int $perPage = 20): array
+    public function get_contacts(int $userId, int $perPage = 25): array
     {
         try {
+            // Set the table explicitly
             $this->table = 'tbl_Contacts';
-            return $this->asArray()
+
+            // Reset the model state
+            $this->resetQuery();
+
+            // Get paginated results
+            $results = $this->asArray()
                 ->where('meta_Owner', $userId)
                 ->orderBy('Name', 'ASC')
-                ->paginate($perPage, 'bootstrap5');
+                ->paginate($perPage, 'bootstrap5_full');
+
+            return $results;
 
         } catch (\Exception $e) {
             log_message('error', 'get_contacts error: ' . $e->getMessage());
@@ -100,14 +119,35 @@ class Mod_Finder extends Model
      * @param int $user_id
      * @return array
      */
-    public function get_sms_sent(int $user_id, int $perPage = 20): array
+    public function get_sms_sent(int $user_id, int $perPage = 25): array
     {
         try {
             $this->table = 'tbl_SMSsent';
             return $this->asArray()
                 ->where('meta_Owner', $user_id)
                 ->orderBy('Name', 'ASC')
-                ->paginate($perPage, 'bootstrap5');
+                ->paginate($perPage, 'bootstrap5_full');
+
+        } catch (\Exception $e) {
+            log_message('error', 'get_sms_sent error: ' . $e->getMessage());
+            return ['error', 'get_sms_sent error: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Gets SMS Received.
+     *
+     * @param int $user_id
+     * @return array
+     */
+    public function get_sms_received(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $this->table = 'tbl_SMSsent';
+            return $this->asArray()
+                ->where('meta_Owner', $user_id)
+                ->orderBy('Name', 'ASC')
+                ->paginate($perPage, 'bootstrap5_full');
 
         } catch (\Exception $e) {
             log_message('error', 'get_sms_sent error: ' . $e->getMessage());
@@ -122,15 +162,20 @@ class Mod_Finder extends Model
      * @param string $sms_type
      * @return array
      */
-    public function get_sms_type(int $user_id, string $sms_type, int $perPage = 20): array
+    public function get_sms_type(int $user_id, string $sms_type, int $perPage = 25): array
     {
         try {
-            return $this->db->table('tbl_Sms')
+            $this->table = 'tbl_Sms';
+
+            // Reset the model state
+            $this->resetQuery();
+
+            return $this->asArray()
                 ->where('meta_Owner', $user_id)
                 ->where('sms_type', $sms_type)
                 ->orderBy('sms_time', 'DESC')
-                ->get()
-                ->getResultArray();
+                ->paginate($perPage, 'bootstrap5_full');
+
         } catch (\Exception $e) {
             log_message('error', 'get_sms_type error: ' . $e->getMessage());
             return ['error', 'get_sms_type error: ' . $e->getMessage()];
@@ -143,14 +188,22 @@ class Mod_Finder extends Model
      * @param int $user_id
      * @return array
      */
-    public function get_sms(int $user_id, int $perPage = 20): array
+    public function get_sms(int $user_id, int $perPage = 25): array
     {
         try {
+            // Set the table explicitly
             $this->table = 'tbl_Sms';
-            return $this->asArray()
+
+            // Reset the model state
+            $this->resetQuery();
+
+            // Get paginated results
+            $results = $this->asArray()
                 ->where('meta_Owner', $user_id)
                 ->orderBy('sms_time', 'DESC')
-                ->paginate($perPage, 'bootstrap5');
+                ->paginate($perPage, 'bootstrap5_full');
+
+            return $results;
 
         } catch (\Exception $e) {
             log_message('error', 'get_sms error: ' . $e->getMessage());
@@ -187,16 +240,9 @@ class Mod_Finder extends Model
      * @param int $user_id
      * @return array
      */
-    public function get_sms_active(int $user_id, int $perPage = 20): array
+    public function get_sms_active(int $user_id, int $perPage = 25): array
     {
         try {
-//            return $this->asArray()
-//                ->select('sms_number, sms_thread_id, count(*) AS Totals')
-//                ->where('meta_Owner', $user_id)
-//                ->groupBy('sms_number')
-//                ->orderBy('Totals', 'DESC')
-//                ->paginate($perPage, 'bootstrap5');
-
             return $this->db->table('tbl_Sms')
                 ->select('sms_number, sms_thread_id, count(*) AS Totals')
                 ->where('meta_Owner', $user_id)
@@ -453,6 +499,9 @@ class Mod_Finder extends Model
 
     public function getPager()
     {
+        if (!$this->pager) {
+            $this->pager = \Config\Services::pager();
+        }
         return $this->pager;
     }
 }

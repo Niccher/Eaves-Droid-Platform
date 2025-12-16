@@ -9,7 +9,7 @@
             } ?>
             <a href="<?php echo base_url('landing'); ?>" class="sub-menu-item">Home</a>
             <?php echo '</li>'; ?>
-    
+
             <?php
             if ($pag == 'download') {
                 echo '<li class="active">';
