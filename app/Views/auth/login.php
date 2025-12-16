@@ -1,20 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>Prj Imgs - Login</title>
+    <meta charset="utf-8"/>
+    <title>Prj Images - Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Premium bootstrap 5 Landing Page Template" />
-    <meta content="Shreethemes-studio" name="author" />
+    <meta name="description"
+          content="Prj Images is a mobile data analysis platform that transforms raw mobile data into actionable insights through advanced analysis and visualization"/>
+    <meta name="keywords"
+          content="mobile data analysis, android data collection, data visualization, call analysis, SMS correlation, file structure generation"/>
+    <meta content="domino" name="author"/>
+    <meta content="support@chegecache.co.ke" name="support"/>
+    <meta content="https://chegecache.co.ke/" name="Website"/>
+    <meta content="Prj Images" name="application-name"/>
+    <meta content="mobile data intelligence, data analysis platform" name="keywords"/>
     <!-- favicon -->
     <link rel="shortcut icon" href="<?= base_url('images/favicon.ico') ?>">
     <!-- Bootstrap -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
     <!-- Icons -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/materialdesignicons.min.css" rel="stylesheet"
+          type="text/css"/>
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
     <!-- Main css -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/style.min.css" rel="stylesheet" type="text/css" id="theme-opt" />
+    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/style.min.css" rel="stylesheet" type="text/css"
+          id="theme-opt"/>
     <link href="https://prjs4.chegecache.co.ke/assets/landing/css/colors/default.css" rel="stylesheet" id="color-opt">
     <style>
         .bg-overlay-primary {
@@ -44,11 +53,13 @@
 <!-- Loader -->
 <!-- Back to home Start -->
 <div class="back-to-home rounded d-none d-sm-block">
-    <a href="<?= base_url('/') ?>" class="text-white rounded d-inline-block text-center"><i class="mdi mdi-home"></i></a>
+    <a href="<?= base_url('/') ?>" class="text-white rounded d-inline-block text-center"><i
+                class="mdi mdi-home"></i></a>
 </div>
 <!-- Back to home End -->
 <!-- Hero Start -->
-<section class="bg-home d-flex align-items-center" style="background: url('<?= base_url('images/authentication.jpg') ?>') center center;">
+<section class="bg-home d-flex align-items-center"
+         style="background: url('<?= base_url('images/authentication.jpg') ?>') center center;">
     <div class="bg-overlay bg-overlay-primary"></div>
     <div class="container">
         <div class="row justify-content-center">
@@ -157,8 +168,8 @@
 <script src="https://prjs4.chegecache.co.ke/assets/landing/js/app.js"></script>
 <script>
     // Hide preloader when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
             document.getElementById('preloader').style.display = 'none';
         }, 500);
     });

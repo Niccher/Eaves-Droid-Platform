@@ -1,14 +1,14 @@
-        <footer class="main-footer">
-            <strong>Copyright &copy; 2020-<?php echo date('Y') ?>.</strong>
-            <div class="float-right d-none d-sm-inline-block">
-                <b>Version</b> 1.4
-            </div>
-        </footer>
-        <!-- Control Sidebar -->
-        <aside class="control-sidebar control-sidebar-dark">
-            <!-- Control sidebar content goes here -->
-        </aside>
-        <!-- /.control-sidebar -->
+    <footer class="main-footer">
+        <strong>Copyright &copy; 2020-<?php echo date('Y') ?>.</strong>
+        <div class="float-right d-none d-sm-inline-block">
+            <b>Version</b> 1.4
+        </div>
+    </footer>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+    </aside>
+    <!-- /.control-sidebar -->
     </div>
     <!-- ./wrapper -->
     <!-- jQuery -->
@@ -43,5 +43,5 @@
     <!-- AdminLTE App -->
     <script src="<?php echo base_url('assets/js/adminlte.js'); ?>"></script>
     </body>
-</html>
+    </html>
 
