@@ -3,16 +3,47 @@
         <!-- Content Header (Page header) -->
         <section class="content-header">
             <div class="container-fluid">
-                <div class="row mb-2">
-                    <div class="col-sm-6">
-                        <h1>Call Logs</h1>
-                    </div>
-                    <div class="col-sm-6">
-                        <ol class="breadcrumb float-sm-right">
-                            <?php echo $call_urls; ?>
-                        </ol>
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-circle bg-primary text-white mr-3">
+                                        <i class="fas fa-phone fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="h4 mb-0"><?php echo ucfirst($pag) ?? 'Saved Contacts' ?></h2>
+                                        <p class="text-muted mb-0 mt-1">
+                                            <i class="fas fa-mobile mr-1"></i> All Contacts:
+                                            <span class="font-weight-bold text-primary"><?php echo $totalContacts ?? 0 ?></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 mt-3 mt-lg-0">
+                                <div class="d-flex justify-content-end">
+                                    <ol class="breadcrumb float-sm-right">
+                                        <li class="breadcrumb-item">
+                                            <a href="<?= base_url("home") ?>">Home</a>
+                                        </li>
+                                        <li class="breadcrumb-item active">Contacts</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <style>
+                    .icon-circle {
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                </style>
             </div>
             <!-- /.container-fluid -->
         </section>
@@ -86,7 +117,11 @@
                                     </tbody>
                                 </table>
                                 <br>
-                                <?php //echo $links; ?>
+                                <div class="d-flex justify-content-end">
+                                    <?php if ($totalCalls > count($callData)) {
+                                        echo $pager->links('bootstrap5_full', 'bootstrap5_full');
+                                    } ?>
+                                </div>
                                 <!-- /.tab-content -->
                             </div>
                             <!-- /.card-body -->

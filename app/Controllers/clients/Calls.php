@@ -2,196 +2,146 @@
 
 namespace App\Controllers\clients;
 
-use App\Controllers\BaseController;
-
-use App\Models\Mod_Finder;
 use CodeIgniter\API\ResponseTrait;
 
-class Calls extends BaseController
+class Calls extends BaseClientController
 {
-	use ResponseTrait;
+    use ResponseTrait;
 
-	public function call_logs(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
+    /**
+     * Display all call logs with pagination
+     * Route: /call_logs
+     */
+    public function index()
+    {
+        return $this->view('all');
+    }
 
-		$data['pag'] = 'call_logs';
-		$data["user_info"] = $model_finder->basic_user();
+    /**
+     * Display only incoming calls
+     * Route: /call_logs/incoming
+     */
+    public function incoming()
+    {
+        return $this->view('incoming');
+    }
 
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
+    /**
+     * Display only outgoing calls
+     * Route: /call_logs/outgoing
+     */
+    public function outgoing()
+    {
+        return $this->view('outgoing');
+    }
 
-		$data['call_urls'] = '
-                        <a class="btn btn-primary" href="'.base_url("call_logs").'">All</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/incoming").'">Incoming</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/outgoing").'">Outgoing</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/rejected").'">Rejected</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/blocked").'">Blocked</a>
-                        &nbsp;&nbsp;';
+    /**
+     * Display only rejected/missed calls
+     * Route: /call_logs/rejected
+     */
+    public function rejected()
+    {
+        return $this->view('rejected');
+    }
 
-		$data["call_logs_dump"] = $model_finder->get_call_logs($data["user_info"]['id']);
+    /**
+     * Display only blocked calls
+     * Route: /call_logs/blocked
+     */
+    public function blocked()
+    {
+        return $this->view('blocked');
+    }
 
-		return view('headers_footers/head_users')
-			. view('headers_footers/sidebar_users', $data)
-			. view('users/call_logs/logs_all', $data)
-			. view('headers_footers/footer_data_datatables');
-	}
+    /**
+     * Alternative: Single method with parameter
+     * Route: /call_logs/(all|incoming|outgoing|rejected|blocked)
+     */
+    public function view($type = 'all')
+    {
+        // Validate type parameter
+        $validTypes = ['all', 'incoming', 'outgoing', 'rejected', 'blocked'];
+        if (!in_array($type, $validTypes)) {
+            return redirect()->to('call_logs');
+        }
 
-	public function call_incoming(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
+        // Get call data based on type
+        switch ($type) {
+            case 'incoming':
+                $callData = $this->finderModel->get_calls_limited($this->userId, 'Incoming', $this->perPage);
+                $viewFile = 'users/call_logs/logs_with_type';
+                break;
+            case 'outgoing':
+                $callData = $this->finderModel->get_calls_limited($this->userId, 'Outgoing', $this->perPage);
+                $viewFile = 'users/call_logs/logs_with_type';
+                break;
+            case 'rejected':
+                $callData = $this->finderModel->get_calls_limited($this->userId, 'Rejected', $this->perPage);
+                $viewFile = 'users/call_logs/logs_with_type';
+                break;
+            case 'blocked':
+                $callData = $this->finderModel->get_calls_limited($this->userId, 'Blocked', $this->perPage);
+                $viewFile = 'users/call_logs/logs_with_type';
+                break;
+            default: // 'all'
+                $callData = $this->finderModel->get_call_logs($this->userId, $this->perPage);
+                $viewFile = 'users/call_logs/logs_all';
+                break;
+        }
 
-		$data['pag'] = 'call_logs';
-		$data["title"] = "Incoming Calls";
-		$data["user_info"] = $model_finder->basic_user();
+        // Get common data for Call views
+        $commonData = $this->getCallCommonData($type);
 
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
+        // Prepare data for the view
+        $data = array_merge($commonData, [
+            'call_logs_dump' => $callData,
+        ]);
 
-		$data['call_urls'] = '
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs").'">All</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-primary" href="'.base_url("call_logs/incoming").'">Incoming</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/outgoing").'">Outgoing</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/rejected").'">Rejected</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/blocked").'">Blocked</a>
-                        &nbsp;&nbsp;';
+        return $this->renderCallView($viewFile, $data);
+    }
 
-		$data["call_logs_dump"] = $model_finder->get_calls_limited($data["user_info"]['id'], "Incoming");
+    /**
+     * Alternative method for backward compatibility
+     * Route: /call_logs (maps to index)
+     */
+    public function call_logs()
+    {
+        return $this->index();
+    }
 
-		return view('headers_footers/head_users')
-			. view('headers_footers/sidebar_users', $data)
-			. view('users/call_logs/logs_incoming', $data)
-			. view('headers_footers/footer_data_datatables');
-	}
+    /**
+     * Alternative method for backward compatibility
+     * Route: /call_logs/incoming (maps to incoming)
+     */
+    public function call_incoming()
+    {
+        return $this->incoming();
+    }
 
-	public function call_outgoing(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
+    /**
+     * Alternative method for backward compatibility
+     * Route: /call_logs/outgoing (maps to outgoing)
+     */
+    public function call_outgoing()
+    {
+        return $this->outgoing();
+    }
 
-		$data['pag'] = 'call_logs';
-		$data["title"] = "Outgoing Calls";
-		$data["user_info"] = $model_finder->basic_user();
+    /**
+     * Alternative method for backward compatibility
+     * Route: /call_logs/rejected (maps to rejected)
+     */
+    public function call_rejected()
+    {
+        return $this->rejected();
+    }
 
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
-
-		$data['call_urls'] = '
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs").'">All</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/incoming").'">Incoming</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-primary" href="'.base_url("call_logs/outgoing").'">Outgoing</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/rejected").'">Rejected</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/blocked").'">Blocked</a>
-                        &nbsp;&nbsp;';
-
-		$data["call_logs_dump"] = $model_finder->get_calls_limited($data["user_info"]['id'],"Outgoing");
-
-		return view('headers_footers/head_users')
-			. view('headers_footers/sidebar_users', $data)
-			. view('users/call_logs/logs_incoming', $data)
-			. view('headers_footers/footer_data_datatables');
-	}
-	
-	public function call_blocked(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
-
-		$data['pag'] = 'call_logs';
-		$data["title"] = "Blocked Calls";
-		$data["user_info"] = $model_finder->basic_user();
-
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
-
-		$data['call_urls'] = '
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs").'">All</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/incoming").'">Incoming</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/outgoing").'">Outgoing</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/rejected").'">Rejected</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-primary" href="'.base_url("call_logs/blocked").'">Blocked</a>
-                        &nbsp;&nbsp;';
-
-		$data["call_logs_dump"] = $model_finder->get_calls_limited($data["user_info"]['id'],"Blocked");
-
-		return view('headers_footers/head_users')
-			. view('headers_footers/sidebar_users', $data)
-			. view('users/call_logs/logs_incoming', $data)
-			. view('headers_footers/footer_data_datatables');
-	}
-	
-	public function call_rejected(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
-
-		$data['pag'] = 'call_logs';
-		$data["title"] = "Missed and Rejected Calls";
-		$data["user_info"] = $model_finder->basic_user();
-
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
-
-		$data['call_urls'] = '
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs").'">All</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/incoming").'">Incoming</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/outgoing").'">Outgoing</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-primary" href="'.base_url("call_logs/rejected").'">Rejected</a>
-                        &nbsp;&nbsp;
-                        <a class="btn btn-outline-primary" href="'.base_url("call_logs/blocked").'">Blocked</a>
-                        &nbsp;&nbsp;';
-
-		$data["call_logs_dump"] = $model_finder->get_calls_limited($data["user_info"]['id'],"Rejected");
-
-		return view('headers_footers/head_users')
-			. view('headers_footers/sidebar_users', $data)
-			. view('users/call_logs/logs_all', $data)
-			. view('headers_footers/footer_data_datatables');
-	}
+    /**
+     * Alternative method for backward compatibility
+     * Route: /call_logs/blocked (maps to blocked)
+     */
+    public function call_blocked()
+    {
+        return $this->blocked();
+    }
 }

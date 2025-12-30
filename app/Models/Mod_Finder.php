@@ -293,11 +293,19 @@ class Mod_Finder extends Model
     public function get_call_logs(int $user_id, int $perPage = 25): array
     {
         try {
+            // Set the table explicitly
             $this->table = 'tbl_Logs';
-            return $this->asArray()
+
+            // Reset the model state
+            $this->resetQuery();
+
+            // Get paginated results
+            $results = $this->asArray()
                 ->where('meta_Owner', $user_id)
                 ->orderBy('Timestamp', 'DESC')
-                ->paginate($perPage, 'bootstrap5');
+                ->paginate($perPage, 'bootstrap5_full');
+
+            return $results;
 
         } catch (\Exception $e) {
             log_message('error', 'get_call_logs error: ' . $e->getMessage());
@@ -312,15 +320,17 @@ class Mod_Finder extends Model
      * @param string $category
      * @return array
      */
-    public function get_calls_limited(int $user_id, string $category, int $perPage = 20): array
+    public function get_calls_limited(int $user_id, string $category, int $perPage = 25): array
     {
         try {
             $this->table = 'tbl_Logs';
-            return $this->asArray()
+            $results = $this->asArray()
                 ->where('meta_Owner', $user_id)
                 ->where('Type', $category)
                 ->orderBy('Timestamp', 'DESC')
                 ->paginate($perPage, 'bootstrap5');
+
+            return $results;
 
         } catch (\Exception $e) {
             log_message('error', 'get_calls_limited error: ' . $e->getMessage());

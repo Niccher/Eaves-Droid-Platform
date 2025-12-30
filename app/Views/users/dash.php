@@ -180,49 +180,49 @@
                                         <tbody>
                                         <?php
 
-                                        use App\Models\Mod_Finder;
-
-                                        if (!function_exists('get_contact_name')) {
-                                            function get_contact_name($old_number)
-                                            {
-                                                $modFinder = new Mod_Finder();
-                                                $contactInfo = $modFinder->get_contact_info($old_number);
-                                                return $contactInfo['name'] ?? '';
-                                            }
-                                        }
-
-                                        foreach ($active_sms as $sms => $smsinfo) {
-                                            $number = substr($smsinfo['sms_number'], 0, 1);
-                                            $old_number = $smsinfo['sms_number'];
-
-                                            if ($number == 0) {
-                                                $old_number = substr($smsinfo['sms_number'], 1);
-                                            } else if ($number == "+") {
-                                                $old_number = substr($smsinfo['sms_number'], 4);
-                                            }
-
-                                            if (is_numeric($smsinfo['sms_number'])) {
-                                                $modFinder = new \App\Models\Mod_Finder();
-                                                $name = $modFinder->get_contact($old_number);
-
-                                                if (empty($name)) {
-                                                    $nom = '<i class="text-danger">Unsaved</i>';
-                                                } else {
-                                                    $nom = $name['Name'];
-                                                }
-                                            } else {
-                                                $nom = $smsinfo['sms_number'];
-                                            }
-
-                                            echo '
-                                                <tr> 
-                                                    <td><a href="#">' . $smsinfo['sms_number'] . '</a></td>
-                                                    <td>' . $nom . '</td>
-                                                    <td>' . $smsinfo['sms_thread_id'] . '</td>
-                                                    <td><span class="badge badge-success">' . $smsinfo['Totals'] . '</span></td>
-                                                </tr>
-                                                ';
-                                        }
+//                                        use App\Models\Mod_Finder;
+//
+//                                        if (!function_exists('get_contact_name')) {
+//                                            function get_contact_name($old_number)
+//                                            {
+//                                                $modFinder = new Mod_Finder();
+//                                                $contactInfo = $modFinder->get_contact_info($old_number);
+//                                                return $contactInfo['name'] ?? '';
+//                                            }
+//                                        }
+//
+//                                        foreach ($active_sms as $sms => $smsinfo) {
+//                                            $number = substr($smsinfo['sms_number'], 0, 1);
+//                                            $old_number = $smsinfo['sms_number'];
+//
+//                                            if ($number == 0) {
+//                                                $old_number = substr($smsinfo['sms_number'], 1);
+//                                            } else if ($number == "+") {
+//                                                $old_number = substr($smsinfo['sms_number'], 4);
+//                                            }
+//
+//                                            if (is_numeric($smsinfo['sms_number'])) {
+//                                                $modFinder = new \App\Models\Mod_Finder();
+//                                                $name = $modFinder->get_contact($old_number);
+//
+//                                                if (empty($name)) {
+//                                                    $nom = '<i class="text-danger">Unsaved</i>';
+//                                                } else {
+//                                                    $nom = $name['Name'];
+//                                                }
+//                                            } else {
+//                                                $nom = $smsinfo['sms_number'];
+//                                            }
+//
+//                                            echo '
+//                                                <tr>
+//                                                    <td><a href="#">' . $smsinfo['sms_number'] . '</a></td>
+//                                                    <td>' . $nom . '</td>
+//                                                    <td>' . $smsinfo['sms_thread_id'] . '</td>
+//                                                    <td><span class="badge badge-success">' . $smsinfo['Totals'] . '</span></td>
+//                                                </tr>
+//                                                ';
+//                                        }
                                         ?>
                                         </tbody>
                                     </table>

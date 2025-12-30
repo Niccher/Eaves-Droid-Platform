@@ -67,13 +67,14 @@ class Account extends BaseController
                 'total_calls' => $dataCounts['calls'] ?? 0,
                 'csrf_token' => csrf_hash(), // CSRF protection
             ];
-
-            return $this->renderView('profile', $viewData);
+            echo '<pre>'.print_r($viewData, true).'</pre>';
+//            return $this->renderView('profile', $viewData);
 
         } catch (\Exception $e) {
             log_message('error', 'Account index error: ' . $e->getMessage());
+            print_r($e->getMessage());
             session()->setFlashdata('error', 'Failed to load account information');
-            return redirect()->back();
+//            return redirect()->back();
         }
     }
 
@@ -146,6 +147,15 @@ class Account extends BaseController
      * Get user variables
      */
     private function getUserVars(): array
+    {
+        $vars = $this->modUser->get_vars($this->userId);
+        return is_array($vars) ? $vars : [];
+    }
+
+    /**
+     * Get user variables
+     */
+    private function getUserVar2(): array
     {
         $vars = $this->modUser->get_vars($this->userId);
         return is_array($vars) ? $vars : [];
