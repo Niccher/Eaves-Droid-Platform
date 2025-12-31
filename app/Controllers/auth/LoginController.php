@@ -17,7 +17,7 @@ class LoginController extends Controller
     public function loginView()
     {
         if (auth()->loggedIn()) {
-            return redirect()->to('/dashboard');
+            return redirect()->to('/home');
         }
 
         return view('auth/login');

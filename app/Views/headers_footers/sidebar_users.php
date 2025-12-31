@@ -1,289 +1,290 @@
-
-
     <body class="hold-transition sidebar-mini layout-fixed">
-        <div class="wrapper">
-            <!-- Navbar -->
-            <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-                <!-- Left navbar links -->
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-                    </li>
-                    <li class="nav-item d-none d-sm-inline-block">
-                        <a href="<?php echo base_url('home'); ?>" class="nav-link">Home</a>
-                    </li>
-                    <li class="nav-item d-none d-sm-inline-block">
-                        <a href="<?php echo base_url('analysis'); ?>" class="nav-link">Analysis</a>
-                    </li>
-                    <li class="nav-item d-none d-sm-inline-block">
-                        <a href="<?php echo base_url('account/logs'); ?>" class="nav-link">Access Logs</a>
-                    </li>
-                    <li class="nav-item d-none d-sm-inline-block">
-                        <a href="<?php echo base_url('account/commands'); ?>" class="nav-link">Requests</a>
-                    </li>
-                </ul>
-                <!-- Right navbar links -->
-                <ul class="navbar-nav ml-auto">
-                    <!-- Notifications Dropdown Menu -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link" data-toggle="dropdown" href="#">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <!-- Left navbar links -->
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                        <i class="fas fa-bars"></i>
+                    </a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="<?php echo base_url('home'); ?>" class="nav-link">
+                        <i class="fas fa-home mr-1"></i> Home
+                    </a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="<?php echo base_url('analysis'); ?>" class="nav-link">
+                        <i class="fas fa-chart-bar mr-1"></i> Analysis
+                    </a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="<?php echo base_url('account/requests'); ?>" class="nav-link">
+                        <i class="fas fa-terminal mr-1"></i> Commands
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Right navbar links -->
+            <ul class="navbar-nav ml-auto">
+                <!-- Notifications -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="dropdown" href="#">
                         <i class="far fa-bell"></i>
-                        <span class="badge badge-warning navbar-badge">15</span>
+                        <span class="badge badge-warning navbar-badge">3</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                            <span class="dropdown-item dropdown-header">
+                                <i class="fas fa-bell mr-2"></i> 3 Notifications
+                            </span>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item">
+                            <i class="fas fa-sync-alt mr-2 text-info"></i> Device sync completed
+                            <span class="float-right text-muted text-sm">5 mins ago</span>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                            <span class="dropdown-item dropdown-header">15 Notifications</span>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                            <i class="fas fa-envelope mr-2"></i> 4 new messages
-                            <span class="float-right text-muted text-sm">3 mins</span>
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                            <i class="fas fa-users mr-2"></i> 8 friend requests
-                            <span class="float-right text-muted text-sm">12 hours</span>
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                            <i class="fas fa-file mr-2"></i> 3 new reports
-                            <span class="float-right text-muted text-sm">2 days</span>
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-                        </div>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
-                        <i class="fas fa-expand-arrows-alt"></i>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item">
+                            <i class="fas fa-shield-alt mr-2 text-success"></i> Security check passed
+                            <span class="float-right text-muted text-sm">2 hours ago</span>
                         </a>
-                    </li>
-                    <?php 
-					    //$person_info = $this->model_user->get_vars($this->session->userdata('log_id'));
-					    //$avatar = (base64_decode($person_info->Avatar));
-					    $avatar = null;
-					?>
-                    <li class="nav-item dropdown user-menu">
-		                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
-		                    <img src="<?php if ($avatar == NULL){
-		                                        echo base_url('assets/img/avatar2.png');}
-		                                        else{ echo base_url().'/uploads/profiles/'.$avatar; }
-		                               ?>" class="user-image img-circle elevation-2" alt="User Image">
-		                    <span class="d-none d-md-inline">
-		                    	<?php echo ucwords($user_info['username']);?>
-		                    </span>
-		                </a>
-		                <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-		                    <!-- Menu Footer-->
-		                    <li class="user-footer">
-		                        <a href="<?php echo base_url('accountprofile') ?>" class="btn btn-default btn-flat">Profile</a>
-		                        <a href="<?php echo base_url('logout') ?>" class="btn btn-default btn-flat float-right">Sign out</a>
-		                    </li>
-		                </ul>
-		            </li>
-                </ul>
-            </nav>
-            <!-- /.navbar -->
-            <!-- Main Sidebar Container -->
-            <aside class="main-sidebar sidebar-dark-primary elevation-4">
-                <!-- Brand Logo --> 
-                <a href="<?php echo base_url('home');?>" class="brand-link">
-                <img src="Logo.png" class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light">Prj Images</span>
-                </a>
-                <!-- Sidebar -->
-                <div class="sidebar">
-                    <!-- Sidebar user panel (optional) -->
-                    <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                        <div class="image">
-                            <img src="<?php if ($avatar == NULL){
-                                                echo base_url('assets/img/avatar2.png');}
-                                                else{ echo base_url().'/uploads/profiles/'.$avatar; } 
-                                       ?>" class="img-circle elevation-2" alt="User Image">
-                        </div>
-                        <div class="info">
-                            <a href="#" class="d-block">
-                                <?php echo ucwords($user_info['username']);?>
-                            </a>
-                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item">
+                            <i class="fas fa-exclamation-triangle mr-2 text-warning"></i> New data available
+                            <span class="float-right text-muted text-sm">1 day ago</span>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item dropdown-footer">
+                            <i class="fas fa-eye mr-1"></i> View All Notifications
+                        </a>
                     </div>
-                    <!-- Sidebar Menu -->
-                    <nav class="mt-2">
-                        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'home') {
-                                        echo '<a href="'.base_url('home').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('home').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>
-                                        Dashboard
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'apps') {
-                                        echo '<a href="'.base_url('apps').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('apps').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-mobile-alt"></i>
-                                    <p>
-                                        Apps
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'call_logs') {
-                                        echo '<a href="'.base_url('call_logs').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('call_logs').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-phone-alt"></i>
-                                    <p>
-                                        Call Logs
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'contacts') {
-                                        echo '<a href="'.base_url('contacts').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('contacts').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-id-card"></i>
-                                    <p>
-                                        Contacts
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'files') {
-                                        echo '<a href="'.base_url('files').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('files').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-file"></i>
-                                    <p>
-                                        Files
-                                    </p>
-                                </a>
-                            </li>
-							<li class="nav-item">
-                                <?php
-                                    if ($pag == 'media') {
-                                        echo '<a href="'.base_url('media').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('media').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-photo-video"></i>
-                                    <p>
-                                        Media
-                                    </p>
-                                </a>
-                            </li>	
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'sms') {
-                                        echo '<a href="'.base_url('sms').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('sms').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-sms"></i>
-                                    <p>
-                                        SMS
-                                    </p>
-                                </a>
-                            </li>
+                </li>
 
+                <!-- Fullscreen -->
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="fullscreen" href="#" role="button" title="Fullscreen">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                    </a>
+                </li>
 
-                            <li class="nav-header">Account.</li>
-                            
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'account_profile') {
-                                        echo '<a href="'.base_url('account/profile').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('account/profile').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-user-alt"></i>
-                                    <p>
-                                        Profile
-                                    </p>
-                                </a>
-                            </li>
-                            
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'account_setting') {
-                                        echo '<a href="'.base_url('account/setting').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('account/setting').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-cogs nav-icon"></i>
-                                    <p>
-                                        Setting
-                                    </p>
-                                </a>
-                            </li>
-                            
-                            
-                                <?php
-                                    if ($pag == 'account_billing1') {
-                                        echo '<a href="'.base_url('account/billing').'" class="nav-link active">';
-                                    }
-                                ?>
-                                    
+                <!-- User Menu -->
+                <?php
+                $avatar = null;
+                $username = isset($user_info['username']) ? htmlspecialchars(ucwords($user_info['username'])) : 'User';
+                ?>
+                <li class="nav-item dropdown user-menu">
+                    <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
+                        <img src="<?php echo $avatar ? base_url('uploads/profiles/' . $avatar) : base_url('assets/img/avatar2.png'); ?>"
+                             class="user-image img-circle elevation-2"
+                             alt="User Image"
+                             style="width: 32px; height: 32px; object-fit: cover;">
+                        <span class="d-none d-md-inline ml-1">
+                                <?php echo $username; ?>
+                            </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                        <li class="user-header bg-light">
+                            <img src="<?php echo $avatar ? base_url('uploads/profiles/' . $avatar) : base_url('assets/img/avatar2.png'); ?>"
+                                 class="img-circle elevation-2"
+                                 alt="User Image">
+                            <p class="mt-2">
+                                <?php echo $username; ?>
+                                <small>Member</small>
+                            </p>
+                        </li>
+                        <li class="user-footer">
+                            <a href="<?php echo base_url('account/profile'); ?>" class="btn btn-default btn-sm">
+                                <i class="fas fa-user mr-1"></i> Profile
+                            </a>
+                            <a href="<?php echo base_url('logout'); ?>" class="btn btn-default btn-sm float-right">
+                                <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+        <!-- /.navbar -->
 
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'requests') {
-                                        echo '<a href="'.base_url('account/requests').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('account/requests').'" class="nav-link ">';
-                                }?>
-                                    <i class="fas fa-terminal nav-icon"></i>
-                                    <p>
-                                        Requests
-                                    </p>
-                                </a>
-                            </li>
-                            
-                                <?php
-                                    if ($pag == 'account_logs1') {
-                                        echo '<a href="'.base_url('account/logs').'" class="nav-link active">';
-                                    }
-                                ?>
+        <!-- Main Sidebar Container -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- Brand Logo -->
+            <a href="<?php echo base_url('home'); ?>" class="brand-link">
+                <img src="<?php echo base_url('assets/img/logo.png'); ?>"
+                     class="brand-image img-circle elevation-3"
+                     alt="Logo"
+                     style="opacity: .8">
+                <span class="brand-text font-weight-light">Prj Monitor</span>
+            </a>
 
-							<li class="nav-header">Miscellaneous.</li>
-                            
-                                <?php
-                                    if ($pag == 'pricing1') {
-                                        echo '<a href="'.base_url('pricing').'" class="nav-link active">';
-                                    }
-                                ?>
-                            
-                            <li class="nav-item">
-                                <?php
-                                    if ($pag == 'faqs') {
-                                        echo '<a href="'.base_url('faqs').'" class="nav-link active">';
-                                    }else{
-                                        echo '<a href="'.base_url('faqs').'" class="nav-link ">';
-                                }?>
-                                    <i class="nav-icon fas fa-info-circle"></i>
-                                    <p>
-                                        FAQS
-                                    </p>
-                                </a>
-                            </li>
-                            
-                        </ul>
-                    </nav>
-                    <!-- /.sidebar-menu -->
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Sidebar user panel -->
+                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                    <div class="image">
+                        <img src="<?php echo $avatar ? base_url('uploads/profiles/' . $avatar) : base_url('assets/img/avatar2.png'); ?>"
+                             class="img-circle elevation-2"
+                             alt="User Image">
+                    </div>
+                    <div class="info">
+                        <a href="#" class="d-block">
+                            <?php echo $username; ?>
+                        </a>
+                    </div>
                 </div>
-                <!-- /.sidebar -->
-            </aside>
+
+                <!-- Sidebar Menu -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <!-- Dashboard -->
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('home'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'home') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Dashboard</p>
+                            </a>
+                        </li>
+
+                        <!-- Data Section -->
+                        <li class="nav-header">DATA</li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('apps'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'apps') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-mobile-alt"></i>
+                                <p>Apps</p>
+                                <?php if (isset($total_apps) && $total_apps > 0): ?>
+                                    <span class="badge badge-info float-right"><?php echo $total_apps; ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('call_logs'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'call_logs') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-phone-alt"></i>
+                                <p>Call Logs</p>
+                                <?php if (isset($total_calls) && $total_calls > 0): ?>
+                                    <span class="badge badge-success float-right"><?php echo $total_calls; ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('contacts'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'contacts') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-id-card"></i>
+                                <p>Contacts</p>
+                                <?php if (isset($total_contacts) && $total_contacts > 0): ?>
+                                    <span class="badge badge-warning float-right"><?php echo $total_contacts; ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('sms'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'sms') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-sms"></i>
+                                <p>SMS</p>
+                                <?php if (isset($total_sms) && $total_sms > 0): ?>
+                                    <span class="badge badge-danger float-right"><?php echo $total_sms; ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('files'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'files') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-file"></i>
+                                <p>Files</p>
+                                <span class="badge badge-secondary float-right"><?php echo isset($total_files) ? $total_files : 0; ?></span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('media'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'media') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-photo-video"></i>
+                                <p>Media</p>
+                                <span class="badge badge-secondary float-right"><?php echo isset($total_media) ? $total_media : 0; ?></span>
+                            </a>
+                        </li>
+
+                        <!-- Intelligence Section -->
+                        <li class="nav-header">INTELLIGENCE</li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('analysis'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'analysis') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>Analysis</p>
+                                <span class="badge badge-info float-right">AI</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('account/requests'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'requests') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-terminal"></i>
+                                <p>Commands</p>
+                                <span class="badge badge-warning float-right">Live</span>
+                            </a>
+                        </li>
+
+                        <!-- Account Section -->
+                        <li class="nav-header">ACCOUNT</li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('account/profile'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'account_profile') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-user-alt"></i>
+                                <p>Profile</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('account/setting'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'account_setting') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-cogs"></i>
+                                <p>Settings</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('account/logs'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'account_logs') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-history"></i>
+                                <p>Access Logs</p>
+                            </a>
+                        </li>
+
+                        <!-- Help Section -->
+                        <li class="nav-header">HELP</li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('faqs'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'faqs') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-info-circle"></i>
+                                <p>FAQs</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- /.sidebar-menu -->
+
+                <!-- Sidebar Footer -->
+                <div class="sidebar-footer mt-4 pt-3 border-top text-center">
+                    <small class="text-muted d-block mb-1">Device Status</small>
+                    <?php if (isset($user_token["Token_Status"]) && $user_token["Token_Status"] == "00"): ?>
+                        <span class="badge badge-danger">
+                                <i class="fas fa-times-circle mr-1"></i> Disconnected
+                            </span>
+                    <?php else: ?>
+                        <span class="badge badge-success">
+                                <i class="fas fa-check-circle mr-1"></i> Connected
+                            </span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <!-- /.sidebar -->
+        </aside>

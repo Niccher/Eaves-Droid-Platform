@@ -439,17 +439,27 @@ class Mod_Finder extends Model
     public function get_points_sms_finance(int $user_id, int $perPage = 20): array
     {
         try {
-        $this->table = 'tbl_Points_Finance';
-        return $this->asArray()
-            ->where('point_Owner', $user_id)
-            ->orderBy('point_Inserted', 'DESC')
-            ->paginate($perPage, 'bootstrap5');
+//        $this->table = 'tbl_Points_Finance'; //tbl_Points_Finance
+//        return $this->asArray()
+//            ->where('point_Owner', $user_id)
+//            ->orderBy('point_Inserted', 'DESC')
+//            ->paginate($perPage, 'bootstrap5');
+
+        $db      = \Config\Database::connect();
+        $builder = $db->table('tbl_Points_Finance'); // Explicitly define table
+
+        return $builder->where('point_Owner', (string)$user_id) // Cast to string since DB is varchar
+        ->orderBy('point_Inserted', 'DESC')
+            ->get() // Use get() or paginate
+            ->getResultArray();
 
     } catch (\Exception $e) {
         log_message('error', 'get_points_sms_finance error: ' . $e->getMessage());
         return ['error', 'get_points_sms_finance error: ' . $e->getMessage()];
     }
     }
+
+
 
     /**
      * Gets SMS from sender(s).

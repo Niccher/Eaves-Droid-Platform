@@ -11,63 +11,58 @@ use CodeIgniter\Filters\SecureHeaders;
 
 class Filters extends BaseConfig
 {
-    /**
-     * Configures aliases for Filter classes to
-     * make reading things nicer and simpler.
-     *
-     * @var array<string, array<int, string>|string> [filter_name => classname]
-     *                                               or [filter_name => [classname1, classname2, ...]]
-     * @phpstan-var array<string, class-string|list<class-string>>
-     */
     public array $aliases = [
         'csrf'          => CSRF::class,
         'toolbar'       => DebugToolbar::class,
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
+        'throttle'      => \App\Filters\ThrottleFilter::class,  // ← Your custom filter
     ];
 
-    /**
-     * List of filter aliases that are always
-     * applied before and after every request.
-     *
-     * @var array<string, array<string, array<string, string>>>|array<string, array<string>>
-     * @phpstan-var array<string, list<string>>|array<string, array<string, array<string, string>>>
-     */
     public array $globals = [
-        'before' => [
-            // 'honeypot',
-            // 'csrf',
-            // 'invalidchars',
-        ],
-        'after' => [
-            'toolbar',
-            // 'honeypot',
-            // 'secureheaders',
-        ],
+        'before' => [],
+        'after'  => ['toolbar'],
     ];
 
     /**
-     * List of filter aliases that works on a
-     * particular HTTP method (GET, POST, etc.).
-     *
-     * Example:
-     * 'post' => ['foo', 'bar']
-     *
-     * If you use this, you should disable auto-routing because auto-routing
-     * permits any HTTP method to access a controller. Accessing the controller
-     * with a method you don't expect could bypass the filter.
+     * Apply CSRF to POST requests, but EXCLUDE all API routes
      */
-    public array $methods = [
-        'post' => ['csrf']
-    ];
+//    public array $methods = [
+//        'post' => [
+//            'csrf' => [
+//                'except' => [
+//                    'api/*',
+//                    'api/v1/*',
+//                    'api/v2/*',
+//                ]
+//            ]
+//        ]
+//    ];
 
     /**
-     * List of filter aliases that should run on any
-     * before or after URI patterns.
-     *
-     * Example:
-     * 'isLoggedIn' => ['before' => ['account/*', 'profiles/*']]
+     * No need to define throttle here — it's applied via route group
+     */
+//    public array $filters = [];
+
+//    public array $filters = [
+//        'csrf' => [
+//            'before' => ['*'],
+//            'except' => [
+//                'api/*',
+//                'api/v1/*',
+//                'api/v2/*',
+//            ]
+//        ],
+//    ];
+
+    /**
+     * ❌ REMOVE CSRF from methods
+     */
+    public array $methods = [];
+
+    /**
+     * ❌ REMOVE global CSRF filters
      */
     public array $filters = [];
 }

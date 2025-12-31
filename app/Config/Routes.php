@@ -164,15 +164,17 @@ $routes->group('', ['namespace' => 'App\Controllers\clients', 'filter' => 'sessi
 //    These typically require an API key/token and should be protected by a filter
 //    like 'tokens' or a custom API key middleware.
 // =================================================================
-
-$routes->group('api', ['namespace' => 'App\Controllers\api'], static function ($routes) {
-    // API endpoint for file uploads (e.g., from a mobile app)
+$routes->group('api/v1', [
+    'namespace' => 'App\\Controllers\\api\\v1',
+    'filter'    => 'throttle',
+], static function ($routes) {
+    // Upload encrypted/text files from mobile devices
     $routes->post('files/upload', 'Receive::upload');
 
-    // API endpoint for verifying a device/user token
+    // Verify device/user token
     $routes->post('token/verify', 'Receive::token_verify');
 
-    // API endpoint for receiving device printing information
+    // Receive device fingerprint / print information
     $routes->post('device/print', 'Receive::device_print');
 });
 

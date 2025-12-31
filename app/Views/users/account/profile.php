@@ -35,7 +35,8 @@
                                 <h3 class="profile-username text-center">
                                     <?php echo ucwords($user_info['username']); ?>
                                 </h3>
-                                <p class="text-muted text-center">Type <?php echo $user_vars["Privilege"]; ?></p>
+<!--                                <p class="text-muted text-center">Type --><?php //echo $user_vars["Privilege"]; ?><!--</p>-->
+                                <p class="text-muted text-center">Type <?php echo $user_info["username"]; ?></p>
                                 <ul class="list-group list-group-unbordered mb-3">
                                     <li class="list-group-item">
                                         <?php
@@ -54,7 +55,8 @@
                                     </li>
                                 </ul>
                                 <?php
-                                if ($user_vars["Status"] == "") {
+//                                if ($user_vars["Status"] == "") {
+                                if ($user_info["username"] == "") {
                                     $active = '<a href="#" class="btn btn-info btn-block"><b>Activate Email Now</b></a>';
                                 } else {
                                     $active = '<a href="#" class="btn btn-success btn-block"><b>Activated</b></a>';
@@ -101,11 +103,14 @@
                                                             <a href="#" class="float-right btn-tool"><i
                                                                         class="fas fa-times"></i></a>
                                                             </span>
-                                                <span class="description">Created - <?php echo date('Y F d H:i:s A', $user_vars["Timestamp"]); ?></span>
+                                                <span class="description">Created -
+<!--                                                    --><?php //echo date('Y F d H:i:s A', $user_vars["Timestamp"]); ?>
+                                                </span>
                                             </div>
                                             <!-- /.user-block -->
                                             <p>
-                                                <?php echo ucwords($user_vars["Bio"]); ?>
+                                                Bio
+<!--                                                --><?php //echo ucwords($user_vars["Bio"]); ?>
                                             </p>
                                         </div>
                                         <!-- /.post -->

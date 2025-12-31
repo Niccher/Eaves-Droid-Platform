@@ -67,13 +67,15 @@ class Account extends BaseController
                 'total_calls' => $dataCounts['calls'] ?? 0,
                 'csrf_token' => csrf_hash(), // CSRF protection
             ];
-            echo '<pre>'.print_r($viewData, true).'</pre>';
-//            return $this->renderView('profile', $viewData);
+            echo '11111111111';
+//            echo '<pre>'.print_r($viewData, true).'</pre>';
+            return $this->renderView('profile', $viewData);
 
         } catch (\Exception $e) {
             log_message('error', 'Account index error: ' . $e->getMessage());
-            print_r($e->getMessage());
             session()->setFlashdata('error', 'Failed to load account information');
+            echo '22222222222';
+//            echo '<pre>'.print_r($viewData, true).'</pre>';
 //            return redirect()->back();
         }
     }
@@ -252,7 +254,7 @@ class Account extends BaseController
     /**
      * Render view with common layout
      */
-    private function renderView(string $page, array $data = []): string
+    private function renderView(string $page, array $data = [])
     {
         $viewPath = 'users/account/' . $page;
 
