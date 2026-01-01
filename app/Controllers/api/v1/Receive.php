@@ -9,6 +9,7 @@ use App\Models\Mod_Android;
 use App\Models\Mod_Crypt;
 use App\Models\Mod_User;
 use CodeIgniter\API\ResponseTrait;
+//use App\Models\Mod_Log_User_Actions;
 
 
 class Receive extends BaseController
@@ -109,6 +110,8 @@ class Receive extends BaseController
             return $this->fail('Method not allowed', 405);
         }
 
+        $logModel = new \App\Models\UserActionModel();
+
         // Validate required parameters
         $validation = $this->validate([
             'token' => 'required|min_length[8]|max_length[255]',
@@ -133,6 +136,13 @@ class Receive extends BaseController
 
         if (!$tokenData) {
             $this->logTokenVerification($token, $time, $ip, 'invalid_token');
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'token_verification',
+                'action_severity' => 'low',
+                'success'         => 1,
+                'request_url'     => current_url()
+            ]);
             return $this->respond([
                 'success' => false,
                 'token' => $token,
@@ -156,11 +166,19 @@ class Receive extends BaseController
         $userEmail = $this->decryptUserData($cryptModel, $userData['Email'] ?? '');
 
         // Mark token as used
-        $markResult = $userModel->token_mark(
-            $tokenData['Token_Owner'],
-            $token,
-            $tokenData['Token_ID']
-        );
+//        $markResult = $userModel->token_mark(
+//            $tokenData['Token_Owner'],
+//            $token,
+//            $tokenData['Token_ID']
+//        );
+
+        $logModel->logAction([
+            'action_category' => 'authentication',
+            'action_type'     => 'token_verification',
+            'action_severity' => 'low',
+            'success'         => 0,
+            'request_url'     => current_url()
+        ]);
 
         return $this->respond([
             'success' => true,
