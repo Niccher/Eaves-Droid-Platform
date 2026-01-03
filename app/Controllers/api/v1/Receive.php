@@ -110,7 +110,7 @@ class Receive extends BaseController
             return $this->fail('Method not allowed', 405);
         }
 
-        $logModel = new \App\Models\UserActionModel();
+        $logModel = new \App\Models\Mod_Log_User_Action();
 
         // Validate required parameters
         $validation = $this->validate([
@@ -166,11 +166,11 @@ class Receive extends BaseController
         $userEmail = $this->decryptUserData($cryptModel, $userData['Email'] ?? '');
 
         // Mark token as used
-//        $markResult = $userModel->token_mark(
-//            $tokenData['Token_Owner'],
-//            $token,
-//            $tokenData['Token_ID']
-//        );
+        $markResult = $userModel->token_mark(
+            $tokenData['Token_Owner'],
+            $token,
+            $tokenData['Token_ID']
+        );
 
         $logModel->logAction([
             'action_category' => 'authentication',
@@ -199,10 +199,28 @@ class Receive extends BaseController
             return $this->fail('Method not allowed', 405);
         }
 
-        // Define expected device print fields
         $expectedFields = [
-            'p_Board', 'p_Brand', 'p_Device',
-            'p_Display', 'p_Hardware', 'p_Manufacturer', 'p_Model'
+            'device_checksum',
+            'android_id',
+            'device_model',
+            'device_brand',
+            'device_manufacturer',
+            'device_product',
+            'device_device',
+            'device_board',
+            'device_hardware',
+            'android_version',
+            'android_sdk_int',
+            'android_security_patch',
+            'build_id',
+            'build_fingerprint',
+            'memory_total_mb',
+            'internal_storage_total_gb',
+            'external_storage_total_gb',
+            'app_package',
+            'app_version',
+            'extraction_timestamp',
+            'extractor_version'
         ];
 
         $input = $this->request->getPost();
@@ -219,15 +237,50 @@ class Receive extends BaseController
         foreach ($expectedFields as $field) {
             $sanitizedData[$field] = htmlspecialchars($input[$field], ENT_QUOTES, 'UTF-8');
         }
-        $sanitizedData['p_Timestamp'] = date('Y-m-d H:i:s');
+        $sanitizedData['extraction_timestamp'] = date('Y-m-d H:i:s');
 
         try {
             $modelReceive = new Mod_Receive();
-            $pdId = $modelReceive->make_device_print($sanitizedData);
+            $device_metadata = $modelReceive->make_device_print($sanitizedData);
+
+            $logModel = new \App\Models\Mod_Log_User_Action();
+
+            // Get request object
+            $request = $this->request;
+
+            // Extract device info from HEADERS (not POST body)
+            $headers = $request->headers();
+
+            $logModel->logAction([
+                'action_category' => 'system',
+                'action_type'     => 'device_registration',
+                'action_severity' => 'low',
+                'success'         => 1,
+                'request_url'     => current_url(),
+                'request_method'  => $request->getMethod(),
+
+                // Get from HEADERS using getHeader() method
+                'device_name'     => $request->getHeader('device_name') ?
+                    $request->getHeader('device_name')->getValue() :
+                    ($input['device_model'] ?? 'Unknown Device'),
+                'device_type'     => $request->getHeader('device_type') ?
+                    $request->getHeader('device_type')->getValue() : 'phone',
+                'operating_system'=> $request->getHeader('os') ?
+                    $request->getHeader('os')->getValue() : 'Android',
+                // Replace TIME_START with CI's constant
+                'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+                // REQUEST_TIME_FLOAT from $_SERVER
+//                'execution_time_ms' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 2),
+            ]);
+
+
+            $dev_print = json_decode($device_metadata, true);
 
             return $this->respond([
                 'success' => true,
-                'pd_id' => $pdId,
+                'android_id' => $dev_print['dev_adr_id'],
+                'device_checksum' => $dev_print['dev_chck_sum'],
+                'device_is_new' => $dev_print['is_new'],
                 'message' => 'Device print registered successfully',
                 'timestamp' => date('Y-m-d H:i:s')
             ]);

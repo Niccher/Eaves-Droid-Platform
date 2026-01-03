@@ -23,7 +23,7 @@ class Mod_Receive extends Model
 
             if ($result) {
                 log_message('info', 'Existing device print found: ' . $result['pd_id']);
-                return "{'pd_id':'" . $result['pd_id'] . "'}";
+                return "{'pd_id':'" . $result['android_id'] . "'}";
             }
 
             $builder->insert($print_dump);
