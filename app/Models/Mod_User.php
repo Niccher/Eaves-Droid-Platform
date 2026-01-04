@@ -242,7 +242,7 @@ class Mod_User extends Model
             return $this->db->table('tbl_Interactions')
                 ->where('User_ID', $user_id)
                 ->orderBy('Interaction', 'DESC')
-                ->groupBy('IP')
+//                ->groupBy('IP')
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {
