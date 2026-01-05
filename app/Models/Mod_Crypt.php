@@ -108,17 +108,43 @@ class Mod_Crypt extends Model
     {
         try {
             $cipher_algo = "AES-128-CBC";
-            $options = OPENSSL_RAW_DATA;
             $crypt_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW'; // Prefer .env
             $crypt_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f="; // Prefer .env
 
-            $dec_val = openssl_decrypt($value, $cipher_algo, $crypt_key, $options, $crypt_iv);
+            // Try decryption with different approaches
+            // First, try with raw data (OPENSSL_RAW_DATA)
+            $dec_val = openssl_decrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
             if ($dec_val !== false) {
-                log_message('info', 'File decryption successful');
-                return base64_decode($dec_val);
+                log_message('info', 'File decryption successful (raw mode)');
+                // Check if decrypted data is valid JSON
+                $json_test = json_decode($dec_val, true);
+                if ($json_test !== null) {
+                    return $dec_val;
+                }
+                // If not JSON, try base64 decode
+                $base64_decoded = base64_decode($dec_val);
+                if ($base64_decoded !== false) {
+                    $json_test2 = json_decode($base64_decoded, true);
+                    if ($json_test2 !== null) {
+                        return $base64_decoded;
+                    }
+                }
             }
 
-            log_message('error', 'File decryption failed');
+            // Second, try assuming the input is base64 encoded encrypted data
+            $base64_decoded_input = base64_decode($value);
+            if ($base64_decoded_input !== false) {
+                $dec_val2 = openssl_decrypt($base64_decoded_input, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
+                if ($dec_val2 !== false) {
+                    log_message('info', 'File decryption successful (base64 input mode)');
+                    $json_test3 = json_decode($dec_val2, true);
+                    if ($json_test3 !== null) {
+                        return $dec_val2;
+                    }
+                }
+            }
+
+            log_message('error', 'File decryption failed - tried multiple methods');
             return false;
         } catch (\Exception $e) {
             log_message('error', 'Dec_File error: ' . $e->getMessage());

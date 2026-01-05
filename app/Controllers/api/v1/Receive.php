@@ -11,6 +11,7 @@ use App\Models\Mod_User;
 use App\Models\Mod_Uploaded_Files;
 use App\Models\Mod_Log_User_Action;
 use CodeIgniter\API\ResponseTrait;
+use CodeIgniter\Model;
 
 class Receive extends BaseController
 {
