@@ -107,7 +107,7 @@ class Apps extends BaseClientController
     {
         try {
             // Filter apps that are likely system apps
-            $allApps = $this->finderModel->get_apps($this->userId, $this->perPage);
+            $allApps = $this->finderModel->get_apps($this->userId, PHP_INT_MAX);
             $systemApps = [];
 
             foreach ($allApps as $app) {
@@ -133,7 +133,7 @@ class Apps extends BaseClientController
     private function getUserApps(): array
     {
         try {
-            $allApps = $this->finderModel->get_apps($this->userId, $this->perPage);
+            $allApps = $this->finderModel->get_apps($this->userId, PHP_INT_MAX);
             $userApps = [];
 
             foreach ($allApps as $app) {
@@ -154,15 +154,22 @@ class Apps extends BaseClientController
     }
 
     /**
-     * Get recently installed apps (mock implementation - would need timestamp in database)
+     * Get recently installed apps (based on first_install_time)
      */
     private function getRecentApps(): array
     {
         try {
-            // For now, return first 10 apps as "recent"
-            // In a real implementation, you would need an install_date column
-            $allApps = $this->finderModel->get_apps($this->userId, 10);
-            return array_slice($allApps, 0, 10);
+            // Get all apps sorted by first_install_time
+            $this->finderModel->table = 'tbl_apps';
+            $recentApps = $this->finderModel->select("package_name as Package, app_name as Name, 
+                                                     version_code as Code, version_name, 
+                                                     first_install_time, last_update_time, is_system_app")
+                ->where('meta_Owner', $this->userId)
+                ->orderBy('first_install_time', 'DESC')
+                ->limit(10)
+                ->findAll();
+
+            return $recentApps;
         } catch (\Exception $e) {
             log_message('error', 'getRecentApps error: ' . $e->getMessage());
             return [];
@@ -170,14 +177,27 @@ class Apps extends BaseClientController
     }
 
     /**
-     * Get disabled apps (mock implementation - would need status in database)
+     * Get disabled apps (check is_system_app field or other criteria)
      */
     private function getDisabledApps(): array
     {
         try {
-            // For now, return empty array or filter by some criteria
-            // In a real implementation, you would need an app_status column
-            return [];
+            // In a real implementation, you would need a status field
+            // For now, return apps that are not system apps but not recently updated
+            $allApps = $this->finderModel->get_apps($this->userId, PHP_INT_MAX);
+            $disabledApps = [];
+
+            foreach ($allApps as $app) {
+                // Example criteria: apps not updated in last 30 days
+                if (isset($app['last_update_time'])) {
+                    $thirtyDaysAgo = time() - (30 * 24 * 60 * 60);
+                    if ($app['last_update_time'] < $thirtyDaysAgo * 1000) {
+                        $disabledApps[] = $app;
+                    }
+                }
+            }
+
+            return $disabledApps;
         } catch (\Exception $e) {
             log_message('error', 'getDisabledApps error: ' . $e->getMessage());
             return [];
@@ -279,7 +299,7 @@ class Apps extends BaseClientController
         $paginationData = $this->getPaginationData();
 
         // Get counts for each category
-        $allApps = $this->finderModel->get_apps($this->userId, PHP_INT_MAX); // Get all apps for counting
+        $allApps = $this->finderModel->get_apps($this->userId, PHP_INT_MAX);
         $totalApps = count($allApps);
         $systemAppsCount = count($this->getSystemApps());
         $userAppsCount = count($this->getUserApps());
@@ -292,7 +312,7 @@ class Apps extends BaseClientController
             'systemAppsCount' => $systemAppsCount,
             'userAppsCount' => $userAppsCount,
             'recentAppsCount' => min(10, $totalApps),
-            'disabledAppsCount' => 0, // Would need database field for this
+            'disabledAppsCount' => count($this->getDisabledApps()),
         ], $paginationData);
     }
 

@@ -1,547 +1,389 @@
-    <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper">
-        <!-- Content Header (Page header) -->
-        <section class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-4 align-items-center">
-                    <div class="col-lg-8 col-md-6">
-                        <div class="d-flex align-items-center">
-                            <h1 class="h2 mb-0">
-                                <i class="fas fa-cogs text-primary mr-2"></i>
-                                Account Settings & APIs
-                            </h1>
-                            <div class="ml-3">
-                                <span class="badge badge-light border p-2">
-                                    <i class="fas fa-key text-primary mr-1"></i>
-                                    Security Level: <b>High</b>
-                                </span>
-                            </div>
-                        </div>
-                        <p class="text-muted mt-2 mb-0">Manage your account settings, security, and API integrations</p>
-                    </div>
-                </div>
-            </div>
-            <!-- /.container-fluid -->
-        </section>
-
-        <!-- Quick Stats Row -->
-        <section class="content mb-4">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-lg-4 col-6">
-                        <div class="small-box bg-info">
-                            <div class="inner">
-                                <h3><?php echo count($user_devices) ?? 0 ?></h3>
-                                <p>Connected Devices</p>
-                            </div>
-                            <div class="icon">
-                                <i class="fas fa-mobile-alt"></i>
-                            </div>
-                            <a href="#devicesTab" data-toggle="tab" class="small-box-footer">
-                                Manage Devices <i class="fas fa-arrow-circle-right"></i>
-                            </a>
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-4 align-items-center">
+                <div class="col-lg-8 col-md-6">
+                    <div class="d-flex align-items-center">
+                        <h1 class="h2 mb-0">
+                            <i class="fas fa-cogs text-primary mr-2"></i>
+                            Account Settings
+                        </h1>
+                        <div class="ml-3">
+                            <span class="badge badge-light border p-2">
+                                <i class="fas fa-shield-alt text-primary mr-1"></i>
+                                Security Level: <b>Standard</b>
+                            </span>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-6">
-                        <div class="small-box bg-success">
-                            <div class="inner">
-                                <h3><?php echo $activeSessions ?? 0 ?></h3>
-                                <p>Active Sessions</p>
-                            </div>
-                            <div class="icon">
-                                <i class="fas fa-user-check"></i>
-                            </div>
-                            <a href="#" class="small-box-footer" data-toggle="modal" data-target="#sessionManagement">
-                                View Sessions <i class="fas fa-external-link-alt"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-6">
-                        <div class="small-box bg-danger">
-                            <div class="inner">
-                                <h3><?php echo $securityEvents ?? 0 ?></h3>
-                                <p>Security Events</p>
-                            </div>
-                            <div class="icon">
-                                <i class="fas fa-shield-alt"></i>
-                            </div>
-                            <a href="#" class="small-box-footer" data-toggle="modal" data-target="#securityLogs">
-                                Review Events <i class="fas fa-search"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Main content -->
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <!-- Left Column - Settings Navigation -->
-                    <div class="col-lg-3">
-                        <!-- Settings Menu Card -->
-                        <div class="card card-primary">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-sliders-h mr-2"></i>
-                                    Settings Menu
-                                </h3>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="nav flex-column nav-pills" id="settingsTabs" role="tablist" aria-orientation="vertical">
-                                    <a class="nav-link active" id="api-tokens-tab" data-toggle="pill" href="#api-tokens" role="tab" aria-controls="api-tokens" aria-selected="true">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-info p-2">
-                                                    <i class="fas fa-key"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">API Tokens</div>
-                                                <small class="text-muted">Android & Web Tokens</small>
-                                            </div>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" id="devices-tab" data-toggle="pill" href="#devicesTab" role="tab" aria-controls="devicesTab" aria-selected="false">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-success p-2">
-                                                    <i class="fas fa-mobile-alt"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Devices</div>
-                                                <small class="text-muted">Connected Devices</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo count($user_devices) ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" id="data-tab" data-toggle="pill" href="#dataTab" role="tab" aria-controls="dataTab" aria-selected="false">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-secondary p-2">
-                                                    <i class="fas fa-database"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Data Management</div>
-                                                <small class="text-muted">Export & Backup</small>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Actions Card -->
-                        <div class="card card-success mt-4">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-bolt mr-2"></i>
-                                    Quick Actions
-                                </h3>
-                            </div>
-                            <div class="card-body">
-                                <button type="button" class="btn btn-outline-primary btn-block mb-2" data-toggle="modal" data-target="#regenerateTokenModal">
-                                    <i class="fas fa-key mr-2"></i> Regenerate Token
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Column - Settings Content -->
-                    <div class="col-lg-9">
-                        <div class="tab-content" id="settingsContent">
-                            <!-- API Tokens Tab -->
-                            <div class="tab-pane fade show active" id="api-tokens" role="tabpanel" aria-labelledby="api-tokens-tab">
-                                <div class="card card-primary card-outline">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fas fa-key mr-2"></i>
-                                            API Tokens Management
-                                        </h3>
-                                        <div class="card-tools">
-                                            <span class="badge badge-info">
-                                                <i class="fas fa-android mr-1"></i> Android Integration
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="alert alert-info">
-                                                    <h5><i class="fas fa-info-circle mr-2"></i> Token Security Notice</h5>
-                                                    <p class="mb-0">API tokens are used to authenticate your devices and applications. Keep them secure and regenerate immediately if compromised.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="card card-info">
-                                                    <div class="card-header">
-                                                        <h3 class="card-title">
-                                                            <i class="fab fa-android mr-2"></i>
-                                                            Android Client Token
-                                                        </h3>
-                                                    </div>
-                                                    <div class="card-body">
-                                                        <div class="form-group">
-                                                            <label for="androidToken">Current Token</label>
-                                                            <div class="input-group">
-                                                                <input type="text" class="form-control" id="androidToken"
-                                                                       value="<?php echo htmlspecialchars($user_token["Token"] ?? ''); ?>"
-                                                                       readonly>
-                                                                <div class="input-group-append">
-                                                                    <button class="btn btn-outline-secondary" type="button" id="copyAndroidToken">
-                                                                        <i class="fas fa-copy"></i>
-                                                                    </button>
-                                                                    <button class="btn btn-outline-secondary" type="button" id="showAndroidToken">
-                                                                        <i class="fas fa-eye"></i>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <small class="form-text text-muted">
-                                                                <i class="fas fa-mobile-alt mr-1"></i> Used for Android app authentication
-                                                            </small>
-                                                        </div>
-
-                                                        <div class="form-group">
-                                                            <label for="tokenExpiry">Token Expiry</label>
-                                                            <div class="input-group">
-                                                                <input type="text" class="form-control" id="tokenExpiry"
-                                                                       value="<?php echo $tokenExpiry ?? 'Never'; ?>" readonly>
-                                                                <div class="input-group-append">
-                                                                    <span class="input-group-text">
-                                                                        <i class="far fa-calendar-alt"></i>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="card-footer">
-                                                        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#regenerateTokenModal">
-                                                            <i class="fas fa-sync-alt mr-1"></i> Regenerate Token
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-6">
-                                                <div class="card card-success">
-                                                    <div class="card-header">
-                                                        <h3 class="card-title">
-                                                            <i class="fas fa-globe mr-2"></i>
-                                                            Web API Token
-                                                        </h3>
-                                                    </div>
-                                                    <div class="card-body">
-                                                        <div class="form-group">
-                                                            <label for="webToken">Web API Token</label>
-                                                            <div class="input-group">
-                                                                <input type="password" class="form-control" id="webToken"
-                                                                       value="<?php echo htmlspecialchars($web_token ?? 'Generate new token'); ?>"
-                                                                       readonly>
-                                                                <div class="input-group-append">
-                                                                    <button class="btn btn-outline-secondary" type="button" id="copyWebToken">
-                                                                        <i class="fas fa-copy"></i>
-                                                                    </button>
-                                                                    <button class="btn btn-outline-secondary" type="button" id="toggleWebToken">
-                                                                        <i class="fas fa-eye"></i>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <small class="form-text text-muted">
-                                                                <i class="fas fa-code mr-1"></i> For API integrations and webhooks
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="card-footer">
-                                                        <button type="button" class="btn btn-success" id="generateWebToken">
-                                                            <i class="fas fa-plus-circle mr-1"></i> Generate Web Token
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Devices Tab -->
-                            <div class="tab-pane fade" id="devicesTab" role="tabpanel" aria-labelledby="devices-tab">
-                                <div class="card card-success card-outline">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fas fa-mobile-alt mr-2"></i>
-                                            Connected Devices Management
-                                        </h3>
-                                        <div class="card-tools">
-                                            <span class="badge badge-success">
-                                                <i class="fas fa-check-circle mr-1"></i> <?php echo count($user_devices) ?? 0 ?> Active
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover table-striped">
-                                                <thead class="thead-light">
-                                                <tr>
-                                                    <th>Device</th>
-                                                    <th>IP Address</th>
-                                                    <th>Last Connected</th>
-                                                    <th>Status</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody>
-                                                <?php if (!empty($user_devices)): ?>
-                                                    <?php foreach ($user_devices as $device): ?>
-                                                        <?php
-                                                        $ip = $device['IP'] ?? 'Unknown';
-                                                        $timestamp = $device['Timestamps'] ?? time();
-                                                        $action = $device['Action'] ?? 'Unknown';
-                                                        $date = date('M d, Y', $timestamp);
-                                                        $time = date('H:i:s', $timestamp);
-                                                        $deviceType = strpos(strtolower($action), 'android') !== false ? 'Android' : 'Web';
-                                                        $status = 'active';
-                                                        $statusColor = 'success';
-                                                        ?>
-                                                        <tr>
-                                                            <td>
-                                                                <div class="d-flex align-items-center">
-                                                                    <div class="mr-3">
-                                                                            <span class="badge badge-<?php echo $deviceType === 'Android' ? 'success' : 'primary'; ?> p-2">
-                                                                                <i class="fas fa-<?php echo $deviceType === 'Android' ? 'mobile-alt' : 'laptop'; ?>"></i>
-                                                                            </span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div class="font-weight-bold"><?php echo $deviceType; ?> Device</div>
-                                                                        <small class="text-muted"><?php echo htmlspecialchars($action); ?></small>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td>
-                                                                <code class="text-dark"><?php echo htmlspecialchars($ip); ?></code>
-                                                                <br>
-                                                                <small class="text-muted">
-                                                                    <i class="fas fa-map-marker-alt mr-1"></i>
-                                                                    <?php echo $device['Location'] ?? 'Unknown Location'; ?>
-                                                                </small>
-                                                            </td>
-                                                            <td>
-                                                                <div class="text-dark"><?php echo $date; ?></div>
-                                                                <small class="text-muted">
-                                                                    <i class="far fa-clock mr-1"></i>
-                                                                    <?php echo $time; ?>
-                                                                </small>
-                                                            </td>
-                                                            <td>
-                                                                    <span class="badge badge-<?php echo $statusColor; ?> p-2">
-                                                                        <i class="fas fa-circle mr-1"></i>
-                                                                        <?php echo ucfirst($status); ?>
-                                                                    </span>
-                                                            </td>
-                                                            <td>
-                                                                <div class="btn-group btn-group-sm">
-                                                                    <button type="button" class="btn btn-outline-info" data-toggle="tooltip" title="View Details">
-                                                                        <i class="fas fa-eye"></i>
-                                                                    </button>
-                                                                    <button type="button" class="btn btn-outline-danger" data-toggle="tooltip" title="Disconnect">
-                                                                        <i class="fas fa-ban"></i>
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                <?php else: ?>
-                                                    <tr>
-                                                        <td colspan="5" class="text-center py-5">
-                                                            <i class="fas fa-mobile-alt fa-3x text-muted mb-3"></i>
-                                                            <h4>No Connected Devices</h4>
-                                                            <p class="text-muted">No devices are currently connected to your account</p>
-                                                        </td>
-                                                    </tr>
-                                                <?php endif; ?>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Data Management Tab -->
-                            <div class="tab-pane fade" id="dataTab" role="tabpanel" aria-labelledby="data-tab">
-                                <div class="card card-secondary card-outline">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fas fa-database mr-2"></i>
-                                            Data Management
-                                        </h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <p class="text-muted">Data management features will be available soon.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- Regenerate Token Modal -->
-    <div class="modal fade" id="regenerateTokenModal" tabindex="-1" role="dialog" aria-labelledby="regenerateTokenModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="regenerateTokenModalLabel">
-                        <i class="fas fa-exclamation-triangle text-warning mr-2"></i>
-                        Regenerate Token
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <h5><i class="fas fa-warning mr-2"></i> Important Notice</h5>
-                        <p class="mb-0">Regenerating your token will:</p>
-                        <ul class="mb-0 mt-2">
-                            <li>Invalidate all current Android connections</li>
-                            <li>Require re-authentication on all devices</li>
-                            <li>Disconnect all active sessions</li>
-                            <li>Require updating the token in your Android app</li>
-                        </ul>
-                    </div>
-                    <p>Are you sure you want to proceed with token regeneration?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <a href="<?php echo base_url('account/setting/token_generate'); ?>">
-                        <button type="button" class="btn btn-danger">
-                            <i class="fas fa-sync-alt mr-1"></i> Yes, Regenerate Token
-                        </button>
-                    </a>
+                    <p class="text-muted mt-2 mb-0">Manage your account settings, API tokens, and security preferences</p>
                 </div>
             </div>
         </div>
-    </div>
+        <!-- /.container-fluid -->
+    </section>
 
-    <style>
-        .info-box {
-            border-radius: 0.25rem;
-            box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
-            transition: transform 0.2s ease;
-        }
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2">
+                    <!-- API Tokens Card -->
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-key mr-2"></i>
+                                API Tokens Management
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h5><i class="fas fa-info-circle mr-2"></i> Token Information</h5>
+                                <p class="mb-0">API tokens are used to authenticate your Android device with our services. Keep them secure and regenerate if compromised.</p>
+                            </div>
 
-        .info-box:hover {
-            transform: translateY(-2px);
-        }
+                            <!-- Current Token Display -->
+                            <div class="form-group">
+                                <label for="currentToken">
+                                    <i class="fab fa-android mr-2 text-success"></i>
+                                    Current Android Token
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="currentToken"
+                                           value="<?php echo htmlspecialchars($user_token['Token'] ?? 'No token found'); ?>"
+                                           readonly style="font-family: 'Courier New', monospace;">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" id="copyTokenBtn"
+                                                data-toggle="tooltip" title="Copy to clipboard">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" type="button" id="showTokenBtn"
+                                                data-toggle="tooltip" title="Show/Hide token">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">
+                                    This token is required for Android app authentication. Copy and paste it into your Android app settings.
+                                </small>
+                            </div>
 
-        .nav-pills .nav-link {
-            border-radius: 0.25rem;
-            margin-bottom: 5px;
-            padding: 12px 15px;
-            transition: all 0.3s ease;
-        }
+                            <!-- Token Details -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Token Created</label>
+                                        <input type="text" class="form-control bg-light"
+                                               value="<?php echo !empty($user_token['Token_Created']) ? date('M d, Y H:i', strtotime($user_token['Token_Created'])) : 'Unknown'; ?>"
+                                               readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Token Expiry</label>
+                                        <input type="text" class="form-control bg-light"
+                                               value="<?php echo $tokenExpiry ?? 'Never'; ?>"
+                                               readonly>
+                                    </div>
+                                </div>
+                            </div>
 
-        .nav-pills .nav-link:hover {
-            background-color: rgba(0,0,0,0.05);
-        }
+                            <!-- Token Status -->
+                            <div class="form-group">
+                                <label>Token Status</label>
+                                <div class="d-flex align-items-center">
+                                    <?php if (!empty($user_token['Token_Status'])): ?>
+                                        <?php if ($user_token['Token_Status'] == '00'): ?>
+                                            <span class="badge badge-success p-2 mr-2">
+                                                <i class="fas fa-check-circle mr-1"></i> Active
+                                            </span>
+                                            <span class="text-success">
+                                                <i class="fas fa-circle mr-1"></i> Token is active and ready for use
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge badge-danger p-2 mr-2">
+                                                <i class="fas fa-times-circle mr-1"></i> Inactive
+                                            </span>
+                                            <span class="text-danger">
+                                                <i class="fas fa-circle mr-1"></i> Token has been revoked or expired
+                                            </span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="badge badge-warning p-2 mr-2">
+                                            <i class="fas fa-exclamation-circle mr-1"></i> No Token
+                                        </span>
+                                        <span class="text-warning">
+                                            <i class="fas fa-circle mr-1"></i> No active token found
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
 
-        .nav-pills .nav-link.active {
-            background-color: #007bff;
-            box-shadow: 0 2px 4px rgba(0,123,255,.3);
-        }
+                            <!-- Regenerate Token Section -->
+                            <div class="border-top mt-4 pt-4">
+                                <h5>
+                                    <i class="fas fa-sync-alt mr-2 text-warning"></i>
+                                    Regenerate Token
+                                </h5>
+                                <p class="text-muted">Regenerating your token will invalidate the current token and require updating it in your Android app.</p>
 
-        .card {
-            box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
-        }
+                                <form action="<?php echo base_url('account/regenerateToken'); ?>" method="post" id="regenerateForm">
+                                    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
-        .input-group .btn {
-            border-color: #ced4da;
-        }
+                                    <div class="alert alert-warning">
+                                        <h5><i class="fas fa-exclamation-triangle mr-2"></i> Important Notice</h5>
+                                        <p class="mb-0">Regenerating your token will:</p>
+                                        <ul class="mb-0 mt-2">
+                                            <li>Invalidate all current Android connections</li>
+                                            <li>Require re-authentication on all devices</li>
+                                            <li>Disconnect all active sessions</li>
+                                            <li>Require updating the token in your Android app</li>
+                                        </ul>
+                                    </div>
 
-        .table-hover tbody tr:hover {
-            background-color: rgba(0,0,0,0.02);
-        }
+                                    <button type="button" class="btn btn-danger" id="regenerateBtn">
+                                        <i class="fas fa-sync-alt mr-1"></i> Regenerate Token
+                                    </button>
+                                    <a href="<?php echo base_url('account/home'); ?>" class="btn btn-outline-secondary ml-2">
+                                        <i class="fas fa-times mr-1"></i> Cancel
+                                    </a>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
 
-        @media (max-width: 768px) {
-            .nav-pills .nav-link {
-                padding: 10px;
-            }
+                    <!-- Connected Devices Card -->
+                    <div class="card card-success mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-laptop mr-2"></i>
+                                Connected Devices
+                                <span class="badge badge-light ml-2"><?php echo count($user_devices); ?></span>
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <?php if (!empty($user_devices)): ?>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>Device</th>
+                                            <th>IP Address</th>
+                                            <th>Last Activity</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <?php foreach ($user_devices as $device): ?>
+                                            <?php
+                                            $isActive = isset($device['last_seen']) && strtotime($device['last_seen']) > strtotime('-30 minutes');
+                                            $statusColor = $isActive ? 'success' : 'secondary';
+                                            $statusText = $isActive ? 'Active' : 'Inactive';
+                                            ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="mr-3">
+                                                            <i class="fas fa-<?php echo $device['device_type'] == 'mobile' ? 'mobile-alt' : 'laptop'; ?> fa-2x text-<?php echo $device['device_type'] == 'mobile' ? 'success' : 'primary'; ?>"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div class="font-weight-bold"><?php echo htmlspecialchars($device['device_name']); ?></div>
+                                                            <small class="text-muted">
+                                                                <?php echo htmlspecialchars($device['os']); ?> · <?php echo htmlspecialchars($device['browser']); ?>
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <code><?php echo htmlspecialchars($device['ip_address']); ?></code>
+                                                </td>
+                                                <td>
+                                                    <?php echo $device['last_seen_formatted']; ?>
+                                                </td>
+                                                <td>
+                                                        <span class="badge badge-<?php echo $statusColor; ?>">
+                                                            <i class="fas fa-circle mr-1"></i>
+                                                            <?php echo $statusText; ?>
+                                                        </span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-center py-4">
+                                    <i class="fas fa-laptop fa-3x text-muted mb-3"></i>
+                                    <h5>No Connected Devices</h5>
+                                    <p class="text-muted">No devices are currently connected to your account</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
-            .card-header .card-title {
-                font-size: 1.1rem;
-            }
+                    <!-- Active Sessions Card -->
+                    <div class="card card-warning mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-user-clock mr-2"></i>
+                                Active Sessions
+                                <span class="badge badge-light ml-2"><?php echo $activeSessions; ?></span>
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <?php if (!empty($user_sessions)): ?>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>Session ID</th>
+                                            <th>Device</th>
+                                            <th>Last Activity</th>
+                                            <th>Activities</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <?php foreach ($user_sessions as $session): ?>
+                                            <?php
+                                            $sessionId = substr($session['session_id'] ?? '', 0, 12) . '...';
+                                            $isActive = $session['is_active'] ?? false;
+                                            $statusColor = $isActive ? 'success' : 'secondary';
+                                            $statusText = $isActive ? 'Active' : 'Expired';
+                                            ?>
+                                            <tr>
+                                                <td>
+                                                    <code class="small"><?php echo htmlspecialchars($sessionId); ?></code>
+                                                </td>
+                                                <td>
+                                                    <div class="font-weight-bold"><?php echo htmlspecialchars($session['device_name']); ?></div>
+                                                    <small class="text-muted"><?php echo htmlspecialchars($session['ip_address']); ?></small>
+                                                </td>
+                                                <td>
+                                                    <?php echo $session['last_activity_formatted']; ?>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-info"><?php echo $session['activity_count']; ?></span>
+                                                </td>
+                                                <td>
+                                                        <span class="badge badge-<?php echo $statusColor; ?>">
+                                                            <i class="fas fa-circle mr-1"></i>
+                                                            <?php echo $statusText; ?>
+                                                        </span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-center py-4">
+                                    <i class="fas fa-user-clock fa-3x text-muted mb-3"></i>
+                                    <h5>No Active Sessions</h5>
+                                    <p class="text-muted">No active sessions found for your account</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
 
-            .btn-group {
-                flex-wrap: wrap;
-            }
-        }
-    </style>
+<style>
+    .input-group .btn {
+        border-color: #ced4da;
+    }
 
-    <script>
-        $(document).ready(function() {
-            // Copy token functionality
-            $('#copyAndroidToken').click(function() {
-                const token = $('#androidToken').val();
-                navigator.clipboard.writeText(token).then(() => {
-                    $(this).html('<i class="fas fa-check"></i>');
-                    setTimeout(() => {
-                        $(this).html('<i class="fas fa-copy"></i>');
-                    }, 2000);
-                });
-            });
+    .card {
+        box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+        border-radius: 0.25rem;
+    }
 
-            $('#copyWebToken').click(function() {
-                const token = $('#webToken').val();
-                navigator.clipboard.writeText(token).then(() => {
-                    $(this).html('<i class="fas fa-check"></i>');
-                    setTimeout(() => {
-                        $(this).html('<i class="fas fa-copy"></i>');
-                    }, 2000);
-                });
-            });
+    .card-header {
+        border-bottom: 1px solid rgba(0,0,0,.125);
+    }
 
-            // Show/hide token
-            $('#showAndroidToken').click(function() {
-                const input = $('#androidToken');
-                if (input.attr('type') === 'password') {
-                    input.attr('type', 'text');
-                    $(this).html('<i class="fas fa-eye-slash"></i>');
-                } else {
-                    input.attr('type', 'password');
-                    $(this).html('<i class="fas fa-eye"></i>');
-                }
-            });
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.02);
+    }
 
-            $('#toggleWebToken').click(function() {
-                const input = $('#webToken');
-                if (input.attr('type') === 'password') {
-                    input.attr('type', 'text');
-                    $(this).html('<i class="fas fa-eye-slash"></i>');
-                } else {
-                    input.attr('type', 'password');
-                    $(this).html('<i class="fas fa-eye"></i>');
-                }
-            });
+    code {
+        background-color: #f8f9fa;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
 
-            // Generate web token
-            $('#generateWebToken').click(function() {
-                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Generating...');
+    .alert {
+        border-radius: 0.25rem;
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // Copy token functionality
+        $('#copyTokenBtn').click(function() {
+            const token = $('#currentToken').val();
+            navigator.clipboard.writeText(token).then(() => {
+                const original = $(this).html();
+                $(this).html('<i class="fas fa-check text-success"></i>');
+                $(this).attr('title', 'Copied!');
+                $(this).tooltip('dispose').tooltip();
+
                 setTimeout(() => {
-                    const newToken = 'web_' + Math.random().toString(36).substr(2, 32);
-                    $('#webToken').val(newToken);
-                    $(this).prop('disabled', false).html('<i class="fas fa-plus-circle mr-1"></i> Generate Web Token');
-                    alert('New web token generated successfully!');
-                }, 1000);
+                    $(this).html(original);
+                    $(this).attr('title', 'Copy to clipboard');
+                    $(this).tooltip('dispose').tooltip();
+                }, 2000);
             });
-
-            // Initialize tooltips
-            $('[data-toggle="tooltip"]').tooltip();
         });
-    </script>
+
+        // Show/hide token
+        let tokenVisible = false;
+        $('#showTokenBtn').click(function() {
+            const input = $('#currentToken');
+            tokenVisible = !tokenVisible;
+
+            if (tokenVisible) {
+                input.attr('type', 'text');
+                $(this).html('<i class="fas fa-eye-slash"></i>');
+                $(this).attr('title', 'Hide token');
+            } else {
+                input.attr('type', 'password');
+                $(this).html('<i class="fas fa-eye"></i>');
+                $(this).attr('title', 'Show token');
+            }
+
+            $(this).tooltip('dispose').tooltip();
+        });
+
+        // Initialize token as hidden
+        $('#currentToken').attr('type', 'password');
+
+        // Regenerate token confirmation
+        $('#regenerateBtn').click(function() {
+            Swal.fire({
+                title: 'Regenerate Token?',
+                text: 'This will invalidate your current token and require updating your Android app. Are you sure?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, regenerate',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#regenerateForm').submit();
+                }
+            });
+        });
+
+        // Initialize tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>

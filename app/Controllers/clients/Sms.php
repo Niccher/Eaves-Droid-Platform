@@ -101,4 +101,76 @@ class Sms extends BaseClientController
     {
         return $this->sent();
     }
+
+    /**
+     * Get common data for SMS views
+     */
+    protected function getSmsCommonData(string $type = 'all'): array
+    {
+        // Get total counts based on type
+        $totalSMS = 0;
+        $totalSmsInbox = 0;
+        $totalSmsSent = 0;
+
+        switch ($type) {
+            case 'inbox':
+                $totalSMS = $this->finderModel->get_count_Sms_category($this->userId, 'inbox');
+                $totalSmsInbox = $totalSMS;
+                break;
+            case 'sent':
+                $totalSMS = $this->finderModel->get_count_Sms_category($this->userId, 'sent');
+                $totalSmsSent = $totalSMS;
+                break;
+            default:
+                $totalSMS = $this->finderModel->get_count_Sms($this->userId);
+                $totalSmsInbox = $this->finderModel->get_count_Sms_category($this->userId, 'inbox');
+                $totalSmsSent = $this->finderModel->get_count_Sms_category($this->userId, 'sent');
+                break;
+        }
+
+        $paginationData = $this->getPaginationData();
+
+        return array_merge([
+            'pag' => 'sms',
+            'sms_head' => ucfirst($type) . ' SMS Messages',
+            'sms_urls' => $this->getSmsNavigationUrls($type),
+            'totalSMS' => $totalSMS,
+            'totalSmsInbox' => $totalSmsInbox,
+            'totalSmsSent' => $totalSmsSent,
+        ], $paginationData);
+    }
+
+    /**
+     * Get navigation URLs for SMS views
+     */
+    protected function getSmsNavigationUrls(string $activeView = 'all'): string
+    {
+        $buttons = [
+            'all'    => ($activeView === 'all') ? 'btn-primary' : 'btn-outline-primary',
+            'inbox'  => ($activeView === 'inbox') ? 'btn-primary' : 'btn-outline-primary',
+            'sent'   => ($activeView === 'sent') ? 'btn-primary' : 'btn-outline-primary'
+        ];
+
+        return '
+            <a class="btn ' . $buttons['all'] . '" href="' . base_url("sms") . '">All SMS</a>
+            &nbsp;&nbsp;
+            <a class="btn ' . $buttons['inbox'] . '" href="' . base_url("sms/inbox") . '">Inbox</a>
+            &nbsp;&nbsp;
+            <a class="btn ' . $buttons['sent'] . '" href="' . base_url("sms/sent") . '">Sent</a>';
+    }
+
+    /**
+     * Render SMS-specific view
+     */
+    protected function renderSmsView(string $mainView, array $extraData = []): string
+    {
+        $data = array_merge([
+            'user_info' => $this->userData,
+        ], $this->getUserDataCounts(), $extraData);
+
+        return view('headers_footers/head_users', $data)
+            . view('headers_footers/sidebar_users', $data)
+            . view($mainView, $data)
+            . view('headers_footers/footer_data_datatables', $data);
+    }
 }

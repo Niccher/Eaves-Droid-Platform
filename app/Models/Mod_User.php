@@ -6,6 +6,17 @@ use CodeIgniter\Model;
 
 class Mod_User extends Model
 {
+    protected $DBGroup = 'default';
+    protected $table = 'users';
+    protected $primaryKey = 'id';
+    protected $useAutoIncrement = true;
+    protected $returnType = 'array';
+    protected $useSoftDeletes = false;
+    protected $allowedFields = ['email', 'username', 'active'];
+    protected $validationRules = [];
+    protected $validationMessages = [];
+    protected $skipValidation = false;
+
     /**
      * Gets basic user data if logged in.
      *
@@ -15,7 +26,10 @@ class Mod_User extends Model
     {
         try {
             if (auth()->loggedIn()) {
-                return json_decode(json_encode(auth()->user()), true);
+                $user = auth()->user();
+                $userArray = $user->toArray();
+                $userArray['email'] = $user->getEmail();
+                return $userArray;
             }
             log_message('error', 'User not logged in');
             return false;
@@ -26,7 +40,7 @@ class Mod_User extends Model
     }
 
     /**
-     * Gets user variables.
+     * Gets user data from tbl_Users (custom table).
      *
      * @param int $user_id
      * @return array|false
@@ -54,10 +68,10 @@ class Mod_User extends Model
     }
 
     /**
-     * Get user data from Shield's default 'users' table
+     * Gets user data from Shield's default 'users' table.
      *
      * @param int $user_id
-     * @return array|false Returns user row as array or false if not found
+     * @return array|false
      */
     public function get_data_users(int $user_id)
     {
@@ -82,11 +96,10 @@ class Mod_User extends Model
     }
 
     /**
-     * Get combined user variables from both tables
-     * Merges data from tbl_Users and Shield's users table
+     * Gets combined user variables from both tables.
      *
      * @param int $user_id
-     * @return array|false Merged data or false if nothing found
+     * @return array|false
      */
     public function get_vars(int $user_id)
     {
@@ -129,7 +142,7 @@ class Mod_User extends Model
     {
         try {
             $dated = date('Y-m-d H:i:s');
-            $future_date = date('Y-m-d H:i:s', strtotime('+1 month', strtotime($dated)));
+            $future_date = date('Y-m-d H:i:s', strtotime('+30 days', strtotime($dated)));
 
             $data = [
                 'Token_Created' => $dated,
@@ -138,6 +151,7 @@ class Mod_User extends Model
                 'Token_Status' => "00",
                 'Token_Initiator' => $ip_add,
                 'Token_Expiry' => $future_date,
+                'Token_Name' => 'Android_' . date('Ymd_His')
             ];
 
             if ($this->db->table('tbl_Tokens')->insert($data)) {
@@ -194,6 +208,7 @@ class Mod_User extends Model
         try {
             $result = $this->db->table('tbl_Tokens')
                 ->where('Token_Owner', $user_id)
+                ->where('Token_Status', '00')
                 ->orderBy('Token_ID', 'DESC')
                 ->limit(1)
                 ->get()
@@ -201,7 +216,7 @@ class Mod_User extends Model
             if ($result) {
                 return $result;
             }
-            log_message('error', 'No token found for user ' . $user_id);
+            log_message('info', 'No active token found for user ' . $user_id);
             return false;
         } catch (\Exception $e) {
             log_message('error', 'get_token error: ' . $e->getMessage());
@@ -210,7 +225,7 @@ class Mod_User extends Model
     }
 
     /**
-     * Gets user devices.
+     * Gets user devices from access logs.
      *
      * @param int $user_id
      * @return array
@@ -218,12 +233,31 @@ class Mod_User extends Model
     public function get_devices(int $user_id): array
     {
         try {
-            return $this->db->table('tbl_Interactions')
-                ->where('User_ID', $user_id)
-                ->orderBy('Interaction', 'DESC')
-                ->groupBy('IP')
+            // Get unique devices from access logs
+            $devices = $this->db->table('tbl_user_actions')
+                ->select('device_type, device_name, operating_system, browser, ip_address, MAX(created_at) as last_seen')
+                ->where('user_id', $user_id)
+                ->where('device_name IS NOT NULL')
+                ->groupBy('device_name, ip_address')
+                ->orderBy('last_seen', 'DESC')
                 ->get()
                 ->getResultArray();
+
+            // Format the results
+            $formattedDevices = [];
+            foreach ($devices as $device) {
+                $formattedDevices[] = [
+                    'device_type' => $device['device_type'] ?? 'unknown',
+                    'device_name' => $device['device_name'] ?? 'Unknown Device',
+                    'os' => $device['operating_system'] ?? 'Unknown OS',
+                    'browser' => $device['browser'] ?? 'Unknown Browser',
+                    'ip_address' => $device['ip_address'] ?? 'N/A',
+                    'last_seen' => $device['last_seen'] ?? date('Y-m-d H:i:s'),
+                    'last_seen_formatted' => isset($device['last_seen']) ? date('M d, Y H:i', strtotime($device['last_seen'])) : 'Never'
+                ];
+            }
+
+            return $formattedDevices;
         } catch (\Exception $e) {
             log_message('error', 'get_devices error: ' . $e->getMessage());
             return [];
@@ -231,23 +265,114 @@ class Mod_User extends Model
     }
 
     /**
-     * Gets user interactions.
+     * Gets user sessions from access logs.
      *
      * @param int $user_id
      * @return array
      */
-    public function get_interactions(int $user_id): array
+    public function get_sessions(int $user_id): array
     {
         try {
-            return $this->db->table('tbl_Interactions')
-                ->where('User_ID', $user_id)
-                ->orderBy('Interaction', 'DESC')
-//                ->groupBy('IP')
+            $sessions = $this->db->table('tbl_user_actions')
+                ->select('session_id, ip_address, device_type, device_name, operating_system, browser, 
+                         MAX(created_at) as last_activity, COUNT(*) as activity_count')
+                ->where('user_id', $user_id)
+                ->where('session_id IS NOT NULL')
+                ->groupBy('session_id, ip_address')
+                ->orderBy('last_activity', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            // Format the results
+            $formattedSessions = [];
+            foreach ($sessions as $session) {
+                $formattedSessions[] = [
+                    'session_id' => $session['session_id'],
+                    'ip_address' => $session['ip_address'] ?? 'N/A',
+                    'device_type' => $session['device_type'] ?? 'unknown',
+                    'device_name' => $session['device_name'] ?? 'Unknown Device',
+                    'os' => $session['operating_system'] ?? 'Unknown OS',
+                    'browser' => $session['browser'] ?? 'Unknown Browser',
+                    'last_activity' => $session['last_activity'],
+                    'last_activity_formatted' => isset($session['last_activity']) ? date('M d, Y H:i', strtotime($session['last_activity'])) : 'Never',
+                    'activity_count' => $session['activity_count'] ?? 0,
+                    'is_active' => isset($session['last_activity']) && strtotime($session['last_activity']) > strtotime('-30 minutes')
+                ];
+            }
+
+            return $formattedSessions;
+        } catch (\Exception $e) {
+            log_message('error', 'get_sessions error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Gets user security events.
+     *
+     * @param int $user_id
+     * @return array
+     */
+    public function get_security_events(int $user_id): array
+    {
+        try {
+            return $this->db->table('tbl_user_actions')
+                ->where('user_id', $user_id)
+                ->whereIn('action_category', ['authentication', 'security'])
+                ->where('success', 0)
+                ->orderBy('created_at', 'DESC')
+                ->limit(20)
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {
-            log_message('error', 'get_interactions error: ' . $e->getMessage());
+            log_message('error', 'get_security_events error: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Gets active sessions count.
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public function get_active_sessions_count(int $user_id): int
+    {
+        try {
+            $thirtyMinutesAgo = date('Y-m-d H:i:s', strtotime('-30 minutes'));
+
+            $result = $this->db->table('tbl_user_actions')
+                ->select('COUNT(DISTINCT session_id) as session_count')
+                ->where('user_id', $user_id)
+                ->where('session_id IS NOT NULL')
+                ->where('created_at >=', $thirtyMinutesAgo)
+                ->get()
+                ->getRow();
+
+            return $result ? (int)$result->session_count : 0;
+        } catch (\Exception $e) {
+            log_message('error', 'get_active_sessions_count error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Gets security events count.
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public function get_security_events_count(int $user_id): int
+    {
+        try {
+            return $this->db->table('tbl_user_actions')
+                ->where('user_id', $user_id)
+                ->whereIn('action_category', ['authentication', 'security'])
+                ->where('success', 0)
+                ->countAllResults();
+        } catch (\Exception $e) {
+            log_message('error', 'get_security_events_count error: ' . $e->getMessage());
+            return 0;
         }
     }
 }

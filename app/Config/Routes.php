@@ -21,11 +21,10 @@ $routes->get('aboutus', 'Home::landing_aboutus');
 $routes->get('faqs_terms', 'Home::landing_faqs');
 $routes->get('how_to', 'Home::landing_how_to');
 $routes->get('error_404', 'Home::landing_error_404');
-$routes->get('prices', 'auth\ContactController::submit'); // Note: 'prices' often links to a view, not a submission handler.
+$routes->get('prices', 'Home::landing_prices');
 
 // Contact Form (handles both GET for view and POST for submission)
 $routes->match(['get', 'post'], 'contactus', 'Home::landing_contactus');
-
 
 // =================================================================
 // 2. AUTHENTICATION ROUTES (CI4 Shield)
@@ -133,30 +132,46 @@ $routes->group('', ['namespace' => 'App\Controllers\clients', 'filter' => 'sessi
     $routes->get('contacts/analyze/calls/(:any)/(:num)', 'Analyze::calls/$1/$2'); // Pagination
 
     // =============================================================
-    // ACCOUNT MANAGEMENT ROUTES
+    // ACCOUNT MANAGEMENT ROUTES (UPDATED)
     // =============================================================
 
-    $routes->group('account', ['namespace' => 'App\Controllers\clients'], function($routes) {
-        $routes->get('profile', 'Account::home');
-        $routes->get('setting', 'Account::setting');
-        $routes->get('logs', 'Account::access_logs');
-        $routes->get('logs/(:num)', 'Account::access_logs/$1'); // Pagination for logs
+    // Account Profile & Settings Group
+    $routes->group('account', function($routes) {
+        // Profile Pages (GET)
+        $routes->get('home', 'Account::home', ['as' => 'account-profile']);
+        $routes->get('profile', 'Account::home'); // Alias for backward compatibility
+        $routes->get('setting', 'Account::setting', ['as' => 'account-settings']);
+        $routes->get('access_logs', 'Account::access_logs', ['as' => 'account-logs']);
+        $routes->get('logs', 'Account::access_logs'); // Alias for backward compatibility
+        $routes->get('access_logs/(:num)', 'Account::access_logs/$1'); // Pagination
+        $routes->get('devices', 'Account::devices', ['as' => 'account-devices']);
+
+        // Profile Actions (POST)
+        $routes->post('updateProfile', 'Account::updateProfile', ['as' => 'account-update']);
+        $routes->post('regenerateToken', 'Account::regenerateToken', ['as' => 'account-regenerate-token']);
+
+        // Data Export (GET)
+        $routes->get('exportData/(:any)', 'Account::exportData/$1', ['as' => 'account-export']);
+
+        // Data Deletion (GET for confirmation, POST for actual deletion)
+        $routes->get('deleteData/(:any)', 'Account::deleteData/$1', ['as' => 'account-delete-confirm']);
+        $routes->post('deleteData/(:any)', 'Account::deleteData/$1', ['as' => 'account-delete']);
+
+        // Legacy Profile Actions (kept for backward compatibility)
+        $routes->match(['get', 'post'], 'profile/update', 'Profile::profile_update');
+        $routes->match(['get', 'post'], 'profile/image_upload', 'Profile::profile_upload');
+        $routes->post('setting/token_generate', 'Profile::token_generate');
+
+        // Legacy Data Deletion (POST only for backward compatibility)
+        $routes->post('data/del/apps', 'Profile::profile_del_apps');
+        $routes->post('data/del/call_logs', 'Profile::profile_del_call_logs');
+        $routes->post('data/del/contacts', 'Profile::profile_del_contacts');
+        $routes->post('data/del/sms', 'Profile::profile_del_sms');
     });
 
-    // --- Account Actions ---
-    $routes->get('account/profile/update', 'Profile::profile_update');      // GET/POST combo might be better
-    $routes->get('account/profile/image_upload', 'Profile::profile_upload'); // GET/POST combo might be better
-
-    $routes->get('account/setting/token_generate', 'Profile::token_generate'); // Should probably be a POST
-
-    $routes->get('account/requests', 'Requests::send_request'); // Should probably be a POST
-    $routes->get('account/requests/sleep', 'Requests::send_sleep'); // Should probably be a POST
-
-    // --- Data Deletion Actions (Should all be POST or DELETE requests) ---
-    $routes->get('account/data/del/apps', 'Profile::profile_del_apps');
-    $routes->get('account/data/del/call_logs', 'Profile::profile_del_call_logs');
-    $routes->get('account/data/del/contacts', 'Profile::profile_del_contacts');
-    $routes->get('account/data/del/sms', 'Profile::profile_del_sms');
+    // --- Other Account Actions ---
+    $routes->match(['get', 'post'], 'account/requests', 'Requests::send_request');
+    $routes->match(['get', 'post'], 'account/requests/sleep', 'Requests::send_sleep');
 });
 
 // =================================================================
@@ -179,7 +194,18 @@ $routes->group('api/v1', [
 });
 
 // =================================================================
-// CATCH-ALL ROUTE FOR 404 ERRORS
+// 5. ADMIN ROUTES (Optional - if you have an admin section)
+// =================================================================
+$routes->group('admin', ['namespace' => 'App\Controllers\admin', 'filter' => 'role:admin'], static function ($routes) {
+    $routes->get('dashboard', 'Dashboard::index');
+    $routes->get('users', 'Users::index');
+    $routes->get('users/(:num)', 'Users::index/$1');
+    $routes->get('logs', 'Logs::index');
+    $routes->get('logs/(:num)', 'Logs::index/$1');
+});
+
+// =================================================================
+// 6. CATCH-ALL ROUTE FOR 404 ERRORS
 // =================================================================
 $routes->set404Override(function() {
     return redirect()->to('/error_404');

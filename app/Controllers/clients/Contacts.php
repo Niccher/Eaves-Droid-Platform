@@ -12,7 +12,7 @@ class Contacts extends BaseClientController
         // Get per page setting
         $perPage = 50;
 
-        // Get contacts with pagination - PASS THE PER PAGE VALUE!
+        // Get contacts with pagination
         $contacts = $this->finderModel->get_contacts($this->userId, $perPage);
 
         // Make sure pager is initialized
@@ -23,8 +23,8 @@ class Contacts extends BaseClientController
             $pager = $this->finderModel->getPager();
         }
 
-        // Get total count
-        $totalContacts = $this->finderModel->get_count_Contacts($this->userId, $perPage);
+        // Get total count using the correct method
+        $totalContacts = $this->finderModel->get_count_Contacts($this->userId);
 
         $data = [
             'pag' => 'contacts',
