@@ -2,165 +2,156 @@
 
 if (!function_exists('renderLogsTable')) {
     /**
-     * Renders logs table HTML
+     * Renders logs table with formatted data.
      *
      * @param array $logs
      * @param string $title
      * @return string
      */
-    function renderLogsTable($logs, $title = 'Activities') {
+    function renderLogsTable(array $logs, string $title = 'Logs'): string
+    {
         if (empty($logs)) {
             return '
-            <div class="text-center py-5">
-                <i class="fas fa-history fa-3x text-muted mb-3"></i>
-                <h4>No ' . htmlspecialchars($title) . ' Found</h4>
-                <p class="text-muted">No access activities have been recorded in this category yet.</p>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle mr-2"></i>
+                No log entries found.
             </div>';
         }
 
-        // Category badge colors
-        $categoryColors = [
-            'authentication' => 'primary',
-            'file' => 'info',
-            'profile' => 'success',
-            'admin' => 'warning',
-            'system' => 'secondary',
-            'security' => 'danger'
-        ];
+        $html = '
+        <div class="table-responsive">
+            <table class="table table-hover table-striped" id="logsTable">
+                <thead class="thead-light">
+                    <tr>
+                        <th><i class="fas fa-hashtag mr-2"></i>ID</th>
+                        <th><i class="fas fa-tasks mr-2"></i>Action</th>
+                        <th><i class="fas fa-tag mr-2"></i>Category</th>
+                        <th><i class="fas fa-exclamation mr-2"></i>Severity</th>
+                        <th><i class="fas fa-globe mr-2"></i>IP Address</th>
+                        <th><i class="fas fa-desktop mr-2"></i>Device</th>
+                        <th><i class="fas fa-circle mr-2"></i>Status</th>
+                        <th><i class="fas fa-calendar mr-2"></i>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>';
 
-        // Severity badge colors
-        $severityColors = [
-            'low' => 'success',
-            'medium' => 'warning',
-            'high' => 'danger',
-            'critical' => 'dark'
-        ];
-
-        // Status badge colors
-        $statusColors = [
-            'success' => 'success',
-            'failed' => 'danger',
-            'warning' => 'warning',
-            'suspicious' => 'danger',
-            'info' => 'info'
-        ];
-
-        $html = '<div class="table-responsive">
-                    <table class="table table-hover table-striped table-bordered">
-                        <thead class="thead-light">
-                            <tr>
-                                <th width="15%">Date & Time</th>
-                                <th width="10%">Category</th>
-                                <th width="15%">Action</th>
-                                <th width="10%">Severity</th>
-                                <th width="15%">Device</th>
-                                <th width="10%">IP Address</th>
-                                <th width="10%">Status</th>
-                                <th width="15%">Details</th>
-                            </tr>
-                        </thead>
-                        <tbody>';
-
-        foreach ($logs as $entry) {
-            $timestamp = $entry['Timestamps'] ?? time();
-            $date = date('d/m/Y', $timestamp);
-            $time = date('H:i:s', $timestamp);
-            $action = $entry['Action'] ?? 'Unknown Action';
-            $category = $entry['action_category'] ?? 'system';
-            $severity = $entry['action_severity'] ?? 'low';
-            $deviceType = $entry['device_type'] ?? 'unknown';
-            $deviceName = $entry['Device'] ?? 'Unknown Device';
-            $ip = $entry['IP'] ?? 'N/A';
-            $status = $entry['Status'] ?? 'info';
-
-            // Status text
-            $statusText = $status;
-            if ($status === 'suspicious') {
-                $statusText = 'Suspicious';
+        foreach ($logs as $log) {
+            // Status badge
+            $status = $log['Status'] ?? 'info';
+            $statusBadge = '';
+            switch ($status) {
+                case 'success':
+                    $statusBadge = '<span class="badge badge-success">Success</span>';
+                    break;
+                case 'failed':
+                    $statusBadge = '<span class="badge badge-danger">Failed</span>';
+                    break;
+                case 'warning':
+                    $statusBadge = '<span class="badge badge-warning">Warning</span>';
+                    break;
+                case 'suspicious':
+                    $statusBadge = '<span class="badge badge-dark">Suspicious</span>';
+                    break;
+                default:
+                    $statusBadge = '<span class="badge badge-info">Info</span>';
             }
 
-            // Get icons
-            $categoryIcon = $entry['CategoryIcon'] ?? 'fa-question-circle';
-            $severityIcon = $entry['SeverityIcon'] ?? 'fa-circle text-secondary';
-            $deviceIcon = $entry['DeviceIcon'] ?? 'fa-question-circle text-muted';
-
-            $html .= '<tr>
-                        <td>
-                            <div class="text-dark font-weight-bold">' . $date . '</div>
-                            <small class="text-muted">' . $time . '</small>
-                        </td>
-                        <td>
-                            <span class="badge badge-' . ($categoryColors[$category] ?? 'secondary') . '">
-                                <i class="fas ' . $categoryIcon . ' mr-1"></i>
-                                ' . ucfirst($category) . '
-                            </span>
-                        </td>
-                        <td>
-                            <div class="text-dark">' . htmlspecialchars($action) . '</div>';
-
-            if (!empty($entry['request_url'])) {
-                $html .= '<small class="text-muted d-block text-truncate" style="max-width: 200px;">
-                            ' . htmlspecialchars($entry['request_url']) . '
-                          </small>';
+            // Severity badge
+            $severity = $log['action_severity'] ?? 'low';
+            $severityBadge = '';
+            switch ($severity) {
+                case 'critical':
+                    $severityBadge = '<span class="badge badge-danger">Critical</span>';
+                    break;
+                case 'high':
+                    $severityBadge = '<span class="badge badge-warning">High</span>';
+                    break;
+                case 'medium':
+                    $severityBadge = '<span class="badge badge-info">Medium</span>';
+                    break;
+                default:
+                    $severityBadge = '<span class="badge badge-secondary">Low</span>';
             }
 
-            $html .= '</td>
-                      <td>
-                          <span class="badge badge-' . ($severityColors[$severity] ?? 'secondary') . '">
-                              <i class="fas ' . $severityIcon . ' mr-1"></i>
-                              ' . ucfirst($severity) . '
-                          </span>
-                      </td>
-                      <td>
-                          <div class="d-flex align-items-center">
-                              <i class="fas ' . $deviceIcon . ' mr-2"></i>
-                              <div>
-                                  <div class="text-dark">' . htmlspecialchars($deviceName) . '</div>';
+            // Category icon
+            $category = $log['action_category'] ?? 'system';
+            $categoryIcon = getCategoryIcon($category);
 
-            if (!empty($entry['operating_system'])) {
-                $html .= '<small class="text-muted">' . htmlspecialchars($entry['operating_system']) . '</small>';
-            }
+            // Device icon
+            $deviceType = $log['device_type'] ?? 'unknown';
+            $deviceIcon = getDeviceIcon($deviceType);
 
-            $html .= '</div>
-                          </div>
-                      </td>
-                      <td>
-                          <code class="text-dark">' . htmlspecialchars($ip) . '</code>';
+            // Format timestamp
+            $timestamp = $log['Timestamps'] ?? time();
+            $formattedTime = date('M d, Y H:i:s', $timestamp);
 
-            if (!empty($entry['Location']) && $entry['Location'] !== 'Unknown Location') {
-                $html .= '<div class="text-muted small">' . htmlspecialchars($entry['Location']) . '</div>';
-            }
-
-            $html .= '</td>
-                      <td>
-                          <span class="badge badge-' . ($statusColors[$status] ?? 'info') . '">
-                              ' . ucfirst($statusText) . '
-                          </span>
-                      </td>
-                      <td>';
-
-            if (!empty($entry['response_code'])) {
-                $badgeClass = $entry['response_code'] >= 400 ? 'badge-danger' : 'badge-success';
-                $html .= '<span class="badge ' . $badgeClass . '">
-                            HTTP ' . $entry['response_code'] . '
-                          </span>';
-            }
-
-            if (!empty($entry['execution_time_ms'])) {
-                $html .= '<div class="text-muted small">
-                            <i class="fas fa-stopwatch mr-1"></i>
-                            ' . $entry['execution_time_ms'] . 'ms
-                          </div>';
-            }
-
-            $html .= '</td>
-                    </tr>';
+            $html .= '
+                <tr>
+                    <td>' . ($log['counter'] ?? $log['id'] ?? 'N/A') . '</td>
+                    <td>
+                        <i class="' . $categoryIcon . ' mr-2"></i>
+                        ' . htmlspecialchars($log['Action'] ?? 'Unknown Action') . '
+                    </td>
+                    <td>' . ucfirst($category) . '</td>
+                    <td>' . $severityBadge . '</td>
+                    <td><code>' . htmlspecialchars($log['IP'] ?? 'N/A') . '</code></td>
+                    <td>
+                        <i class="' . $deviceIcon . ' mr-2"></i>
+                        ' . htmlspecialchars($log['Device'] ?? 'Unknown Device') . '
+                    </td>
+                    <td>' . $statusBadge . '</td>
+                    <td>' . $formattedTime . '</td>
+                </tr>';
         }
 
-        $html .= '</tbody>
-                </table>
-            </div>';
+        $html .= '
+                </tbody>
+            </table>
+        </div>';
 
         return $html;
+    }
+}
+
+if (!function_exists('getCategoryIcon')) {
+    /**
+     * Gets category icon.
+     *
+     * @param string $category
+     * @return string
+     */
+    function getCategoryIcon(string $category): string
+    {
+        $icons = [
+            'authentication' => 'fas fa-key text-primary',
+            'file' => 'fas fa-file text-info',
+            'profile' => 'fas fa-user text-success',
+            'admin' => 'fas fa-cog text-warning',
+            'system' => 'fas fa-server text-secondary',
+            'security' => 'fas fa-shield-alt text-danger'
+        ];
+
+        return $icons[$category] ?? 'fas fa-question-circle text-muted';
+    }
+}
+
+if (!function_exists('getDeviceIcon')) {
+    /**
+     * Gets device icon.
+     *
+     * @param string $deviceType
+     * @return string
+     */
+    function getDeviceIcon(string $deviceType): string
+    {
+        $icons = [
+            'desktop' => 'fas fa-desktop text-primary',
+            'mobile' => 'fas fa-mobile-alt text-success',
+            'tablet' => 'fas fa-tablet-alt text-info',
+            'bot' => 'fas fa-robot text-secondary',
+            'unknown' => 'fas fa-question-circle text-muted'
+        ];
+
+        return $icons[$deviceType] ?? 'fas fa-question-circle text-muted';
     }
 }

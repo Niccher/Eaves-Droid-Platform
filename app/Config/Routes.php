@@ -168,10 +168,25 @@ $routes->group('', [
     // 4.5 DATA VIEWS - CONTACTS
     // =============================================================
 
+    // Contact routes
     $routes->group('contacts', static function ($routes) {
         // Main contacts listing with pagination
         $routes->get('/', 'Contacts::index', ['as' => 'contacts-all']);
         $routes->get('(:num)', 'Contacts::index/$1');
+
+        // Filtered views
+        $routes->get('favorites', 'Contacts::view/favorites', ['as' => 'contacts-favorites']);
+        $routes->get('favorites/(:num)', 'Contacts::view/favorites/$1');
+
+        $routes->get('recent', 'Contacts::view/recent', ['as' => 'contacts-recent']);
+        $routes->get('recent/(:num)', 'Contacts::view/recent/$1');
+
+        // Individual contact view
+        $routes->get('view/(:any)', 'Contacts::viewContact/$1', ['as' => 'contact-view']);
+
+        // Analysis routes (if they exist)
+        $routes->get('analyze/sms/(:any)', 'Contacts::analyzeSms/$1', ['as' => 'contact-analyze-sms']);
+        $routes->get('analyze/calls/(:any)', 'Contacts::analyzeCalls/$1', ['as' => 'contact-analyze-calls']);
 
         // Contact analysis (dynamic routes)
         $routes->get('analyze/sms/(:any)', 'Analyze::sms/$1', ['as' => 'contact-analyze-sms']);

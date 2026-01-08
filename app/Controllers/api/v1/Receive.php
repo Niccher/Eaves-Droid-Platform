@@ -177,7 +177,8 @@ class Receive extends BaseController
         $userModel = new Mod_User();
         $cryptModel = new Mod_Crypt();
 
-        $userData = $userModel->get_vars($tokenData['Token_Owner']);
+        $userData = $userModel->get_vars($tokenData['owner_id']);
+//        $userData = $userModel->get_vars(auth()->id());
         if (!$userData) {
             return $this->fail('User not found');
         }
@@ -187,11 +188,11 @@ class Receive extends BaseController
         $userEmail = $this->decryptUserData($cryptModel, $userData['Email'] ?? '');
 
         // Mark token as used
-        $markResult = $userModel->token_mark(
-            $tokenData['Token_Owner'],
-            $token,
-            $tokenData['Token_ID']
-        );
+//        $markResult = $userModel->token_mark(
+//            $tokenData['Token_Owner'],
+//            $token,
+//            $tokenData['Token_ID']
+//        );
 
         $logModel->logAction([
             'action_category' => 'authentication',
@@ -209,9 +210,9 @@ class Receive extends BaseController
             'token' => $token,
             'validity' => true,
             'timestamp' => date('Y-m-d H:i:s'),
-            'token_owner' => $tokenData['Token_Owner'],
-            'token_expiry' => $tokenData['Token_Expiry'],
-            'token_id' => $tokenData['Token_ID'],
+            'token_owner' => $tokenData['owner_id'],
+            'token_expiry' => $tokenData['expires_at'],
+            'token_id' => $tokenData['counter'],
             'token_owner_id' => $this->getTokenOwner($token),
         ]);
     }
@@ -488,7 +489,7 @@ class Receive extends BaseController
     {
         $modelReceive = new Mod_Receive();
         $owner = $modelReceive->get_token_owner($token);
-        return $owner && $owner !== '-0-' ? $owner['Token_Owner'] : null;
+        return $owner && $owner !== '0' ? $owner['owner_id'] : null;
     }
 
     /**

@@ -218,6 +218,9 @@ class Mod_Parse_Loot extends Model
                     continue; // Skip invalid entries
                 }
 
+                //'meta_owner'         => $app['meta_owner'] ?? $var_file_owner,
+                //'meta_owner'         => auth()->user()->id ?? null,
+
                 $data = [
                     'package_name'       => $app['package_name'],
                     'app_name'           => $app['app_name'],
@@ -234,7 +237,7 @@ class Mod_Parse_Loot extends Model
                     'device_id'          => $device_id,
                     'device_model'       => $device_model,
                     'android_version'    => $android_version,
-                    'meta_owner'         => $app['meta_owner'] ?? $var_file_owner,
+                    'meta_owner'         => $var_file_owner,
                     'extracted_at'       => $extracted_at,
                     'meta_print'         => $var_file_print,
                     'created_at'         => $dated,

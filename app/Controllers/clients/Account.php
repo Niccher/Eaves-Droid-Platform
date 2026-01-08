@@ -528,7 +528,7 @@ class Account extends BaseController
                 ->update();
 
             // Generate new token
-            $newToken = bin2hex(random_bytes(16));
+            $newToken = bin2hex(random_bytes(4));
 
             // Get user info
             $userEmail = auth()->user()->getEmail();
@@ -556,23 +556,35 @@ class Account extends BaseController
             // Log the action
             $this->logUserAction('token_regenerate', 'security', 'medium', 1);
 
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Token regenerated successfully!',
-                'token' => $newToken,
-                'qrCodeData' => $this->generateQRCodeData($newToken),
-                'expiry' => date('M d, Y H:i', strtotime('+30 days'))
-            ]);
+            // Check if it's an AJAX request
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Token regenerated successfully!',
+                    'token' => $newToken,
+                    'qrCodeData' => $this->generateQRCodeData($newToken),
+                    'expiry' => date('M d, Y H:i', strtotime('+30 days'))
+                ]);
+            } else {
+                // For non-AJAX requests, redirect with flash message
+                session()->setFlashdata('success', 'Token regenerated successfully!');
+                return redirect()->to('account/setting');
+            }
 
         } catch (\Exception $e) {
             log_message('error', 'Token regeneration failed: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Token regeneration failed: ' . $e->getMessage()
-            ]);
+
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Token regeneration failed: ' . $e->getMessage()
+                ]);
+            } else {
+                session()->setFlashdata('error', 'Token regeneration failed: ' . $e->getMessage());
+                return redirect()->to('account/setting');
+            }
         }
     }
-
     // =================================================================
     // ACCESS LOGS METHODS
     // =================================================================
@@ -1039,8 +1051,8 @@ class Account extends BaseController
                         'export_info' => [
                             'exported_at' => date('Y-m-d H:i:s'),
                             'user_id' => $this->userId,
-                            'user_email' => auth()->user()->getEmail()
-                        ]
+                            'user_email' => auth()->user()->getEmail(),
+                        ],
                     ];
                     $filename = 'complete_export_' . date('Y-m-d_H-i-s') . '.json';
                     break;
@@ -1202,7 +1214,7 @@ class Account extends BaseController
         $tokenData = $this->modUser->get_token($this->userId);
 
         if (empty($tokenData) || !isset($tokenData['token'])) {
-            $newToken = bin2hex(random_bytes(16));
+            $newToken = bin2hex(random_bytes(4));
 
             $userEmail = auth()->user()->getEmail();
             $username = auth()->user()->username ?? explode('@', $userEmail)[0];
@@ -1400,10 +1412,8 @@ class Account extends BaseController
         ob_start();
 
         try {
-            // Load helper if not loaded
-            if (!function_exists('renderLogsTable')) {
-                helper('logs');
-            }
+            // Load helper
+            helper('logs');
 
             // Set the view path
             $viewPath = 'users/account/' . $page;

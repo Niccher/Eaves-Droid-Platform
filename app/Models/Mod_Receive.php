@@ -95,8 +95,8 @@ class Mod_Receive extends Model
     public function get_token_owner(string $token)
     {
         try {
-            $result = $this->db->table('tbl_Tokens')
-                ->where('Token', $token)
+            $result = $this->db->table('tbl_tokens')
+                ->where('token', $token)
                 ->limit(1)
                 ->get()
                 ->getRowArray();

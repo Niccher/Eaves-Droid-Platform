@@ -98,4 +98,9 @@ class Security extends BaseConfig
      * @deprecated `Config\Cookie` $samesite property is used.
      */
     public string $samesite = 'Lax';
+
+    public string $csrfTokenName = 'csrf_token';
+    public string $csrfHeaderName = 'X-CSRF-TOKEN';
+    public int $csrfExpire = 7200;
+
 }

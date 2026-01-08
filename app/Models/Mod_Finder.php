@@ -165,7 +165,14 @@ class Mod_Finder extends Model
      */
     public function get_count_Apps(int $user_id): int
     {
-        return $this->getCount('tbl_apps', $user_id);
+        try {
+            return $this->db->table('tbl_apps')
+                ->where('meta_Owner', $user_id)  // Changed from meta_Owner
+                ->countAllResults();
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_Apps error: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
@@ -220,7 +227,7 @@ class Mod_Finder extends Model
      * @param int $perPage
      * @return array
      */
-    public function get_contacts(int $userId, int $perPage = 25): array
+    public function get_contacts1(int $userId, int $perPage = 25): array
     {
         try {
             $builder = $this->db->table('tbl_contacts');
@@ -249,6 +256,64 @@ class Mod_Finder extends Model
             foreach ($results as &$row) {
                 $phoneNumbers = json_decode($row['phone_numbers'], true);
                 $row['Number'] = !empty($phoneNumbers) ? $phoneNumbers[0] : '';
+                unset($row['phone_numbers']);
+            }
+
+            // Set up pagination
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+            return $results;
+
+        } catch (\Exception $e) {
+            log_message('error', 'get_contacts error: ' . $e->getMessage());
+            return ['error' => 'get_contacts error: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Gets contacts with new schema mapping.
+     *
+     * @param int $userId
+     * @param int $perPage
+     * @return array
+     */
+    public function get_contacts(int $userId, int $perPage = 25): array
+    {
+        try {
+            $builder = $this->db->table('tbl_contacts');
+
+            // Get total count for pagination
+            $total = $this->get_count_Contacts($userId);
+
+            // Get page number from request
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $results = $builder->select('
+            counter as ID,
+            contact_id,
+            display_name as Name,
+            phone_numbers,
+            phone_count,
+            last_contacted,
+            is_favorite,
+            contact_frequency,
+            device_id,
+            created_at
+        ')
+                ->where('meta_Owner', $userId)
+                ->orderBy('display_name', 'ASC')
+                ->limit($perPage, $offset)
+                ->get()
+                ->getResultArray();
+
+            // Process phone numbers from JSON
+            foreach ($results as &$row) {
+                $phoneNumbers = json_decode($row['phone_numbers'], true);
+                $row['Number'] = !empty($phoneNumbers) ? $phoneNumbers[0] : '';
+                // Keep the original phone numbers array for the modal
+                $row['phone_numbers_array'] = $phoneNumbers ?: [];
                 unset($row['phone_numbers']);
             }
 
@@ -526,7 +591,7 @@ class Mod_Finder extends Model
                 package_name as Package,
                 version_code as Code
             ')
-                ->where('meta_Owner', $user_id)
+                ->where('meta_owner', $user_id)
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();

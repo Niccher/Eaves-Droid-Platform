@@ -15,9 +15,16 @@ class Mod_Android extends Model
     public function token_test(string $token)
     {
         try {
-            $builder = $this->db->table('tbl_Tokens');
-            $result = $builder->where('Token', $token)
-                ->where('Token_Status', "00")
+//            $builder = $this->db->table('tbl_tokens');
+//            $result = $builder->where('token', $token)
+//                ->where('status', "00")
+//                ->limit(1)
+//                ->get()
+//                ->getRowArray();
+            $builder = $this->db->table('tbl_tokens');
+            $result = $builder->where('token', $token)
+                ->where('created_at = last_used_at', NULL, FALSE)  // Assumes initial last_used_at equals created_at for unused tokens
+                ->where('expires_at > NOW()', NULL, FALSE)  // Checks if token has not expired (expires_at after current timestamp)
                 ->limit(1)
                 ->get()
                 ->getRowArray();

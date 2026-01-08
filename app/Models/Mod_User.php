@@ -48,8 +48,8 @@ class Mod_User extends Model
     public function get_data_tbl_users(int $user_id)
     {
         try {
-            $result = $this->db->table('tbl_Users')
-                ->where('Person_ID', $user_id)
+            $result = $this->db->table('user_profiles')
+                ->where('user_id', $user_id)
                 ->limit(1)
                 ->get()
                 ->getRowArray();

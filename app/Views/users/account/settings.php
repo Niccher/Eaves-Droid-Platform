@@ -539,6 +539,85 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
+        // Regenerate token form submission
+        $('#regenerateTokenForm').on('submit', function(e) {
+            e.preventDefault();
+
+            Swal.fire({
+                title: 'Regenerate Token?',
+                html: `
+            <div class="text-left">
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This action will:
+                    <ul class="text-left pl-3">
+                        <li>Invalidate current Android connections</li>
+                        <li>Require re-authentication on all devices</li>
+                        <li>Disconnect all active sessions</li>
+                        <li>Require updating your Android app</li>
+                    </ul>
+                </div>
+                <p><strong>Are you sure you want to proceed?</strong></p>
+            </div>
+        `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, regenerate',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true,
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return fetch(this.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams(new FormData(this))
+                    })
+                        .then(response => {
+                            // Check content type to handle both JSON and HTML redirects
+                            const contentType = response.headers.get("content-type");
+                            if (contentType && contentType.indexOf("application/json") !== -1) {
+                                return response.json();
+                            } else {
+                                // If it's not JSON, it's likely a redirect
+                                window.location.href = response.url;
+                                return { success: true };
+                            }
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Request failed: ${error}`);
+                        });
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value && result.value.success) {
+                    const data = result.value;
+
+                    // Update token display
+                    $('#currentToken').val(data.token);
+                    generateQRCode(data.token);
+
+                    Swal.fire({
+                        title: 'Success!',
+                        html: `
+                    <div class="text-left">
+                        <p>Token regenerated successfully!</p>
+                        <div class="alert alert-success">
+                            <strong>New Token:</strong><br>
+                            <code class="d-block mt-2 p-2 bg-light">${data.token}</code>
+                        </div>
+                        <p class="text-muted small">Expires: ${data.expiry}</p>
+                        <p><strong>Update your Android app with this new token.</strong></p>
+                    </div>
+                `,
+                        icon: 'success',
+                        confirmButtonText: 'Got it!'
+                    });
+                }
+            });
+        });
+
         // Initialize tooltips
         $('[data-toggle="tooltip"]').tooltip();
 

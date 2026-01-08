@@ -4,39 +4,55 @@ namespace App\Controllers\clients;
 
 use App\Controllers\BaseController;
 use App\Models\Mod_Finder;
-use CodeIgniter\HTTP\RedirectResponse;
 
 class BaseClientController extends BaseController
 {
     protected $finderModel;
     protected $userData;
     protected $userId;
-    protected $perPage = 50; // Default items per page
+    protected $perPage = 50;
 
+    /**
+     * Initialize controller.
+     *
+     * @param \CodeIgniter\HTTP\RequestInterface $request
+     * @param \CodeIgniter\HTTP\ResponseInterface $response
+     * @param \Psr\Log\LoggerInterface $logger
+     * @return void
+     */
     public function initController(
         \CodeIgniter\HTTP\RequestInterface $request,
         \CodeIgniter\HTTP\ResponseInterface $response,
         \Psr\Log\LoggerInterface $logger
-    ) {
+    ): void
+    {
         parent::initController($request, $response, $logger);
 
-        // Force login
+        // Check authentication
         if (!auth()->loggedIn()) {
             session()->setFlashdata('error', 'Please login to continue');
-            return redirect()->to('login')->send();
+            // Don't return the redirect, just throw an exception or use helper
+            throw new \RuntimeException('Authentication required');
         }
 
+        // Initialize models
         $this->finderModel = new Mod_Finder();
 
+        // Get authenticated user data
         $this->userData = $this->finderModel->basic_user();
         if (!$this->userData || !isset($this->userData['id'])) {
             session()->setFlashdata('error', 'User session invalid');
-            return redirect()->to('login')->send();
+            throw new \RuntimeException('Invalid user session');
         }
 
         $this->userId = (int) $this->userData['id'];
     }
 
+    /**
+     * Get user data counts.
+     *
+     * @return array
+     */
     protected function getUserDataCounts(): array
     {
         return [
@@ -50,7 +66,10 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Get navigation URLs for SMS views
+     * Get navigation URLs for SMS views.
+     *
+     * @param string $activeView
+     * @return string
      */
     protected function getSmsNavigationUrls(string $activeView = 'all'): string
     {
@@ -70,7 +89,10 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Get navigation URLs for Call views
+     * Get navigation URLs for Call views.
+     *
+     * @param string $activeView
+     * @return string
      */
     protected function getCallNavigationUrls(string $activeView = 'all'): string
     {
@@ -96,7 +118,10 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Get navigation URLs for App views
+     * Get navigation URLs for App views.
+     *
+     * @param string $activeView
+     * @return string
      */
     protected function getAppNavigationUrls(string $activeView = 'all'): string
     {
@@ -114,15 +139,14 @@ class BaseClientController extends BaseController
         <a class="btn ' . $buttons['system'] . '" href="' . base_url("apps/system") . '">System</a>
         &nbsp;&nbsp;
         <a class="btn ' . $buttons['user'] . '" href="' . base_url("apps/user") . '">User</a>
-        &nbsp;&nbsp;
-        <a class="btn ' . $buttons['recent'] . '" href="' . base_url("apps/recent") . '">Recent</a>
-        &nbsp;&nbsp;
-        <a class="btn ' . $buttons['disabled'] . '" href="' . base_url("apps/disabled") . '">Disabled</a>
         &nbsp;&nbsp;';
     }
 
     /**
-     * Get page titles for different SMS views
+     * Get page titles for different SMS views.
+     *
+     * @param string $viewType
+     * @return string
      */
     protected function getSmsPageTitle(string $viewType): string
     {
@@ -136,7 +160,10 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Get page titles for different Call views
+     * Get page titles for different Call views.
+     *
+     * @param string $viewType
+     * @return string
      */
     protected function getCallPageTitle(string $viewType): string
     {
@@ -152,44 +179,43 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Get page titles for different App views
+     * Get page titles for different App views.
+     *
+     * @param string $viewType
+     * @return string
      */
     protected function getAppPageTitle(string $viewType): string
     {
         $titles = [
             'all'      => 'All Apps',
             'system'   => 'System Apps',
-            'user'     => 'User Apps',
-            'recent'   => 'Recently Installed',
-            'disabled' => 'Disabled Apps'
+            'user'     => 'User Apps'
         ];
 
         return $titles[$viewType] ?? 'Apps';
     }
 
     /**
-     * Get pagination data
+     * Get pagination data.
+     *
+     * @return array
      */
     protected function getPaginationData(): array
     {
         // Get current page from query string
         $currentPage = $this->request->getGet('page') ?? 1;
 
-        // Make sure pager is initialized
-        $pager = $this->finderModel->pager;
-        if (!$pager) {
-            $pager = $this->finderModel->getPager();
-        }
-
         return [
-            'pager' => $pager,
             'currentPage' => $currentPage,
             'perPage' => $this->perPage,
         ];
     }
 
     /**
-     * Get common data for SMS views
+     * Get common data for SMS views.
+     *
+     * @param string $viewType
+     * @return array
      */
     protected function getSmsCommonData(string $viewType = 'all'): array
     {
@@ -206,7 +232,10 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Get common data for Call views
+     * Get common data for Call views.
+     *
+     * @param string $viewType
+     * @return array
      */
     protected function getCallCommonData(string $viewType = 'all'): array
     {
@@ -221,22 +250,32 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Get common data for App views
+     * Get common data for App views.
+     *
+     * @param string $viewType
+     * @return array
      */
     protected function getAppCommonData(string $viewType = 'all'): array
     {
         $paginationData = $this->getPaginationData();
 
+        // Get counts for each category
+        $totalApps = $this->finderModel->get_count_Apps($this->userId);
+
         return array_merge([
             'pag' => 'apps',
             'apps_head' => $this->getAppPageTitle($viewType),
             'apps_urls' => $this->getAppNavigationUrls($viewType),
-            'totalApps' => $this->finderModel->get_count_Apps($this->userId),
+            'totalApps' => $totalApps,
         ], $paginationData);
     }
 
     /**
-     * Render user view with common data
+     * Render user view with common data.
+     *
+     * @param string $mainView
+     * @param array $extraData
+     * @return string
      */
     protected function renderUserView(string $mainView, array $extraData = []): string
     {
@@ -251,7 +290,11 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Render SMS-specific view
+     * Render SMS-specific view.
+     *
+     * @param string $mainView
+     * @param array $extraData
+     * @return string
      */
     protected function renderSmsView(string $mainView, array $extraData = []): string
     {
@@ -266,7 +309,11 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Render Call-specific view
+     * Render Call-specific view.
+     *
+     * @param string $mainView
+     * @param array $extraData
+     * @return string
      */
     protected function renderCallView(string $mainView, array $extraData = []): string
     {
@@ -281,7 +328,11 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Render App-specific view
+     * Render App-specific view.
+     *
+     * @param string $mainView
+     * @param array $extraData
+     * @return string
      */
     protected function renderAppView(string $mainView, array $extraData = []): string
     {
@@ -296,7 +347,10 @@ class BaseClientController extends BaseController
     }
 
     /**
-     * Set items per page for pagination
+     * Set items per page for pagination.
+     *
+     * @param int $perPage
+     * @return void
      */
     protected function setPerPage(int $perPage): void
     {
