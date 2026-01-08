@@ -13,10 +13,8 @@ use CodeIgniter\Router\RouteCollection;
 // Set default namespace for all routes
 $routes->setDefaultNamespace('App\Controllers');
 
-// Set 404 Override
-$routes->set404Override(function() {
-    return redirect()->to('/error_404');
-});
+// Set 404 Override - Point to custom error controller
+$routes->set404Override('App\Controllers\Errors::show404');
 
 // Set Translate URI Dashes
 $routes->setTranslateURIDashes(false);
@@ -40,14 +38,86 @@ $routes->group('', ['namespace' => 'App\Controllers\Home'], static function ($ro
     $routes->get('faqs_terms', 'Home::landing_faqs', ['as' => 'faqs']);
     $routes->get('how_to', 'Home::landing_how_to', ['as' => 'how-to']);
     $routes->get('prices', 'Home::landing_prices', ['as' => 'pricing']);
-    $routes->get('error_404', 'Home::landing_error_404', ['as' => 'error-404']);
 
     // Contact Form (GET for view, POST for submission)
     $routes->match(['get', 'post'], 'contactus', 'Home::landing_contactus', ['as' => 'contact']);
 });
 
 // =================================================================
-// 3. AUTHENTICATION ROUTES (CodeIgniter Shield)
+// 3. ERROR PAGES ROUTES
+//    Custom error pages accessible to all users
+// =================================================================
+
+$routes->group('', ['namespace' => 'App\Controllers'], static function ($routes) {
+    /**
+     * Displays a 403 Forbidden error page.
+     *
+     * @return string
+     */
+    $routes->get('error/403', 'Errors::show403', ['as' => 'error-403']);
+
+    /**
+     * Displays a 404 Not Found error page.
+     *
+     * @return string
+     */
+    $routes->get('error/404', 'Errors::show404', ['as' => 'error-404']);
+
+    /**
+     * Displays a 500 Internal Server Error page.
+     *
+     * @return string
+     */
+    $routes->get('error/500', 'Errors::show500', ['as' => 'error-500']);
+
+    /**
+     * Displays a 503 Service Unavailable error page.
+     *
+     * @return string
+     */
+    $routes->get('error/503', 'Errors::show503', ['as' => 'error-503']);
+
+    /**
+     * Displays a general error page.
+     *
+     * @return string
+     */
+    $routes->get('error/general', 'Errors::showGeneral', ['as' => 'error-general']);
+
+    // Test routes for error pages (development only)
+    if (ENVIRONMENT === 'development') {
+        /**
+         * Triggers a 403 error for testing.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('error/test/403', 'Errors::trigger403', ['as' => 'error-test-403']);
+
+        /**
+         * Triggers a 404 error for testing.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('error/test/404', 'Errors::trigger404', ['as' => 'error-test-404']);
+
+        /**
+         * Triggers a 500 error for testing.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('error/test/500', 'Errors::trigger500', ['as' => 'error-test-500']);
+
+        /**
+         * Triggers a 503 error for testing.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('error/test/503', 'Errors::trigger503', ['as' => 'error-test-503']);
+    }
+});
+
+// =================================================================
+// 4. AUTHENTICATION ROUTES (CodeIgniter Shield)
 //    Custom authentication controllers override Shield defaults
 // =================================================================
 
@@ -56,26 +126,72 @@ service('auth')->routes($routes);
 
 // Custom Authentication Routes (override Shield defaults)
 $routes->group('', ['namespace' => 'App\Controllers\Auth'], static function ($routes) {
-    // Login
+    /**
+     * Displays login view.
+     *
+     * @return string
+     */
     $routes->get('login', 'LoginController::loginView', ['as' => 'login']);
+
+    /**
+     * Handles login action.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
     $routes->post('login', 'LoginController::loginAction');
+
+    /**
+     * Handles logout action.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
     $routes->get('logout', 'LoginController::logoutAction', ['as' => 'logout']);
 
-    // Registration
+    /**
+     * Displays registration view.
+     *
+     * @return string
+     */
     $routes->get('register', 'RegisterController::registerView', ['as' => 'register']);
+
+    /**
+     * Handles registration action.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
     $routes->post('register', 'RegisterController::registerAction');
 
-    // Forgot Password
+    /**
+     * Displays forgot password view.
+     *
+     * @return string
+     */
     $routes->get('forgot', 'ForgotPasswordController::forgotView', ['as' => 'forgot-password']);
+
+    /**
+     * Handles forgot password action.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
     $routes->post('forgot', 'ForgotPasswordController::forgotAction');
 
-    // Reset Password
+    /**
+     * Displays reset password view.
+     *
+     * @return string
+     */
     $routes->get('reset-password', 'ForgotPasswordController::resetView', ['as' => 'reset-password']);
+
+    /**
+     * Handles reset password action.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
     $routes->post('reset-password', 'ForgotPasswordController::resetAction');
 });
 
 // =================================================================
-// 4. PROTECTED CLIENT/DASHBOARD ROUTES
+// 5. PROTECTED CLIENT/DASHBOARD ROUTES
 //    All routes require authentication (session filter)
 // =================================================================
 
@@ -85,143 +201,295 @@ $routes->group('', [
 ], static function ($routes) {
 
     // =============================================================
-    // 4.1 DASHBOARD & GENERAL PAGES
+    // 5.1 DASHBOARD & GENERAL PAGES
     // =============================================================
 
-    // Main Dashboard
+    /**
+     * Displays main client dashboard.
+     *
+     * @return string
+     */
     $routes->get('home', 'Client::home', ['as' => 'client-dashboard']);
 
-    // FAQ Page (Client Version)
+    /**
+     * Displays client FAQ page.
+     *
+     * @return string
+     */
     $routes->get('faqs', 'Client::faqs', ['as' => 'client-faqs']);
 
     // =============================================================
-    // 4.2 DATA VIEWS - APPS
+    // 5.2 DATA VIEWS - APPS
     // =============================================================
 
     $routes->group('apps', static function ($routes) {
-        // Main apps listing with pagination
+        /**
+         * Displays all apps with pagination.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('/', 'Apps::apps', ['as' => 'apps-all']);
         $routes->get('(:num)', 'Apps::apps/$1');
 
-        // Filtered views with pagination
+        /**
+         * Displays unique apps.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('unique', 'Apps::apps_unique', ['as' => 'apps-unique']);
         $routes->get('unique/(:num)', 'Apps::apps_unique/$1');
 
+        /**
+         * Displays recently used apps.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('last_time', 'Apps::apps_last_time', ['as' => 'apps-recent']);
         $routes->get('last_time/(:num)', 'Apps::apps_last_time/$1');
 
+        /**
+         * Displays complete apps list.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('all_apps', 'Apps::apps_all', ['as' => 'apps-complete']);
         $routes->get('all_apps/(:num)', 'Apps::apps_all/$1');
 
-        // Categorized views (using BaseClientController navigation)
+        /**
+         * Displays system apps.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('system', 'Apps::apps_system', ['as' => 'apps-system']);
         $routes->get('system/(:num)', 'Apps::apps_system/$1');
 
+        /**
+         * Displays user-installed apps.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('user', 'Apps::apps_user', ['as' => 'apps-user']);
         $routes->get('user/(:num)', 'Apps::apps_user/$1');
 
-        $routes->get('disabled', 'Apps::apps_disabled', ['as' => 'apps-disabled']);
-        $routes->get('disabled/(:num)', 'Apps::apps_disabled/$1');
     });
 
     // =============================================================
-    // 4.3 DATA VIEWS - CALL LOGS
+    // 5.3 DATA VIEWS - CALL LOGS
     // =============================================================
 
     $routes->group('call_logs', static function ($routes) {
-        // Main call logs listing with pagination
+        /**
+         * Displays all call logs.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('/', 'Calls::call_logs', ['as' => 'call-logs-all']);
         $routes->get('(:num)', 'Calls::call_logs/$1');
 
-        // Filtered views with pagination
+        /**
+         * Displays incoming calls.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('incoming', 'Calls::call_incoming', ['as' => 'call-logs-incoming']);
         $routes->get('incoming/(:num)', 'Calls::call_incoming/$1');
 
+        /**
+         * Displays outgoing calls.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('outgoing', 'Calls::call_outgoing', ['as' => 'call-logs-outgoing']);
         $routes->get('outgoing/(:num)', 'Calls::call_outgoing/$1');
 
+        /**
+         * Displays rejected calls.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('rejected', 'Calls::call_rejected', ['as' => 'call-logs-rejected']);
         $routes->get('rejected/(:num)', 'Calls::call_rejected/$1');
 
+        /**
+         * Displays blocked calls.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('blocked', 'Calls::call_blocked', ['as' => 'call-logs-blocked']);
         $routes->get('blocked/(:num)', 'Calls::call_blocked/$1');
     });
 
     // =============================================================
-    // 4.4 DATA VIEWS - SMS
+    // 5.4 DATA VIEWS - SMS
     // =============================================================
 
     $routes->group('sms', static function ($routes) {
-        // Main SMS listing with pagination
+        /**
+         * Displays all SMS messages.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('/', 'Sms::sms', ['as' => 'sms-all']);
         $routes->get('(:num)', 'Sms::sms/$1');
 
-        // Filtered views with pagination
+        /**
+         * Displays inbox SMS messages.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('inbox', 'Sms::sms_inbox', ['as' => 'sms-inbox']);
         $routes->get('inbox/(:num)', 'Sms::sms_inbox/$1');
 
+        /**
+         * Displays sent SMS messages.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('sent', 'Sms::sms_sent', ['as' => 'sms-sent']);
         $routes->get('sent/(:num)', 'Sms::sms_sent/$1');
     });
 
     // =============================================================
-    // 4.5 DATA VIEWS - CONTACTS
+    // 5.5 DATA VIEWS - CONTACTS
     // =============================================================
 
-    // Contact routes
     $routes->group('contacts', static function ($routes) {
-        // Main contacts listing with pagination
+        /**
+         * Displays all contacts.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('/', 'Contacts::index', ['as' => 'contacts-all']);
         $routes->get('(:num)', 'Contacts::index/$1');
 
-        // Filtered views
+        /**
+         * Displays favorite contacts.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('favorites', 'Contacts::view/favorites', ['as' => 'contacts-favorites']);
         $routes->get('favorites/(:num)', 'Contacts::view/favorites/$1');
 
+        /**
+         * Displays recent contacts.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('recent', 'Contacts::view/recent', ['as' => 'contacts-recent']);
         $routes->get('recent/(:num)', 'Contacts::view/recent/$1');
 
-        // Individual contact view
+        /**
+         * Displays individual contact view.
+         *
+         * @param string $contactId Contact identifier
+         * @return string
+         */
         $routes->get('view/(:any)', 'Contacts::viewContact/$1', ['as' => 'contact-view']);
 
-        // Analysis routes (if they exist)
+        /**
+         * Analyzes SMS with specific contact.
+         *
+         * @param string $contactId Contact identifier
+         * @return string
+         */
         $routes->get('analyze/sms/(:any)', 'Contacts::analyzeSms/$1', ['as' => 'contact-analyze-sms']);
-        $routes->get('analyze/calls/(:any)', 'Contacts::analyzeCalls/$1', ['as' => 'contact-analyze-calls']);
 
-        // Contact analysis (dynamic routes)
-        $routes->get('analyze/sms/(:any)', 'Analyze::sms/$1', ['as' => 'contact-analyze-sms']);
+        /**
+         * Analyzes SMS with pagination.
+         *
+         * @param string $contactId Contact identifier
+         * @param int $page Page number
+         * @return string
+         */
         $routes->get('analyze/sms/(:any)/(:num)', 'Analyze::sms/$1/$2');
 
-        $routes->get('analyze/calls/(:any)', 'Analyze::calls/$1', ['as' => 'contact-analyze-calls']);
+        /**
+         * Analyzes calls with specific contact.
+         *
+         * @param string $contactId Contact identifier
+         * @return string
+         */
+        $routes->get('analyze/calls/(:any)', 'Contacts::analyzeCalls/$1', ['as' => 'contact-analyze-calls']);
+
+        /**
+         * Analyzes calls with pagination.
+         *
+         * @param string $contactId Contact identifier
+         * @param int $page Page number
+         * @return string
+         */
         $routes->get('analyze/calls/(:any)/(:num)', 'Analyze::calls/$1/$2');
     });
 
     // =============================================================
-    // 4.6 ANALYSIS & CORRELATION ROUTES
+    // 5.6 ANALYSIS & CORRELATION ROUTES
     // =============================================================
 
     $routes->group('analysis', static function ($routes) {
-        // Main analysis dashboard
+        /**
+         * Displays analysis dashboard.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('/', 'Correlation::index', ['as' => 'analysis-dashboard']);
         $routes->get('(:num)', 'Correlation::index/$1');
 
-        // Financial SMS analysis
+        /**
+         * Displays financial SMS analysis.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('sms/finance', 'Correlation::sms_finance', ['as' => 'analysis-sms-finance']);
         $routes->get('sms/finance/(:num)', 'Correlation::sms_finance/$1');
 
+        /**
+         * Analyzes financial SMS from specific sender.
+         *
+         * @param string $sender Sender identifier
+         * @return string
+         */
         $routes->get('sms/finance/(:any)', 'Correlation::sms_analyze_finance_from/$1');
         $routes->get('sms/finance/(:any)/(:num)', 'Correlation::sms_analyze_finance_from/$1/$2');
 
-        // SMS rules configuration
+        /**
+         * Displays SMS rules configuration.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('set_rules', 'Correlation::set_sms_rules', ['as' => 'analysis-set-rules']);
         $routes->get('set_rules/(:num)', 'Correlation::set_sms_rules/$1');
 
-        // SMS datapoints configuration (POST only)
+        /**
+         * Sets SMS datapoints configuration.
+         *
+         * @param string $rule Rule identifier
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('set/set_sms_datapoints/(:any)', 'Correlation::set_sms_datapoints/$1');
     });
 
     // =============================================================
-    // 4.7 ACCOUNT MANAGEMENT ROUTES (UPDATED)
+    // 5.7 ACCOUNT MANAGEMENT ROUTES
     // =============================================================
 
     $routes->group('account', static function ($routes) {
@@ -229,70 +497,201 @@ $routes->group('', [
         // PROFILE MANAGEMENT
         // ---------------------------------------------------------
 
-        // Profile Home (Main Profile Page)
+        /**
+         * Displays account profile page.
+         *
+         * @return string
+         */
         $routes->get('home', 'Account::home', ['as' => 'account-profile']);
         $routes->get('profile', 'Account::home'); // Legacy alias
 
-        // Profile Update Actions (AJAX/POST)
+        /**
+         * Updates user profile.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('updateProfile', 'Account::updateProfile', ['as' => 'account-update-profile']);
+
+        /**
+         * Uploads profile image.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('uploadImage', 'Account::uploadImage', ['as' => 'account-upload-image']);
 
         // ---------------------------------------------------------
         // SETTINGS & TOKEN MANAGEMENT
         // ---------------------------------------------------------
 
-        // Settings Page
+        /**
+         * Displays account settings page.
+         *
+         * @return string
+         */
         $routes->get('setting', 'Account::setting', ['as' => 'account-settings']);
 
-        // Token Management
+        /**
+         * Regenerates user token.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('regenerateToken', 'Account::regenerateToken', ['as' => 'account-regenerate-token']);
+
+        /**
+         * Revokes user token.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('revokeToken', 'Account::revokeToken', ['as' => 'account-revoke-token']);
+
+        /**
+         * Displays user tokens.
+         *
+         * @return string
+         */
         $routes->get('tokens', 'Account::tokens', ['as' => 'account-tokens']);
 
         // ---------------------------------------------------------
         // ACCESS LOGS & SECURITY
         // ---------------------------------------------------------
 
-        // Access Logs with Tabbed Navigation
+        /**
+         * Displays access logs.
+         *
+         * @return string
+         */
         $routes->get('access_logs', 'Account::access_logs', ['as' => 'account-access-logs']);
-        $routes->get('access_logs/(:any)', 'Account::access_logs/$1'); // web, android, all
 
-        // Security Settings
+        /**
+         * Displays filtered access logs.
+         *
+         * @param string $filter Filter type (web, android, all)
+         * @return string
+         */
+        $routes->get('access_logs/(:any)', 'Account::access_logs/$1');
+
+        /**
+         * Displays security settings.
+         *
+         * @return string
+         */
         $routes->get('security', 'Account::security', ['as' => 'account-security']);
+
+        /**
+         * Updates security settings.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('updateSecurity', 'Account::updateSecurity', ['as' => 'account-update-security']);
 
-        // Devices & Sessions
+        /**
+         * Displays user devices.
+         *
+         * @return string
+         */
         $routes->get('devices', 'Account::devices', ['as' => 'account-devices']);
+
+        /**
+         * Displays user sessions.
+         *
+         * @return string
+         */
         $routes->get('sessions', 'Account::sessions', ['as' => 'account-sessions']);
+
+        /**
+         * Terminates a user session.
+         *
+         * @param string $sessionId Session identifier
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('terminateSession/(:any)', 'Account::terminateSession/$1', ['as' => 'account-terminate-session']);
 
         // ---------------------------------------------------------
         // DATA EXPORT & MANAGEMENT
         // ---------------------------------------------------------
 
-        // Data Export (GET downloads)
+        /**
+         * Exports user data.
+         *
+         * @param string $type Data type to export
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->get('exportData/(:any)', 'Account::exportData/$1', ['as' => 'account-export-data']);
 
-        // Data Deletion (GET for confirmation, POST for action)
+        /**
+         * Displays data deletion confirmation.
+         *
+         * @param string $type Data type to delete
+         * @return string
+         */
         $routes->get('deleteData/(:any)', 'Account::deleteData/$1', ['as' => 'account-delete-data-confirm']);
+
+        /**
+         * Deletes user data.
+         *
+         * @param string $type Data type to delete
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('deleteData/(:any)', 'Account::deleteData/$1', ['as' => 'account-delete-data']);
 
-        // Data Statistics
+        /**
+         * Displays account statistics.
+         *
+         * @return string
+         */
         $routes->get('stats', 'Account::stats', ['as' => 'account-stats']);
 
         // ---------------------------------------------------------
         // LEGACY ROUTES (For backward compatibility)
         // ---------------------------------------------------------
 
-        // Legacy Profile Routes
+        /**
+         * Updates profile (legacy).
+         *
+         * @return \CodeIgniter\HTTP\RedirectResponse
+         */
         $routes->match(['get', 'post'], 'profile/update', 'Profile::profile_update');
+
+        /**
+         * Uploads profile image (legacy).
+         *
+         * @return \CodeIgniter\HTTP\RedirectResponse
+         */
         $routes->match(['get', 'post'], 'profile/image_upload', 'Profile::profile_upload');
+
+        /**
+         * Generates token (legacy).
+         *
+         * @return \CodeIgniter\HTTP\RedirectResponse
+         */
         $routes->post('setting/token_generate', 'Profile::token_generate');
 
-        // Legacy Data Deletion Routes (POST only)
+        /**
+         * Deletes all apps (legacy).
+         *
+         * @return \CodeIgniter\HTTP\RedirectResponse
+         */
         $routes->post('data/del/apps', 'Profile::profile_del_apps');
+
+        /**
+         * Deletes all call logs (legacy).
+         *
+         * @return \CodeIgniter\HTTP\RedirectResponse
+         */
         $routes->post('data/del/call_logs', 'Profile::profile_del_call_logs');
+
+        /**
+         * Deletes all contacts (legacy).
+         *
+         * @return \CodeIgniter\HTTP\RedirectResponse
+         */
         $routes->post('data/del/contacts', 'Profile::profile_del_contacts');
+
+        /**
+         * Deletes all SMS (legacy).
+         *
+         * @return \CodeIgniter\HTTP\RedirectResponse
+         */
         $routes->post('data/del/sms', 'Profile::profile_del_sms');
 
         // Legacy Access Logs Alias
@@ -300,16 +699,26 @@ $routes->group('', [
     });
 
     // =============================================================
-    // 4.8 OTHER CLIENT ROUTES
+    // 5.8 OTHER CLIENT ROUTES
     // =============================================================
 
-    // Support Requests
+    /**
+     * Sends support request.
+     *
+     * @return string|\CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->match(['get', 'post'], 'account/requests', 'Requests::send_request', ['as' => 'client-requests']);
+
+    /**
+     * Sends sleep request.
+     *
+     * @return string|\CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->match(['get', 'post'], 'account/requests/sleep', 'Requests::send_sleep', ['as' => 'client-sleep-request']);
 });
 
 // =================================================================
-// 5. API ROUTES (Mobile & External Integration)
+// 6. API ROUTES (Mobile & External Integration)
 //    Requires API authentication (tokens filter)
 // =================================================================
 
@@ -319,61 +728,119 @@ $routes->group('api/v1', [
 ], static function ($routes) {
 
     // -------------------------------------------------------------
-    // 5.1 AUTHENTICATION & TOKEN VERIFICATION
+    // 6.1 AUTHENTICATION & TOKEN VERIFICATION
     // -------------------------------------------------------------
 
-    // Token verification for mobile devices
+    /**
+     * Verifies API token.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->post('token/verify', 'Receive::token_verify', ['as' => 'api-token-verify']);
 
     // -------------------------------------------------------------
-    // 5.2 DEVICE REGISTRATION & MANAGEMENT
+    // 6.2 DEVICE REGISTRATION & MANAGEMENT
     // -------------------------------------------------------------
 
-    // Device fingerprint registration
+    /**
+     * Registers device fingerprint.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->post('device/print', 'Receive::device_print', ['as' => 'api-device-print']);
 
-    // Device status check
+    /**
+     * Checks device status.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->get('device/status', 'Receive::device_status', ['as' => 'api-device-status']);
 
     // -------------------------------------------------------------
-    // 5.3 DATA UPLOAD ENDPOINTS
+    // 6.3 DATA UPLOAD ENDPOINTS
     // -------------------------------------------------------------
 
-    // Bulk file upload (encrypted/text files)
+    /**
+     * Uploads bulk files.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->post('files/upload', 'Receive::upload', ['as' => 'api-files-upload']);
 
-    // Individual data type uploads
+    /**
+     * Uploads SMS data.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->post('data/sms', 'Receive::upload_sms', ['as' => 'api-data-sms']);
+
+    /**
+     * Uploads call logs data.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->post('data/calls', 'Receive::upload_calls', ['as' => 'api-data-calls']);
+
+    /**
+     * Uploads contacts data.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->post('data/contacts', 'Receive::upload_contacts', ['as' => 'api-data-contacts']);
+
+    /**
+     * Uploads apps data.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->post('data/apps', 'Receive::upload_apps', ['as' => 'api-data-apps']);
 
     // -------------------------------------------------------------
-    // 5.4 DATA RETRIEVAL ENDPOINTS (Read-only)
+    // 6.4 DATA RETRIEVAL ENDPOINTS (Read-only)
     // -------------------------------------------------------------
 
-    // Account information
+    /**
+     * Retrieves account information.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->get('account/info', 'Receive::account_info', ['as' => 'api-account-info']);
 
-    // Configuration data
+    /**
+     * Retrieves configuration data.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->get('config', 'Receive::config', ['as' => 'api-config']);
 
     // -------------------------------------------------------------
-    // 5.5 UTILITY & HEALTH CHECK ENDPOINTS
+    // 6.5 UTILITY & HEALTH CHECK ENDPOINTS
     // -------------------------------------------------------------
 
-    // API health check
+    /**
+     * Checks API health status.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->get('health', 'Receive::health', ['as' => 'api-health']);
 
-    // Server time synchronization
+    /**
+     * Gets server time for synchronization.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->get('time', 'Receive::server_time', ['as' => 'api-server-time']);
 
-    // App version check
+    /**
+     * Checks app version.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->get('version', 'Receive::version_check', ['as' => 'api-version-check']);
 });
 
 // =================================================================
-// 6. ADMIN ROUTES (Administrative Interface)
+// 7. ADMIN ROUTES (Administrative Interface)
 //    Requires admin role and authentication
 // =================================================================
 
@@ -383,131 +850,353 @@ $routes->group('admin', [
 ], static function ($routes) {
 
     // -------------------------------------------------------------
-    // 6.1 ADMIN DASHBOARD
+    // 7.1 ADMIN DASHBOARD
     // -------------------------------------------------------------
 
+    /**
+     * Displays admin dashboard.
+     *
+     * @return string
+     */
     $routes->get('dashboard', 'Dashboard::index', ['as' => 'admin-dashboard']);
+
+    /**
+     * Displays admin overview.
+     *
+     * @return string
+     */
     $routes->get('overview', 'Dashboard::overview', ['as' => 'admin-overview']);
 
     // -------------------------------------------------------------
-    // 6.2 USER MANAGEMENT
+    // 7.2 USER MANAGEMENT
     // -------------------------------------------------------------
 
     $routes->group('users', static function ($routes) {
+        /**
+         * Displays all users.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('/', 'Users::index', ['as' => 'admin-users']);
         $routes->get('(:num)', 'Users::index/$1');
 
-        // User CRUD operations
+        /**
+         * Displays user creation form.
+         *
+         * @return string
+         */
         $routes->get('create', 'Users::create', ['as' => 'admin-user-create']);
+
+        /**
+         * Stores new user.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('store', 'Users::store', ['as' => 'admin-user-store']);
+
+        /**
+         * Displays user edit form.
+         *
+         * @param int $userId User ID
+         * @return string
+         */
         $routes->get('edit/(:num)', 'Users::edit/$1', ['as' => 'admin-user-edit']);
+
+        /**
+         * Updates user information.
+         *
+         * @param int $userId User ID
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('update/(:num)', 'Users::update/$1', ['as' => 'admin-user-update']);
+
+        /**
+         * Deletes a user.
+         *
+         * @param int $userId User ID
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('delete/(:num)', 'Users::delete/$1', ['as' => 'admin-user-delete']);
 
-        // User status management
+        /**
+         * Suspends a user.
+         *
+         * @param int $userId User ID
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('suspend/(:num)', 'Users::suspend/$1', ['as' => 'admin-user-suspend']);
+
+        /**
+         * Activates a user.
+         *
+         * @param int $userId User ID
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('activate/(:num)', 'Users::activate/$1', ['as' => 'admin-user-activate']);
 
-        // User data management
+        /**
+         * Displays user data.
+         *
+         * @param int $userId User ID
+         * @return string
+         */
         $routes->get('data/(:num)', 'Users::user_data/$1', ['as' => 'admin-user-data']);
+
+        /**
+         * Clears user data.
+         *
+         * @param int $userId User ID
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('clearData/(:num)', 'Users::clear_user_data/$1', ['as' => 'admin-user-clear-data']);
     });
 
     // -------------------------------------------------------------
-    // 6.3 SYSTEM LOGS & MONITORING
+    // 7.3 SYSTEM LOGS & MONITORING
     // -------------------------------------------------------------
 
     $routes->group('logs', static function ($routes) {
+        /**
+         * Displays all system logs.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('/', 'Logs::index', ['as' => 'admin-logs']);
         $routes->get('(:num)', 'Logs::index/$1');
 
-        // Filtered logs
+        /**
+         * Displays access logs.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('access', 'Logs::access_logs', ['as' => 'admin-access-logs']);
         $routes->get('access/(:num)', 'Logs::access_logs/$1');
 
+        /**
+         * Displays error logs.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('errors', 'Logs::error_logs', ['as' => 'admin-error-logs']);
         $routes->get('errors/(:num)', 'Logs::error_logs/$1');
 
+        /**
+         * Displays API logs.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('api', 'Logs::api_logs', ['as' => 'admin-api-logs']);
         $routes->get('api/(:num)', 'Logs::api_logs/$1');
 
-        // Log management
+        /**
+         * Clears system logs.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('clear', 'Logs::clear_logs', ['as' => 'admin-logs-clear']);
+
+        /**
+         * Exports system logs.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('export', 'Logs::export_logs', ['as' => 'admin-logs-export']);
     });
 
     // -------------------------------------------------------------
-    // 6.4 SYSTEM SETTINGS & CONFIGURATION
+    // 7.4 SYSTEM SETTINGS & CONFIGURATION
     // -------------------------------------------------------------
 
     $routes->group('settings', static function ($routes) {
+        /**
+         * Displays system settings.
+         *
+         * @return string
+         */
         $routes->get('/', 'Settings::index', ['as' => 'admin-settings']);
+
+        /**
+         * Updates system settings.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('update', 'Settings::update', ['as' => 'admin-settings-update']);
 
-        // Module-specific settings
+        /**
+         * Displays API settings.
+         *
+         * @return string
+         */
         $routes->get('api', 'Settings::api_settings', ['as' => 'admin-settings-api']);
+
+        /**
+         * Displays security settings.
+         *
+         * @return string
+         */
         $routes->get('security', 'Settings::security_settings', ['as' => 'admin-settings-security']);
+
+        /**
+         * Displays notification settings.
+         *
+         * @return string
+         */
         $routes->get('notifications', 'Settings::notification_settings', ['as' => 'admin-settings-notifications']);
 
-        // System maintenance
+        /**
+         * Displays maintenance page.
+         *
+         * @return string
+         */
         $routes->get('maintenance', 'Settings::maintenance', ['as' => 'admin-maintenance']);
+
+        /**
+         * Runs system maintenance.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('maintenance/run', 'Settings::run_maintenance', ['as' => 'admin-run-maintenance']);
 
-        // Backup & restore
+        /**
+         * Displays backup page.
+         *
+         * @return string
+         */
         $routes->get('backup', 'Settings::backup', ['as' => 'admin-backup']);
+
+        /**
+         * Creates system backup.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('backup/create', 'Settings::create_backup', ['as' => 'admin-create-backup']);
+
+        /**
+         * Restores system backup.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('backup/restore', 'Settings::restore_backup', ['as' => 'admin-restore-backup']);
     });
 
     // -------------------------------------------------------------
-    // 6.5 REPORTS & ANALYTICS
+    // 7.5 REPORTS & ANALYTICS
     // -------------------------------------------------------------
 
     $routes->group('reports', static function ($routes) {
+        /**
+         * Displays reports dashboard.
+         *
+         * @return string
+         */
         $routes->get('/', 'Reports::index', ['as' => 'admin-reports']);
 
-        // User activity reports
+        /**
+         * Displays user activity reports.
+         *
+         * @return string
+         */
         $routes->get('user-activity', 'Reports::user_activity', ['as' => 'admin-reports-user-activity']);
         $routes->get('user-activity/(:any)', 'Reports::user_activity_report/$1');
 
-        // Data usage reports
+        /**
+         * Displays data usage reports.
+         *
+         * @return string
+         */
         $routes->get('data-usage', 'Reports::data_usage', ['as' => 'admin-reports-data-usage']);
         $routes->get('data-usage/(:any)', 'Reports::data_usage_report/$1');
 
-        // System performance reports
+        /**
+         * Displays system performance reports.
+         *
+         * @return string
+         */
         $routes->get('performance', 'Reports::performance', ['as' => 'admin-reports-performance']);
 
-        // Generate custom reports
+        /**
+         * Generates custom reports.
+         *
+         * @return string|\CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->match(['get', 'post'], 'generate', 'Reports::generate', ['as' => 'admin-reports-generate']);
 
-        // Export reports
+        /**
+         * Exports reports.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('export', 'Reports::export', ['as' => 'admin-reports-export']);
     });
 
     // -------------------------------------------------------------
-    // 6.6 TOKEN MANAGEMENT (Admin View)
+    // 7.6 TOKEN MANAGEMENT (Admin View)
     // -------------------------------------------------------------
 
     $routes->group('tokens', static function ($routes) {
+        /**
+         * Displays all tokens.
+         *
+         * @param int|null $page Page number
+         * @return string
+         */
         $routes->get('/', 'Tokens::index', ['as' => 'admin-tokens']);
         $routes->get('(:num)', 'Tokens::index/$1');
 
-        // Token management
+        /**
+         * Revokes a token.
+         *
+         * @param int $tokenId Token ID
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('revoke/(:num)', 'Tokens::revoke/$1', ['as' => 'admin-token-revoke']);
+
+        /**
+         * Regenerates a token.
+         *
+         * @param int $tokenId Token ID
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('regenerate/(:num)', 'Tokens::regenerate/$1', ['as' => 'admin-token-regenerate']);
+
+        /**
+         * Deletes a token.
+         *
+         * @param int $tokenId Token ID
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
         $routes->post('delete/(:num)', 'Tokens::delete/$1', ['as' => 'admin-token-delete']);
 
-        // Token analytics
+        /**
+         * Displays token analytics.
+         *
+         * @return string
+         */
         $routes->get('analytics', 'Tokens::analytics', ['as' => 'admin-token-analytics']);
+
+        /**
+         * Displays expired tokens.
+         *
+         * @return string
+         */
         $routes->get('expired', 'Tokens::expired', ['as' => 'admin-tokens-expired']);
     });
 });
 
 // =================================================================
-// 7. UTILITY & SYSTEM ROUTES
+// 8. UTILITY & SYSTEM ROUTES
 // =================================================================
 
-// Health check endpoint (no authentication required)
+/**
+ * Health check endpoint.
+ *
+ * @return \CodeIgniter\HTTP\ResponseInterface
+ */
 $routes->get('health-check', function() {
     return service('response')->setJSON([
         'status' => 'online',
@@ -517,7 +1206,11 @@ $routes->get('health-check', function() {
     ]);
 });
 
-// Server status (minimal information)
+/**
+ * Server status endpoint.
+ *
+ * @return \CodeIgniter\HTTP\ResponseInterface
+ */
 $routes->get('server-status', function() {
     $data = [
         'server_time' => date('Y-m-d H:i:s'),
@@ -531,10 +1224,15 @@ $routes->get('server-status', function() {
 });
 
 // =================================================================
-// 8. DEVELOPMENT ROUTES (Environment specific)
+// 9. DEVELOPMENT ROUTES (Environment specific)
 // =================================================================
 
 if (ENVIRONMENT === 'development') {
+    /**
+     * Debug endpoint for development.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->get('dev/debug', function() {
         if (!function_exists('auth')) {
             echo "Auth helper not loaded";
@@ -551,6 +1249,11 @@ if (ENVIRONMENT === 'development') {
         return service('response')->setJSON($data);
     });
 
+    /**
+     * Displays all registered routes.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     $routes->get('dev/routes', function() {
         $router = service('router');
         $routes = service('routes');
@@ -571,12 +1274,12 @@ if (ENVIRONMENT === 'development') {
 }
 
 // =================================================================
-// 9. CATCH-ALL ROUTE (Must be last)
+// 10. CATCH-ALL ROUTE (Must be last)
 // =================================================================
 
-// Any other route not matched above goes to 404
+// Any other route not matched above goes to 404 error page
 $routes->get('(:any)', function() {
-    return redirect()->to('/error_404');
+    return redirect()->to('/error/404');
 });
 
 // =================================================================

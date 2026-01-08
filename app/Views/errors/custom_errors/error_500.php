@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>500 - Internal Server Error</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --danger-color: #dc3545;
+            --dark-color: #343a40;
+            --light-color: #f8f9fa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .error-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .error-header {
+            background: var(--danger-color);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .error-header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .error-header h2 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .error-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .error-body {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .error-message {
+            font-size: 1.2rem;
+            color: var(--dark-color);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .error-details {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: left;
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .error-details h5 {
+            color: var(--danger-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .error-details ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+
+        .error-details li {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .tech-support {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: left;
+        }
+
+        .tech-support h5 {
+            color: #856404;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .support-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .support-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .btn-custom {
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .error-footer {
+            background: var(--light-color);
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .error-info {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .info-item {
+            flex: 1;
+            min-width: 200px;
+            text-align: left;
+        }
+
+        .info-item i {
+            color: var(--danger-color);
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .error-container {
+                margin: 10px;
+            }
+
+            .error-header h1 {
+                font-size: 2.5rem;
+            }
+
+            .error-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .error-body {
+                padding: 30px 20px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-custom {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="error-container">
+    <div class="error-header">
+        <div class="error-icon">
+            <i class="fas fa-server"></i>
+        </div>
+        <h1>500</h1>
+        <h2>Internal Server Error</h2>
+    </div>
+
+    <div class="error-body">
+        <p class="error-message">
+            Something went wrong on our end. Our technical team has been notified and is working to fix the issue.
+        </p>
+
+        <div class="error-details">
+            <h5><i class="fas fa-exclamation-circle"></i> What happened?</h5>
+            <ul>
+                <li>An unexpected server error occurred while processing your request</li>
+                <li>The server encountered an internal error or misconfiguration</li>
+                <li>This could be a temporary issue - please try again in a few moments</li>
+                <li>If the problem persists, contact our support team</li>
+            </ul>
+        </div>
+
+        <div class="tech-support">
+            <h5><i class="fas fa-life-ring"></i> Need Help?</h5>
+            <p>Our technical support team is available to help you resolve this issue.</p>
+<!--            <div class="support-info">-->
+<!--                <div class="support-item">-->
+<!--                    <i class="fas fa-envelope"></i>-->
+<!--                    <span>support@yourapp.com</span>-->
+<!--                </div>-->
+<!--                <div class="support-item">-->
+<!--                    <i class="fas fa-phone"></i>-->
+<!--                    <span>+1-234-567-8900</span>-->
+<!--                </div>-->
+<!--                <div class="support-item">-->
+<!--                    <i class="fas fa-clock"></i>-->
+<!--                    <span>24/7 Support Available</span>-->
+<!--                </div>-->
+<!--            </div>-->
+        </div>
+
+        <div class="action-buttons">
+            <a href="<?php echo base_url(''); ?>" class="btn-custom btn-primary">
+                <i class="fas fa-home"></i> Go to Homepage
+            </a>
+            <a href="javascript:location.reload()" class="btn-custom btn-secondary">
+                <i class="fas fa-redo"></i> Reload Page
+            </a>
+            <a href="<?php echo base_url('status'); ?>" class="btn-custom btn-danger">
+                <i class="fas fa-chart-bar"></i> Check Status
+            </a>
+        </div>
+
+        <?php if (ENVIRONMENT !== 'production' && isset($exception)): ?>
+            <div class="error-info">
+                <div class="info-item">
+                    <i class="fas fa-code"></i>
+                    <strong>Error Code:</strong> HTTP 500 - Internal Server Error
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-clock"></i>
+                    <strong>Time:</strong> <?php echo date('Y-m-d H:i:s'); ?>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-bug"></i>
+                    <strong>Exception:</strong> <?php echo get_class($exception); ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <div class="error-footer">
+        <p>&copy; <?php echo date('Y'); ?> Your Application. All rights reserved.</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click effect to buttons
+        const buttons = document.querySelectorAll('.btn-custom');
+        buttons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+
+        // Auto-retry after 10 seconds
+        setTimeout(() => {
+            const retryBtn = document.querySelector('[href="javascript:location.reload()"]');
+            if (retryBtn) {
+                retryBtn.style.animation = 'pulse 1s infinite';
+                setTimeout(() => {
+                    retryBtn.style.animation = '';
+                }, 5000);
+            }
+        }, 10000);
+
+        // Log error details for debugging
+        console.error('500 Internal Server Error occurred at:', new Date().toISOString());
+    });
+</script>
+</body>
+</html>

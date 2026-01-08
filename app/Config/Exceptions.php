@@ -3,6 +3,7 @@
 namespace Config;
 
 use CodeIgniter\Config\BaseConfig;
+use CodeIgniter\Debug\BaseExceptionHandler;
 use CodeIgniter\Debug\ExceptionHandler;
 use CodeIgniter\Debug\ExceptionHandlerInterface;
 use Psr\Log\LogLevel;
@@ -42,7 +43,39 @@ class Exceptions extends BaseConfig
      *
      * Default: APPPATH.'Views/errors'
      */
-    public string $errorViewPath = APPPATH . 'Views/errors';
+    public string $errorViewPath = APPPATH . 'Views/errors/custom_error';
+
+    /**
+     * --------------------------------------------------------------------------
+     * Custom Error Pages
+     * --------------------------------------------------------------------------
+     *
+     * The path to the custom error pages directory.
+     */
+//    public $errorViewPath = 'errors/custom_errors';
+
+    /**
+     * --------------------------------------------------------------------------
+     * HTTP Error Views
+     * --------------------------------------------------------------------------
+     *
+     * List of custom error view files.
+     */
+    public $views = [
+        '403' => 'errors/custom_errors/error_403',
+        '404' => 'errors/custom_errors/error_404',
+        '500' => 'errors/custom_errors/error_500',
+        '503' => 'errors/custom_errors/error_503',
+    ];
+
+    /**
+     * --------------------------------------------------------------------------
+     * General Error View
+     * --------------------------------------------------------------------------
+     *
+     * This view is used for any error that doesn't have a specific view.
+     */
+    public $errorView = 'errors/custom_errors/error_general';
 
     /**
      * --------------------------------------------------------------------------
