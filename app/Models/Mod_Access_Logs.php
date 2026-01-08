@@ -171,4 +171,35 @@ class Mod_Access_Logs extends Model
             return [];
         }
     }
+
+    /**
+     * Logs user actions with automatic field population.
+     *
+     * @param array $data
+     * @return mixed
+     */
+    public function logAction($data)
+    {
+        // Add IP address if not provided
+        if (!isset($data['ip_address'])) {
+            $data['ip_address'] = service('request')->getIPAddress();
+        }
+
+        // Add user agent if not provided
+        if (!isset($data['user_agent'])) {
+            $data['user_agent'] = service('request')->getUserAgent()->getAgentString();
+        }
+
+        // Add user ID from session if not provided
+        if (!isset($data['user_id']) && session()->has('user_id')) {
+            $data['user_id'] = session()->get('user_id');
+        }
+
+        // Add session ID
+        if (!isset($data['session_id'])) {
+            $data['session_id'] = session_id();
+        }
+
+        return $this->insert($data);
+    }
 }

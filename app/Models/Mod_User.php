@@ -144,17 +144,46 @@ class Mod_User extends Model
             $dated = date('Y-m-d H:i:s');
             $future_date = date('Y-m-d H:i:s', strtotime('+30 days', strtotime($dated)));
 
+            // Get user info for token naming
+            $user = auth()->user();
+            $userEmail = $user->getEmail();
+            $username = $user->username ?? explode('@', $userEmail)[0];
+
             $data = [
-                'Token_Created' => $dated,
-                'Token_Owner' => $user_id,
-                'Token' => $token,
-                'Token_Status' => "00",
-                'Token_Initiator' => $ip_add,
-                'Token_Expiry' => $future_date,
-                'Token_Name' => 'Android_' . date('Ymd_His')
+                'created_at' => $dated,
+                'owner_id' => $user_id,
+                'token' => $token,
+                'status' => "00",
+                'initiator' => $ip_add,
+                'expires_at' => $future_date,
+                'device_name' => 'Android_' . date('Ymd_His'),
+                'last_used_at' => $dated,
+                'ip_address' => $ip_add,
+                'user_agent' => service('request')->getUserAgent()->getAgentString(),
+                'token_type' => 'api',
+                'is_refreshable' => 1,
+                'scopes' => 'all',
+                'device_checksum' => md5($token . $user_id . $dated),
+                'android_id' => null // Can be set later when device connects
             ];
 
-            if ($this->db->table('tbl_Tokens')->insert($data)) {
+            if ($this->db->table('tbl_tokens')->insert($data)) {
+                $logData = new Mod_Access_Logs();
+                // Log action
+                $logData->logAction([
+                    'user_id' => $this->userId,
+                    'action_type' => 'Create Token',
+                    'action_category' => 'authentication',
+                    'action_severity' => 'medium',
+                    'ip_address' => $this->request->getIPAddress(),
+                    'user_agent' => $this->request->getUserAgent()->getAgentString(),
+                    'request_url'     => current_url(),
+                    'device_type' => 'desktop',
+                    'success' => 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+                ]);
+
                 log_message('info', 'Token created for user ' . $user_id);
                 return true;
             }
@@ -178,11 +207,12 @@ class Mod_User extends Model
     public function token_mark(int $token_owner, string $token, int $token_id): bool
     {
         try {
-            $builder = $this->db->table('tbl_Tokens');
-            $builder->set('Token_Status', "11")
-                ->where('Token', $token)
-                ->where('Token_ID', $token_id)
-                ->where('Token_Owner', $token_owner);
+            $builder = $this->db->table('tbl_tokens');
+            $builder->set('status', "11")
+                ->set('last_used_at', date('Y-m-d H:i:s'))
+                ->where('token', $token)
+                ->where('counter', $token_id)  // Using 'counter' as the primary key
+                ->where('owner_id', $token_owner);
 
             if ($builder->update()) {
                 log_message('info', 'Token marked for owner ' . $token_owner);
@@ -206,13 +236,14 @@ class Mod_User extends Model
     public function get_token(int $user_id)
     {
         try {
-            $result = $this->db->table('tbl_Tokens')
-                ->where('Token_Owner', $user_id)
-                ->where('Token_Status', '00')
-                ->orderBy('Token_ID', 'DESC')
+            $result = $this->db->table('tbl_tokens')
+                ->where('owner_id', $user_id)
+                ->where('status', '00')
+                ->orderBy('counter', 'DESC')  // Using 'counter' as the primary key
                 ->limit(1)
                 ->get()
                 ->getRowArray();
+
             if ($result) {
                 return $result;
             }

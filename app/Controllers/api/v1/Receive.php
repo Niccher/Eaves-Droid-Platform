@@ -158,8 +158,11 @@ class Receive extends BaseController
                 'action_category' => 'authentication',
                 'action_type'     => 'token_verification',
                 'action_severity' => 'low',
+                'device_type'     => 'mobile',
                 'success'         => 1,
-                'request_url'     => current_url()
+                'request_url'     => current_url(),
+                'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+
             ]);
             return $this->respond([
                 'success' => false,
@@ -194,8 +197,11 @@ class Receive extends BaseController
             'action_category' => 'authentication',
             'action_type'     => 'token_verification',
             'action_severity' => 'low',
+            'device'          => 'mobile',
             'success'         => 0,
-            'request_url'     => current_url()
+            'request_url'     => current_url(),
+            'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+
         ]);
 
         return $this->respond([
@@ -276,6 +282,7 @@ class Receive extends BaseController
                 'action_type'     => 'device_registration',
                 'action_severity' => 'low',
                 'success'         => 1,
+                'device_type'     => 'mobile',
                 'request_url'     => current_url(),
                 'request_method'  => $request->getMethod(),
                 'device_name'     => $request->getHeader('device_name') ?

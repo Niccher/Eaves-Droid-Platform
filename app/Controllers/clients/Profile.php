@@ -7,14 +7,16 @@ use App\Controllers\BaseController;
 use App\Models\Mod_Finder;
 use App\Models\Mod_Android;
 use App\Models\Mod_User;
+use App\Models\Mod_Access_Logs;
 
 use CodeIgniter\API\ResponseTrait;
+use CodeIgniter\Model;
 
 class Profile extends BaseController
 {
     use ResponseTrait;
 
-	public function profile_upload(){
+    public function profile_upload(){
 		$model_finder = new Mod_Finder();
 		if (!auth()->loggedIn()){
 			return redirect()->to('login');
@@ -22,6 +24,7 @@ class Profile extends BaseController
 
 		$data["user_info"] = $model_finder->basic_user();
 		$person_id = $data["user_info"]['id'];
+		$lognow = new Mod_Access_Logs();
 
 		if (!empty($_FILES) ) {
 
@@ -40,6 +43,23 @@ class Profile extends BaseController
 				$this->model_user->update_profile($person_id, $newfilename);
 
 				move_uploaded_file($tempFile, "uploads/profiles/" . $newfilename);
+
+                // Log action
+                $lognow = new Mod_Access_Logs();
+
+                $logdata = $lognow->logAction([
+                    'user_id' => $this->userId,
+                    'action_type' => 'New Profile Picture',
+                    'action_category' => 'profile',
+                    'action_severity' => 'low',
+                    'ip_address' => $this->request->getIPAddress(),
+                    'user_agent' => $this->request->getUserAgent()->getAgentString(),
+                    'request_url'     => current_url(),
+                    'device_type' => 'desktop',
+                    'success' => 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+                ]);
 			}
 		}
 	}
@@ -65,10 +85,28 @@ class Profile extends BaseController
 			$this->model_user->update_profile_bio($person_id, $new_bio);
 		}
 
-		if(($_POST['ed_email']) != "") {
-			$new_email = base64_encode($this->model_cryption->Enc_String($_POST['ed_email']));
-			$this->model_user->update_profile_mail($person_id, $new_email);
-		}
+//		if(($_POST['ed_email']) != "") {
+//			$new_email = base64_encode($this->model_cryption->Enc_String($_POST['ed_email']));
+//			$this->model_user->update_profile_mail($person_id, $new_email);
+//
+//		}
+
+        // Log action
+        $lognow = new Mod_Access_Logs();
+
+        $logdata = $lognow->logAction([
+            'user_id' => $this->userId,
+            'action_type' => 'Profile Update',
+            'action_category' => 'profile',
+            'action_severity' => 'low',
+            'ip_address' => $this->request->getIPAddress(),
+            'user_agent' => $this->request->getUserAgent()->getAgentString(),
+            'request_url'     => current_url(),
+            'device_type' => 'desktop',
+            'success' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+        ]);
 
 		return redirect()->to('account/profile');
 	}
@@ -109,6 +147,23 @@ class Profile extends BaseController
         $model_android->data_register_action($person_id,"Delete All Apps", $ip_add, $dated);
         $model_android->data_del_apps($person_id);
 
+        // Log action
+        $lognow = new Mod_Access_Logs();
+
+        $logdata = $lognow->logAction([
+            'user_id' => $this->userId,
+            'action_type' => 'Data Deletion (Apps)',
+            'action_category' => 'profile',
+            'action_severity' => 'low',
+            'ip_address' => $this->request->getIPAddress(),
+            'user_agent' => $this->request->getUserAgent()->getAgentString(),
+            'request_url'     => current_url(),
+            'device_type' => 'desktop',
+            'success' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+        ]);
+
         return redirect()->to('account/profile');
     }
 
@@ -126,8 +181,24 @@ class Profile extends BaseController
         $dated = date('Y-m-d H:i:s');
         $ip_add = $this->request->getIPAddress();
 
-        $model_android->data_register_action($person_id,"Delete All Calls", $ip_add, $dated);
         $model_android->data_del_call_logs($person_id);
+
+        // Log action
+        $lognow = new Mod_Access_Logs();
+
+        $logdata = $lognow->logAction([
+            'user_id' => $this->userId,
+            'action_type' => 'Data Deletion (Call Logs)',
+            'action_category' => 'profile',
+            'action_severity' => 'critical',
+            'ip_address' => $this->request->getIPAddress(),
+            'user_agent' => $this->request->getUserAgent()->getAgentString(),
+            'request_url'     => current_url(),
+            'device_type' => 'desktop',
+            'success' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+        ]);
 
         return redirect()->to('account/profile');
     }
@@ -146,8 +217,24 @@ class Profile extends BaseController
         $dated = date('Y-m-d H:i:s');
         $ip_add = $this->request->getIPAddress();
 
-        $model_android->data_register_action($person_id,"Delete All Contacts", $ip_add, $dated);
         $model_android->data_del_contacts($person_id);
+
+        // Log action
+        $lognow = new Mod_Access_Logs();
+
+        $logdata = $lognow->logAction([
+            'user_id' => $this->userId,
+            'action_type' => 'Data Deletion (Contacts)',
+            'action_category' => 'profile',
+            'action_severity' => 'critical',
+            'ip_address' => $this->request->getIPAddress(),
+            'user_agent' => $this->request->getUserAgent()->getAgentString(),
+            'request_url'     => current_url(),
+            'device_type' => 'desktop',
+            'success' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+        ]);
 
         return redirect()->to('account/profile');
     }
@@ -166,8 +253,24 @@ class Profile extends BaseController
         $dated = date('Y-m-d H:i:s');
         $ip_add = $this->request->getIPAddress();
 
-        $model_android->data_register_action($person_id,"Delete All Sms", $ip_add, $dated);
         $model_android->data_del_sms($person_id);
+
+        // Log action
+        $lognow = new Mod_Access_Logs();
+
+        $logdata = $lognow->logAction([
+            'user_id' => $this->userId,
+            'action_type' => 'Data Deletion (SMS)',
+            'action_category' => 'profile',
+            'action_severity' => 'critical',
+            'ip_address' => $this->request->getIPAddress(),
+            'user_agent' => $this->request->getUserAgent()->getAgentString(),
+            'request_url'     => current_url(),
+            'device_type' => 'desktop',
+            'success' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+        ]);
 
         return redirect()->to('account/profile');
     }
