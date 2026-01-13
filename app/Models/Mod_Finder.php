@@ -53,7 +53,7 @@ class Mod_Finder extends Model
             $builder = $this->db->table($table);
 
             // Handle different owner column names
-            $ownerColumn = ($table === 'tbl_sms') ? 'meta_owner' : 'meta_Owner';
+            $ownerColumn = 'owner_id';
             $builder->where($ownerColumn, $user_id);
 
             if (!empty($extraWhere)) {
@@ -76,7 +76,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_apps');
-            return $builder->where('meta_Owner', $user_id)->delete();
+            return $builder->where('owner_id', $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteAppsByUser error: ' . $e->getMessage());
             return false;
@@ -93,7 +93,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_call_logs');
-            return $builder->where('meta_Owner', $user_id)->delete();
+            return $builder->where('owner_id', $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteCallsByUser error: ' . $e->getMessage());
             return false;
@@ -110,7 +110,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_contacts');
-            return $builder->where('meta_Owner', $user_id)->delete();
+            return $builder->where('owner_id', $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteContactsByUser error: ' . $e->getMessage());
             return false;
@@ -127,7 +127,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_sms');
-            return $builder->where('meta_owner', $user_id)->delete();
+            return $builder->where('owner_id', $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteSmsByUser error: ' . $e->getMessage());
             return false;
@@ -167,7 +167,7 @@ class Mod_Finder extends Model
     {
         try {
             return $this->db->table('tbl_apps')
-                ->where('meta_Owner', $user_id)  // Changed from meta_Owner
+                ->where('owner_id', $user_id)
                 ->countAllResults();
         } catch (\Exception $e) {
             log_message('error', 'get_count_Apps error: ' . $e->getMessage());
@@ -209,7 +209,7 @@ class Mod_Finder extends Model
             $user_id = auth()->user()->id;
             $builder = $this->db->table('tbl_contacts');
             $query_sent = $builder->select('*')
-                ->where('meta_Owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->like('phone_numbers', $contactNumber1)
                 ->limit(1)
                 ->get();
@@ -246,7 +246,7 @@ class Mod_Finder extends Model
                 phone_numbers,
                 phone_count
             ')
-                ->where('meta_Owner', $userId)
+                ->where('owner_id', $userId)
                 ->orderBy('display_name', 'ASC')
                 ->limit($perPage, $offset)
                 ->get()
@@ -302,7 +302,7 @@ class Mod_Finder extends Model
             device_id,
             created_at
         ')
-                ->where('meta_Owner', $userId)
+                ->where('owner_id', $userId)
                 ->orderBy('display_name', 'ASC')
                 ->limit($perPage, $offset)
                 ->get()
@@ -358,7 +358,7 @@ class Mod_Finder extends Model
                 sms_date as sms_time,
                 sms_type
             ')
-                ->where('meta_owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->where('sms_type', $sms_type)
                 ->orderBy('sms_date', 'DESC')
                 ->limit($perPage, $offset)
@@ -405,7 +405,7 @@ class Mod_Finder extends Model
                 sms_date as sms_time,
                 sms_type
             ')
-                ->where('meta_owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->orderBy('sms_date', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
@@ -435,7 +435,7 @@ class Mod_Finder extends Model
         try {
             return $this->db->table('tbl_sms')
                 ->select('address as sms_number, thread_id as sms_thread_id, count(*) AS Totals')
-                ->where('meta_owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->groupBy('address')
                 ->orderBy('Totals', 'DESC')
                 ->limit($perPage)
@@ -475,7 +475,7 @@ class Mod_Finder extends Model
                 duration_seconds as Durations,
                 call_type as Type
             ')
-                ->where('meta_Owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->orderBy('call_date', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
@@ -507,7 +507,7 @@ class Mod_Finder extends Model
             $builder = $this->db->table('tbl_call_logs');
 
             // Get total count for this category
-            $total = $builder->where('meta_Owner', $user_id)
+            $total = $builder->where('owner_id', $user_id)
                 ->where('call_type', $category)
                 ->countAllResults();
 
@@ -523,7 +523,7 @@ class Mod_Finder extends Model
                 duration_seconds as Durations,
                 call_type as Type
             ')
-                ->where('meta_Owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->where('call_type', $category)
                 ->orderBy('call_date', 'DESC')
                 ->limit($perPage, $offset)
@@ -554,7 +554,7 @@ class Mod_Finder extends Model
         try {
             return $this->db->table('tbl_call_logs')
                 ->select('phone_number as Caller, contact_name as Saved, count(*) AS Totals')
-                ->where('meta_Owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->groupBy('phone_number')
                 ->orderBy('Totals', 'DESC')
                 ->limit($perPage)
@@ -591,7 +591,7 @@ class Mod_Finder extends Model
                 package_name as Package,
                 version_code as Code
             ')
-                ->where('meta_owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
@@ -623,11 +623,11 @@ class Mod_Finder extends Model
 
             // Get total count for pagination
             if (is_array($sender)) {
-                $total = $builder->where('meta_owner', $user_id)
+                $total = $builder->where('owner_id', $user_id)
                     ->whereIn('address', $sender)
                     ->countAllResults();
             } else {
-                $total = $builder->where('meta_owner', $user_id)
+                $total = $builder->where('owner_id', $user_id)
                     ->where('address', $sender)
                     ->countAllResults();
             }
@@ -645,7 +645,7 @@ class Mod_Finder extends Model
                 sms_date as sms_time,
                 sms_type
             ')
-                ->where('meta_owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->orderBy('sms_date', 'DESC');
 
             if (is_array($sender)) {

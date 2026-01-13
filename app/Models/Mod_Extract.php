@@ -18,7 +18,7 @@ class Mod_Extract extends Model
     {
         try {
             return $this->db->table('tbl_Sms')
-                ->where('meta_Owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->where('sms_number', $contactNumber1)
                 ->orWhere('sms_number', $contactNumber2)
                 ->orderBy('sms_time', 'DESC')
@@ -42,7 +42,7 @@ class Mod_Extract extends Model
     {
         try {
             return $this->db->table('tbl_Logs')
-                ->where('meta_Owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->where('Caller', $contactNumber1)
                 ->orWhere('Caller', $contactNumber2)
                 ->orderBy('Timestamp', 'DESC')
@@ -89,7 +89,7 @@ class Mod_Extract extends Model
     {
         try {
             return $this->db->table('tbl_Sms')
-                ->where('meta_Owner', $user_id)
+                ->where('owner_id', $user_id)
                 ->where('sms_number', $sender)
                 ->get()
                 ->getResultArray();

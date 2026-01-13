@@ -117,9 +117,9 @@ class CreateEnhancedSmsTable extends Migration
             ],
 
             // ---------- Device & Ownership ----------
-            'meta_owner' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
+            'owner_id' => [
+                'type'       => 'INT',
+                'unsigned'   => true,
                 'null'       => false,
             ],
             'device_id' => [
@@ -147,11 +147,11 @@ class CreateEnhancedSmsTable extends Migration
         $this->forge->addPrimaryKey('counter');
 
         // Ensure we don't duplicate the same SMS from the same device
-        $this->forge->addUniqueKey(['android_sms_id', 'device_id', 'meta_owner']);
+        $this->forge->addUniqueKey(['android_sms_id', 'device_id', 'owner_id']);
 
         $this->forge->addKey('address');
         $this->forge->addKey('sms_date');
-        $this->forge->addKey('meta_owner');
+        $this->forge->addKey('owner_id');
 
         $this->forge->createTable('tbl_sms', true);
 

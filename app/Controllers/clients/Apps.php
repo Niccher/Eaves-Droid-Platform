@@ -105,7 +105,7 @@ class Apps extends BaseClientController
                     last_update_time,
                     created_at
                 ')
-                ->where('meta_Owner', $this->userId)
+                ->where('owner_id', $this->userId)
                 ->orderBy('app_name', 'ASC');
 
             // Get total count for pagination
@@ -160,7 +160,7 @@ class Apps extends BaseClientController
                     first_install_time,
                     last_update_time
                 ')
-                ->where('meta_Owner', $this->userId)
+                ->where('owner_id', $this->userId)
                 ->where('is_system_app', 1)
                 ->orderBy('app_name', 'ASC');
 
@@ -216,7 +216,7 @@ class Apps extends BaseClientController
                     first_install_time,
                     last_update_time
                 ')
-                ->where('meta_Owner', $this->userId)
+                ->where('owner_id', $this->userId)
                 ->where('is_system_app', 0)
                 ->orderBy('app_name', 'ASC');
 

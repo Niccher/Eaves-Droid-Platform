@@ -154,6 +154,55 @@
             margin-bottom: 15px;
         }
 
+        .server-status-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: left;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .server-status-panel h5 {
+            color: var(--warning-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--warning-color);
+        }
+
+        .status-item strong {
+            display: block;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .status-item span {
+            color: #666;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .status-item.maintenance {
+            border-left-color: #ffc107;
+            background-color: #fff9e6;
+        }
+
         .status-updates {
             background: #f8f9fa;
             border-radius: 10px;
@@ -297,10 +346,47 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+<?php
+/**
+ * Get server status data.
+ *
+ * @return array
+ */
+function getServerStatus() {
+    return [
+        'server_time' => date('Y-m-d H:i:s'),
+        'timezone' => date_default_timezone_get(),
+        'php_version' => PHP_VERSION,
+        'memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2) . ' MB',
+        'memory_limit' => ini_get('memory_limit')
+    ];
+}
+
+/**
+ * Get health check data.
+ *
+ * @return array
+ */
+function getHealthCheck() {
+    return [
+        'status' => 'maintenance',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'version' => '1.0.0',
+        'environment' => defined('ENVIRONMENT') ? ENVIRONMENT : 'unknown'
+    ];
+}
+
+$serverStatus = getServerStatus();
+$healthCheck = getHealthCheck();
+?>
 <div class="error-container">
     <div class="error-header">
         <div class="error-icon">
@@ -335,6 +421,30 @@
             <div class="timer-display" id="countdownTimer">01:45:30</div>
             <small class="text-muted">This is an estimate and may change</small>
         </div>
+
+        <?php if (ENVIRONMENT !== 'production'): ?>
+            <div class="server-status-panel">
+                <h5><i class="fas fa-server"></i> Maintenance Status</h5>
+                <div class="status-grid">
+                    <div class="status-item maintenance">
+                        <strong>System Status</strong>
+                        <span>MAINTENANCE MODE</span>
+                    </div>
+                    <div class="status-item">
+                        <strong>Server Time</strong>
+                        <span><?php echo $serverStatus['server_time']; ?></span>
+                    </div>
+                    <div class="status-item">
+                        <strong>PHP Version</strong>
+                        <span><?php echo $serverStatus['php_version']; ?></span>
+                    </div>
+                    <div class="status-item">
+                        <strong>Memory Usage</strong>
+                        <span><?php echo $serverStatus['memory_usage']; ?></span>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="status-updates">
             <h5><i class="fas fa-bullhorn"></i> Latest Updates</h5>

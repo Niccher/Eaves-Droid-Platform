@@ -12,7 +12,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
 
     <style>
         :root {
@@ -50,8 +51,14 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .error-header {
@@ -80,8 +87,12 @@
         }
 
         @keyframes shake {
-            0% { transform: translateX(-5px); }
-            100% { transform: translateX(5px); }
+            0% {
+                transform: translateX(-5px);
+            }
+            100% {
+                transform: translateX(5px);
+            }
         }
 
         .error-body {
@@ -192,6 +203,58 @@
             margin-right: 10px;
         }
 
+        .server-status-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: left;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .server-status-panel h5 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .status-item strong {
+            display: block;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .status-item span {
+            color: #666;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .status-item.online {
+            border-left-color: #28a745;
+        }
+
+        .status-item.offline {
+            border-left-color: #dc3545;
+        }
+
         @media (max-width: 768px) {
             .error-container {
                 margin: 10px;
@@ -222,10 +285,49 @@
             .error-info {
                 flex-direction: column;
             }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+<?php
+/**
+ * Get server status data.
+ *
+ * @return array
+ */
+function getServerStatus()
+{
+    return [
+        'server_time' => date('Y-m-d H:i:s'),
+        'timezone' => date_default_timezone_get(),
+        'php_version' => PHP_VERSION,
+        'memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2) . ' MB',
+        'memory_limit' => ini_get('memory_limit')
+    ];
+}
+
+/**
+ * Get health check data.
+ *
+ * @return array
+ */
+function getHealthCheck()
+{
+    return [
+        'status' => 'online',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'version' => '1.0.0',
+        'environment' => defined('ENVIRONMENT') ? ENVIRONMENT : 'unknown'
+    ];
+}
+
+$serverStatus = getServerStatus();
+$healthCheck = getHealthCheck();
+?>
 <div class="error-container">
     <div class="error-header">
         <div class="error-icon">
@@ -249,6 +351,30 @@
                 <li>IP address restrictions may be in place</li>
             </ul>
         </div>
+
+        <?php if (ENVIRONMENT !== 'production'): ?>
+            <div class="server-status-panel">
+                <h5><i class="fas fa-heartbeat"></i> System Status</h5>
+                <div class="status-grid">
+                    <div class="status-item <?php echo $healthCheck['status'] === 'online' ? 'online' : 'offline'; ?>">
+                        <strong>Health Status</strong>
+                        <span><?php echo $healthCheck['status']; ?></span>
+                    </div>
+                    <div class="status-item">
+                        <strong>Application Version</strong>
+                        <span><?php echo $healthCheck['version']; ?></span>
+                    </div>
+                    <div class="status-item">
+                        <strong>PHP Version</strong>
+                        <span><?php echo $serverStatus['php_version']; ?></span>
+                    </div>
+                    <div class="status-item">
+                        <strong>Memory Usage</strong>
+                        <span><?php echo $serverStatus['memory_usage']; ?> / <?php echo $serverStatus['memory_limit']; ?></span>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="action-buttons">
             <a href="<?php echo base_url(''); ?>" class="btn-custom btn-primary">
@@ -287,11 +413,11 @@
 
 <script>
     // Add some interactive elements
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         // Add click effect to buttons
         const buttons = document.querySelectorAll('.btn-custom');
         buttons.forEach(button => {
-            button.addEventListener('click', function(e) {
+            button.addEventListener('click', function (e) {
                 this.style.transform = 'scale(0.98)';
                 setTimeout(() => {
                     this.style.transform = '';

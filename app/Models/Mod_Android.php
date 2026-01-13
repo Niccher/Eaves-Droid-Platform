@@ -86,7 +86,7 @@ class Mod_Android extends Model
     {
         try {
             $builder = $this->db->table($table);
-            $builder->where('meta_Owner', $user_id);
+            $builder->where('owner_id', $user_id);
             if ($builder->delete()) {
                 log_message('info', 'Deleted all from ' . $table . ' for user ' . $user_id);
                 return true;

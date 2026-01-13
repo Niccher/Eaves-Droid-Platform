@@ -107,9 +107,9 @@ class CreateEnhancedContactsTable extends Migration
             ],
 
             // Ownership & sync
-            'meta_Owner' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
+            'owner_id' => [
+                'type'       => 'INT',
+                'unsigned'   => true,
                 'null'       => false,
                 'comment'    => 'User ID owning this data',
             ],
@@ -152,22 +152,22 @@ class CreateEnhancedContactsTable extends Migration
         $this->forge->addPrimaryKey('counter');
 
         // Unique: prevent duplicates for same Android contact on same device for same user
-        $this->forge->addUniqueKey(['contact_id', 'device_id', 'meta_Owner']);
+        $this->forge->addUniqueKey(['contact_id', 'device_id', 'owner_id']);
 
         // Indexes for performance
         $this->forge->addKey('display_name');
         $this->forge->addKey('contact_id');
         $this->forge->addKey('device_id');
-        $this->forge->addKey('meta_Owner');
+        $this->forge->addKey('owner_id');
         $this->forge->addKey('is_favorite');
         $this->forge->addKey('is_active');
         $this->forge->addKey('created_at');
 
         // Composite indexes
-        $this->forge->addKey(['meta_Owner', 'device_id']);
-        $this->forge->addKey(['meta_Owner', 'is_favorite']);
-        $this->forge->addKey(['meta_Owner', 'display_name']);
-        $this->forge->addKey(['meta_Owner', 'contact_frequency']);
+        $this->forge->addKey(['owner_id', 'device_id']);
+        $this->forge->addKey(['owner_id', 'is_favorite']);
+        $this->forge->addKey(['owner_id', 'display_name']);
+        $this->forge->addKey(['owner_id', 'contact_frequency']);
 
         // Create table
         $this->forge->createTable('tbl_contacts', true);

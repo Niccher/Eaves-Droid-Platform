@@ -155,6 +155,60 @@
             color: #666;
         }
 
+        .server-status-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: left;
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .server-status-panel h5 {
+            color: var(--danger-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .status-item strong {
+            display: block;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .status-item span {
+            color: #666;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .status-item.critical {
+            border-left-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .status-item.warning {
+            border-left-color: #ffc107;
+            background-color: #fff9e6;
+        }
+
         .action-buttons {
             display: flex;
             justify-content: center;
@@ -252,10 +306,47 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+<?php
+/**
+ * Get server status data.
+ *
+ * @return array
+ */
+function getServerStatus() {
+    return [
+        'server_time' => date('Y-m-d H:i:s'),
+        'timezone' => date_default_timezone_get(),
+        'php_version' => PHP_VERSION,
+        'memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2) . ' MB',
+        'memory_limit' => ini_get('memory_limit')
+    ];
+}
+
+/**
+ * Get health check data.
+ *
+ * @return array
+ */
+function getHealthCheck() {
+    return [
+        'status' => 'online',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'version' => '1.0.0',
+        'environment' => defined('ENVIRONMENT') ? ENVIRONMENT : 'unknown'
+    ];
+}
+
+$serverStatus = getServerStatus();
+$healthCheck = getHealthCheck();
+?>
 <div class="error-container">
     <div class="error-header">
         <div class="error-icon">
@@ -283,21 +374,45 @@
         <div class="tech-support">
             <h5><i class="fas fa-life-ring"></i> Need Help?</h5>
             <p>Our technical support team is available to help you resolve this issue.</p>
-<!--            <div class="support-info">-->
-<!--                <div class="support-item">-->
-<!--                    <i class="fas fa-envelope"></i>-->
-<!--                    <span>support@yourapp.com</span>-->
-<!--                </div>-->
-<!--                <div class="support-item">-->
-<!--                    <i class="fas fa-phone"></i>-->
-<!--                    <span>+1-234-567-8900</span>-->
-<!--                </div>-->
-<!--                <div class="support-item">-->
-<!--                    <i class="fas fa-clock"></i>-->
-<!--                    <span>24/7 Support Available</span>-->
-<!--                </div>-->
-<!--            </div>-->
+            <!--            <div class="support-info">-->
+            <!--                <div class="support-item">-->
+            <!--                    <i class="fas fa-envelope"></i>-->
+            <!--                    <span>support@yourapp.com</span>-->
+            <!--                </div>-->
+            <!--                <div class="support-item">-->
+            <!--                    <i class="fas fa-phone"></i>-->
+            <!--                    <span>+1-234-567-8900</span>-->
+            <!--                </div>-->
+            <!--                <div class="support-item">-->
+            <!--                    <i class="fas fa-clock"></i>-->
+            <!--                    <span>24/7 Support Available</span>-->
+            <!--                </div>-->
+            <!--            </div>-->
         </div>
+
+        <?php if (ENVIRONMENT !== 'production'): ?>
+            <div class="server-status-panel">
+                <h5><i class="fas fa-diagnoses"></i> Server Diagnostics</h5>
+                <div class="status-grid">
+                    <div class="status-item <?php echo $healthCheck['status'] === 'online' ? 'warning' : 'critical'; ?>">
+                        <strong>System Status</strong>
+                        <span><?php echo strtoupper($healthCheck['status']); ?> - ERROR DETECTED</span>
+                    </div>
+                    <div class="status-item">
+                        <strong>Server Time</strong>
+                        <span><?php echo $serverStatus['server_time']; ?></span>
+                    </div>
+                    <div class="status-item critical">
+                        <strong>Memory Status</strong>
+                        <span><?php echo $serverStatus['memory_usage']; ?> / <?php echo $serverStatus['memory_limit']; ?></span>
+                    </div>
+                    <div class="status-item">
+                        <strong>PHP Version</strong>
+                        <span><?php echo $serverStatus['php_version']; ?></span>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="action-buttons">
             <a href="<?php echo base_url(''); ?>" class="btn-custom btn-primary">

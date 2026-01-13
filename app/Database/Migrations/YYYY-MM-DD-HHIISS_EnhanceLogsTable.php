@@ -10,7 +10,7 @@ class CreateEnhancedLogsTable extends Migration
     {
         $this->forge->addField([
             // Primary Key
-            'LOG_ID' => [
+            'counter' => [
                 'type'           => 'INT',
                 'constraint'     => 11,
                 'unsigned'       => true,
@@ -78,44 +78,12 @@ class CreateEnhancedLogsTable extends Migration
                 'comment'    => 'From result.put("extracted_at", System.currentTimeMillis())',
             ],
 
-            // ---------- Your Original Metadata Fields ----------
-            'meta_Inserted' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 32,
-                'default'    => 'kotlin',
-                'null'       => false,
-                'comment'    => 'When inserted to the database',
-            ],
-
-            'meta_Opened' => [
+            // ---------- Ownership ----------
+            'owner_id' => [
                 'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 0,
-                'null'       => false,
-                'comment'    => 'Number of times opened/viewed',
-            ],
-
-            'meta_Viewed' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 0,
-                'null'       => false,
-                'comment'    => 'Number of times viewed (similar to opened)',
-            ],
-
-            'meta_Owner' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
+                'unsigned'   => true,
                 'null'       => false,
                 'comment'    => 'User ID - the owner of the data',
-            ],
-
-            'meta_Print' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 1,
-                'null'       => false,
-                'comment'    => 'Unique number identifying the device fingerprint',
             ],
 
             // ---------- Additional Tracking ----------
@@ -214,21 +182,20 @@ class CreateEnhancedLogsTable extends Migration
         ]);
 
         // Primary Key
-        $this->forge->addPrimaryKey('LOG_ID');
+        $this->forge->addPrimaryKey('counter');
 
         // Add indexes for common queries
         $this->forge->addKey('phone_number');
         $this->forge->addKey('call_date');
         $this->forge->addKey('call_type');
         $this->forge->addKey('device_id');
-        $this->forge->addKey('meta_Owner');
-        $this->forge->addKey('meta_Print');
+        $this->forge->addKey('owner_id');
         $this->forge->addKey('created_at');
         $this->forge->addKey('updated_at');
         $this->forge->addKey('is_synced');
 
         // Composite indexes for common query patterns
-        $this->forge->addKey(['meta_Owner', 'call_date']);
+        $this->forge->addKey(['owner_id', 'call_date']);
         $this->forge->addKey(['device_id', 'call_date']);
         $this->forge->addKey(['phone_number', 'call_date']);
         $this->forge->addKey(['call_type', 'call_date']);

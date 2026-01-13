@@ -180,6 +180,58 @@
             text-align: center;
         }
 
+        .server-status-panel {
+            grid-column: 1 / -1;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border-top: 2px solid var(--primary-color);
+        }
+
+        .server-status-panel h4 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .status-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .status-item strong {
+            display: block;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .status-item span {
+            color: #666;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .status-item.warning {
+            border-left-color: #ffc107;
+            background-color: #fff9e6;
+        }
+
+        .status-item.error {
+            border-left-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
         .error-details {
             grid-column: 1 / -1;
             background: #f8f9fa;
@@ -251,13 +303,46 @@
                 padding: 30px 20px;
             }
 
-            .details-grid {
+            .details-grid, .status-grid {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
+<?php
+/**
+ * Get server status data.
+ *
+ * @return array
+ */
+function getServerStatus() {
+    return [
+        'server_time' => date('Y-m-d H:i:s'),
+        'timezone' => date_default_timezone_get(),
+        'php_version' => PHP_VERSION,
+        'memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2) . ' MB',
+        'memory_limit' => ini_get('memory_limit')
+    ];
+}
+
+/**
+ * Get health check data.
+ *
+ * @return array
+ */
+function getHealthCheck() {
+    return [
+        'status' => 'error',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'version' => '1.0.0',
+        'environment' => defined('ENVIRONMENT') ? ENVIRONMENT : 'unknown'
+    ];
+}
+
+$serverStatus = getServerStatus();
+$healthCheck = getHealthCheck();
+?>
 <div class="error-container">
     <div class="error-header">
         <div class="error-icon">
@@ -308,6 +393,30 @@
                     </div>
                 </a>
             </div>
+
+            <?php if (ENVIRONMENT !== 'production'): ?>
+                <div class="server-status-panel">
+                    <h4><i class="fas fa-server"></i> System Status</h4>
+                    <div class="status-grid">
+                        <div class="status-item <?php echo $healthCheck['status'] === 'online' ? '' : 'error'; ?>">
+                            <strong>Application Status</strong>
+                            <span><?php echo strtoupper($healthCheck['status']); ?></span>
+                        </div>
+                        <div class="status-item">
+                            <strong>Server Time</strong>
+                            <span><?php echo $serverStatus['server_time']; ?></span>
+                        </div>
+                        <div class="status-item">
+                            <strong>PHP Version</strong>
+                            <span><?php echo $serverStatus['php_version']; ?></span>
+                        </div>
+                        <div class="status-item warning">
+                            <strong>Memory Usage</strong>
+                            <span><?php echo $serverStatus['memory_usage']; ?> / <?php echo $serverStatus['memory_limit']; ?></span>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <?php if (ENVIRONMENT !== 'production' && isset($exception)): ?>
                 <div class="error-details">

