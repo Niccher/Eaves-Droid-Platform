@@ -152,7 +152,7 @@ class Mod_Parse_Loot extends Model
                 ];
 
                 // Strong duplicate prevention: same number, exact timestamp, duration, and type
-                $exists = $this->db->table('tbl_call_logs')
+                $exists = $this->db->table('tbl_logs')
                         ->where('phone_number', $logData['phone_number'])
                         ->where('call_date', $logData['call_date'])
                         ->where('duration_seconds', $logData['duration_seconds'])

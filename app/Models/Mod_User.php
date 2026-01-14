@@ -171,11 +171,11 @@ class Mod_User extends Model
                 $logData = new Mod_Access_Logs();
                 // Log action
                 $logData->logAction([
-                    'user_id' => $this->userId,
+                    'user_id' => $user_id,
                     'action_type' => 'Create Token',
                     'action_category' => 'authentication',
                     'action_severity' => 'medium',
-                    'ip_address' => $this->request->getIPAddress(),
+                    // 'ip_address' => $this->request->getIPAddress(),
                     'user_agent' => $this->request->getUserAgent()->getAgentString(),
                     'request_url'     => current_url(),
                     'device_type' => 'desktop',

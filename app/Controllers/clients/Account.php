@@ -534,24 +534,13 @@ class Account extends BaseController
             $userEmail = auth()->user()->getEmail();
             $username = auth()->user()->username ?? explode('@', $userEmail)[0];
 
-            // Create new token
-            $tokenData = [
-                'created_at' => date('Y-m-d H:i:s'),
-                'owner_id' => $this->userId,
-                'token' => $newToken,
-                'status' => '00',
-                'initiator' => $this->request->getIPAddress(),
-                'expires_at' => date('Y-m-d H:i:s', strtotime('+30 days')),
-                'device_name' => $username . '_' . date('Ymd_His'),
-                'last_used_at' => date('Y-m-d H:i:s'),
-                'ip_address' => $this->request->getIPAddress(),
-                'user_agent' => $this->request->getUserAgent()->getAgentString(),
-                'token_type' => 'pin',
-                'is_refreshable' => 1,
-                'scopes' => 'all'
-            ];
-
-            $db->table('tbl_tokens')->insert($tokenData);
+            // Create new token using the model method
+            $this->modUser->create_token(
+                $this->userId,
+                $newToken,
+                $this->request->getIPAddress(),
+                $this->request->getUserAgent()->getAgentString()
+            );
 
             // Log the action
             $this->logUserAction('token_regenerate', 'security', 'medium', 1);
@@ -1222,7 +1211,8 @@ class Account extends BaseController
             $this->modUser->create_token(
                 $this->userId,
                 $newToken,
-                $this->request->getIPAddress()
+                $this->request->getIPAddress(),
+                $this->request->getUserAgent()->getAgentString()
             );
 
             $tokenData = $this->modUser->get_token($this->userId);
@@ -1382,7 +1372,7 @@ class Account extends BaseController
                 'ip_address' => $this->request->getIPAddress(),
                 'user_agent' => $this->request->getUserAgent()->getAgentString(),
                 'request_url' => current_url(),
-                'device_type' => 'desktop',
+                'device_type' => 'web',
                 'success' => $success,
                 'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
                 'created_at' => date('Y-m-d H:i:s')

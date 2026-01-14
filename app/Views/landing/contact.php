@@ -116,7 +116,7 @@
                             </div>
                         <?php endif; ?>
 
-                        <form class="needs-validation" method="post" action="<?= url_to('contactus') ?>" novalidate
+                        <form class="needs-validation" method="post" action="<?= url_to('contact') ?>" novalidate
                               id="contactForm">
                             <?= csrf_field() ?>
 

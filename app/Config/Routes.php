@@ -27,21 +27,20 @@ $routes->setAutoRoute(false);
 //    Unauthenticated access only
 // =================================================================
 
-$routes->group('', ['namespace' => 'App\Controllers\Home'], static function ($routes) {
-    // Base URL & Landing
-    $routes->get('/', 'Home::index', ['as' => 'home']);
-    $routes->get('landing', 'Home::index', ['as' => 'landing']);
+// Base URL & Landing
+$routes->get('/', 'Home::index', ['as' => 'home']);
+$routes->get('landing', 'Home::index', ['as' => 'landing']);
 
-    // Information Pages
-    $routes->get('download', 'Home::landing_download', ['as' => 'download']);
-    $routes->get('aboutus', 'Home::landing_aboutus', ['as' => 'about']);
-    $routes->get('faqs_terms', 'Home::landing_faqs', ['as' => 'faqs']);
-    $routes->get('how_to', 'Home::landing_how_to', ['as' => 'how-to']);
-    $routes->get('prices', 'Home::landing_prices', ['as' => 'pricing']);
+// Information Pages
+$routes->get('download', 'Home::landing_download', ['as' => 'download']);
+$routes->get('aboutus', 'Home::landing_aboutus', ['as' => 'about']);
+$routes->get('faqs_terms', 'Home::landing_faqs', ['as' => 'faqs']);
+$routes->get('how_to', 'Home::landing_how_to', ['as' => 'how-to']);
+$routes->get('prices', 'Home::landing_prices', ['as' => 'pricing']);
 
-    // Contact Form (GET for view, POST for submission)
-    $routes->match(['get', 'post'], 'contactus', 'Home::landing_contactus', ['as' => 'contact']);
-});
+// Contact Form (GET for view, POST for submission)
+$routes->get('contactus', 'ContactController::index', ['as' => 'contact']);
+$routes->post('contactus', 'ContactController::send');
 
 // =================================================================
 // 3. ERROR PAGES ROUTES

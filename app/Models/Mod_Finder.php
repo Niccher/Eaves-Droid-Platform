@@ -92,7 +92,7 @@ class Mod_Finder extends Model
     public function deleteCallsByUser(int $user_id): bool
     {
         try {
-            $builder = $this->db->table('tbl_call_logs');
+            $builder = $this->db->table('tbl_logs');
             return $builder->where('owner_id', $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteCallsByUser error: ' . $e->getMessage());
@@ -194,7 +194,7 @@ class Mod_Finder extends Model
      */
     public function get_count_Calls(int $user_id): int
     {
-        return $this->getCount('tbl_call_logs', $user_id);
+        return $this->getCount('tbl_logs', $user_id);
     }
 
     /**
@@ -354,7 +354,7 @@ class Mod_Finder extends Model
                 android_sms_id,
                 thread_id as sms_thread_id,
                 address as sms_number,
-                body_encoded as sms_body,
+                body as sms_body,
                 sms_date as sms_time,
                 sms_type
             ')
@@ -401,7 +401,7 @@ class Mod_Finder extends Model
                 android_sms_id,
                 thread_id as sms_thread_id,
                 address as sms_number,
-                body_encoded as sms_body,
+                body as sms_body,
                 sms_date as sms_time,
                 sms_type
             ')
@@ -458,7 +458,7 @@ class Mod_Finder extends Model
     public function get_call_logs(int $user_id, int $perPage = 25): array
     {
         try {
-            $builder = $this->db->table('tbl_call_logs');
+            $builder = $this->db->table('tbl_logs');
 
             // Get total count for pagination
             $total = $this->get_count_Calls($user_id);
@@ -504,7 +504,7 @@ class Mod_Finder extends Model
     public function get_calls_limited(int $user_id, string $category, int $perPage = 25): array
     {
         try {
-            $builder = $this->db->table('tbl_call_logs');
+            $builder = $this->db->table('tbl_logs');
 
             // Get total count for this category
             $total = $builder->where('owner_id', $user_id)
@@ -552,7 +552,7 @@ class Mod_Finder extends Model
     public function get_calls_active(int $user_id, int $perPage = 20): array
     {
         try {
-            return $this->db->table('tbl_call_logs')
+            return $this->db->table('tbl_logs')
                 ->select('phone_number as Caller, contact_name as Saved, count(*) AS Totals')
                 ->where('owner_id', $user_id)
                 ->groupBy('phone_number')
@@ -641,7 +641,7 @@ class Mod_Finder extends Model
                 android_sms_id,
                 thread_id as sms_thread_id,
                 address as sms_number,
-                body_encoded as sms_body,
+                body as sms_body,
                 sms_date as sms_time,
                 sms_type
             ')

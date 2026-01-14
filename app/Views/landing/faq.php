@@ -6,7 +6,7 @@
                     <div class="section-title">
                         <h4 class="title mb-4">Frequently Asked Questions</h4>
                         <p class="text-muted">These are among the most raised questions on our platform. If you have any
-                            other question, please use <a href="<?= url_to('contactus') ?>" class="text-primary">this
+                            other question, please use <a href="<?= url_to('contact') ?>" class="text-primary">this
                                 link</a> to send your question.</p>
                     </div>
 
@@ -185,7 +185,7 @@
                                             </div>
 
                                             <div class="mt-3">
-                                                <a href="<?= url_to('contactus') ?>" class="text-primary">
+                                                <a href="<?= url_to('contact') ?>" class="text-primary">
                                                     <i class="fas fa-lightbulb me-1"></i> Have a specific integration
                                                     request?
                                                 </a>
@@ -296,7 +296,7 @@
                             <p class="text-muted mb-4">Can't find the answer you're looking for? Our support team is here to
                                 help.</p>
                             <div class="d-flex flex-wrap justify-content-center gap-3">
-                                <a href="<?= url_to('contactus') ?>" class="btn btn-primary">
+                                <a href="<?= url_to('contact') ?>" class="btn btn-primary">
                                     <i class="fas fa-envelope me-2"></i> Contact Support
                                 </a>
                                 <a href="<?= base_url('documentation') ?>" class="btn btn-outline-primary">
@@ -564,7 +564,7 @@
                             </a>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <a href="<?= url_to('contactus') ?>" class="card border-0 shadow-sm text-decoration-none h-100">
+                            <a href="<?= url_to('contact') ?>" class="card border-0 shadow-sm text-decoration-none h-100">
                                 <div class="card-body text-center p-4">
                                     <i class="fas fa-question-circle fa-2x text-primary mb-3"></i>
                                     <h6>Contact Legal</h6>

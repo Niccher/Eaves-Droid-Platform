@@ -101,7 +101,7 @@ class Mod_Android extends Model
     }
 
     public function data_del_apps(int $user_id): bool { return $this->data_delete_by_user('tbl_apps', $user_id); }
-    public function data_del_call_logs(int $user_id): bool { return $this->data_delete_by_user('tbl_call_logs', $user_id); }
+    public function data_del_call_logs(int $user_id): bool { return $this->data_delete_by_user('tbl_logs', $user_id); }
     public function data_del_contacts(int $user_id): bool { return $this->data_delete_by_user('tbl_contacts', $user_id); }
     public function data_del_sms(int $user_id): bool { return $this->data_delete_by_user('tbl_sms', $user_id); }
 

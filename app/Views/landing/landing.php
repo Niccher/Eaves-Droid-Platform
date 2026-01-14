@@ -12,7 +12,7 @@
                             and SMS correlate. It generates the file structure and many other features.</p>
                         <div class="mt-4 pt-2">
                             <a href="<?= url_to('login') ?>" class="btn btn-primary mb-2 me-2">Get Started</a>
-                            <a href="<?= url_to('how_to') ?>" class="btn btn-outline-primary rounded-pill"> How it
+                            <a href="<?= url_to('how-to') ?>" class="btn btn-outline-primary rounded-pill"> How it
                                 works </a>
                         </div>
                         <div class="mt-3">
