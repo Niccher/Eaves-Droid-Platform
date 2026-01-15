@@ -179,7 +179,7 @@
                         <div class="card-footer clearfix">
                             <div class="float-right">
                                 <?php if (isset($pager) && $totalApps > 20): ?>
-                                    <?= $pager->links('default', 'bootstrap4') ?>
+                                    <?= $pager->links('default', 'bootstrap5_full') ?>
                                 <?php endif; ?>
                             </div>
                         </div>

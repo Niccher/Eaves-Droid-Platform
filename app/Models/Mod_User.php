@@ -176,7 +176,7 @@ class Mod_User extends Model
                     'action_category' => 'authentication',
                     'action_severity' => 'medium',
                     // 'ip_address' => $this->request->getIPAddress(),
-                    'user_agent' => $this->request->getUserAgent()->getAgentString(),
+                    // 'user_agent' => $this->request->getUserAgent()->getAgentString(),
                     'request_url'     => current_url(),
                     'device_type' => 'desktop',
                     'success' => 1,

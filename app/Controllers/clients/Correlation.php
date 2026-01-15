@@ -2,7 +2,7 @@
 
 namespace App\Controllers\clients;
 
-use App\Controllers\BaseController;
+
 
 use App\Models\Mod_Extract;
 use App\Models\Mod_Finder;
@@ -12,20 +12,22 @@ use App\Models\Mod_Receive;
 use App\Models\Mod_Android;
 use App\Models\Mod_User;
 
-class Correlation extends BaseController{
+class Correlation extends BaseClientController{
 
     public function index(){
-	    $model_finder = new Mod_Finder();
+        // Auth check handled in parent
+	    //$model_finder = new Mod_Finder(); // Use $this->finderModel
 	    $model_crypt = new Mod_Crypt();
 	    //$encrypter = \Config\Services::encrypter();
-	    if (!auth()->loggedIn()){
-		    return redirect()->to('login');
-	    }
 
 	    $pg = 'correlation';
 	    $data['pag'] = 'analysis';
-	    $data["user_info"] = $model_finder->basic_user();
+	    $data["user_info"] = $this->finderModel->basic_user();
 	    
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
 	    return view('headers_footers/head_users')
 		    . view('headers_footers/sidebar_users', $data)
 		    . view('users/correlation/'.$pg, $data)
@@ -33,19 +35,21 @@ class Correlation extends BaseController{
     }
 
     public function sms_finance(){
-        $model_finder = new Mod_Finder();
+        // Auth check handled in parent
+        //$model_finder = new Mod_Finder();
         $model_crypt = new Mod_Crypt();
         $model_extract = new Mod_Extract();
         //$encrypter = \Config\Services::encrypter();
-        if (!auth()->loggedIn()){
-            return redirect()->to('login');
-        }
 
         $pg = 'correlation';
         $data['pag'] = 'analysis';
-        $data["user_info"] = $model_finder->basic_user();
+        $data["user_info"] = $this->finderModel->basic_user();
 
-        $sms_dump = $model_finder->get_sms($data["user_info"]['id']);
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $sms_dump = $this->finderModel->get_sms($data["user_info"]['id']);
         $sms_sender_list = array();
         $sms_parserable = array();
         $sms_good_sms = array();
@@ -69,7 +73,7 @@ class Correlation extends BaseController{
 
         $data['sms_data_points'] = $list;
 
-        $sms_finance_points = $model_finder->get_points_sms_finance($data["user_info"]['id']);
+        $sms_finance_points = $this->finderModel->get_points_sms_finance($data["user_info"]['id']);
 
         $list_finance = '
         <select class="form-control source_sms_finance select2-hidden-accessible" data-placeholder="Select a Contact to monitor" style="width: 100%;" tabindex="-1" aria-hidden="true">';
@@ -84,7 +88,7 @@ class Correlation extends BaseController{
         $data['sms_data_points_source'] = $list_finance;
 
         if (!empty($sms_parserable)){
-            $sms_good_sms = $model_finder->get_sms_from_sender($data["user_info"]['id'] , $sms_parserable);
+            $sms_good_sms = $this->finderModel->get_sms_from_sender($data["user_info"]['id'] , $sms_parserable);
         }
         $data['sms_good_sms'] = $sms_good_sms;
 
@@ -95,28 +99,24 @@ class Correlation extends BaseController{
     }
 
     public function set_sms_rules(){
-        $model_finder = new Mod_Finder();
+        //$model_finder = new Mod_Finder();
         $model_crypt = new Mod_Crypt();
         $model_extract = new Mod_Extract();
         //$encrypter = \Config\Services::encrypter();
-        if (!auth()->loggedIn()){
-            return redirect()->to('login');
-        }
+        // if (!auth()->loggedIn()){ return redirect()->to('login'); } // Handled in parent
 
         $pg = 'correlation';
         $data['pag'] = 'analysis';
-        $data["user_info"] = $model_finder->basic_user();
+        $data["user_info"] = $this->finderModel->basic_user();
     }
 
     public function set_sms_datapoints($owner){
-        $model_finder = new Mod_Finder();
+        //$model_finder = new Mod_Finder();
 
-        if (!auth()->loggedIn()){
-            return redirect()->to('login');
-        }
+        // if (!auth()->loggedIn()){ return redirect()->to('login'); } // Handled in parent
 
         $data['pag'] = 'analysis';
-        $data["user_info"] = $model_finder->basic_user();
+        $data["user_info"] = $this->finderModel->basic_user();
         $dated = date('Y-m-d H:i:s');
 
         $post_point = explode(',', str_replace('"',"",$_POST['points']) );
@@ -126,21 +126,23 @@ class Correlation extends BaseController{
                 "point_Name" =>  base64_decode(urldecode($item)),
                 "point_Inserted" => $dated,
             );
-            $model_finder->set_sms_points_to_analyze_finance($data_point);
+            $this->finderModel->set_sms_points_to_analyze_finance($data_point);
         }
     }
 
     public function sms_analyze_finance_from($source){
-        $model_finder = new Mod_Finder();
+        //$model_finder = new Mod_Finder();
         $model_crypt = new Mod_Crypt();
         $model_extract = new Mod_Extract();
         //$encrypter = \Config\Services::encrypter();
-        if (!auth()->loggedIn()){
-            return redirect()->to('login');
-        }
+        // if (!auth()->loggedIn()){ return redirect()->to('login'); } // Handled in parent
 
         $data['pag'] = 'analysis';
-        $data["user_info"] = $model_finder->basic_user();
+        $data["user_info"] = $this->finderModel->basic_user();
+
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
 
         $source_clean = $model_crypt->base64url_decode($source);
 

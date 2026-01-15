@@ -279,6 +279,68 @@ $routes->group('', [
     });
 
     // =============================================================
+    // 5.2.1 DATA VIEWS - FILES
+    // =============================================================
+
+    $routes->group('files', static function ($routes) {
+        /**
+         * Displays all files.
+         *
+         * @return string
+         */
+        $routes->get('/', 'Files::index', ['as' => 'files-all']);
+
+        /**
+         * Displays images.
+         *
+         * @return string
+         */
+        $routes->get('images', 'Files::images', ['as' => 'files-images']);
+
+        /**
+         * Displays videos.
+         *
+         * @return string
+         */
+        $routes->get('videos', 'Files::videos', ['as' => 'files-videos']);
+
+        /**
+         * Displays media files (images + videos).
+         *
+         * @return string
+         */
+        $routes->get('media', 'Files::media', ['as' => 'files-media']);
+
+        /**
+         * Displays documents.
+         *
+         * @return string
+         */
+        $routes->get('documents', 'Files::documents', ['as' => 'files-documents']);
+
+        /**
+         * Displays audio files.
+         *
+         * @return string
+         */
+        $routes->get('audio', 'Files::audio', ['as' => 'files-audio']);
+
+        /**
+         * Displays archive files.
+         *
+         * @return string
+         */
+        $routes->get('archives', 'Files::archives', ['as' => 'files-archives']);
+
+        /**
+         * Displays other files.
+         *
+         * @return string
+         */
+        $routes->get('others', 'Files::others', ['as' => 'files-others']);
+    });
+
+    // =============================================================
     // 5.3 DATA VIEWS - CALL LOGS
     // =============================================================
 

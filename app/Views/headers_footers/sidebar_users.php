@@ -153,9 +153,7 @@
                                class="nav-link <?php echo (isset($pag) && $pag == 'apps') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-mobile-alt"></i>
                                 <p>Apps</p>
-                                <?php if (isset($total_apps) && $total_apps > 0): ?>
-                                    <span class="badge badge-info float-right"><?php echo $total_apps; ?></span>
-                                <?php endif; ?>
+                                <span class="badge badge-info float-right"><?php echo isset($total_apps) ? $total_apps : 0; ?></span>
                             </a>
                         </li>
 
@@ -164,9 +162,7 @@
                                class="nav-link <?php echo (isset($pag) && $pag == 'call_logs') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-phone-alt"></i>
                                 <p>Call Logs</p>
-                                <?php if (isset($total_calls) && $total_calls > 0): ?>
-                                    <span class="badge badge-success float-right"><?php echo $total_calls; ?></span>
-                                <?php endif; ?>
+                                <span class="badge badge-success float-right"><?php echo isset($total_calls) ? $total_calls : 0; ?></span>
                             </a>
                         </li>
 
@@ -175,9 +171,7 @@
                                class="nav-link <?php echo (isset($pag) && $pag == 'contacts') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-id-card"></i>
                                 <p>Contacts</p>
-                                <?php if (isset($total_contacts) && $total_contacts > 0): ?>
-                                    <span class="badge badge-warning float-right"><?php echo $total_contacts; ?></span>
-                                <?php endif; ?>
+                                <span class="badge badge-warning float-right"><?php echo isset($total_contacts) ? $total_contacts : 0; ?></span>
                             </a>
                         </li>
 
@@ -186,9 +180,7 @@
                                class="nav-link <?php echo (isset($pag) && $pag == 'sms') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-sms"></i>
                                 <p>SMS</p>
-                                <?php if (isset($total_sms) && $total_sms > 0): ?>
-                                    <span class="badge badge-danger float-right"><?php echo $total_sms; ?></span>
-                                <?php endif; ?>
+                                <span class="badge badge-danger float-right"><?php echo isset($total_sms) ? $total_sms : 0; ?></span>
                             </a>
                         </li>
 
@@ -198,15 +190,6 @@
                                 <i class="nav-icon fas fa-file"></i>
                                 <p>Files</p>
                                 <span class="badge badge-secondary float-right"><?php echo isset($total_files) ? $total_files : 0; ?></span>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('media'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag == 'media') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-photo-video"></i>
-                                <p>Media</p>
-                                <span class="badge badge-secondary float-right"><?php echo isset($total_media) ? $total_media : 0; ?></span>
                             </a>
                         </li>
 

@@ -88,24 +88,9 @@
                     <!-- ./col -->
                     <div class="col-lg-2 col-3">
                         <!-- small box -->
-                        <div class="small-box bg-success">
-                            <div class="inner">
-                                <h3>65</h3>
-                                <p>Media</p>
-                            </div>
-                            <div class="icon">
-                                <i class="nav-icon fas fa-photo-video"></i>
-                            </div>
-                            <a href="<?php echo base_url('media'); ?>" class="small-box-footer">More info <i
-                                        class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                    <!-- ./col -->
-                    <div class="col-lg-2 col-3">
-                        <!-- small box -->
                         <div class="small-box bg-primary">
                             <div class="inner">
-                                <h3>65</h3>
+                                <h3><?php echo isset($total_files) ? $total_files : 0; ?></h3>
                                 <p>Files</p>
                             </div>
                             <div class="icon">

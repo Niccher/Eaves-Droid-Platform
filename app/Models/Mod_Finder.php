@@ -198,6 +198,17 @@ class Mod_Finder extends Model
     }
 
     /**
+     * Gets count of files for user.
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public function get_count_Files(int $user_id): int
+    {
+        return $this->getCount('tbl_device_files', $user_id);
+    }
+
+    /**
      * Gets contact info by phone number.
      *
      * @param string $contactNumber1
@@ -532,7 +543,7 @@ class Mod_Finder extends Model
 
             // Set up pagination
             $this->pager = \Config\Services::pager();
-            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5');
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
 
             return $results;
 
@@ -589,7 +600,17 @@ class Mod_Finder extends Model
                 counter,
                 app_name as Name,
                 package_name as Package,
-                version_code as Code
+                version_code as Code,
+                version_name,
+                app_icon,
+                app_size,
+                permissions,
+                permission_count,
+                is_system_app,
+                first_install_time,
+                last_update_time,
+                target_sdk,
+                min_sdk
             ')
                 ->where('owner_id', $user_id)
                 ->limit($perPage, $offset)
@@ -598,7 +619,7 @@ class Mod_Finder extends Model
 
             // Set up pagination
             $this->pager = \Config\Services::pager();
-            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5');
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
 
             return $results;
 
@@ -658,7 +679,7 @@ class Mod_Finder extends Model
 
             // Set up pagination
             $this->pager = \Config\Services::pager();
-            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5');
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
 
             return $results;
 

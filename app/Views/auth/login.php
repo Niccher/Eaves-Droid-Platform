@@ -16,9 +16,9 @@
     <!-- favicon -->
     <link rel="shortcut icon" href="<?= base_url('images/favicon.ico') ?>">
     <!-- Bootstrap -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <link href="<?php echo base_url('assets/landing/css/bootstrap.min.css'); ?>" rel="stylesheet" type="text/css"/>
     <!-- Icons -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/materialdesignicons.min.css" rel="stylesheet"
+    <link href="<?php echo base_url('assets/landing/css/materialdesignicons.min.css'); ?>" rel="stylesheet"
           type="text/css"/>
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
     <!-- Main css -->

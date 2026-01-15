@@ -1,4 +1,3 @@
-
 <?php
 
 namespace App\Controllers\auth;
@@ -58,14 +57,17 @@ class RegisterController extends Controller
             $db->transStart();
 
             // Save user to Shield users table
-            $userId = $users->save($user);
+            $result = $users->save($user);
 
-            if (!$userId) {
+            if (!$result) {
                 $errors = $users->errors();
                 return redirect()->back()
                     ->withInput()
                     ->with('errors', $errors);
             }
+
+            // Get the new user's ID
+            $userId = $users->getInsertID();
 
             // Get the user entity
             $user = $users->findById($userId);
@@ -73,23 +75,34 @@ class RegisterController extends Controller
             // Add to default group
             $user->addGroup('user');
 
-            // Prepare data for tbl_Users
-            $tblUsersData = [
-                'Person_ID' => $userId,
-                'Name' => $postData['username'] ?? '',
-                'Email' => $postData['email'] ?? '',
-                'Phone' => '',
-                'Password' => password_hash($postData['password'] ?? '', PASSWORD_DEFAULT), // Store hashed password
-                'Timestamp' => date('Y-m-d H:i:s'),
-                'Avatar' => '',
-                'Privilege' => 'user',
-                'Bio' => '',
-                'Status' => 'active',
-                'Activated' => 1
+            // Create user profile record
+            $profileData = [
+                'user_id' => $userId,
+                'language' => 'en',
+                'timezone' => null,
+                'theme' => 'system',
+                'account_status' => 'active',
+                'notifications_enabled' => true,
+                'email_notifications' => true,
+                'push_notifications' => true,
+                'onboarding_completed' => false,
+                'profile_completed' => false,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
             ];
 
-            // Save to tbl_Users table
-            $db->table('tbl_Users')->insert($tblUsersData);
+            $db->table('user_profiles')->insert($profileData);
+
+            // Log registration action
+            $logModel = new \App\Models\Mod_Access_Logs();
+            $logModel->logAction([
+                'user_id' => $userId,
+                'action_category' => 'authentication',
+                'action_type' => 'Register',
+                'action_severity' => 'medium',
+                'device_type' => 'desktop', // Or detect, but leaving as desktop/default for now
+                'success' => 1
+            ]);
 
             // Commit transaction
             $db->transComplete();

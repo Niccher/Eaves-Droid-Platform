@@ -59,6 +59,7 @@ class BaseClientController extends BaseController
             'total_apps'     => $this->finderModel->get_count_Apps($this->userId),
             'total_contacts' => $this->finderModel->get_count_Contacts($this->userId),
             'total_sms'      => $this->finderModel->get_count_Sms($this->userId),
+            'total_files'    => $this->finderModel->get_count_Files($this->userId),
             'total_calls'    => $this->finderModel->get_count_Calls($this->userId),
             'active_sms'     => $this->finderModel->get_sms_active($this->userId),
             'active_calls'   => $this->finderModel->get_calls_active($this->userId),
@@ -344,6 +345,90 @@ class BaseClientController extends BaseController
             . view('headers_footers/sidebar_users', $data)
             . view($mainView, $data)
             . view('headers_footers/footer_data_datatables', $data);
+    }
+
+    /**
+     * Get navigation URLs for File views.
+     *
+     * @param string $activeView
+     * @return string
+     */
+    protected function getFileNavigationUrls(string $activeView = 'all'): string
+    {
+        $buttons = [
+            'all'       => ($activeView === 'all') ? 'btn-primary' : 'btn-outline-primary',
+            'media'     => ($activeView === 'media') ? 'btn-primary' : 'btn-outline-primary',
+            'documents' => ($activeView === 'documents') ? 'btn-primary' : 'btn-outline-primary',
+            'audio'     => ($activeView === 'audio') ? 'btn-primary' : 'btn-outline-primary',
+            'archives'  => ($activeView === 'archives') ? 'btn-primary' : 'btn-outline-primary',
+            'others'    => ($activeView === 'others') ? 'btn-primary' : 'btn-outline-primary',
+        ];
+
+        return '
+        <a class="btn ' . $buttons['all'] . '" href="' . base_url("files") . '">
+            <i class="fas fa-folder"></i> All
+        </a>
+        &nbsp;&nbsp;
+        <a class="btn ' . $buttons['media'] . '" href="' . base_url("files/media") . '">
+            <i class="fas fa-photo-video"></i> Media
+        </a>
+        &nbsp;&nbsp;
+        <a class="btn ' . $buttons['documents'] . '" href="' . base_url("files/documents") . '">
+            <i class="fas fa-file-alt"></i> Documents
+        </a>
+        &nbsp;&nbsp;
+        <a class="btn ' . $buttons['audio'] . '" href="' . base_url("files/audio") . '">
+            <i class="fas fa-music"></i> Audio
+        </a>
+        &nbsp;&nbsp;
+        <a class="btn ' . $buttons['archives'] . '" href="' . base_url("files/archives") . '">
+            <i class="fas fa-file-archive"></i> Archives
+        </a>
+        &nbsp;&nbsp;
+        <a class="btn ' . $buttons['others'] . '" href="' . base_url("files/others") . '">
+            <i class="fas fa-ellipsis-h"></i> Others
+        </a>
+        &nbsp;&nbsp;';
+    }
+
+    /**
+     * Get page titles for different File views.
+     *
+     * @param string $viewType
+     * @return string
+     */
+    protected function getFilePageTitle(string $viewType): string
+    {
+        $titles = [
+            'all'       => 'All Files',
+            'images'    => 'Images',
+            'videos'    => 'Videos',
+            'media'     => 'Media Files',
+            'documents' => 'Documents',
+            'audio'     => 'Audio Files',
+            'archives'  => 'Archives',
+            'others'    => 'Other Files'
+        ];
+
+        return $titles[$viewType] ?? 'Files';
+    }
+
+    /**
+     * Get common data for File views.
+     *
+     * @param string $viewType
+     * @return array
+     */
+    protected function getFileCommonData(string $viewType = 'all'): array
+    {
+        $paginationData = $this->getPaginationData();
+
+        return array_merge([
+            'pag' => 'files',
+            'files_head' => $this->getFilePageTitle($viewType),
+            'files_urls' => $this->getFileNavigationUrls($viewType),
+            // We can add counts here later if needed
+        ], $paginationData);
     }
 
     /**

@@ -2,20 +2,15 @@
 
 namespace App\Controllers\clients;
 
-use App\Controllers\BaseController;
+
 use App\Models\Mod_Finder;
 use App\Models\Mod_User;
 use App\Models\Mod_Access_Logs;
 use CodeIgniter\HTTP\RedirectResponse;
 use CodeIgniter\Files\File;
 
-class Account extends BaseController
+class Account extends BaseClientController
 {
-    /**
-     * @var Mod_Finder
-     */
-    protected $modFinder;
-
     /**
      * @var Mod_User
      */
@@ -26,15 +21,13 @@ class Account extends BaseController
      */
     protected $modAccessLogs;
 
-    /**
-     * @var int
-     */
-    protected $userId;
+    // Remove $modFinder, $userId as they are in BaseClientController
+    // Keep $userData if needed or use parent's structure
 
     /**
      * @var array
      */
-    protected $userData;
+    protected $userData; // BaseClientController doesn't have userData property exposed maybe?
 
     /**
      * @var int
@@ -53,39 +46,23 @@ class Account extends BaseController
         \CodeIgniter\HTTP\RequestInterface $request,
         \CodeIgniter\HTTP\ResponseInterface $response,
         \Psr\Log\LoggerInterface $logger
-    ) {
+    ): void {
         parent::initController($request, $response, $logger);
 
-        // Check authentication
-        if (!auth()->loggedIn()) {
-            session()->setFlashdata('error', 'Please login to continue');
-            return redirect()->to('login')->send();
-        }
+        // Auth check and Mod_Finder init are handled in parent
 
-        // Initialize models
-        $this->modFinder = new Mod_Finder();
+        // Initialize specific models
         $this->modUser = new Mod_User();
         $this->modAccessLogs = new Mod_Access_Logs();
 
-        // Get authenticated user data
+        // Get authenticated user data (BaseClientController might have userId set, but let's keep this for consistency with Account's logic for now)
         $this->userData = $this->getAuthenticatedUserData();
         $this->userId = $this->userData['id'] ?? null;
-
-        if (!$this->userId) {
-            session()->setFlashdata('error', 'User data not found');
-            return redirect()->to('login')->send();
-        }
+        
+        // Ensure userId is synced with parent if needed, though parent likely set it from auth
     }
 
-    // =================================================================
-    // PROFILE METHODS
-    // =================================================================
-
-    /**
-     * Account profile page.
-     *
-     * @return string
-     */
+    // ... home ...
     public function home(): string
     {
         try {
@@ -101,7 +78,7 @@ class Account extends BaseController
             // Check Android connection status
             $androidConnected = $this->isAndroidConnected();
 
-            // Get user data counts
+            // Get user data counts from BaseClientController
             $dataCounts = $this->getUserDataCounts();
 
             // Get usage metrics
@@ -113,14 +90,18 @@ class Account extends BaseController
                 'user_vars' => $userVars,
                 'user_token' => $userToken,
                 'android_connected' => $androidConnected,
-                'total_apps' => $dataCounts['apps'] ?? 0,
-                'total_contacts' => $dataCounts['contacts'] ?? 0,
-                'total_sms' => $dataCounts['sms'] ?? 0,
-                'total_calls' => $dataCounts['calls'] ?? 0,
+                // Map BaseClientController keys (total_*) if Account expects them, or just merge
+                // BaseClientController returns ['total_apps' => ..., 'total_files' => ...]
+                // Account::home used $dataCounts['apps']. I will update to use the merged array directly or map it.
+                // Best to simple merge and use the keys in view if view expects total_*.
+                // BUT Account view 'card' might expect 'total_apps'.
+                // Let's just merge $dataCounts.
                 'total_tokens' => $usageMetrics['total_tokens'] ?? 0,
                 'connected_devices' => $usageMetrics['connected_devices'] ?? 0,
                 'csrf_token' => csrf_hash(),
             ];
+            
+            $viewData = array_merge($viewData, $dataCounts);
 
             return $this->renderView('profile', $viewData);
 
@@ -128,6 +109,115 @@ class Account extends BaseController
             log_message('error', 'Account home error: ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to load account information');
             return redirect()->back();
+        }
+    }
+
+    // ... setting ...
+    public function setting(): string
+    {
+        try {
+            // Get enhanced user data
+            $userData = $this->getEnhancedUserData();
+
+            // Get user variables and token
+            $userVars = $this->getUserVars();
+            $userToken = $this->ensureUserToken();
+
+            // Get user devices and sessions
+            $userDevices = $this->getUserDevices();
+            $userSessions = $this->getUserSessions();
+
+            // Get usage metrics
+            $usageMetrics = $this->getUsageMetrics();
+            
+            // Stats
+            $dataCounts = $this->getUserDataCounts();
+
+            $viewData = [
+                'pag' => 'account_setting',
+                'user_info' => $userData,
+                'user_vars' => $userVars,
+                'user_token' => $userToken,
+                'user_devices' => $userDevices,
+                'user_sessions' => $userSessions,
+                'activeSessions' => $this->modUser->get_active_sessions_count($this->userId),
+                'securityEvents' => $this->modUser->get_security_events_count($this->userId),
+                'total_tokens' => $usageMetrics['total_tokens'] ?? 0,
+                'connected_devices' => $usageMetrics['connected_devices'] ?? 0,
+                'tokenExpiry' => isset($userToken['expires_at']) ? date('M d, Y H:i', strtotime($userToken['expires_at'])) : 'Never',
+                'currentTokenDisplay' => $userToken['token'] ?? 'No token found',
+                'qrCodeData' => $this->generateQRCodeData($userToken['token'] ?? ''),
+                'csrf_token' => csrf_hash(),
+            ];
+            
+            $viewData = array_merge($viewData, $dataCounts);
+
+            return $this->renderView('settings', $viewData);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Account settings error: ' . $e->getMessage());
+            session()->setFlashdata('error', 'Failed to load settings');
+            return redirect()->back();
+        }
+    }
+    
+    // ... access_logs ...
+    public function access_logs($tab = 'all'): string
+    {
+        try {
+            // Get access logs for the user
+            $accessLogs = $this->getAccessLogs();
+
+            // Process logs with tab filtering
+            $processedData = $this->processAccessLogsTabbed($accessLogs, $tab);
+
+            // Get access statistics
+            $accessStats = $this->getAccessStats();
+
+            // Get enhanced user data
+            $userData = $this->getEnhancedUserData();
+            
+            // Stats
+            $dataCounts = $this->getUserDataCounts();
+
+            $viewData = [
+                'pag' => 'account_logs',
+                'activeTab' => $tab,
+                'user_info' => $userData,
+                'csrf_token' => csrf_hash(),
+                'access_head' => 'Access Logs',
+            ];
+
+            // Merge processed data
+            $viewData = array_merge($viewData, $processedData, $accessStats, $dataCounts);
+
+            return $this->renderView('access_logs', $viewData);
+
+        } catch (\Exception $e) {
+            // ... (keep catch block but ensure stats are missing or default)
+             // For error view, maybe just empty stats
+            log_message('error', 'Access logs error: ' . $e->getMessage());
+
+            return $this->renderView('access_logs', [
+                'pag' => 'account_logs',
+                'activeTab' => $tab,
+                'user_info' => $this->userData,
+                'access_head' => 'Access Logs',
+                'user_logs' => [],
+                'webLogs' => [],
+                'androidLogs' => [],
+                'webLogsCount' => 0,
+                'androidLogsCount' => 0,
+                'totalLogs' => 0,
+                'successfulLogins' => 0,
+                'failedAttempts' => 0,
+                'suspiciousActivities' => 0,
+                'lastUpdated' => 'Never',
+                'by_status' => [],
+                'by_category' => [],
+                'by_device' => [],
+                'csrf_token' => csrf_hash(),
+            ]);
         }
     }
 
@@ -344,53 +434,7 @@ class Account extends BaseController
     // SETTINGS METHODS
     // =================================================================
 
-    /**
-     * Account settings page.
-     *
-     * @return string
-     */
-    public function setting(): string
-    {
-        try {
-            // Get enhanced user data
-            $userData = $this->getEnhancedUserData();
 
-            // Get user variables and token
-            $userVars = $this->getUserVars();
-            $userToken = $this->ensureUserToken();
-
-            // Get user devices and sessions
-            $userDevices = $this->getUserDevices();
-            $userSessions = $this->getUserSessions();
-
-            // Get usage metrics
-            $usageMetrics = $this->getUsageMetrics();
-
-            $viewData = [
-                'pag' => 'account_setting',
-                'user_info' => $userData,
-                'user_vars' => $userVars,
-                'user_token' => $userToken,
-                'user_devices' => $userDevices,
-                'user_sessions' => $userSessions,
-                'activeSessions' => $this->modUser->get_active_sessions_count($this->userId),
-                'securityEvents' => $this->modUser->get_security_events_count($this->userId),
-                'total_tokens' => $usageMetrics['total_tokens'] ?? 0,
-                'connected_devices' => $usageMetrics['connected_devices'] ?? 0,
-                'tokenExpiry' => isset($userToken['expires_at']) ? date('M d, Y H:i', strtotime($userToken['expires_at'])) : 'Never',
-                'currentTokenDisplay' => $userToken['token'] ?? 'No token found',
-                'qrCodeData' => $this->generateQRCodeData($userToken['token'] ?? ''),
-                'csrf_token' => csrf_hash(),
-            ];
-
-            return $this->renderView('settings', $viewData);
-
-        } catch (\Exception $e) {
-            log_message('error', 'Account settings error: ' . $e->getMessage());
-            session()->setFlashdata('error', 'Failed to load settings');
-            return redirect()->back();
-        }
-    }
 
     /**
      * Gets user devices from access logs.
@@ -578,65 +622,7 @@ class Account extends BaseController
     // ACCESS LOGS METHODS
     // =================================================================
 
-    /**
-     * Access logs page with tabbed navigation.
-     *
-     * @param string $tab
-     * @return string
-     */
-    public function access_logs($tab = 'all'): string
-    {
-        try {
-            // Get access logs for the user
-            $accessLogs = $this->getAccessLogs();
 
-            // Process logs with tab filtering
-            $processedData = $this->processAccessLogsTabbed($accessLogs, $tab);
-
-            // Get access statistics
-            $accessStats = $this->getAccessStats();
-
-            // Get enhanced user data
-            $userData = $this->getEnhancedUserData();
-
-            $viewData = [
-                'pag' => 'account_logs',
-                'activeTab' => $tab,
-                'user_info' => $userData,
-                'csrf_token' => csrf_hash(),
-                'access_head' => 'Access Logs',
-            ];
-
-            // Merge processed data
-            $viewData = array_merge($viewData, $processedData, $accessStats);
-
-            return $this->renderView('access_logs', $viewData);
-
-        } catch (\Exception $e) {
-            log_message('error', 'Access logs error: ' . $e->getMessage());
-
-            return $this->renderView('access_logs', [
-                'pag' => 'account_logs',
-                'activeTab' => $tab,
-                'user_info' => $this->userData,
-                'access_head' => 'Access Logs',
-                'user_logs' => [],
-                'webLogs' => [],
-                'androidLogs' => [],
-                'webLogsCount' => 0,
-                'androidLogsCount' => 0,
-                'totalLogs' => 0,
-                'successfulLogins' => 0,
-                'failedAttempts' => 0,
-                'suspiciousActivities' => 0,
-                'lastUpdated' => 'Never',
-                'by_status' => [],
-                'by_category' => [],
-                'by_device' => [],
-                'csrf_token' => csrf_hash(),
-            ]);
-        }
-    }
 
     /**
      * Gets access logs for the current user.
@@ -1153,25 +1139,7 @@ class Account extends BaseController
         }
     }
 
-    /**
-     * Gets user data counts.
-     *
-     * @return array
-     */
-    private function getUserDataCounts(): array
-    {
-        try {
-            return [
-                'apps' => $this->modFinder->get_count_Apps($this->userId),
-                'contacts' => $this->modFinder->get_count_Contacts($this->userId),
-                'sms' => $this->modFinder->get_count_Sms($this->userId),
-                'calls' => $this->modFinder->get_count_Calls($this->userId),
-            ];
-        } catch (\Exception $e) {
-            log_message('error', 'Failed to get user data counts: ' . $e->getMessage());
-            return ['apps' => 0, 'contacts' => 0, 'sms' => 0, 'calls' => 0];
-        }
-    }
+
 
     // =================================================================
     // UTILITY METHODS

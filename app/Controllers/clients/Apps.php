@@ -120,7 +120,7 @@ class Apps extends BaseClientController
 
             // Set up pagination
             $pager = \Config\Services::pager();
-            $pager->makeLinks($page, $perPage, $total, 'bootstrap4');
+            $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
 
             return [
                 'data' => $results,
@@ -176,7 +176,7 @@ class Apps extends BaseClientController
 
             // Set up pagination
             $pager = \Config\Services::pager();
-            $pager->makeLinks($page, $perPage, $total, 'bootstrap4');
+            $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
 
             return [
                 'data' => $results,
@@ -232,7 +232,7 @@ class Apps extends BaseClientController
 
             // Set up pagination
             $pager = \Config\Services::pager();
-            $pager->makeLinks($page, $perPage, $total, 'bootstrap4');
+            $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
 
             return [
                 'data' => $results,

@@ -16,15 +16,15 @@
     <!-- favicon -->
     <link rel="shortcut icon" href="<?= base_url('images/favicon.ico') ?>">
     <!-- Bootstrap -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <link href="<?php echo base_url('assets/landing/css/bootstrap.min.css'); ?>" rel="stylesheet" type="text/css"/>
     <!-- Icons -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/materialdesignicons.min.css" rel="stylesheet"
+    <link href="<?php echo base_url('assets/landing/css/materialdesignicons.min.css'); ?>" rel="stylesheet"
           type="text/css"/>
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
     <!-- Main css -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/style.min.css" rel="stylesheet" type="text/css"
+    <link href="<?php echo base_url('assets/landing/css/style.min.css'); ?>" rel="stylesheet" type="text/css"
           id="theme-opt"/>
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/colors/default.css" rel="stylesheet" id="color-opt">
+    <link href="<?php echo base_url('assets/landing/css/colors/default.css'); ?>" rel="stylesheet" id="color-opt">
     <style>
         .bg-overlay-primary {
             background: linear-gradient(90deg, #4e73df 0%, #4e73df 100%);
@@ -144,13 +144,13 @@
 <!-- Hero End -->
 
 <!-- javascript -->
-<script src="https://prjs4.chegecache.co.ke/assets/landing/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo base_url('assets/landing/js/bootstrap.bundle.min.js'); ?>"></script>
 <!-- Icons -->
-<script src="https://prjs4.chegecache.co.ke/assets/landing/js/feather.min.js"></script>
+<script src="<?php echo base_url('assets/landing/js/feather.min.js'); ?>"></script>
 <!-- Icons -->
-<script src="https://prjs4.chegecache.co.ke/assets/landing/js/switcher.js"></script>
+<script src="<?php echo base_url('assets/landing/js/switcher.js'); ?>"></script>
 <!-- Main Js -->
-<script src="https://prjs4.chegecache.co.ke/assets/landing/js/app.js"></script>
+<script src="<?php echo base_url('assets/landing/js/app.js'); ?>"></script>
 
 <script>
     // Hide preloader when page loads

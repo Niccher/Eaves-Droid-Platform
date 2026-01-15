@@ -26,7 +26,9 @@ class Receive extends BaseController
     ];
 
     // Allowed file categories
-    private $allowedCategories = ['contacts', 'logs', 'sms', 'apps'];
+    private $allowedCategories = ['contacts', 'logs', 'sms', 'apps', 'files'];
+
+
 
     /**
      * Upload file endpoint
@@ -405,7 +407,8 @@ class Receive extends BaseController
             'contacts' => 'get_contacts',
             'logs' => 'get_logs',
             'sms' => 'get_sms',
-            'apps' => 'get_apps'
+            'apps' => 'get_apps',
+            'files' => 'get_files'
         ];
 
         if (isset($methodMap[$category]) && method_exists($modelParse, $methodMap[$category])) {

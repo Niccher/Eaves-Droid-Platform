@@ -2,31 +2,24 @@
 
 namespace App\Controllers\clients;
 
-use App\Controllers\BaseController;
+
 
 use App\Models\Mod_Finder;
 use CodeIgniter\API\ResponseTrait;
 
-class Client extends BaseController
+class Client extends BaseClientController
 {
 	use ResponseTrait;
 
 	public function home(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
-
+        // Auth check is handled in BaseClientController::initController
+        
 		$data['pag'] = 'home';
-		$data["user_info"] = $model_finder->basic_user();
+		$data["user_info"] = $this->finderModel->basic_user();
 
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
+        // Get counts using BaseClientController method
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
 
 		return view('headers_footers/head_users')
 			. view('headers_footers/sidebar_users', $data)
@@ -35,20 +28,14 @@ class Client extends BaseController
 	}
 
 	public function call_logs(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
+        // Auth check is handled in BaseClientController::initController
 
 		$data['pag'] = 'call_logs';
-		$data["user_info"] = $model_finder->basic_user();
+		$data["user_info"] = $this->finderModel->basic_user();
 
-		$data["total_apps"] = $model_finder->get_count_Apps($data["user_info"]['id']);
-		$data["total_contacts"] = $model_finder->get_count_Contacts($data["user_info"]['id']);
-		$data["total_sms"] = $model_finder->get_count_Sms($data["user_info"]['id'] );
-		$data["total_calls"] = $model_finder->get_count_Calls($data["user_info"]['id']);
-		$data["active_sms"] = $model_finder->get_sms_active($data["user_info"]['id']);
-		$data["active_calls"] = $model_finder->get_calls_active($data["user_info"]['id']);
+        // Get counts using BaseClientController method
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
 
 		$data['call_urls'] = '
                         <a class="btn btn-primary" href="'.base_url("call_logs").'">All</a>
@@ -62,7 +49,7 @@ class Client extends BaseController
                         <a class="btn btn-outline-primary" href="'.base_url("call_logs/blocked").'">Blocked</a>
                         &nbsp;&nbsp;';
 
-		$data["call_logs_dump"] = $model_finder->get_call_logs($data["user_info"]['id']);
+		$data["call_logs_dump"] = $this->finderModel->get_call_logs($data["user_info"]['id']);
 
 		return view('headers_footers/head_users')
 			. view('headers_footers/sidebar_users', $data)
@@ -71,13 +58,14 @@ class Client extends BaseController
 	}
 
 	public function faqs(){
-		$model_finder = new Mod_Finder();
-		if (!auth()->loggedIn()){
-			return redirect()->to('login');
-		}
-
+        // Auth check is handled in BaseClientController::initController
+        
 		$data['pag'] = 'faqs';
-		$data["user_info"] = $model_finder->basic_user();
+		$data["user_info"] = $this->finderModel->basic_user();
+
+        // Get counts for sidebar
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
 
 		return view('headers_footers/head_users')
 			. view('headers_footers/sidebar_users', $data)
