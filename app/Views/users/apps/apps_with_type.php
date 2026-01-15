@@ -177,10 +177,21 @@
                         </div>
                         <!-- Card Footer with Pagination -->
                         <div class="card-footer clearfix">
-                            <div class="float-right">
-                                <?php if (isset($pager) && $totalApps > 20): ?>
-                                    <?= $pager->links('default', 'bootstrap5_full') ?>
-                                <?php endif; ?>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="dataTables_info" role="status">
+                                        Showing <?php echo (($currentPage - 1) * 50) + 1 ?>
+                                        to <?php echo min($currentPage * 50, $totalApps ?? 0) ?>
+                                        of <?php echo $totalApps ?? 0 ?> entries
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="float-right">
+                                        <?php if (isset($pager) && $totalApps > 20): ?>
+                                            <?= $pager->links('default', 'bootstrap5_full') ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

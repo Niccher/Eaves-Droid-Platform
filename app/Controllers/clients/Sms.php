@@ -70,6 +70,7 @@ class Sms extends BaseClientController
         // Prepare data for the view
         $data = array_merge($commonData, [
             'sms_dump' => $smsData,
+            'pager' => $this->finderModel->pager,
         ]);
 
         return $this->renderSmsView($viewFile, $data);

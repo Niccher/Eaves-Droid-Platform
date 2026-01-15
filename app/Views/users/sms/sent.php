@@ -373,14 +373,14 @@
                                     <div class="col-md-6">
                                         <div class="dataTables_info" role="status">
                                             Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
-                                            to <?php echo min($currentPage * $perPage, $totalSMS ?? 0) ?>
-                                            of <?php echo $totalSMS ?? 0 ?> entries
+                                            to <?php echo min($currentPage * $perPage, $totalSmsSent ?? 0) ?>
+                                            of <?php echo $totalSmsSent ?? 0 ?> entries
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="float-right">
                                             <?php if (isset($pager) && $totalSmsSent > $perPage): ?>
-                                                <?php echo $pager->links('bootstrap5_full', 'bootstrap5_full'); ?>
+                                                <?php echo $pager->links('default', 'bootstrap5_full'); ?>
                                             <?php endif; ?>
                                         </div>
                                     </div>

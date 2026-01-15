@@ -182,11 +182,16 @@
                         <div class="card-footer">
                             <div class="row">
                                 <div class="col-md-6">
+                                    <div class="dataTables_info" role="status">
+                                        Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
+                                        to <?php echo min($currentPage * $perPage, $totalContacts ?? 0) ?>
+                                        of <?php echo $totalContacts ?? 0 ?> entries
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="float-right">
                                         <?php if (isset($pager) && $totalContacts > $perPage): ?>
-                                            <?php echo $pager->links('bootstrap5_full', 'bootstrap5_full'); ?>
+                                            <?php echo $pager->links('default', 'bootstrap5_full'); ?>
                                         <?php endif; ?>
                                     </div>
                                 </div>

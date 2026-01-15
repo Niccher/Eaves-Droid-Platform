@@ -27,12 +27,11 @@ class Contacts extends BaseClientController
         $totalContacts = $this->finderModel->get_count_Contacts($this->userId);
 
         $data = [
-            'pag' => 'contacts',
             'contacts_dump' => $contacts,
-            'pager' => $pager,
-            'currentPage' => $currentPage,
-            'perPage' => $perPage,
-            'totalContacts' => $totalContacts,
+            'pager' => $this->finderModel->pager,
+            'currentPage' => $this->getPaginationData()['currentPage'],
+            'perPage' => $this->perPage,
+            'totalContacts' => $totalContacts
         ];
 
         return $this->renderUserView('users/contacts', $data);

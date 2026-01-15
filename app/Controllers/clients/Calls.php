@@ -95,6 +95,7 @@ class Calls extends BaseClientController
         // Prepare data for the view
         $data = array_merge($commonData, [
             'call_logs_dump' => $callData,
+            'pager' => $this->finderModel->pager,
         ]);
 
         return $this->renderCallView($viewFile, $data);
