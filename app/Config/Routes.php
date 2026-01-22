@@ -36,7 +36,7 @@ $routes->get('download', 'Home::landing_download', ['as' => 'download']);
 $routes->get('aboutus', 'Home::landing_aboutus', ['as' => 'about']);
 $routes->get('faqs_terms', 'Home::landing_faqs', ['as' => 'faqs']);
 $routes->get('how_to', 'Home::landing_how_to', ['as' => 'how-to']);
-$routes->get('prices', 'Home::landing_prices', ['as' => 'pricing']);
+$routes->get('pricing', 'Home::landing_prices', ['as' => 'pricing']);
 
 // Contact Form (GET for view, POST for submission)
 $routes->get('contactus', 'ContactController::index', ['as' => 'contact']);
