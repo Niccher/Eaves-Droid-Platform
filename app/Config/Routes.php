@@ -470,7 +470,7 @@ $routes->group('', [
          * @param string $contactId Contact identifier
          * @return string
          */
-        $routes->get('analyze/sms/(:any)', 'Contacts::analyzeSms/$1', ['as' => 'contact-analyze-sms']);
+        $routes->get('analyze/sms/(:any)', 'Analyze::sms/$1', ['as' => 'contact-analyze-sms']);
 
         /**
          * Analyzes SMS with pagination.
@@ -487,7 +487,7 @@ $routes->group('', [
          * @param string $contactId Contact identifier
          * @return string
          */
-        $routes->get('analyze/calls/(:any)', 'Contacts::analyzeCalls/$1', ['as' => 'contact-analyze-calls']);
+        $routes->get('analyze/calls/(:any)', 'Analyze::calls/$1', ['as' => 'contact-analyze-calls']);
 
         /**
          * Analyzes calls with pagination.

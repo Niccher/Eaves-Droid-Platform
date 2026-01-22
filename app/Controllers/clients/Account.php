@@ -1036,16 +1036,27 @@ class Account extends BaseClientController
                     return redirect()->to('account/home');
             }
 
+            if (empty($data) || (isset($data['error']) && $data['error'])) {
+                 session()->setFlashdata('error', 'No data found to export or error occurred.');
+                 return redirect()->to('account/home');
+            }
+
             // Log export action
             $this->logUserAction('data_export_' . $type, 'system', 'low', 1);
 
             // Update export count
             $this->updateExportCount();
+            
+            // Encode JSON with error checking
+            $jsonData = json_encode($data, JSON_PRETTY_PRINT);
+            if ($jsonData === false) {
+                throw new \Exception('JSON encoding failed: ' . json_last_error_msg());
+            }
 
             return $this->response
                 ->setContentType('application/json')
                 ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                ->setBody(json_encode($data, JSON_PRETTY_PRINT));
+                ->setBody($jsonData);
 
         } catch (\Exception $e) {
             log_message('error', 'Export data error: ' . $e->getMessage());

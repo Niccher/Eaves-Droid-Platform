@@ -47,14 +47,17 @@
                                                 $source = 'Sent to <b><a href ="#"> ' . $element['sms_number'] . '</a></b>';
                                             }
 
+                                            $smsDate = date('d M Y', $element['sms_time'] / 1000);
+                                            $smsTime = date('H:i', $element['sms_time'] / 1000);
+
                                             echo '
                                                             <div class="time-label">
-                                                                <span class="bg-gray"> ' . $element['sms_time'] . '</span>
+                                                                <span class="bg-gray"> ' . $smsDate . '</span>
                                                             </div>
                                                             <div>
                                                                 ' . $type . '
                                                                 <div class="timeline-item">
-                                                                    <span class="time font-weight-bold text-monospace"><i class="far fa-clock"></i> ' . $element['sms_time'] . '</span>
+                                                                    <span class="time font-weight-bold text-monospace"><i class="far fa-clock"></i> ' . $smsTime . '</span>
                                                                     <h3 class="timeline-header">' . $source . '</h3>
                                                                     <div class="timeline-body">
                                                                         ' . base64_decode($element['sms_body']) . ' 

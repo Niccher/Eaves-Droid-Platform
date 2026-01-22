@@ -278,7 +278,7 @@ class Mod_Finder extends Model
 
         } catch (\Exception $e) {
             log_message('error', 'get_contacts error: ' . $e->getMessage());
-            return ['error' => 'get_contacts error: ' . $e->getMessage()];
+            return [];
         }
     }
 
@@ -336,7 +336,7 @@ class Mod_Finder extends Model
 
         } catch (\Exception $e) {
             log_message('error', 'get_contacts error: ' . $e->getMessage());
-            return ['error' => 'get_contacts error: ' . $e->getMessage()];
+            return [];
         }
     }
 
@@ -430,7 +430,7 @@ class Mod_Finder extends Model
 
         } catch (\Exception $e) {
             log_message('error', 'get_sms error: ' . $e->getMessage());
-            return ['error' => 'get_sms error: ' . $e->getMessage()];
+            return [];
         }
     }
 
@@ -500,7 +500,7 @@ class Mod_Finder extends Model
 
         } catch (\Exception $e) {
             log_message('error', 'get_call_logs error: ' . $e->getMessage());
-            return ['error' => 'get_call_logs error: ' . $e->getMessage()];
+            return [];
         }
     }
 
@@ -625,7 +625,7 @@ class Mod_Finder extends Model
 
         } catch (\Exception $e) {
             log_message('error', 'get_apps error: ' . $e->getMessage());
-            return ['error' => 'get_apps error: ' . $e->getMessage()];
+            return [];
         }
     }
 

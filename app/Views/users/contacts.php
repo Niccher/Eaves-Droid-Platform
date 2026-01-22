@@ -8,7 +8,7 @@
                     <div class="d-flex align-items-center">
                         <h1 class="h2 mb-0">
                             <i class="fas fa-address-book text-primary mr-2"></i>
-                            <?php echo ucfirst($pag) ?? 'Saved Contacts' ?>
+                            <?php echo empty($pag) ? 'Saved Contacts' : ucfirst($pag) ?>
                         </h1>
                         <div class="ml-3">
                             <span class="badge badge-light border p-2">

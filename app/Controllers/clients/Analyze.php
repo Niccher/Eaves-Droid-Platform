@@ -29,6 +29,10 @@ class Analyze extends BaseController{
 
         $contact = $model_extract->get_contact_at($contact_id);
 
+        if (!$contact) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Contact not found");
+        }
+
         $number = substr($contact['Number'], 0, 1);
         $new_number = $contact['Number'];
         $old_number = $contact['Number'];
@@ -67,6 +71,10 @@ class Analyze extends BaseController{
         $contact_id = $encrypter->decrypt(base64_decode($decod_url));
 
         $contact = $model_extract->get_contact_at($contact_id);
+
+        if (!$contact) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Contact not found");
+        }
 
 	    $number = substr($contact['Number'], 0, 1);
 	    $new_number = $contact['Number'];

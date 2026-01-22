@@ -55,16 +55,19 @@
                                                 $source = 'Blocked <b><a href ="#"> ' . $element['Caller'] . '</a></b>';
                                             }
 
+                                            $callDate = date('d M Y', $element['Timestamp'] / 1000);
+                                            $callTime = date('H:i', $element['Timestamp'] / 1000);
+
                                             echo '
                                                             <div class="time-label">
                                                                 <span class="bg-gray">
-                                                                ' . ($element['Timestamp']) . '
+                                                                ' . $callDate . '
                                                                 </span>
                                                             </div>
                                                             <div>
                                                                 ' . $type . '
                                                                 <div class="timeline-item">
-                                                                    <span class="time font-weight-bold text-monospace"><i class="far fa-clock"></i> ' . $element['Timestamp'] . '</span>
+                                                                    <span class="time font-weight-bold text-monospace"><i class="far fa-clock"></i> ' . $callTime . '</span>
                                                                     <h3 class="timeline-header">' . $source . '</h3>
                                                                     <div class="timeline-body">
                                                                         ' . gmdate("i:s", $element['Durations']) . ' 

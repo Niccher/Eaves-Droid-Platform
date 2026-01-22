@@ -17,11 +17,14 @@ class Mod_Extract extends Model
     public function get_sms_between_contacts(int $user_id, string $contactNumber1, string $contactNumber2): array
     {
         try {
-            return $this->db->table('tbl_Sms')
+            return $this->db->table('tbl_sms')
+                ->select('*, address as sms_number, body as sms_body, sms_date as sms_time')
                 ->where('owner_id', $user_id)
-                ->where('sms_number', $contactNumber1)
-                ->orWhere('sms_number', $contactNumber2)
-                ->orderBy('sms_time', 'DESC')
+                ->groupStart()
+                    ->where('address', $contactNumber1)
+                    ->orWhere('address', $contactNumber2)
+                ->groupEnd()
+                ->orderBy('sms_date', 'DESC')
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {
@@ -41,11 +44,14 @@ class Mod_Extract extends Model
     public function get_logs_between_contacts(int $user_id, string $contactNumber1, string $contactNumber2): array
     {
         try {
-            return $this->db->table('tbl_Logs')
+            return $this->db->table('tbl_logs')
+                ->select('*, call_type as Type, phone_number as Caller, call_date as Timestamp, duration_seconds as Durations')
                 ->where('owner_id', $user_id)
-                ->where('Caller', $contactNumber1)
-                ->orWhere('Caller', $contactNumber2)
-                ->orderBy('Timestamp', 'DESC')
+                ->groupStart()
+                    ->where('phone_number', $contactNumber1)
+                    ->orWhere('phone_number', $contactNumber2)
+                ->groupEnd()
+                ->orderBy('call_date', 'DESC')
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {
@@ -63,11 +69,20 @@ class Mod_Extract extends Model
     public function get_contact_at(int $contact_id)
     {
         try {
-            $result = $this->db->table('tbl_Contacts')
-                ->where('ID', $contact_id)
+            $result = $this->db->table('tbl_contacts')
+                ->select('*, display_name as Name')
+                ->where('counter', $contact_id)
                 ->get()
                 ->getRowArray();
+                
             if ($result) {
+                // Handle new schema phone numbers (stored as JSON)
+                if (isset($result['phone_numbers'])) {
+                    $phoneNumbers = json_decode($result['phone_numbers'], true);
+                    $result['Number'] = !empty($phoneNumbers) && is_array($phoneNumbers) ? $phoneNumbers[0] : '';
+                } else {
+                    $result['Number'] = '';
+                }
                 return $result;
             }
             log_message('error', 'No contact found for ID ' . $contact_id);
@@ -88,9 +103,10 @@ class Mod_Extract extends Model
     public function get_sms_from(int $user_id, string $sender): array
     {
         try {
-            return $this->db->table('tbl_Sms')
+            return $this->db->table('tbl_sms')
+                ->select('*, address as sms_number, body as sms_body, sms_date as sms_time')
                 ->where('owner_id', $user_id)
-                ->where('sms_number', $sender)
+                ->where('address', $sender)
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {
