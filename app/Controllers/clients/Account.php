@@ -123,9 +123,8 @@ class Account extends BaseClientController
             $userVars = $this->getUserVars();
             $userToken = $this->ensureUserToken();
 
-            // Get user devices and sessions
+            // Get user devices
             $userDevices = $this->getUserDevices();
-            $userSessions = $this->getUserSessions();
 
             // Get usage metrics
             $usageMetrics = $this->getUsageMetrics();
@@ -139,7 +138,8 @@ class Account extends BaseClientController
                 'user_vars' => $userVars,
                 'user_token' => $userToken,
                 'user_devices' => $userDevices,
-                'user_sessions' => $userSessions,
+                'user_devices' => $userDevices,
+                'recent_files' => $this->getRecentFiles(),
                 'activeSessions' => $this->modUser->get_active_sessions_count($this->userId),
                 'securityEvents' => $this->modUser->get_security_events_count($this->userId),
                 'total_tokens' => $usageMetrics['total_tokens'] ?? 0,
@@ -476,46 +476,24 @@ class Account extends BaseClientController
     }
 
     /**
-     * Gets user sessions from access logs.
+     * Gets recent files for the user.
      *
+     * @param int $limit
      * @return array
      */
-    private function getUserSessions(): array
+    private function getRecentFiles(int $limit = 10): array
     {
         try {
             $db = \Config\Database::connect();
-
-            $sessions = $db->table('tbl_user_actions')
-                ->select('session_id, ip_address, device_type, device_name, operating_system, browser, 
-                         MAX(created_at) as last_activity, COUNT(*) as activity_count')
-                ->where('user_id', $this->userId)
-                ->where('session_id IS NOT NULL')
-                ->groupBy('session_id, ip_address')
-                ->orderBy('last_activity', 'DESC')
+            return $db->table('uploaded_files')
+                ->select('original_filename as name, file_size_bytes as size_bytes, file_extension as extension, file_category as category, uploaded_at as created_at')
+                ->where('token_owner_id', $this->userId)
+                ->orderBy('uploaded_at', 'DESC')
+                ->limit($limit)
                 ->get()
                 ->getResultArray();
-
-            $formattedSessions = [];
-            foreach ($sessions as $session) {
-                $formattedSessions[] = [
-                    'session_id' => $session['session_id'],
-                    'ip_address' => $session['ip_address'] ?? 'N/A',
-                    'device_type' => $session['device_type'] ?? 'unknown',
-                    'device_name' => $session['device_name'] ?? 'Unknown Device',
-                    'os' => $session['operating_system'] ?? 'Unknown OS',
-                    'browser' => $session['browser'] ?? 'Unknown Browser',
-                    'last_activity' => $session['last_activity'],
-                    'last_activity_formatted' => isset($session['last_activity']) ?
-                        date('M d, Y H:i', strtotime($session['last_activity'])) : 'Never',
-                    'activity_count' => $session['activity_count'] ?? 0,
-                    'is_active' => isset($session['last_activity']) &&
-                        strtotime($session['last_activity']) > strtotime('-30 minutes')
-                ];
-            }
-
-            return $formattedSessions;
         } catch (\Exception $e) {
-            log_message('error', 'Failed to get user sessions: ' . $e->getMessage());
+            log_message('error', 'Failed to get recent files: ' . $e->getMessage());
             return [];
         }
     }

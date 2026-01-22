@@ -61,12 +61,12 @@
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" id="sessions-tab" data-toggle="tab" href="#sessions" role="tab">
+                                            <a class="nav-link" id="recent-uploads-tab" data-toggle="tab" href="#recent-uploads" role="tab">
                                                 <div class="text-center">
-                                                    <i class="fas fa-user-clock fa-2x mb-2 text-warning"></i>
-                                                    <h5 class="mb-1">Sessions</h5>
-                                                    <p class="mb-0 text-muted small">Active sessions</p>
-                                                    <span class="badge badge-warning mt-1"><?php echo $activeSessions ?? 0 ?></span>
+                                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-warning"></i>
+                                                    <h5 class="mb-1">Recent Uploads</h5>
+                                                    <p class="mb-0 text-muted small">Latest files</p>
+                                                    <span class="badge badge-warning mt-1"><?php echo count($recent_files) ?? 0 ?></span>
                                                 </div>
                                             </a>
                                         </li>
@@ -184,7 +184,7 @@
 
                                                     <!-- QR Code Container -->
                                                     <div class="mb-4" id="qrcode-container">
-                                                        <div id="qrcode" style="width:200px; height:200px; margin: 0 auto;"></div>
+                                                        <canvas id="qr-canvas" style="width:200px; height:200px; margin: 0 auto;"></canvas>
                                                     </div>
 
                                                     <div class="alert alert-light border">
@@ -251,14 +251,109 @@
                                     </div>
                                 </div>
 
-                                <!-- Devices Tab (remains same) -->
+                                <!-- Devices Tab -->
                                 <div class="tab-pane fade" id="devices" role="tabpanel">
-                                    <!-- ... existing devices tab content ... -->
+                                    <?php if (!empty($user_devices)): ?>
+                                        <div class="row">
+                                            <?php foreach ($user_devices as $device): ?>
+                                                <div class="col-md-6 col-lg-4 mb-4">
+                                                    <div class="card h-100 shadow-sm border-0 bg-light">
+                                                        <div class="card-body">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="bg-white p-3 rounded-circle shadow-sm mr-3">
+                                                                    <?php if (stripos($device['device_type'], 'mobile') !== false || stripos($device['device_type'], 'android') !== false): ?>
+                                                                        <i class="fas fa-mobile-alt fa-2x text-primary"></i>
+                                                                    <?php else: ?>
+                                                                        <i class="fas fa-laptop fa-2x text-info"></i>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                                <div>
+                                                                    <h5 class="card-title mb-0 font-weight-bold"><?php echo htmlspecialchars($device['device_name']); ?></h5>
+                                                                    <small class="text-muted"><?php echo htmlspecialchars($device['os']); ?></small>
+                                                                </div>
+                                                            </div>
+                                                            <ul class="list-unstyled mb-0">
+                                                                <li class="mb-2">
+                                                                    <i class="fas fa-globe text-muted mr-2" style="width: 20px;"></i>
+                                                                    <?php echo htmlspecialchars($device['browser']); ?>
+                                                                </li>
+                                                                <li class="mb-2">
+                                                                    <i class="fas fa-map-marker-alt text-muted mr-2" style="width: 20px;"></i>
+                                                                    <?php echo htmlspecialchars($device['ip_address']); ?>
+                                                                </li>
+                                                                <li>
+                                                                    <i class="far fa-clock text-muted mr-2" style="width: 20px;"></i>
+                                                                    Last seen: <?php echo $device['last_seen_formatted']; ?>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                        <div class="card-footer bg-transparent border-top-0 text-right">
+                                                            <span class="badge badge-success">Connected</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="text-center py-5">
+                                            <div class="mb-3">
+                                                <i class="fas fa-laptop-medical fa-4x text-muted opacity-50"></i>
+                                            </div>
+                                            <h5 class="text-muted">No devices found</h5>
+                                            <p class="text-muted small">Devices access history will appear here.</p>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
 
-                                <!-- Sessions Tab (remains same) -->
-                                <div class="tab-pane fade" id="sessions" role="tabpanel">
-                                    <!-- ... existing sessions tab content ... -->
+                                <!-- Recent Uploads Tab -->
+                                <div class="tab-pane fade" id="recent-uploads" role="tabpanel">
+                                    <?php if (!empty($recent_files)): ?>
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle">
+                                                <thead class="bg-light">
+                                                <tr>
+                                                    <th>File Name</th>
+                                                    <th>Size</th>
+                                                    <th>Type</th>
+                                                    <th>Date</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                <?php foreach ($recent_files as $file): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="mr-3">
+                                                                    <i class="fas fa-file text-primary fa-lg"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="font-weight-bold"><?php echo htmlspecialchars($file['name']); ?></span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td><?php echo $file['formatted_size'] ?? number_format($file['size_bytes'] / 1024, 2) . ' KB'; ?></td>
+                                                        <td>
+                                                            <span class="badge badge-light border">
+                                                                <?php echo strtoupper($file['extension'] ?? 'FILE'); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-muted">
+                                                            <?php echo !empty($file['created_at']) ? date('M d, Y H:i', strtotime($file['created_at'])) : 'N/A'; ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="text-center py-5">
+                                            <div class="mb-3">
+                                                <i class="fas fa-cloud-upload-alt fa-4x text-muted opacity-50"></i>
+                                            </div>
+                                            <h5 class="text-muted">No recent uploads</h5>
+                                            <p class="text-muted small">Files uploaded from your devices will appear here.</p>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -290,7 +385,7 @@
 </div>
 
 <!-- Include QR Code Library -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
 
 <style>
     .nav-tabs.nav-justified .nav-link {
@@ -362,22 +457,35 @@
 </style>
 
 <script>
-    $(document).ready(function() {
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ensure jQuery is loaded
+        if (typeof jQuery === 'undefined') {
+            console.error('jQuery is not loaded!');
+            return;
+        }
+        var $ = jQuery;
+
+        $(document).ready(function() {
         // Initialize QR Code
         function generateQRCode(token) {
-            $('#qrcode').empty();
+            const canvas = document.getElementById('qr-canvas');
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height); // Clear previous
+
             if (token && token !== 'No token found') {
-                QRCode.toCanvas(document.getElementById('qrcode'), token, {
+                QRCode.toCanvas(canvas, token, {
                     width: 200,
-                    height: 200,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
+                    margin: 2,
+                    color: {
+                        dark: "#000000",
+                        light: "#ffffff"
+                    },
+                    errorCorrectionLevel: 'M'
                 }, function(error) {
                     if (error) console.error(error);
                 });
             } else {
-                $('#qrcode').html('<div class="text-center text-muted p-5"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><p>No token available for QR code</p></div>');
+                // Handle no token - maybe simple text on canvas or keep empty
             }
         }
 
@@ -422,7 +530,7 @@
 
         // QR Code actions
         $('#downloadQRBtn').click(function() {
-            const canvas = document.querySelector('#qrcode canvas');
+            const canvas = document.getElementById('qr-canvas');
             if (canvas) {
                 const link = document.createElement('a');
                 link.download = 'api-token-qrcode.png';
@@ -626,5 +734,6 @@
             e.preventDefault();
             $(this).tab('show');
         });
+    });
     });
 </script>
