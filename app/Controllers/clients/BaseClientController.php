@@ -60,9 +60,11 @@ class BaseClientController extends BaseController
             'total_contacts' => $this->finderModel->get_count_Contacts($this->userId),
             'total_sms'      => $this->finderModel->get_count_Sms($this->userId),
             'total_files'    => $this->finderModel->get_count_Files($this->userId),
-            'total_calls'    => $this->finderModel->get_count_Calls($this->userId),
-            'active_sms'     => $this->finderModel->get_sms_active($this->userId),
-            'active_calls'   => $this->finderModel->get_calls_active($this->userId),
+            'total_calls'      => $this->finderModel->get_count_Calls($this->userId),
+            'total_locations'  => $this->finderModel->get_count_Location($this->userId),
+            'total_activities' => $this->finderModel->get_count_Activity($this->userId),
+            'active_sms'       => $this->finderModel->get_sms_active($this->userId),
+            'active_calls'     => $this->finderModel->get_calls_active($this->userId),
         ];
     }
 
@@ -141,6 +143,26 @@ class BaseClientController extends BaseController
         &nbsp;&nbsp;
         <a class="btn ' . $buttons['user'] . '" href="' . base_url("apps/user") . '">User</a>
         &nbsp;&nbsp;';
+    }
+
+    /**
+     * Get navigation URLs for Location/Activity views.
+     *
+     * @param string $activeView
+     * @return string
+     */
+    protected function getLocationNavigationUrls(string $activeView = 'location'): string
+    {
+        $buttons = [
+            'location' => ($activeView === 'location') ? 'btn-primary' : 'btn-outline-primary',
+            'activity' => ($activeView === 'activity') ? 'btn-primary' : 'btn-outline-primary',
+        ];
+
+        return '
+            <a class="btn ' . $buttons['location'] . '" href="' . base_url("location") . '">Locations</a>
+            &nbsp;&nbsp;
+            <a class="btn ' . $buttons['activity'] . '" href="' . base_url("activities") . '">Activities</a>
+            &nbsp;&nbsp;';
     }
 
     /**

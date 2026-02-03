@@ -11,6 +11,7 @@ class CreateTokensTable extends Migration
         $this->forge->addField([
             'counter' => [
                 'type'           => 'INT',
+                'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
@@ -21,10 +22,12 @@ class CreateTokensTable extends Migration
             'token_type' => [
                 'type'       => 'ENUM',
                 'constraint' => ['pin', 'qr'],
+                'null'       => false,
             ],
             'owner_id' => [
-                'type'     => 'INT',
-                'unsigned' => true,
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
             ],
             'initiator' => [
                 'type'       => 'VARCHAR',
@@ -37,8 +40,8 @@ class CreateTokensTable extends Migration
                 'default'    => 'active',
             ],
             'created_at' => [
-                'type'    => 'DATETIME',
-                'default' => 'CURRENT_TIMESTAMP',
+                'type' => 'DATETIME',
+                'null' => true,
             ],
             'expires_at' => [
                 'type' => 'DATETIME',
@@ -74,8 +77,9 @@ class CreateTokensTable extends Migration
                 'null'       => true,
             ],
             'is_refreshable' => [
-                'type'    => 'BOOLEAN',
-                'default' => false,
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 0,
             ],
             'scopes' => [
                 'type'       => 'VARCHAR',
@@ -84,23 +88,26 @@ class CreateTokensTable extends Migration
             ],
         ]);
 
-        $this->forge->addKey('counter', true);
+        $this->forge->addPrimaryKey('counter');
         $this->forge->addUniqueKey('token');
 
-        // Uncomment when users table is stable
-        // $this->forge->addForeignKey(
-        //     'owner_id',
-        //     'users',
-        //     'id',
-        //     'CASCADE',
-        //     'CASCADE'
-        // );
+        $this->forge->addKey('token_type');
+        $this->forge->addKey('owner_id');
+        $this->forge->addKey('status');
+        $this->forge->addKey('created_at');
+        $this->forge->addKey('expires_at');
+        $this->forge->addKey('last_used_at');
+        $this->forge->addKey('device_checksum');
+        $this->forge->addKey('android_id');
 
-        $this->forge->createTable('tbl_tokens', true);
+        // Foreign key commented as per original
+        // $this->forge->addForeignKey('owner_id', 'users', 'id', 'CASCADE', 'CASCADE');
+
+        $this->forge->createTable('tbl_tokens');
     }
 
     public function down()
     {
-        $this->forge->dropTable('tbl_tokens', true);
+        $this->forge->dropTable('tbl_tokens');
     }
 }

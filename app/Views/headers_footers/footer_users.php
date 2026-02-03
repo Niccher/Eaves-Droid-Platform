@@ -24,6 +24,8 @@
     <script src="<?php echo base_url('assets/plugins/datatables/datatables.min.js'); ?>"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Toastr -->
+    <script src="<?php echo base_url('assets/plugins/toastr/toastr.min.js'); ?>"></script>
 
     <!-- overlayScrollbars -->
     <script src="<?php echo base_url('assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js'); ?>"></script>

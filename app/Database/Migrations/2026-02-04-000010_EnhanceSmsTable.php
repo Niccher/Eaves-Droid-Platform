@@ -4,25 +4,21 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateEnhancedSmsTable extends Migration
+class EnhanceSmsTable extends Migration
 {
     public function up()
     {
         $this->forge->addField([
-            // Primary Key as requested
             'counter' => [
                 'type'           => 'INT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-
-            // ---------- Android JSON Mapping ----------
             'android_sms_id' => [
                 'type'       => 'BIGINT',
                 'constraint' => 20,
                 'null'       => false,
-                'comment'    => 'sms_id from Android',
             ],
             'thread_id' => [
                 'type'       => 'BIGINT',
@@ -42,12 +38,12 @@ class CreateEnhancedSmsTable extends Migration
             'body' => [
                 'type' => 'LONGTEXT',
                 'null' => false,
-                'comment' => 'Base64 string from Android',
             ],
             'body_length' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'default'    => 0,
+                'null'       => false,
             ],
             'sms_date' => [
                 'type'       => 'BIGINT',
@@ -69,32 +65,41 @@ class CreateEnhancedSmsTable extends Migration
             'type_code' => [
                 'type'       => 'INT',
                 'constraint' => 5,
+                'null'       => false,
             ],
             'is_read' => [
-                'type'    => 'BOOLEAN',
-                'default' => false,
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 0,
+                'null'       => false,
             ],
             'is_seen' => [
-                'type'    => 'BOOLEAN',
-                'default' => false,
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 0,
+                'null'       => false,
             ],
             'status_code' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'default'    => 0,
+                'null'       => false,
             ],
             'error_code' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'default'    => 0,
+                'null'       => false,
             ],
             'protocol' => [
                 'type'       => 'INT',
                 'constraint' => 11,
+                'null'       => false,
             ],
             'protocol_type' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 20,
+                'null'       => false,
             ],
             'service_center' => [
                 'type'       => 'VARCHAR',
@@ -107,18 +112,19 @@ class CreateEnhancedSmsTable extends Migration
                 'null'       => true,
             ],
             'is_locked' => [
-                'type'    => 'BOOLEAN',
-                'default' => false,
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 0,
+                'null'       => false,
             ],
             'creator' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
             ],
-
-            // ---------- Device & Ownership ----------
             'owner_id' => [
                 'type'       => 'INT',
+                'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
@@ -131,36 +137,42 @@ class CreateEnhancedSmsTable extends Migration
                 'type'       => 'BIGINT',
                 'constraint' => 20,
                 'unsigned'   => true,
+                'null'       => true,
             ],
-
-            // ---------- Timestamps ----------
             'created_at' => [
-                'type'    => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP',
+                'type' => 'DATETIME',
+                'null' => true,
             ],
             'updated_at' => [
-                'type'    => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+                'type' => 'DATETIME',
+                'null' => true,
             ],
         ]);
 
         $this->forge->addPrimaryKey('counter');
-
-        // Ensure we don't duplicate the same SMS from the same device
         $this->forge->addUniqueKey(['android_sms_id', 'device_id', 'owner_id']);
-
         $this->forge->addKey('address');
         $this->forge->addKey('sms_date');
         $this->forge->addKey('owner_id');
+        $this->forge->addKey('thread_id');
+        $this->forge->addKey('sms_type');
+        $this->forge->addKey('is_read');
+        $this->forge->addKey('is_seen');
+        $this->forge->addKey('status_code');
+        $this->forge->addKey('error_code');
+        $this->forge->addKey('protocol_type');
+        $this->forge->addKey('extracted_at');
+        $this->forge->addKey('created_at');
+        $this->forge->addKey('updated_at');
+        $this->forge->addKey(['owner_id', 'sms_date']);
+        $this->forge->addKey(['device_id', 'sms_date']);
+        $this->forge->addKey(['owner_id', 'address']);
 
-        $this->forge->createTable('tbl_sms', true);
-
-        // Add Fulltext for searching SMS content
-        $this->db->query("CREATE FULLTEXT INDEX ft_sms_body ON tbl_sms(body)");
+        $this->forge->createTable('tbl_sms');
     }
 
     public function down()
     {
-        $this->forge->dropTable('tbl_sms', true);
+        $this->forge->dropTable('tbl_sms');
     }
 }

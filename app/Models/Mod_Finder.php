@@ -209,6 +209,50 @@ class Mod_Finder extends Model
     }
 
     /**
+     * Gets count of locations for user.
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public function get_count_Location(int $user_id): int
+    {
+        return $this->getCount('tbl_location', $user_id);
+    }
+
+    /**
+     * Gets count of activities for user.
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public function get_count_Activity(int $user_id): int
+    {
+        return $this->getCount('tbl_activity', $user_id);
+    }
+
+    /**
+     * Gets contact name by phone number (used by dashboard).
+     *
+     * @param string $nom
+     * @return array|null
+     */
+    public function get_contact(string $nom)
+    {
+        try {
+            $user_id = auth()->user()->id;
+            return $this->db->table('tbl_contacts')
+                ->select('display_name as Name')
+                ->where('owner_id', $user_id)
+                ->like('phone_numbers', $nom)
+                ->get()
+                ->getRowArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_contact error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Gets contact info by phone number.
      *
      * @param string $contactNumber1
@@ -441,7 +485,7 @@ class Mod_Finder extends Model
      * @param int $perPage
      * @return array
      */
-    public function get_sms_active(int $user_id, int $perPage = 20): array
+    public function get_sms_active(int $user_id, int $perPage = 15): array
     {
         try {
             return $this->db->table('tbl_sms')
@@ -560,7 +604,7 @@ class Mod_Finder extends Model
      * @param int $perPage
      * @return array
      */
-    public function get_calls_active(int $user_id, int $perPage = 20): array
+    public function get_calls_active(int $user_id, int $perPage = 15): array
     {
         try {
             return $this->db->table('tbl_logs')
@@ -700,5 +744,67 @@ class Mod_Finder extends Model
             $this->pager = \Config\Services::pager();
         }
         return $this->pager;
+    }
+
+    /**
+     * Gets all locations with pagination.
+     *
+     * @param int $user_id
+     * @param int $perPage
+     * @return array
+     */
+    public function get_locations(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $builder = $this->db->table('tbl_location');
+            $total = $this->get_count_Location($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $results = $builder->where('owner_id', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()
+                ->getResultArray();
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_locations error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Gets all activities with pagination.
+     *
+     * @param int $user_id
+     * @param int $perPage
+     * @return array
+     */
+    public function get_activities(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $builder = $this->db->table('tbl_activity');
+            $total = $this->get_count_Activity($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $results = $builder->where('owner_id', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()
+                ->getResultArray();
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_activities error: ' . $e->getMessage());
+            return [];
+        }
     }
 }

@@ -8,157 +8,140 @@ class CreateDevicesTable extends Migration
 {
     public function up()
     {
-        // Enable foreign key checks
-        $this->db->query('SET FOREIGN_KEY_CHECKS=0');
-
-        // Drop table if exists (for development)
-        $this->forge->dropTable('tbl_Devices', true);
-
         $this->forge->addField([
-            // === PRIMARY KEY ===
             'id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
                 'auto_increment' => true,
             ],
-
-            // === BASIC DEVICE INFO ===
             'device_model' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
-                'null' => true,
+                'null'       => true,
             ],
             'device_brand' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'device_manufacturer' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'device_product' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'device_device' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'device_board' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'device_hardware' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === ANDROID OS INFO ===
             'android_version' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'android_sdk_int' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'android_codename' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'android_incremental' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'android_base_os' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'android_security_patch' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === BUILD INFO ===
             'build_id' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'build_type' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'build_tags' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
-                'null' => true,
+                'null'       => true,
             ],
             'build_fingerprint' => [
                 'type' => 'TEXT',
                 'null' => true,
             ],
             'build_time' => [
-                'type' => 'BIGINT',
+                'type'       => 'BIGINT',
                 'constraint' => 20,
-                'null' => true,
+                'null'       => true,
             ],
             'build_user' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'build_host' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'build_display' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === DEVICE IDENTIFIERS ===
             'android_id' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === DISPLAY INFO ===
             'display_width' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'display_height' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'display_density' => [
                 'type' => 'FLOAT',
                 'null' => true,
             ],
             'display_density_dpi' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'display_scaled_density' => [
                 'type' => 'FLOAT',
@@ -172,235 +155,207 @@ class CreateDevicesTable extends Migration
                 'type' => 'FLOAT',
                 'null' => true,
             ],
-
-            // === CPU & MEMORY INFO ===
             'cpu_cores' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'cpu_abi' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'cpu_abis' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
-                'null' => true,
+                'null'       => true,
             ],
             'memory_total_mb' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'memory_free_mb' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === STORAGE INFO ===
             'internal_storage_total_gb' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'internal_storage_free_gb' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'internal_storage_usable_gb' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'external_storage_total_gb' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'external_storage_free_gb' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === NETWORK & TELEPHONY INFO ===
             'phone_number' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'sim_operator' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'network_operator' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'sim_country' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 10,
-                'null' => true,
+                'null'       => true,
             ],
             'network_country' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 10,
-                'null' => true,
+                'null'       => true,
             ],
             'imei' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'meid' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'device_id' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
-                'comment' => 'Telephony device ID (pre-Android O)',
+                'null'       => true,
             ],
             'sim_state' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === LOCALE & TIME INFO ===
             'language' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 10,
-                'null' => true,
+                'null'       => true,
             ],
             'country' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 10,
-                'null' => true,
+                'null'       => true,
             ],
             'timezone' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'timezone_offset' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'current_time' => [
-                'type' => 'BIGINT',
+                'type'       => 'BIGINT',
                 'constraint' => 20,
-                'null' => true,
+                'null'       => true,
             ],
             'current_time_formatted' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === BATTERY INFO ===
             'battery_charging' => [
-                'type' => 'TINYINT',
+                'type'       => 'TINYINT',
                 'constraint' => 1,
-                'null' => true,
-                'default' => 0,
+                'default'    => 0,
+                'null'       => true,
             ],
             'battery_level' => [
                 'type' => 'FLOAT',
                 'null' => true,
             ],
-
-            // === SENSORS INFO ===
             'sensor_count' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === NETWORK INFO (MAC) ===
             'mac_address' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === KERNEL INFO ===
             'kernel_info' => [
                 'type' => 'TEXT',
                 'null' => true,
             ],
-
-            // === SECURITY INFO ===
             'is_emulator' => [
-                'type' => 'TINYINT',
+                'type'       => 'TINYINT',
                 'constraint' => 1,
-                'null' => true,
-                'default' => 0,
+                'default'    => 0,
+                'null'       => true,
             ],
             'is_rooted' => [
-                'type' => 'TINYINT',
+                'type'       => 'TINYINT',
                 'constraint' => 1,
-                'null' => true,
-                'default' => 0,
+                'default'    => 0,
+                'null'       => true,
             ],
-
-            // === APP INFO ===
             'app_package' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
-                'null' => true,
+                'null'       => true,
             ],
             'app_version' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'app_version_code' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null'       => true,
             ],
             'app_first_install' => [
-                'type' => 'BIGINT',
+                'type'       => 'BIGINT',
                 'constraint' => 20,
-                'null' => true,
+                'null'       => true,
             ],
             'app_last_update' => [
-                'type' => 'BIGINT',
+                'type'       => 'BIGINT',
                 'constraint' => 20,
-                'null' => true,
+                'null'       => true,
             ],
-
-            // === EXTRACTION METADATA ===
             'extraction_timestamp' => [
-                'type' => 'BIGINT',
+                'type'       => 'BIGINT',
                 'constraint' => 20,
-                'null' => false,
+                'null'       => false,
             ],
             'extractor_version' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 20,
-                'null' => true,
-                'default' => '1.0',
+                'default'    => '1.0',
+                'null'       => true,
             ],
-
-            // === RAW JSON DATA (Optional - stores complete JSON) ===
             'raw_device_json' => [
                 'type' => 'LONGTEXT',
                 'null' => true,
-                'comment' => 'Complete JSON device data',
             ],
-
-            // === SERVER METADATA ===
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
@@ -410,40 +365,34 @@ class CreateDevicesTable extends Migration
                 'null' => true,
             ],
             'is_active' => [
-                'type' => 'TINYINT',
+                'type'       => 'TINYINT',
                 'constraint' => 1,
-                'null' => true,
-                'default' => 1,
+                'default'    => 1,
+                'null'       => true,
             ],
         ]);
 
-        // Primary Key
-        $this->forge->addKey('id', true);
-
-        // Indexes for better performance
+        $this->forge->addPrimaryKey('id');
         $this->forge->addKey('android_id');
         $this->forge->addKey('device_model');
         $this->forge->addKey('android_version');
         $this->forge->addKey('extraction_timestamp');
         $this->forge->addKey('created_at');
         $this->forge->addKey('is_active');
-
-        // Unique constraint to prevent duplicate device entries
+        $this->forge->addKey('device_brand');
+        $this->forge->addKey('android_sdk_int');
+        $this->forge->addKey('phone_number');
+        $this->forge->addKey('sim_operator');
+        $this->forge->addKey('imei');
+        $this->forge->addKey('is_rooted');
+        $this->forge->addKey('app_package');
         $this->forge->addUniqueKey(['android_id', 'device_model', 'android_version'], 'unique_device_fingerprint');
 
-        // Create the table
-        $this->forge->createTable('tbl_Devices', true);
-
-        // Add table comment
-        $this->db->query("ALTER TABLE tbl_Devices COMMENT = 'Stores comprehensive device information from Android devices'");
-
-        // Re-enable foreign key checks
-        $this->db->query('SET FOREIGN_KEY_CHECKS=1');
+        $this->forge->createTable('tbl_devices');
     }
 
     public function down()
     {
-        // Drop the table
-        $this->forge->dropTable('tbl_Devices', true);
+        $this->forge->dropTable('tbl_devices');
     }
 }

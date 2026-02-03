@@ -4,118 +4,131 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateUploadedFiles extends Migration
+class CreateUploadedFilesTable extends Migration
 {
     public function up()
     {
         $this->forge->addField([
             'file_id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'original_filename' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
+                'null'       => false,
             ],
             'stored_filename' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
+                'null'       => false,
             ],
             'file_size_bytes' => [
-                'type' => 'BIGINT',
+                'type'       => 'BIGINT',
                 'constraint' => 20,
-                'unsigned' => true,
+                'unsigned'   => true,
+                'null'       => false,
             ],
             'file_extension' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 10,
+                'null'       => false,
             ],
             'mime_type' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
+                'null'       => false,
             ],
             'file_category' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
+                'null'       => false,
             ],
             'token_used' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
+                'null'       => false,
             ],
             'token_owner_id' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'unsigned' => true,
-                'null' => true,
+                'unsigned'   => true,
+                'null'       => true,
             ],
             'device_checksum' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
+                'null'       => false,
             ],
             'device_print_id' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
+                'null'       => false,
             ],
             'android_id' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 100,
-                'null' => true,
+                'null'       => true,
             ],
             'upload_path' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 500,
+                'null'       => false,
             ],
             'upload_status' => [
-                'type' => 'ENUM',
+                'type'       => 'ENUM',
                 'constraint' => ['pending', 'processing', 'parsed', 'failed', 'archived'],
-                'default' => 'pending',
+                'default'    => 'pending',
             ],
             'upload_error' => [
                 'type' => 'TEXT',
                 'null' => true,
             ],
             'parsed_at' => [
-                'type' => 'TIMESTAMP',
+                'type' => 'DATETIME',
                 'null' => true,
             ],
             'parsed_records' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'unsigned' => true,
-                'default' => 0,
+                'unsigned'   => true,
+                'default'    => 0,
             ],
             'parse_duration_ms' => [
-                'type' => 'INT',
+                'type'       => 'INT',
                 'constraint' => 11,
-                'unsigned' => true,
-                'null' => true,
+                'unsigned'   => true,
+                'null'       => true,
             ],
             'uploaded_at' => [
-                'type' => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP',
+                'type' => 'DATETIME',
+                'null' => true,
             ],
             'processed_at' => [
-                'type' => 'TIMESTAMP',
+                'type' => 'DATETIME',
                 'null' => true,
             ],
             'updated_at' => [
-                'type' => 'TIMESTAMP',
-                'default' => 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+                'type' => 'DATETIME',
+                'null' => true,
             ],
         ]);
 
-        $this->forge->addKey('file_id', true);
+        $this->forge->addPrimaryKey('file_id');
         $this->forge->addKey('token_used');
         $this->forge->addKey('token_owner_id');
         $this->forge->addKey('device_checksum');
         $this->forge->addKey('file_category');
         $this->forge->addKey('upload_status');
         $this->forge->addKey('uploaded_at');
-
-        // Add foreign key if you have users table
-        // $this->forge->addForeignKey('token_owner_id', 'users', 'user_id', 'CASCADE', 'SET NULL');
+        $this->forge->addKey('original_filename');
+        $this->forge->addKey('file_extension');
+        $this->forge->addKey('mime_type');
+        $this->forge->addKey('android_id');
+        $this->forge->addKey('parsed_at');
+        $this->forge->addKey('processed_at');
 
         $this->forge->createTable('uploaded_files');
     }

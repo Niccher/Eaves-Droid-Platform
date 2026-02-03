@@ -394,7 +394,21 @@ $routes->group('', [
     // =============================================================
     // 5.4 DATA VIEWS - SMS
     // =============================================================
+    // Location Routes
+    $routes->group('location', static function ($routes) {
+        $routes->get('/', 'Location::index', ['as' => 'location-all']);
+        $routes->get('(:num)', 'Location::index/$1');
+    });
 
+    // Activity Routes
+    $routes->group('activities', static function ($routes) {
+        $routes->get('/', 'Location::activities', ['as' => 'activity-all']);
+        $routes->get('(:num)', 'Location::activities/$1');
+    });
+
+    /**
+     * Group for SMS related actions.
+     */
     $routes->group('sms', static function ($routes) {
         /**
          * Displays all SMS messages.
@@ -776,6 +790,13 @@ $routes->group('', [
      * @return string|\CodeIgniter\HTTP\ResponseInterface
      */
     $routes->match(['get', 'post'], 'account/requests/sleep', 'Requests::send_sleep', ['as' => 'client-sleep-request']);
+
+    /**
+     * Sends device command (AJAX).
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    $routes->post('requests/send_command', 'Requests::send_command', ['as' => 'client-send-command']);
 });
 
 // =================================================================
