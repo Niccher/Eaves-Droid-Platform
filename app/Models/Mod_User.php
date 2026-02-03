@@ -256,6 +256,32 @@ class Mod_User extends Model
     }
 
     /**
+     * Updates token metadata with real device information.
+     *
+     * @param string $token
+     * @param string|null $device_checksum
+     * @param string|null $android_id
+     * @return bool
+     */
+    public function update_token_metadata(string $token, ?string $device_checksum = null, ?string $android_id = null): bool
+    {
+        try {
+            $data = [];
+            if ($device_checksum) $data['device_checksum'] = $device_checksum;
+            if ($android_id) $data['android_id'] = $android_id;
+
+            if (empty($data)) return true;
+
+            return $this->db->table('tbl_tokens')
+                ->where('token', $token)
+                ->update($data);
+        } catch (\Exception $e) {
+            log_message('error', 'update_token_metadata error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Gets user devices from access logs.
      *
      * @param int $user_id
@@ -404,6 +430,63 @@ class Mod_User extends Model
         } catch (\Exception $e) {
             log_message('error', 'get_security_events_count error: ' . $e->getMessage());
             return 0;
+        }
+    }
+    /**
+     * Gets user devices with metadata (including FCM token) from device profile.
+     *
+     * @param int $user_id
+     * @return array
+     */
+    public function get_user_devices_from_profile(int $user_id): array
+    {
+        try {
+            // Step 1: Get device hardware IDs linked to this user
+            // We check both tbl_tokens and uploaded_files for maximum reliability
+            
+            // From tokens
+            $tokenChecksums = $this->db->table('tbl_tokens')
+                ->select('device_checksum')
+                ->where('owner_id', $user_id)
+                ->where('device_checksum !=', '')
+                ->where('device_checksum IS NOT NULL')
+                ->groupBy('device_checksum')
+                ->get()
+                ->getResultArray();
+
+            // From uploaded files (very reliable as it's saved during actual data upload)
+            $uploadChecksums = $this->db->table('uploaded_files')
+                ->select('device_checksum')
+                ->where('token_owner_id', $user_id)
+                ->where('device_checksum !=', '')
+                ->where('device_checksum IS NOT NULL')
+                ->groupBy('device_checksum')
+                ->get()
+                ->getResultArray();
+
+            $allChecksums = array_unique(array_merge(
+                array_column($tokenChecksums, 'device_checksum'),
+                array_column($uploadChecksums, 'device_checksum')
+            ));
+
+            if (empty($allChecksums)) {
+                log_message('info', 'No tokens/uploads/devices found for user ' . $user_id);
+                return [];
+            }
+
+            // Step 2: Fetch device profiles using these checksums
+            // Profiles use the real hardware ID in the 'device_id' column
+            $devices = $this->db->table('tbl_device_profile')
+                ->whereIn('device_id', $allChecksums) 
+                ->orderBy('extraction_timestamp', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            return $devices;
+
+        } catch (\Exception $e) {
+            log_message('error', 'get_user_devices_from_profile error: ' . $e->getMessage());
+            return [];
         }
     }
 }

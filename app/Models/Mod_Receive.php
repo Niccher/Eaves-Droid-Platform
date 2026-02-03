@@ -17,18 +17,27 @@ class Mod_Receive extends Model
         try {
             $builder = $this->db->table('tbl_device_profile');
             $deviceChecksum = $print_dump['device_checksum'];
+            
+            // Map input field 'device_checksum' to database column 'device_id'
+            // and ensure we don't try to insert non-existent columns
+            $print_dump['device_id'] = $deviceChecksum;
+            unset($print_dump['device_checksum']);
+            
+            // Also handle fcm_token if it's optional/missing in input but table might have it
+            // if input doesn't have it, we shouldn't try to update it to null necessarily,
+            // or maybe we should? For now, let's just stick to the checksum fix.
 
             // Always use update - will insert if not exists in some databases
             // But for MySQL with InnoDB, we need to check first
 
             $existing = $builder->select('1')
-                ->where('device_checksum', $deviceChecksum)
+                ->where('device_id', $deviceChecksum)
                 ->get()
                 ->getRow();
 
             if ($existing) {
                 // Update existing
-                $builder->where('device_checksum', $deviceChecksum)
+                $builder->where('device_id', $deviceChecksum)
                     ->update($print_dump);
                 $action = 'updated';
             } else {
@@ -41,6 +50,7 @@ class Mod_Receive extends Model
                 'success' => true,
                 'dev_chck_sum' => $deviceChecksum,
                 'dev_adr_id' => $print_dump['android_id'] ?? null,
+                'fcm_token_saved' => isset($print_dump['fcm_token']),
                 'action' => $action,
                 'is_new' => ($action === 'created')
             ]);

