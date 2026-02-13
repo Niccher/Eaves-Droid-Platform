@@ -108,6 +108,11 @@
                             </tbody>
                         </table>
                     </div>
+                <div class="card-footer clearfix">
+                    <div class="float-right">
+                        <?php echo $pager_links; ?>
+                    </div>
+                    <span class="text-muted">Showing 20 items per page (Total: <?php echo $total; ?>)</span>
                 </div>
             </div>
         </div>
@@ -117,7 +122,6 @@
 <script>
 $(function () {
     $('#callAnalysisTable').DataTable({
-        "paging": true,
         "lengthChange": true,
         "searching": true,
         "ordering": true,

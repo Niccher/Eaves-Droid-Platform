@@ -102,406 +102,78 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
-                    <!-- Left Column - Analysis Categories -->
-                    <div class="col-lg-3">
-                        <!-- SMS Analysis Card -->
-                        <div class="card card-primary">
+                    <!-- Main Content Area -->
+                    <div class="col-lg-12">
+                        <div class="card card-white card-outline">
                             <div class="card-header">
                                 <h3 class="card-title">
-                                    <i class="fas fa-sms mr-2"></i>
-                                    SMS Analysis
-                                    <span class="badge badge-light float-right"><?php echo $smsCategories ?? 3 ?></span>
-                                </h3>
-                                <div class="card-tools">
-                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="nav flex-column nav-pills" id="smsAnalysisTab" role="tablist" aria-orientation="vertical">
-                                    <a class="nav-link active" href="<?php echo base_url('analysis/sms?category=financial'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-info p-2">
-                                                    <i class="fas fa-comments-dollar"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Financial SMS</div>
-                                                <small class="text-muted">Banking & Transactions</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $financialSMS ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=promo'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-warning p-2">
-                                                    <i class="fas fa-ad"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Promotional SMS</div>
-                                                <small class="text-muted">Ads & Marketing</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $promotionalSMS ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=malicious'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-danger p-2">
-                                                    <i class="fas fa-user-shield"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Malicious SMS</div>
-                                                <small class="text-muted">Phishing & Scams</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $maliciousSMS ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=otp'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-primary p-2">
-                                                    <i class="fas fa-key"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">OTP/Auth</div>
-                                                <small class="text-muted">Codes & Verification</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $otpSMS ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=utility'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-secondary p-2">
-                                                    <i class="fas fa-file-invoice-dollar"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Utility/Bills</div>
-                                                <small class="text-muted">Power & Water</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $utilitySMS ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=service'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-dark p-2">
-                                                    <i class="fas fa-truck"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Service/Delivery</div>
-                                                <small class="text-muted">Uber, Jumia, etc.</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $serviceSMS ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=personal'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-success p-2">
-                                                    <i class="fas fa-user-circle"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Personal SMS</div>
-                                                <small class="text-muted">Conversations</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $personalSMS ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <a href="<?php echo base_url('analysis/sms'); ?>" class="btn btn-primary btn-block">
-                                    <i class="fas fa-chart-bar mr-1"></i> View Full Analysis
-                                </a>
-                            </div>
-                        </div>
-
-                        <!-- Call Analysis Card -->
-                        <div class="card card-success mt-4">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-phone-alt mr-2"></i>
-                                    Call Analysis
-                                    <span class="badge badge-light float-right"><?php echo $callCategories ?? 2 ?></span>
-                                </h3>
-                                <div class="card-tools">
-                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="nav flex-column nav-pills" id="callAnalysisTab" role="tablist" aria-orientation="vertical">
-                                    <a class="nav-link active" href="<?php echo base_url('analysis/calls?category=family'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-success p-2">
-                                                    <i class="fas fa-user-friends"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Family & Friends</div>
-                                                <small class="text-muted">Frequent Contacts</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $familyCalls ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=new'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-info p-2">
-                                                    <i class="fas fa-phone"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">New Callers</div>
-                                                <small class="text-muted">Unknown Numbers</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $newCalls ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=business'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-warning p-2">
-                                                    <i class="fas fa-briefcase"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Business Calls</div>
-                                                <small class="text-muted">Professional Contacts</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $businessCalls ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=intl'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-dark p-2">
-                                                    <i class="fas fa-globe-africa"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">International</div>
-                                                <small class="text-muted">Foreign Numbers</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $intlCalls ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=urgent'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-danger p-2">
-                                                    <i class="fas fa-history"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Urgent/Frequent</div>
-                                                <small class="text-muted">High Frequency Unknown</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $urgentCalls ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=spam'); ?>">
-                                        <div class="d-flex align-items-center">
-                                            <div class="mr-2">
-                                                <span class="badge badge-danger p-2">
-                                                    <i class="fas fa-ban"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">Spam Calls</div>
-                                                <small class="text-muted">Blocked Numbers</small>
-                                            </div>
-                                            <span class="badge badge-light ml-auto"><?php echo $spamCalls ?? 0 ?></span>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <a href="<?php echo base_url('analysis/calls'); ?>" class="btn btn-success btn-block">
-                                    <i class="fas fa-chart-pie mr-1"></i> View Call Analytics
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Column - Analysis Content -->
-                    <div class="col-lg-9">
-                        <!-- AI Analysis Overview Card -->
-                        <div class="card card-dark card-outline">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-robot mr-2"></i>
-                                    AI-Powered Intelligence
+                                    <i class="fas fa-brain mr-2"></i>
+                                    Intelligence Insight
                                 </h3>
                                 <div class="card-tools">
                                     <span class="badge badge-info">
-                                        <i class="fas fa-bolt mr-1"></i> Real-time Analysis
+                                        <i class="fas fa-bolt mr-1"></i> Statistical Analysis
                                     </span>
                                 </div>
                             </div>
                             <div class="card-body">
-                                <div class="row mb-4">
-                                    <div class="col-md-12">
-                                        <div class="alert alert-info">
-                                            <h5><i class="fas fa-lightbulb mr-2"></i> Intelligent Pattern Recognition</h5>
-                                            <p class="mb-0">Our AI algorithms analyze your mobile data to identify patterns, categorize communications, and detect anomalies using machine learning models.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div class="row">
+                                    <!-- SMS Section -->
                                     <div class="col-md-6">
-                                        <div class="info-box mb-4">
-                                            <span class="info-box-icon bg-info elevation-1">
-                                                <i class="fas fa-comments"></i>
-                                            </span>
-                                            <div class="info-box-content">
-                                                <span class="info-box-text">SMS Intelligence Engine</span>
-                                                <span class="info-box-number">
-                                                    <?php echo $smsAccuracy ?? '95' ?>% Accuracy
-                                                </span>
-                                                <div class="progress">
-                                                    <div class="progress-bar bg-info" style="width: <?php echo $smsAccuracy ?? 95 ?>%"></div>
-                                                </div>
-                                                <small class="text-muted">Text classification for financial, promotional, and malicious messages</small>
+                                        <div class="card card-info card-outline">
+                                            <div class="card-header d-flex p-0">
+                                                <h3 class="card-title p-3"><i class="fas fa-chart-pie mr-1"></i> SMS Categories</h3>
+                                                <ul class="nav nav-pills ml-auto p-2">
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/sms?category=financial'); ?>">Fin</a></li>
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/sms?category=otp'); ?>">OTP</a></li>
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/sms?category=promo'); ?>">Ads</a></li>
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/sms?category=malicious'); ?>">Sec</a></li>
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/sms'); ?>">All</a></li>
+                                                </ul>
                                             </div>
-                                        </div>
-
-                                        <div class="card card-info">
-                                            <div class="card-header">
-                                                <h3 class="card-title">
-                                                    <i class="fas fa-chart-pie mr-2"></i>
-                                                    SMS Categories
-                                                </h3>
-                                            </div>
-                                            <div class="card-body">
-                                                <canvas id="smsPieChart" height="150"></canvas>
+                                            <div class="card-body text-center">
+                                                <canvas id="smsPieChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                                                 <div class="mt-3">
-                                                    <span class="badge badge-info mr-2">Financial</span>
-                                                    <span class="badge badge-primary mr-2">OTP</span>
-                                                    <span class="badge badge-warning mr-2">Promotional</span>
-                                                    <span class="badge badge-secondary mr-2">Utility</span>
-                                                    <span class="badge badge-dark mr-2">Service</span>
-                                                    <span class="badge badge-danger mr-2">Malicious</span>
-                                                    <span class="badge badge-success">Personal</span>
+                                                    <span class="badge badge-info mr-1">Financial: <?php echo $financialSMS ?? 0 ?></span>
+                                                    <span class="badge badge-primary mr-1">OTP: <?php echo $otpSMS ?? 0 ?></span>
+                                                    <span class="badge badge-warning mr-1">Promo: <?php echo $promotionalSMS ?? 0 ?></span>
+                                                    <span class="badge badge-danger">Scams: <?php echo $maliciousSMS ?? 0 ?></span>
                                                 </div>
+                                            </div>
+                                            <div class="card-footer">
+                                                <a href="<?php echo base_url('analysis/sms'); ?>" class="btn btn-primary btn-block btn-sm">
+                                                    <i class="fas fa-search-plus mr-1"></i> View Full SMS Analysis
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
 
+                                    <!-- Call Section -->
                                     <div class="col-md-6">
-                                        <div class="info-box mb-4">
-                                            <span class="info-box-icon bg-success elevation-1">
-                                                <i class="fas fa-phone-alt"></i>
-                                            </span>
-                                            <div class="info-box-content">
-                                                <span class="info-box-text">Call Pattern Analysis</span>
-                                                <span class="info-box-number">
-                                                    <?php echo $callAccuracy ?? '92' ?>% Accuracy
-                                                </span>
-                                                <div class="progress">
-                                                    <div class="progress-bar bg-success" style="width: <?php echo $callAccuracy ?? 92 ?>%"></div>
-                                                </div>
-                                                <small class="text-muted">Contact categorization and behavior analysis</small>
+                                        <div class="card card-success card-outline">
+                                            <div class="card-header d-flex p-0">
+                                                <h3 class="card-title p-3"><i class="fas fa-chart-bar mr-1"></i> Call Pattern</h3>
+                                                <ul class="nav nav-pills ml-auto p-2">
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/calls?category=family'); ?>">Fam</a></li>
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/calls?category=new'); ?>">New</a></li>
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/calls?category=business'); ?>">Biz</a></li>
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/calls?category=spam'); ?>">Spam</a></li>
+                                                    <li class="nav-item"><a class="nav-link btn-xs" href="<?php echo base_url('analysis/calls'); ?>">All</a></li>
+                                                </ul>
                                             </div>
-                                        </div>
-
-                                        <div class="card card-success">
-                                            <div class="card-header">
-                                                <h3 class="card-title">
-                                                    <i class="fas fa-chart-bar mr-2"></i>
-                                                    Call Distribution
-                                                </h3>
-                                            </div>
-                                            <div class="card-body">
-                                                <canvas id="callBarChart" height="150"></canvas>
+                                            <div class="card-body text-center">
+                                                <canvas id="callBarChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                                                 <div class="mt-3">
-                                                    <span class="badge badge-success mr-2">Family</span>
-                                                    <span class="badge badge-info mr-2">New</span>
-                                                    <span class="badge badge-warning mr-2">Business</span>
-                                                    <span class="badge badge-dark mr-2">Intl</span>
-                                                    <span class="badge badge-danger mr-2">Urgent</span>
-                                                    <span class="badge badge-danger">Spam</span>
+                                                    <span class="badge badge-success mr-1">Family: <?php echo $familyCalls ?? 0 ?></span>
+                                                    <span class="badge badge-info mr-1">New: <?php echo $newCalls ?? 0 ?></span>
+                                                    <span class="badge badge-warning mr-1">Biz: <?php echo $businessCalls ?? 0 ?></span>
+                                                    <span class="badge badge-danger">Spam: <?php echo $spamCalls ?? 0 ?></span>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Real-time Insights -->
-                                <div class="row mt-4">
-                                    <div class="col-md-12">
-                                        <div class="card">
-                                            <div class="card-header">
-                                                <h3 class="card-title">
-                                                    <i class="fas fa-bolt mr-2 text-warning"></i>
-                                                    Real-time Insights
-                                                </h3>
-                                            </div>
-                                            <div class="card-body p-0">
-                                                <div class="table-responsive">
-                                                    <table class="table table-hover">
-                                                        <thead>
-                                                        <tr>
-                                                            <th>Time</th>
-                                                            <th>Type</th>
-                                                            <th>Insight</th>
-                                                            <th>Confidence</th>
-                                                            <th>Action</th>
-                                                        </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                        <?php if (!empty($recentInsights)): ?>
-                                                            <?php foreach ($recentInsights as $insight): ?>
-                                                                <tr>
-                                                                    <td>
-                                                                        <small><?php echo date('H:i', $insight['timestamp']); ?></small>
-                                                                    </td>
-                                                                    <td>
-                                                                        <span class="badge badge-<?php echo $insight['type_color'] ?? 'info'; ?>">
-                                                                            <i class="fas fa-<?php echo $insight['icon'] ?? 'info-circle'; ?> mr-1"></i>
-                                                                            <?php echo $insight['type'] ?? 'Info'; ?>
-                                                                        </span>
-                                                                    </td>
-                                                                    <td><?php echo htmlspecialchars($insight['message'] ?? ''); ?></td>
-                                                                    <td>
-                                                                        <div class="progress progress-sm">
-                                                                            <div class="progress-bar bg-<?php echo $insight['confidence_color'] ?? 'success'; ?>"
-                                                                                 style="width: <?php echo $insight['confidence'] ?? 0; ?>%"></div>
-                                                                        </div>
-                                                                        <small><?php echo $insight['confidence'] ?? 0; ?>%</small>
-                                                                    </td>
-                                                                    <td>
-                                                                        <a href="<?php echo $insight['action_url'] ?? '#'; ?>" class="btn btn-xs btn-outline-primary">
-                                                                            <i class="fas fa-search mr-1"></i> Review
-                                                                        </a>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        <?php else: ?>
-                                                            <tr>
-                                                                <td colspan="5" class="text-center py-4">
-                                                                    <i class="fas fa-info-circle fa-2x text-muted mb-3"></i>
-                                                                    <p class="text-muted">No recent insights available</p>
-                                                                </td>
-                                                            </tr>
-                                                        <?php endif; ?>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                                            <div class="card-footer">
+                                                <a href="<?php echo base_url('analysis/calls'); ?>" class="btn btn-success btn-block btn-sm">
+                                                    <i class="fas fa-search-plus mr-1"></i> View Full Call Analysis
+                                                </a>
                                             </div>
                                         </div>
                                     </div>

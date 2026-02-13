@@ -813,6 +813,19 @@ class Mod_Finder extends Model
      */
     public function get_categorized_sms_counts(int $userId): array
     {
+        $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
+        
+        // Basic keywords for SQL LIKE - simple ones that don't depend on decoding if possible
+        // But since many might be encoded, we still might need to fetch some.
+        // Let's try to count by sender ID first in SQL as it\'s 100% reliable and fast.
+        
+        $builder = $this->db->table('tbl_sms');
+        $total = $builder->where('owner_id', $userId)->countAllResults();
+
+        // Optimized counting: Fetch everything but avoid heavy processing if we can
+        // For truly high performance, we'd need a categorized column in the DB.
+        // For now, let's optimize the loop and base64 check.
+        
         $all_sms = $this->db->table('tbl_sms')
             ->select('address, body')
             ->where('owner_id', $userId)
@@ -827,31 +840,41 @@ class Mod_Finder extends Model
             'service'   => 0,
             'malicious' => 0,
             'personal'  => 0,
-            'total'     => count($all_sms)
+            'total'     => $total
         ];
 
-        $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
         $fin_keys = ['bank', 'mpesa', 'equity', 'kcb', 'transaction', 'kes', 'paid', 'received', 'balance', 'credited', 'debited', 'reversal'];
         $otp_keys = ['code', 'otp', 'verification', 'login', 'password reset'];
-        $promo_keys = ['offer', 'discount', '% off', 'sale', 'win', 'subscribe', 'buy', 'promo', 'exclusive', 'betting'];
+        $promo_keys = ['offer', 'discount', '% off', 'sale', 'win', 'subscribe', 'buy', 'promo', 'exclusive', 'betting', 'bet', 'jackpot'];
         $util_keys = ['kplc', 'water', 'token', 'zuku', 'fiber', 'safaricom home', 'bill', 'due date'];
         $serv_keys = ['uber', 'bolt', 'jumia', 'dhl', 'courier', 'delivery', 'ride', 'food'];
         $mal_keys = ['won lottery', 'congratulations you have won', 'prize', 'kshs 50,000'];
 
         foreach ($all_sms as $sms) {
-            $body = strtolower($sms['body']);
             $addr = strtolower($sms['address']);
-            $addr_len = strlen($addr);
-
-            $categorized = false;
-
-            // Priority 1: Financial Sender IDs
+            
+            // Fast Path: Financial Sender ID
             if (in_array($addr, $fin_senders)) {
                 $counts['financial']++;
                 continue;
             }
 
-            // Priority 2: Malicious check
+            $raw_body = $sms['body'];
+            $body_text = $raw_body;
+
+            // Only decode if it looks like base64 or if it's long enough to be an encoded msg
+            if (strlen($raw_body) > 4 && preg_match('/^[a-zA-Z0-9\/\+=]+$/', $raw_body)) {
+                $decoded = base64_decode($raw_body, true);
+                if ($decoded !== false && mb_check_encoding($decoded, 'UTF-8')) {
+                    $body_text = $decoded;
+                }
+            }
+            
+            $body = strtolower($body_text);
+            $addr_len = strlen($addr);
+            $categorized = false;
+
+            // Malicious
             foreach ($mal_keys as $key) {
                 if (strpos($body, $key) !== false) {
                     $counts['malicious']++;
@@ -861,7 +884,7 @@ class Mod_Finder extends Model
             }
             if ($categorized) continue;
 
-            // OTP check
+            // OTP
             foreach ($otp_keys as $key) {
                 if (strpos($body, $key) !== false) {
                     $counts['otp']++;
@@ -871,7 +894,7 @@ class Mod_Finder extends Model
             }
             if ($categorized) continue;
 
-            // Financial check
+            // Financial Keywords
             if ($addr_len < 10) {
                 foreach ($fin_keys as $key) {
                     if (strpos($body, $key) !== false) {
@@ -883,7 +906,7 @@ class Mod_Finder extends Model
             }
             if ($categorized) continue;
 
-            // Utility check
+            // Utility
             foreach ($util_keys as $key) {
                 if (strpos($body, $key) !== false) {
                     $counts['utility']++;
@@ -893,7 +916,7 @@ class Mod_Finder extends Model
             }
             if ($categorized) continue;
 
-            // Service check
+            // Service
             foreach ($serv_keys as $key) {
                 if (strpos($body, $key) !== false) {
                     $counts['service']++;
@@ -903,10 +926,9 @@ class Mod_Finder extends Model
             }
             if ($categorized) continue;
 
-            // Promo check
+            // Promo
             if ($addr_len < 10) {
                 $counts['promo']++;
-                $categorized = true;
             } else {
                 foreach ($promo_keys as $key) {
                     if (strpos($body, $key) !== false) {
@@ -915,12 +937,9 @@ class Mod_Finder extends Model
                         break;
                     }
                 }
-            }
-            if ($categorized) continue;
-
-            // If not categorized and addr_len >= 10, likely personal
-            if ($addr_len >= 10) {
-                $counts['personal']++;
+                if (!$categorized) {
+                    $counts['personal']++;
+                }
             }
         }
 
@@ -932,8 +951,8 @@ class Mod_Finder extends Model
      */
     public function get_categorized_call_counts(int $userId): array
     {
-        $all_logs = $this->db->table('tbl_logs')
-            ->select('phone_number, contact_name, call_type, call_date')
+        $builder = $this->db->table('tbl_logs');
+        $all_logs = $builder->select('phone_number, contact_name, call_type, call_date')
             ->where('owner_id', $userId)
             ->get()
             ->getResultArray();
@@ -948,15 +967,20 @@ class Mod_Finder extends Model
             'total'     => count($all_logs)
         ];
 
-        // Frequency map for urgency/spam
+        if (empty($all_logs)) return $counts;
+
         $freq = [];
-        $recent_threshold = strtotime('-24 hours') * 1000; // Assuming ms timestamp
+        $recent_threshold = strtotime('-24 hours') * 1000;
 
         foreach ($all_logs as $log) {
             $num = $log['phone_number'];
-            if (!isset($freq[$num])) $freq[$num] = ['count' => 0, 'recent' => 0, 'in_contacts' => !empty($log['contact_name'])];
+            if (!isset($freq[$num])) {
+                $freq[$num] = ['count' => 0, 'recent' => 0, 'name' => $log['contact_name']];
+            }
             $freq[$num]['count']++;
-            if ($log['call_date'] > $recent_threshold) $freq[$num]['recent']++;
+            if ($log['call_date'] > $recent_threshold) {
+                $freq[$num]['recent']++;
+            }
         }
 
         $business_keys = ['ltd', 'inc', 'bank', 'service', 'delivery', 'support', 'office'];
@@ -966,43 +990,44 @@ class Mod_Finder extends Model
             $name = strtolower($log['contact_name'] ?? '');
             $type = $log['call_type'];
             
-            $categorized = false;
-
-            // Spam check
+            // Spam
             if ($type === 'blocked' || ($type === 'rejected' && empty($log['contact_name']) && $freq[$num]['count'] > 3)) {
                 $counts['spam']++;
                 continue;
             }
 
-            // International check
+            // Intl
             if (strpos($num, '+') === 0 && strpos($num, '+254') !== 0) {
                 $counts['intl']++;
                 continue;
             }
 
-            // Family/Friends
+            // Family
             if (!empty($log['contact_name']) && $freq[$num]['count'] > 10) {
                 $counts['family']++;
                 continue;
             }
 
             // Business
+            $is_biz = false;
             foreach ($business_keys as $key) {
                 if (strpos($name, $key) !== false) {
-                    $counts['business']++;
-                    $categorized = true;
+                    $is_biz = true;
                     break;
                 }
             }
-            if ($categorized) continue;
+            if ($is_biz) {
+                $counts['business']++;
+                continue;
+            }
 
-            // Urgent/High Frequency
+            // Urgent
             if (empty($log['contact_name']) && $freq[$num]['recent'] > 5) {
                 $counts['urgent']++;
                 continue;
             }
 
-            // New Callers
+            // New
             if (empty($log['contact_name']) && $freq[$num]['count'] == 1) {
                 $counts['new']++;
                 continue;
@@ -1012,9 +1037,9 @@ class Mod_Finder extends Model
         return $counts;
     }
     /**
-     * Get categorized SMS items.
+     * Get categorized SMS items with pagination.
      */
-    public function get_categorized_sms(int $userId, string $category): array
+    public function get_categorized_sms(int $userId, string $category, int $perPage = 20, int $page = 1): array
     {
         $all_sms = $this->db->table('tbl_sms')
             ->select('address, body, sms_date as sms_time, sms_type')
@@ -1034,7 +1059,16 @@ class Mod_Finder extends Model
         $filtered = [];
 
         foreach ($all_sms as $sms) {
-            $body = strtolower($sms['body']);
+            $raw_body = $sms['body'];
+            $decoded_body = base64_decode($raw_body, true);
+            if ($decoded_body !== false && mb_check_encoding($decoded_body, 'UTF-8')) {
+                $body_text = $decoded_body;
+            } else {
+                $body_text = $raw_body;
+            }
+            
+            $sms['body'] = $body_text; // Return decoded body
+            $body = strtolower($body_text);
             $addr = strtolower($sms['address']);
             $addr_len = strlen($addr);
 
@@ -1127,13 +1161,20 @@ class Mod_Finder extends Model
             }
         }
 
-        return $filtered;
+        $total = count($filtered);
+        $offset = ($page - 1) * $perPage;
+        $data = array_slice($filtered, $offset, $perPage);
+
+        return [
+            'data' => $data,
+            'total' => $total
+        ];
     }
 
     /**
-     * Get categorized call items.
+     * Get categorized call items with pagination.
      */
-    public function get_categorized_calls(int $userId, string $category): array
+    public function get_categorized_calls(int $userId, string $category, int $perPage = 20, int $page = 1): array
     {
         $all_logs = $this->db->table('tbl_logs')
             ->select('phone_number, contact_name, call_type, call_date, duration_seconds')
@@ -1189,6 +1230,13 @@ class Mod_Finder extends Model
             }
         }
 
-        return $filtered;
+        $total = count($filtered);
+        $offset = ($page - 1) * $perPage;
+        $data = array_slice($filtered, $offset, $perPage);
+
+        return [
+            'data' => $data,
+            'total' => $total
+        ];
     }
 }

@@ -17,17 +17,19 @@
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="<?php echo base_url('assets/plugins/fontawesome-free/css/all.min.css'); ?>"/>
+    <link rel="stylesheet" href="<?php echo base_url('assets/plugins/fontawesome-free/css/all.min.css?v=1.4'); ?>"/>
     <!-- Ionicons -->
     <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
     <!-- Bootstrap 4 -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <!-- Theme style -->
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/adminlte.min.css'); ?>"/>
+    <link rel="stylesheet" href="<?php echo base_url('assets/css/adminlte.min.css?v=1.4'); ?>"/>
+    <!-- jQuery -->
+    <script src="<?php echo base_url('assets/plugins/jquery/jquery.min.js?v=1.4'); ?>"></script>
     <!-- overlayScrollbars -->
     <link rel="stylesheet"
-          href="<?php echo base_url('assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css'); ?>"/>
-    <link rel="stylesheet" href="<?php echo base_url('assets/plugins/datatables/datatables.min.css'); ?>"/>
+          href="<?php echo base_url('assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css?v=1.4'); ?>"/>
+    <link rel="stylesheet" href="<?php echo base_url('assets/plugins/datatables/datatables.min.css?v=1.4'); ?>"/>
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <!-- Chart.js -->

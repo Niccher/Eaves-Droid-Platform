@@ -51,9 +51,7 @@ class Correlation extends BaseClientController{
         $data['intlCalls'] = $data['call_analysis']['intl'];
         $data['urgentCalls'] = $data['call_analysis']['urgent'];
 
-        // Accuracy simulation (can be refined later)
-        $data['smsAccuracy'] = 94;
-        $data['callAccuracy'] = 91;
+        // Analysis results passed from data merge
 
 	    return view('headers_footers/head_users')
 		    . view('headers_footers/sidebar_users', $data)
@@ -187,6 +185,8 @@ class Correlation extends BaseClientController{
     public function sms_analysis()
     {
         $category = $this->request->getGet('category') ?? 'financial';
+        $perPage = 20;
+        $page = $this->request->getGet('page') ?? 1;
         
         $data['pag'] = 'analysis';
         $data["user_info"] = $this->finderModel->basic_user();
@@ -195,11 +195,19 @@ class Correlation extends BaseClientController{
         $counts = $this->getUserDataCounts();
         $data = array_merge($data, $counts);
 
+        $results = $this->finderModel->get_categorized_sms($this->userId, $category, $perPage, (int)$page);
+        
         $data['current_category'] = $category;
-        $data['categorized_sms'] = $this->finderModel->get_categorized_sms($this->userId, $category);
+        $data['categorized_sms'] = $results['data'];
+        $data['total'] = $results['total'];
+        $data['perPage'] = $perPage;
         
         // Pass counts for the tabs
         $data['sms_counts'] = $this->finderModel->get_categorized_sms_counts($this->userId);
+
+        // Setup Pager
+        $data['pager'] = \Config\Services::pager();
+        $data['pager_links'] = $data['pager']->makeLinks($page, $perPage, $results['total'], 'bootstrap5_full');
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -210,6 +218,8 @@ class Correlation extends BaseClientController{
     public function call_analysis()
     {
         $category = $this->request->getGet('category') ?? 'family';
+        $perPage = 20;
+        $page = $this->request->getGet('page') ?? 1;
         
         $data['pag'] = 'analysis';
         $data["user_info"] = $this->finderModel->basic_user();
@@ -218,11 +228,19 @@ class Correlation extends BaseClientController{
         $counts = $this->getUserDataCounts();
         $data = array_merge($data, $counts);
 
+        $results = $this->finderModel->get_categorized_calls($this->userId, $category, $perPage, (int)$page);
+
         $data['current_category'] = $category;
-        $data['categorized_calls'] = $this->finderModel->get_categorized_calls($this->userId, $category);
+        $data['categorized_calls'] = $results['data'];
+        $data['total'] = $results['total'];
+        $data['perPage'] = $perPage;
         
         // Pass counts for the tabs
         $data['call_counts'] = $this->finderModel->get_categorized_call_counts($this->userId);
+
+        // Setup Pager
+        $data['pager'] = \Config\Services::pager();
+        $data['pager_links'] = $data['pager']->makeLinks($page, $perPage, $results['total'], 'bootstrap5_full');
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
