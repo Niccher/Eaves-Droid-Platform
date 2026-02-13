@@ -807,4 +807,388 @@ class Mod_Finder extends Model
             return [];
         }
     }
+
+    /**
+     * Get categorized SMS counts for dashboard.
+     */
+    public function get_categorized_sms_counts(int $userId): array
+    {
+        $all_sms = $this->db->table('tbl_sms')
+            ->select('address, body')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        $counts = [
+            'financial' => 0,
+            'otp'       => 0,
+            'promo'     => 0,
+            'utility'   => 0,
+            'service'   => 0,
+            'malicious' => 0,
+            'personal'  => 0,
+            'total'     => count($all_sms)
+        ];
+
+        $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
+        $fin_keys = ['bank', 'mpesa', 'equity', 'kcb', 'transaction', 'kes', 'paid', 'received', 'balance', 'credited', 'debited', 'reversal'];
+        $otp_keys = ['code', 'otp', 'verification', 'login', 'password reset'];
+        $promo_keys = ['offer', 'discount', '% off', 'sale', 'win', 'subscribe', 'buy', 'promo', 'exclusive', 'betting'];
+        $util_keys = ['kplc', 'water', 'token', 'zuku', 'fiber', 'safaricom home', 'bill', 'due date'];
+        $serv_keys = ['uber', 'bolt', 'jumia', 'dhl', 'courier', 'delivery', 'ride', 'food'];
+        $mal_keys = ['won lottery', 'congratulations you have won', 'prize', 'kshs 50,000'];
+
+        foreach ($all_sms as $sms) {
+            $body = strtolower($sms['body']);
+            $addr = strtolower($sms['address']);
+            $addr_len = strlen($addr);
+
+            $categorized = false;
+
+            // Priority 1: Financial Sender IDs
+            if (in_array($addr, $fin_senders)) {
+                $counts['financial']++;
+                continue;
+            }
+
+            // Priority 2: Malicious check
+            foreach ($mal_keys as $key) {
+                if (strpos($body, $key) !== false) {
+                    $counts['malicious']++;
+                    $categorized = true;
+                    break;
+                }
+            }
+            if ($categorized) continue;
+
+            // OTP check
+            foreach ($otp_keys as $key) {
+                if (strpos($body, $key) !== false) {
+                    $counts['otp']++;
+                    $categorized = true;
+                    break;
+                }
+            }
+            if ($categorized) continue;
+
+            // Financial check
+            if ($addr_len < 10) {
+                foreach ($fin_keys as $key) {
+                    if (strpos($body, $key) !== false) {
+                        $counts['financial']++;
+                        $categorized = true;
+                        break;
+                    }
+                }
+            }
+            if ($categorized) continue;
+
+            // Utility check
+            foreach ($util_keys as $key) {
+                if (strpos($body, $key) !== false) {
+                    $counts['utility']++;
+                    $categorized = true;
+                    break;
+                }
+            }
+            if ($categorized) continue;
+
+            // Service check
+            foreach ($serv_keys as $key) {
+                if (strpos($body, $key) !== false) {
+                    $counts['service']++;
+                    $categorized = true;
+                    break;
+                }
+            }
+            if ($categorized) continue;
+
+            // Promo check
+            if ($addr_len < 10) {
+                $counts['promo']++;
+                $categorized = true;
+            } else {
+                foreach ($promo_keys as $key) {
+                    if (strpos($body, $key) !== false) {
+                        $counts['promo']++;
+                        $categorized = true;
+                        break;
+                    }
+                }
+            }
+            if ($categorized) continue;
+
+            // If not categorized and addr_len >= 10, likely personal
+            if ($addr_len >= 10) {
+                $counts['personal']++;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Get categorized call counts for dashboard.
+     */
+    public function get_categorized_call_counts(int $userId): array
+    {
+        $all_logs = $this->db->table('tbl_logs')
+            ->select('phone_number, contact_name, call_type, call_date')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        $counts = [
+            'family'    => 0,
+            'business'  => 0,
+            'intl'      => 0,
+            'urgent'    => 0,
+            'spam'      => 0,
+            'new'       => 0,
+            'total'     => count($all_logs)
+        ];
+
+        // Frequency map for urgency/spam
+        $freq = [];
+        $recent_threshold = strtotime('-24 hours') * 1000; // Assuming ms timestamp
+
+        foreach ($all_logs as $log) {
+            $num = $log['phone_number'];
+            if (!isset($freq[$num])) $freq[$num] = ['count' => 0, 'recent' => 0, 'in_contacts' => !empty($log['contact_name'])];
+            $freq[$num]['count']++;
+            if ($log['call_date'] > $recent_threshold) $freq[$num]['recent']++;
+        }
+
+        $business_keys = ['ltd', 'inc', 'bank', 'service', 'delivery', 'support', 'office'];
+
+        foreach ($all_logs as $log) {
+            $num = $log['phone_number'];
+            $name = strtolower($log['contact_name'] ?? '');
+            $type = $log['call_type'];
+            
+            $categorized = false;
+
+            // Spam check
+            if ($type === 'blocked' || ($type === 'rejected' && empty($log['contact_name']) && $freq[$num]['count'] > 3)) {
+                $counts['spam']++;
+                continue;
+            }
+
+            // International check
+            if (strpos($num, '+') === 0 && strpos($num, '+254') !== 0) {
+                $counts['intl']++;
+                continue;
+            }
+
+            // Family/Friends
+            if (!empty($log['contact_name']) && $freq[$num]['count'] > 10) {
+                $counts['family']++;
+                continue;
+            }
+
+            // Business
+            foreach ($business_keys as $key) {
+                if (strpos($name, $key) !== false) {
+                    $counts['business']++;
+                    $categorized = true;
+                    break;
+                }
+            }
+            if ($categorized) continue;
+
+            // Urgent/High Frequency
+            if (empty($log['contact_name']) && $freq[$num]['recent'] > 5) {
+                $counts['urgent']++;
+                continue;
+            }
+
+            // New Callers
+            if (empty($log['contact_name']) && $freq[$num]['count'] == 1) {
+                $counts['new']++;
+                continue;
+            }
+        }
+
+        return $counts;
+    }
+    /**
+     * Get categorized SMS items.
+     */
+    public function get_categorized_sms(int $userId, string $category): array
+    {
+        $all_sms = $this->db->table('tbl_sms')
+            ->select('address, body, sms_date as sms_time, sms_type')
+            ->where('owner_id', $userId)
+            ->orderBy('sms_date', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
+        $fin_keys = ['bank', 'mpesa', 'equity', 'kcb', 'transaction', 'kes', 'paid', 'received', 'balance', 'credited', 'debited', 'reversal'];
+        $otp_keys = ['code', 'otp', 'verification', 'login', 'password reset'];
+        $promo_keys = ['offer', 'discount', '% off', 'sale', 'win', 'subscribe', 'buy', 'promo', 'exclusive', 'betting', 'bet', 'jackpot'];
+        $util_keys = ['kplc', 'water', 'token', 'zuku', 'fiber', 'safaricom home', 'bill', 'due date'];
+        $serv_keys = ['uber', 'bolt', 'jumia', 'dhl', 'courier', 'delivery', 'ride', 'food'];
+        $mal_keys = ['won lottery', 'congratulations you have won', 'prize', 'kshs 50,000'];
+
+        $filtered = [];
+
+        foreach ($all_sms as $sms) {
+            $body = strtolower($sms['body']);
+            $addr = strtolower($sms['address']);
+            $addr_len = strlen($addr);
+
+            $current_cat = 'personal';
+            $match = false;
+
+            // Priority 1: Financial Sender IDs
+            if (in_array($addr, $fin_senders)) {
+                $current_cat = 'financial';
+                $match = true;
+            }
+
+            // Priority 2: Malicious check
+            if (!$match) {
+                foreach ($mal_keys as $key) {
+                    if (strpos($body, $key) !== false) {
+                        $current_cat = 'malicious';
+                        $match = true;
+                        break;
+                    }
+                }
+            }
+
+            // OTP
+            if (!$match) {
+                foreach ($otp_keys as $key) {
+                    if (strpos($body, $key) !== false) {
+                        $current_cat = 'otp';
+                        $match = true;
+                        break;
+                    }
+                }
+            }
+
+            // Financial Keywords
+            if (!$match && $addr_len < 10) {
+                foreach ($fin_keys as $key) {
+                    if (strpos($body, $key) !== false) {
+                        $current_cat = 'financial';
+                        $match = true;
+                        break;
+                    }
+                }
+            }
+
+            // Utility
+            if (!$match) {
+                foreach ($util_keys as $key) {
+                    if (strpos($body, $key) !== false) {
+                        $current_cat = 'utility';
+                        $match = true;
+                        break;
+                    }
+                }
+            }
+
+            // Service
+            if (!$match) {
+                foreach ($serv_keys as $key) {
+                    if (strpos($body, $key) !== false) {
+                        $current_cat = 'service';
+                        $match = true;
+                        break;
+                    }
+                }
+            }
+
+            // Promo
+            if (!$match) {
+                if ($addr_len < 10) {
+                    $current_cat = 'promo';
+                    $match = true;
+                } else {
+                    foreach ($promo_keys as $key) {
+                        if (strpos($body, $key) !== false) {
+                            $current_cat = 'promo';
+                            $match = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!$match && $addr_len >= 10) {
+                $current_cat = 'personal';
+            }
+
+            if ($current_cat === $category) {
+                $filtered[] = $sms;
+            }
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Get categorized call items.
+     */
+    public function get_categorized_calls(int $userId, string $category): array
+    {
+        $all_logs = $this->db->table('tbl_logs')
+            ->select('phone_number, contact_name, call_type, call_date, duration_seconds')
+            ->where('owner_id', $userId)
+            ->orderBy('call_date', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $freq = [];
+        $recent_threshold = strtotime('-24 hours') * 1000;
+        foreach ($all_logs as $log) {
+            $num = $log['phone_number'];
+            if (!isset($freq[$num])) $freq[$num] = ['count' => 0, 'recent' => 0];
+            $freq[$num]['count']++;
+            if ($log['call_date'] > $recent_threshold) $freq[$num]['recent']++;
+        }
+
+        $business_keys = ['ltd', 'inc', 'bank', 'service', 'delivery', 'support', 'office'];
+        $filtered = [];
+
+        foreach ($all_logs as $log) {
+            $num = $log['phone_number'];
+            $name = strtolower($log['contact_name'] ?? '');
+            $type = $log['call_type'];
+            
+            $current_cat = 'other';
+
+            if ($type === 'blocked' || ($type === 'rejected' && empty($log['contact_name']) && $freq[$num]['count'] > 3)) {
+                $current_cat = 'spam';
+            } else if (strpos($num, '+') === 0 && strpos($num, '+254') !== 0) {
+                $current_cat = 'intl';
+            } else if (!empty($log['contact_name']) && $freq[$num]['count'] > 10) {
+                $current_cat = 'family';
+            } else {
+                $is_biz = false;
+                foreach ($business_keys as $key) {
+                    if (strpos($name, $key) !== false) {
+                        $is_biz = true;
+                        break;
+                    }
+                }
+                if ($is_biz) {
+                    $current_cat = 'business';
+                } else if (empty($log['contact_name']) && $freq[$num]['recent'] > 5) {
+                    $current_cat = 'urgent';
+                } else if (empty($log['contact_name']) && $freq[$num]['count'] == 1) {
+                    $current_cat = 'new';
+                }
+            }
+
+            if ($current_cat === $category) {
+                $filtered[] = $log;
+            }
+        }
+
+        return $filtered;
+    }
 }

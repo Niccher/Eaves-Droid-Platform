@@ -30,5 +30,7 @@
     <link rel="stylesheet" href="<?php echo base_url('assets/plugins/datatables/datatables.min.css'); ?>"/>
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
     

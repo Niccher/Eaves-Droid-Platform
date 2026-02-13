@@ -437,34 +437,44 @@ class Account extends BaseClientController
 
 
     /**
-     * Gets user devices from access logs.
+     * Gets only Android devices that have connected using tokens.
      *
      * @return array
      */
     private function getUserDevices(): array
     {
         try {
-            $db = \Config\Database::connect();
+            // Use the model method that specifically finds devices connected via tokens/uploads
+            $devices = $this->modUser->get_user_devices_from_profile($this->userId);
 
-            $devices = $db->table('tbl_user_actions')
-                ->select('device_type, device_name, operating_system, browser, ip_address, MAX(created_at) as last_seen')
-                ->where('user_id', $this->userId)
-                ->where('device_name IS NOT NULL')
-                ->groupBy('device_name, ip_address')
-                ->orderBy('last_seen', 'DESC')
-                ->get()
-                ->getResultArray();
+            if (empty($devices)) {
+                return [];
+            }
 
             $formattedDevices = [];
             foreach ($devices as $device) {
+                // Determine the best way to parse the "last seen" timestamp
+                $rawTimestamp = $device['extraction_timestamp'] ?? null;
+                $lastSeenTime = null;
+
+                if ($rawTimestamp) {
+                    if (is_numeric($rawTimestamp)) {
+                        // Handle millisecond or second timestamp
+                        $lastSeenTime = strlen($rawTimestamp) > 11 ? (int)($rawTimestamp / 1000) : (int)$rawTimestamp;
+                    } else {
+                        // Handle date string
+                        $lastSeenTime = strtotime($rawTimestamp);
+                    }
+                }
+
                 $formattedDevices[] = [
-                    'device_type' => $device['device_type'] ?? 'unknown',
-                    'device_name' => $device['device_name'] ?? 'Unknown Device',
-                    'os' => $device['operating_system'] ?? 'Unknown OS',
-                    'browser' => $device['browser'] ?? 'Unknown Browser',
-                    'ip_address' => $device['ip_address'] ?? 'N/A',
-                    'last_seen' => $device['last_seen'] ?? date('Y-m-d H:i:s'),
-                    'last_seen_formatted' => isset($device['last_seen']) ? date('M d, Y H:i', strtotime($device['last_seen'])) : 'Never'
+                    'device_type' => 'mobile',
+                    'device_name' => ($device['device_brand'] ?? 'Unknown') . ' ' . ($device['device_model'] ?? 'Device'),
+                    'os' => 'Android ' . ($device['android_version'] ?? 'Unknown'),
+                    'browser' => 'FGM Extractor',
+                    'ip_address' => $device['device_ip_address'] ?? 'N/A',
+                    'last_seen' => $lastSeenTime ? date('Y-m-d H:i:s', $lastSeenTime) : 'N/A',
+                    'last_seen_formatted' => $lastSeenTime ? date('M d, Y H:i', $lastSeenTime) : 'Never'
                 ];
             }
 

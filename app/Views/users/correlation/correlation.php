@@ -120,7 +120,7 @@
                             </div>
                             <div class="card-body p-0">
                                 <div class="nav flex-column nav-pills" id="smsAnalysisTab" role="tablist" aria-orientation="vertical">
-                                    <a class="nav-link active" id="sms-finance-tab" data-toggle="pill" href="#sms-finance" role="tab" aria-controls="sms-finance" aria-selected="true">
+                                    <a class="nav-link active" href="<?php echo base_url('analysis/sms?category=financial'); ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <span class="badge badge-info p-2">
@@ -134,7 +134,7 @@
                                             <span class="badge badge-light ml-auto"><?php echo $financialSMS ?? 0 ?></span>
                                         </div>
                                     </a>
-                                    <a class="nav-link" id="sms-promotional-tab" data-toggle="pill" href="#sms-promotional" role="tab" aria-controls="sms-promotional" aria-selected="false">
+                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=promo'); ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <span class="badge badge-warning p-2">
@@ -148,7 +148,7 @@
                                             <span class="badge badge-light ml-auto"><?php echo $promotionalSMS ?? 0 ?></span>
                                         </div>
                                     </a>
-                                    <a class="nav-link" id="sms-malicious-tab" data-toggle="pill" href="#sms-malicious" role="tab" aria-controls="sms-malicious" aria-selected="false">
+                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=malicious'); ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <span class="badge badge-danger p-2">
@@ -162,7 +162,49 @@
                                             <span class="badge badge-light ml-auto"><?php echo $maliciousSMS ?? 0 ?></span>
                                         </div>
                                     </a>
-                                    <a class="nav-link" id="sms-personal-tab" data-toggle="pill" href="#sms-personal" role="tab" aria-controls="sms-personal" aria-selected="false">
+                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=otp'); ?>">
+                                        <div class="d-flex align-items-center">
+                                            <div class="mr-2">
+                                                <span class="badge badge-primary p-2">
+                                                    <i class="fas fa-key"></i>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">OTP/Auth</div>
+                                                <small class="text-muted">Codes & Verification</small>
+                                            </div>
+                                            <span class="badge badge-light ml-auto"><?php echo $otpSMS ?? 0 ?></span>
+                                        </div>
+                                    </a>
+                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=utility'); ?>">
+                                        <div class="d-flex align-items-center">
+                                            <div class="mr-2">
+                                                <span class="badge badge-secondary p-2">
+                                                    <i class="fas fa-file-invoice-dollar"></i>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">Utility/Bills</div>
+                                                <small class="text-muted">Power & Water</small>
+                                            </div>
+                                            <span class="badge badge-light ml-auto"><?php echo $utilitySMS ?? 0 ?></span>
+                                        </div>
+                                    </a>
+                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=service'); ?>">
+                                        <div class="d-flex align-items-center">
+                                            <div class="mr-2">
+                                                <span class="badge badge-dark p-2">
+                                                    <i class="fas fa-truck"></i>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">Service/Delivery</div>
+                                                <small class="text-muted">Uber, Jumia, etc.</small>
+                                            </div>
+                                            <span class="badge badge-light ml-auto"><?php echo $serviceSMS ?? 0 ?></span>
+                                        </div>
+                                    </a>
+                                    <a class="nav-link" href="<?php echo base_url('analysis/sms?category=personal'); ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <span class="badge badge-success p-2">
@@ -179,7 +221,7 @@
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <a href="<?php echo base_url('analysis/sms/finance'); ?>" class="btn btn-primary btn-block">
+                                <a href="<?php echo base_url('analysis/sms'); ?>" class="btn btn-primary btn-block">
                                     <i class="fas fa-chart-bar mr-1"></i> View Full Analysis
                                 </a>
                             </div>
@@ -201,7 +243,7 @@
                             </div>
                             <div class="card-body p-0">
                                 <div class="nav flex-column nav-pills" id="callAnalysisTab" role="tablist" aria-orientation="vertical">
-                                    <a class="nav-link active" id="call-family-tab" data-toggle="pill" href="#call-family" role="tab" aria-controls="call-family" aria-selected="true">
+                                    <a class="nav-link active" href="<?php echo base_url('analysis/calls?category=family'); ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <span class="badge badge-success p-2">
@@ -215,7 +257,7 @@
                                             <span class="badge badge-light ml-auto"><?php echo $familyCalls ?? 0 ?></span>
                                         </div>
                                     </a>
-                                    <a class="nav-link" id="call-new-tab" data-toggle="pill" href="#call-new" role="tab" aria-controls="call-new" aria-selected="false">
+                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=new'); ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <span class="badge badge-info p-2">
@@ -229,7 +271,7 @@
                                             <span class="badge badge-light ml-auto"><?php echo $newCalls ?? 0 ?></span>
                                         </div>
                                     </a>
-                                    <a class="nav-link" id="call-business-tab" data-toggle="pill" href="#call-business" role="tab" aria-controls="call-business" aria-selected="false">
+                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=business'); ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <span class="badge badge-warning p-2">
@@ -243,7 +285,35 @@
                                             <span class="badge badge-light ml-auto"><?php echo $businessCalls ?? 0 ?></span>
                                         </div>
                                     </a>
-                                    <a class="nav-link" id="call-spam-tab" data-toggle="pill" href="#call-spam" role="tab" aria-controls="call-spam" aria-selected="false">
+                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=intl'); ?>">
+                                        <div class="d-flex align-items-center">
+                                            <div class="mr-2">
+                                                <span class="badge badge-dark p-2">
+                                                    <i class="fas fa-globe-africa"></i>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">International</div>
+                                                <small class="text-muted">Foreign Numbers</small>
+                                            </div>
+                                            <span class="badge badge-light ml-auto"><?php echo $intlCalls ?? 0 ?></span>
+                                        </div>
+                                    </a>
+                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=urgent'); ?>">
+                                        <div class="d-flex align-items-center">
+                                            <div class="mr-2">
+                                                <span class="badge badge-danger p-2">
+                                                    <i class="fas fa-history"></i>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">Urgent/Frequent</div>
+                                                <small class="text-muted">High Frequency Unknown</small>
+                                            </div>
+                                            <span class="badge badge-light ml-auto"><?php echo $urgentCalls ?? 0 ?></span>
+                                        </div>
+                                    </a>
+                                    <a class="nav-link" href="<?php echo base_url('analysis/calls?category=spam'); ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <span class="badge badge-danger p-2">
@@ -260,7 +330,7 @@
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <a href="<?php echo base_url('analysis/calls/family'); ?>" class="btn btn-success btn-block">
+                                <a href="<?php echo base_url('analysis/calls'); ?>" class="btn btn-success btn-block">
                                     <i class="fas fa-chart-pie mr-1"></i> View Call Analytics
                                 </a>
                             </div>
@@ -321,7 +391,10 @@
                                                 <canvas id="smsPieChart" height="150"></canvas>
                                                 <div class="mt-3">
                                                     <span class="badge badge-info mr-2">Financial</span>
+                                                    <span class="badge badge-primary mr-2">OTP</span>
                                                     <span class="badge badge-warning mr-2">Promotional</span>
+                                                    <span class="badge badge-secondary mr-2">Utility</span>
+                                                    <span class="badge badge-dark mr-2">Service</span>
                                                     <span class="badge badge-danger mr-2">Malicious</span>
                                                     <span class="badge badge-success">Personal</span>
                                                 </div>
@@ -356,9 +429,11 @@
                                             <div class="card-body">
                                                 <canvas id="callBarChart" height="150"></canvas>
                                                 <div class="mt-3">
-                                                    <span class="badge badge-success mr-2">Family/Friends</span>
-                                                    <span class="badge badge-info mr-2">New Contacts</span>
+                                                    <span class="badge badge-success mr-2">Family</span>
+                                                    <span class="badge badge-info mr-2">New</span>
                                                     <span class="badge badge-warning mr-2">Business</span>
+                                                    <span class="badge badge-dark mr-2">Intl</span>
+                                                    <span class="badge badge-danger mr-2">Urgent</span>
                                                     <span class="badge badge-danger">Spam</span>
                                                 </div>
                                             </div>
@@ -642,12 +717,23 @@
             const smsPieChart = new Chart(smsCtx, {
                 type: 'pie',
                 data: {
-                    labels: ['Financial', 'Promotional', 'Malicious', 'Personal'],
+                    labels: ['Financial', 'OTP', 'Promotional', 'Utility', 'Service', 'Malicious', 'Personal'],
                     datasets: [{
-                        data: [<?php echo $financialSMS ?? 35 ?>, <?php echo $promotionalSMS ?? 45 ?>, <?php echo $maliciousSMS ?? 10 ?>, <?php echo $personalSMS ?? 40 ?>],
+                        data: [
+                            <?php echo $financialSMS ?? 0 ?>, 
+                            <?php echo $otpSMS ?? 0 ?>, 
+                            <?php echo $promotionalSMS ?? 0 ?>, 
+                            <?php echo $utilitySMS ?? 0 ?>, 
+                            <?php echo $serviceSMS ?? 0 ?>, 
+                            <?php echo $maliciousSMS ?? 0 ?>, 
+                            <?php echo $personalSMS ?? 0 ?>
+                        ],
                         backgroundColor: [
                             '#17a2b8',
+                            '#007bff',
                             '#ffc107',
+                            '#6c757d',
+                            '#343a40',
                             '#dc3545',
                             '#28a745'
                         ],
@@ -667,14 +753,23 @@
             const callBarChart = new Chart(callCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Family/Friends', 'New Contacts', 'Business', 'Spam'],
+                    labels: ['Family', 'New', 'Business', 'Intl', 'Urgent', 'Spam'],
                     datasets: [{
                         label: 'Number of Calls',
-                        data: [<?php echo $familyCalls ?? 120 ?>, <?php echo $newCalls ?? 25 ?>, <?php echo $businessCalls ?? 45 ?>, <?php echo $spamCalls ?? 15 ?>],
+                        data: [
+                            <?php echo $familyCalls ?? 0 ?>, 
+                            <?php echo $newCalls ?? 0 ?>, 
+                            <?php echo $businessCalls ?? 0 ?>, 
+                            <?php echo $intlCalls ?? 0 ?>, 
+                            <?php echo $urgentCalls ?? 0 ?>, 
+                            <?php echo $spamCalls ?? 0 ?>
+                        ],
                         backgroundColor: [
                             '#28a745',
                             '#17a2b8',
                             '#ffc107',
+                            '#343a40',
+                            '#dc3545',
                             '#dc3545'
                         ],
                         borderWidth: 1

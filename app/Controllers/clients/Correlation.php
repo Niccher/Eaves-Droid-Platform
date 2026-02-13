@@ -16,9 +16,7 @@ class Correlation extends BaseClientController{
 
     public function index(){
         // Auth check handled in parent
-	    //$model_finder = new Mod_Finder(); // Use $this->finderModel
 	    $model_crypt = new Mod_Crypt();
-	    //$encrypter = \Config\Services::encrypter();
 
 	    $pg = 'correlation';
 	    $data['pag'] = 'analysis';
@@ -27,6 +25,35 @@ class Correlation extends BaseClientController{
         // Stats
         $counts = $this->getUserDataCounts();
         $data = array_merge($data, $counts);
+
+        // Analysis Stats
+        $data['sms_analysis'] = $this->finderModel->get_categorized_sms_counts($this->userId);
+        $data['call_analysis'] = $this->finderModel->get_categorized_call_counts($this->userId);
+
+        // Map data for view variables
+        $data['totalAnalyzedSMS'] = $data['sms_analysis']['total'];
+        $data['financialAlerts'] = $data['sms_analysis']['financial'];
+        $data['suspiciousCalls'] = $data['call_analysis']['spam'];
+        $data['newContacts'] = $data['call_analysis']['new'];
+
+        $data['financialSMS'] = $data['sms_analysis']['financial'];
+        $data['promotionalSMS'] = $data['sms_analysis']['promo'];
+        $data['maliciousSMS'] = $data['sms_analysis']['malicious'];
+        $data['otpSMS'] = $data['sms_analysis']['otp'];
+        $data['utilitySMS'] = $data['sms_analysis']['utility'];
+        $data['serviceSMS'] = $data['sms_analysis']['service'];
+        $data['personalSMS'] = $data['sms_analysis']['personal'];
+
+        $data['familyCalls'] = $data['call_analysis']['family'];
+        $data['newCalls'] = $data['call_analysis']['new'];
+        $data['businessCalls'] = $data['call_analysis']['business'];
+        $data['spamCalls'] = $data['call_analysis']['spam'];
+        $data['intlCalls'] = $data['call_analysis']['intl'];
+        $data['urgentCalls'] = $data['call_analysis']['urgent'];
+
+        // Accuracy simulation (can be refined later)
+        $data['smsAccuracy'] = 94;
+        $data['callAccuracy'] = 91;
 
 	    return view('headers_footers/head_users')
 		    . view('headers_footers/sidebar_users', $data)
@@ -155,6 +182,52 @@ class Correlation extends BaseClientController{
             . view('users/correlation/sms_finance_single_view', $data)
             . view('headers_footers/tail_analyze_sms', $data);
 
+    }
+
+    public function sms_analysis()
+    {
+        $category = $this->request->getGet('category') ?? 'financial';
+        
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $data['current_category'] = $category;
+        $data['categorized_sms'] = $this->finderModel->get_categorized_sms($this->userId, $category);
+        
+        // Pass counts for the tabs
+        $data['sms_counts'] = $this->finderModel->get_categorized_sms_counts($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/sms_analysis', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    public function call_analysis()
+    {
+        $category = $this->request->getGet('category') ?? 'family';
+        
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $data['current_category'] = $category;
+        $data['categorized_calls'] = $this->finderModel->get_categorized_calls($this->userId, $category);
+        
+        // Pass counts for the tabs
+        $data['call_counts'] = $this->finderModel->get_categorized_call_counts($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/call_analysis', $data)
+            . view('headers_footers/footer_users');
     }
 
 }
