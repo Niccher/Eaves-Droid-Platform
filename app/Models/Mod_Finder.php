@@ -1263,4 +1263,72 @@ class Mod_Finder extends Model
             'total' => $total
         ];
     }
+
+    /**
+     * Search SMS by keyword.
+     */
+    public function search_sms(int $userId, string $query): array
+    {
+        return $this->db->table('tbl_sms')
+            ->select('address as Number, body as Message, sms_date as Date, sms_type as Type')
+            ->where('owner_id', $userId)
+            ->groupStart()
+                ->like('address', $query)
+                ->orLike('body', $query)
+            ->groupEnd()
+            ->orderBy('sms_date', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Search Call Logs by keyword.
+     */
+    public function search_calls(int $userId, string $query): array
+    {
+        return $this->db->table('tbl_logs')
+            ->select('contact_name as Name, phone_number as Number, call_date as Date, call_type as Type, duration_seconds as Duration')
+            ->where('owner_id', $userId)
+            ->groupStart()
+                ->like('contact_name', $query)
+                ->orLike('phone_number', $query)
+            ->groupEnd()
+            ->orderBy('call_date', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Search Contacts by keyword.
+     */
+    public function search_contacts(int $userId, string $query): array
+    {
+        return $this->db->table('tbl_contacts')
+            ->select('display_name as Name, phone_numbers as Number, last_contacted, contact_id')
+            ->where('owner_id', $userId)
+            ->groupStart()
+                ->like('display_name', $query)
+                ->orLike('phone_numbers', $query)
+            ->groupEnd()
+            ->orderBy('display_name', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Search Files by keyword.
+     */
+    public function search_files(int $userId, string $query): array
+    {
+        return $this->db->table('tbl_device_files')
+            ->select('name as file_name, path as file_path, size_bytes as file_size, category as file_type, last_modified')
+            ->where('owner_id', $userId)
+            ->groupStart()
+                ->like('name', $query)
+                ->orLike('path', $query)
+            ->groupEnd()
+            ->orderBy('last_modified', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
 }

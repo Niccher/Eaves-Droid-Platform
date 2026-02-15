@@ -211,6 +211,14 @@ $routes->group('', [
     $routes->get('home', 'Client::home', ['as' => 'client-dashboard']);
 
     /**
+     * Handles universal search across SMS, Calls, Contacts, and Files.
+     *
+     * @return string
+     */
+    $routes->get('globalsearch', 'GlobalSearch::index', ['as' => 'global-search']);
+
+
+    /**
      * Displays client FAQ page.
      *
      * @return string
