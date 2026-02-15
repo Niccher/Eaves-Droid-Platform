@@ -528,6 +528,16 @@ $routes->group('', [
         $routes->get('(:num)', 'Correlation::index/$1');
 
         /**
+         * Detailed SMS Analysis.
+         */
+        $routes->get('sms', 'Correlation::sms_analysis', ['as' => 'analysis-sms']);
+
+        /**
+         * Detailed Call Analysis.
+         */
+        $routes->get('calls', 'Correlation::call_analysis', ['as' => 'analysis-calls']);
+
+        /**
          * Displays financial SMS analysis.
          *
          * @param int|null $page Page number
@@ -579,6 +589,7 @@ $routes->group('', [
          */
         $routes->get('home', 'Account::home', ['as' => 'account-profile']);
         $routes->get('profile', 'Account::home'); // Legacy alias
+        $routes->post('profile', 'Account::updateProfile'); // Handle POST updates on profile link
 
         /**
          * Updates user profile.

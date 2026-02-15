@@ -29,6 +29,21 @@ class Mod_User extends Model
                 $user = auth()->user();
                 $userArray = $user->toArray();
                 $userArray['email'] = $user->getEmail();
+                $userArray['id'] = $user->id;
+
+                // Sync with user_profiles
+                $profile = $this->db->table('user_profiles')
+                    ->where('user_id', $user->id)
+                    ->get()
+                    ->getRowArray();
+
+                if ($profile) {
+                    $userArray['profile_image'] = $profile['profile_image'] ?? null;
+                    $userArray['bio'] = $profile['bio'] ?? null;
+                } else {
+                    $userArray['profile_image'] = null;
+                }
+
                 return $userArray;
             }
             log_message('error', 'User not logged in');

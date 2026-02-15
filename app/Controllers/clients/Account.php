@@ -17,9 +17,9 @@ class Account extends BaseClientController
     protected $modUser;
 
     /**
-     * @var Mod_Access_Logs
+     * @var \App\Models\Mod_Crypt
      */
-    protected $modAccessLogs;
+    protected $modCrypt;
 
     // Remove $modFinder, $userId as they are in BaseClientController
     // Keep $userData if needed or use parent's structure
@@ -54,6 +54,7 @@ class Account extends BaseClientController
         // Initialize specific models
         $this->modUser = new Mod_User();
         $this->modAccessLogs = new Mod_Access_Logs();
+        $this->modCrypt = new \App\Models\Mod_Crypt();
 
         // Get authenticated user data (BaseClientController might have userId set, but let's keep this for consistency with Account's logic for now)
         $this->userData = $this->getAuthenticatedUserData();
@@ -239,8 +240,22 @@ class Account extends BaseClientController
                 ->getRowArray();
 
             if ($profile) {
-                $userData = array_merge($userData, $profile);
+            // Decrypt bio if it exists
+            if (!empty($profile['bio'])) {
+                try {
+                    $decodedBio = base64_decode($profile['bio'], true);
+                    if ($decodedBio !== false) {
+                        $decrypted = $this->modCrypt->Dec_String($decodedBio);
+                        if ($decrypted) {
+                            $profile['bio'] = $decrypted;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    log_message('debug', 'Bio decryption failed, it might be plain text: ' . $e->getMessage());
+                }
             }
+            $userData = array_merge($userData, $profile);
+        }
 
             // Get last login timestamp from access logs
             $lastLogin = $db->table('tbl_user_actions')
@@ -279,6 +294,15 @@ class Account extends BaseClientController
 
         $userArray = $user->toArray();
         $userArray['email'] = $user->getEmail();
+        $userArray['id'] = $user->id;
+
+        // Get profile data for avatar
+        if ($this->userId || $user->id) {
+            $profile = (new Mod_User())->get_data_tbl_users($this->userId ?? $user->id);
+            if ($profile) {
+                $userArray['profile_image'] = $profile['profile_image'] ?? null;
+            }
+        }
 
         return $userArray;
     }
@@ -329,21 +353,23 @@ class Account extends BaseClientController
             // Update username if provided
             $username = $this->request->getPost('username');
             if ($username && trim($username) !== '') {
-                $data['username'] = trim($username);
-
                 // Update in Shield users table
                 $user = auth()->user();
-                $user->fill(['username' => $username]);
+                $user->fill(['username' => trim($username)]);
                 auth()->updateUser($user);
             }
 
             // Update bio if provided
-            $bio = $this->request->getPost('bio');
-            if ($bio !== null) {
-                $data['bio'] = trim($bio);
+        $bio = $this->request->getPost('bio');
+        if ($bio !== null) {
+            $trimmedBio = trim($bio);
+            if ($trimmedBio !== '') {
+                // Encrypt bio to stay consistent with legacy code
+                $data['bio'] = base64_encode($this->modCrypt->Enc_String($trimmedBio));
             }
+        }
 
-            // Handle profile image upload
+        // Handle profile image upload
             $imageFile = $this->request->getFile('profile_image');
             if ($imageFile && $imageFile->isValid() && !$imageFile->hasMoved()) {
                 $validationRules = [
@@ -363,7 +389,8 @@ class Account extends BaseClientController
                 }
 
                 $newName = $imageFile->getRandomName();
-                $uploadPath = WRITEPATH . 'uploads/profiles/';
+            // Store in public/uploads/profiles so it's accessible via base_url()
+            $uploadPath = FCPATH . 'uploads/profiles/';
 
                 if (!is_dir($uploadPath)) {
                     mkdir($uploadPath, 0777, true);
@@ -990,27 +1017,27 @@ class Account extends BaseClientController
         try {
             switch ($type) {
                 case 'apps':
-                    $data = $this->modFinder->get_apps($this->userId, 1000);
+                    $data = $this->finderModel->get_apps($this->userId, 1000);
                     $filename = 'apps_export_' . date('Y-m-d_H-i-s') . '.json';
                     break;
                 case 'calls':
-                    $data = $this->modFinder->get_call_logs($this->userId, 1000);
+                    $data = $this->finderModel->get_call_logs($this->userId, 1000);
                     $filename = 'calls_export_' . date('Y-m-d_H-i-s') . '.json';
                     break;
                 case 'contacts':
-                    $data = $this->modFinder->get_contacts($this->userId, 1000);
+                    $data = $this->finderModel->get_contacts($this->userId, 1000);
                     $filename = 'contacts_export_' . date('Y-m-d_H-i-s') . '.json';
                     break;
                 case 'sms':
-                    $data = $this->modFinder->get_sms($this->userId, 1000);
+                    $data = $this->finderModel->get_sms($this->userId, 1000);
                     $filename = 'sms_export_' . date('Y-m-d_H-i-s') . '.json';
                     break;
                 case 'all':
                     $data = [
-                        'apps' => $this->modFinder->get_apps($this->userId, 1000),
-                        'calls' => $this->modFinder->get_call_logs($this->userId, 1000),
-                        'contacts' => $this->modFinder->get_contacts($this->userId, 1000),
-                        'sms' => $this->modFinder->get_sms($this->userId, 1000),
+                        'apps' => $this->finderModel->get_apps($this->userId, 1000),
+                        'calls' => $this->finderModel->get_call_logs($this->userId, 1000),
+                        'contacts' => $this->finderModel->get_contacts($this->userId, 1000),
+                        'sms' => $this->finderModel->get_sms($this->userId, 1000),
                         'export_info' => [
                             'exported_at' => date('Y-m-d H:i:s'),
                             'user_id' => $this->userId,
@@ -1093,26 +1120,27 @@ class Account extends BaseClientController
 
             switch ($type) {
                 case 'apps':
-                    $success = $this->modFinder->deleteAppsByUser($this->userId);
+                    $success = $this->finderModel->deleteAppsByUser($this->userId);
                     $message = 'All apps deleted successfully';
                     break;
+                case 'calls':
                 case 'call_logs':
-                    $success = $this->modFinder->deleteCallsByUser($this->userId);
+                    $success = $this->finderModel->deleteCallsByUser($this->userId);
                     $message = 'All call logs deleted successfully';
                     break;
                 case 'contacts':
-                    $success = $this->modFinder->deleteContactsByUser($this->userId);
+                    $success = $this->finderModel->deleteContactsByUser($this->userId);
                     $message = 'All contacts deleted successfully';
                     break;
                 case 'sms':
-                    $success = $this->modFinder->deleteSmsByUser($this->userId);
+                    $success = $this->finderModel->deleteSmsByUser($this->userId);
                     $message = 'All SMS messages deleted successfully';
                     break;
                 case 'all':
-                    $apps = $this->modFinder->deleteAppsByUser($this->userId);
-                    $calls = $this->modFinder->deleteCallsByUser($this->userId);
-                    $contacts = $this->modFinder->deleteContactsByUser($this->userId);
-                    $sms = $this->modFinder->deleteSmsByUser($this->userId);
+                    $apps = $this->finderModel->deleteAppsByUser($this->userId);
+                    $calls = $this->finderModel->deleteCallsByUser($this->userId);
+                    $contacts = $this->finderModel->deleteContactsByUser($this->userId);
+                    $sms = $this->finderModel->deleteSmsByUser($this->userId);
                     $success = ($apps && $calls && $contacts && $sms);
                     $message = 'All data deleted successfully';
                     break;
@@ -1278,6 +1306,7 @@ class Account extends BaseClientController
             return false;
         }
     }
+
 
     /**
      * Updates last deleted timestamp.

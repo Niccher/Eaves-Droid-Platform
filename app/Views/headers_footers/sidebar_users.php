@@ -34,8 +34,8 @@
                         <i class="far fa-bell"></i>
                         <span class="badge badge-warning navbar-badge">3</span>
                     </a>
-                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                            <span class="dropdown-item dropdown-header">
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" id="notification-dropdown">
+                        <span class="dropdown-item dropdown-header" id="notification-header">
                                 <i class="fas fa-bell mr-2"></i> 3 Notifications
                             </span>
                         <div class="dropdown-divider"></div>
@@ -54,6 +54,9 @@
                             <span class="float-right text-muted text-sm">1 day ago</span>
                         </a>
                         <div class="dropdown-divider"></div>
+                        <div id="dynamic-notifications">
+                            <!-- JS will append notifications here -->
+                        </div>
                         <a href="#" class="dropdown-item dropdown-footer">
                             <i class="fas fa-eye mr-1"></i> View All Notifications
                         </a>
@@ -69,7 +72,7 @@
 
                 <!-- User Menu -->
                 <?php
-                $avatar = null;
+                $avatar = isset($user_info['profile_image']) ? $user_info['profile_image'] : null;
                 $username = isset($user_info['username']) ? htmlspecialchars(ucwords($user_info['username'])) : 'User';
                 ?>
                 <li class="nav-item dropdown user-menu">

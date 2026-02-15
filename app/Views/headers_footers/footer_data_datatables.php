@@ -37,6 +37,40 @@
                 ]
             }
         );
+
+        // Export data notification handler
+        $(document).on('click', '.export-link', function(e) {
+            const dataType = $(this).data('type') || 'Data';
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            
+            // Add notification item
+            const notificationHtml = `
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item">
+                    <i class="fas fa-file-download mr-2 text-success"></i> Export completed for ${dataType}
+                    <span class="float-right text-muted text-sm">${timeStr}</span>
+                </a>
+            `;
+            
+            $('#dynamic-notifications').prepend(notificationHtml);
+            
+            // Update badge count
+            const badge = $('.navbar-badge');
+            let count = parseInt(badge.text()) || 0;
+            badge.text(count + 1);
+            
+            // Update header count
+            const header = $('#notification-header');
+            if (header.length) {
+                let headerText = header.text().trim();
+                let match = headerText.match(/(\d+)/);
+                if (match) {
+                    let newCount = parseInt(match[1]) + 1;
+                    header.html(`<i class="fas fa-bell mr-2"></i> ${newCount} Notifications`);
+                }
+            }
+        });
     </script>
 
     <!-- overlayScrollbars -->

@@ -219,9 +219,9 @@ class Auth extends ShieldAuth
      * @var array<string, bool|int|string>
      */
     public array $sessionConfig = [
-        'field'              => 'user',
+        'field'              => 'user_v4',
         'allowRemembering'   => true,
-        'rememberCookieName' => 'remember',
+        'rememberCookieName' => 'remember_v4',
         'rememberLength'     => 30 * DAY,
     ];
 
