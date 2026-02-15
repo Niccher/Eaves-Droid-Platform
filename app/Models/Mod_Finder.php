@@ -175,12 +175,6 @@ class Mod_Finder extends Model
         return $this->getCount('tbl_sms', $user_id, ['sms_type' => $category]);
     }
 
-    /**
-     * Gets count of apps for user.
-     *
-     * @param int $user_id
-     * @return int
-     */
     public function get_count_Apps(int $user_id): int
     {
         try {
@@ -191,6 +185,18 @@ class Mod_Finder extends Model
             log_message('error', 'get_count_Apps error: ' . $e->getMessage());
             return 0;
         }
+    }
+
+    /**
+     * Gets count of apps by category (system or user).
+     *
+     * @param int $user_id
+     * @param int $is_system
+     * @return int
+     */
+    public function get_count_Apps_category(int $user_id, int $is_system): int
+    {
+        return $this->getCount('tbl_apps', $user_id, ['is_system_app' => $is_system]);
     }
 
     /**

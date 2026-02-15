@@ -5,26 +5,34 @@
         <div class="container-fluid">
             <div class="row mb-4 align-items-center">
                 <div class="col-lg-8 col-md-6">
-                    <div class="d-flex align-items-center">
-                        <h1 class="h2 mb-0">
+                    <div class="d-flex align-items-center flex-wrap">
+                        <h1 class="h2 mb-0 mr-3">
                             <i class="fas fa-mobile-alt text-primary mr-2"></i>
                             <?php echo $apps_head ?? 'Installed Apps' ?>
                         </h1>
-                        <div class="ml-3">
-                            <span class="badge badge-light border p-2">
+                        <div class="d-flex align-items-center mt-2 mt-sm-0">
+                            <span class="badge badge-light border p-2 mr-2">
                                 <i class="fas fa-boxes text-primary mr-1"></i>
                                 Total: <b><?php echo $totalApps ?? 0 ?></b>
+                            </span>
+                            <span class="badge badge-light border p-2 mr-2">
+                                <i class="fas fa-shield-alt text-info mr-1"></i>
+                                System: <b><?php echo $systemAppsCount ?? 0 ?></b>
+                            </span>
+                            <span class="badge badge-light border p-2">
+                                <i class="fas fa-user text-success mr-1"></i>
+                                User: <b><?php echo $userAppsCount ?? 0 ?></b>
                             </span>
                         </div>
                     </div>
                     <p class="text-muted mt-2 mb-0">View and manage apps installed on the device</p>
                 </div>
                 <div class="col-lg-4 col-md-6">
-                    <div class="float-right mt-2">
-                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <nav aria-label="breadcrumb" class="float-right mt-2">
+                        <ol class="breadcrumb bg-transparent p-0 mb-0">
                             <?php echo $apps_urls; ?>
-                        </div>
-                    </div>
+                        </ol>
+                    </nav>
                 </div>
             </div>
         </div>
@@ -63,7 +71,7 @@
                         <!-- /.card-header -->
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0">
+                                <table class="table table-hover table-striped mb-0 tabledump">
                                     <thead class="thead-light">
                                     <tr>
                                         <th width="35%">App Name</th>

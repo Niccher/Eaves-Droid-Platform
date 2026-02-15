@@ -18,19 +18,36 @@
     <!-- Content Header -->
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>
-                        <i class="fas fa-mobile-alt mr-2"></i>
-                        <?= esc($apps_head ?? 'Apps') ?>
-                    </h1>
+            <div class="row mb-4 align-items-center">
+                <div class="col-lg-8 col-md-6">
+                    <div class="d-flex align-items-center flex-wrap">
+                        <h1 class="h2 mb-0 mr-3">
+                            <i class="fas fa-mobile-alt text-primary mr-2"></i>
+                            <?= esc($apps_head ?? 'Apps') ?>
+                        </h1>
+                        <div class="d-flex align-items-center mt-2 mt-sm-0">
+                            <span class="badge badge-light border p-2 mr-2">
+                                <i class="fas fa-boxes text-primary mr-1"></i>
+                                Total: <b><?php echo $totalApps ?? 0 ?></b>
+                            </span>
+                            <span class="badge badge-light border p-2 mr-2">
+                                <i class="fas fa-shield-alt text-info mr-1"></i>
+                                System: <b><?php echo $systemAppsCount ?? 0 ?></b>
+                            </span>
+                            <span class="badge badge-light border p-2">
+                                <i class="fas fa-user text-success mr-1"></i>
+                                User: <b><?php echo $userAppsCount ?? 0 ?></b>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">View and manage apps installed on the device</p>
                 </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="<?= base_url('home') ?>">Home</a></li>
-                        <li class="breadcrumb-item"><a href="<?= base_url('apps') ?>">Apps</a></li>
-                        <li class="breadcrumb-item active"><?= esc($apps_head ?? 'All Apps') ?></li>
-                    </ol>
+                <div class="col-lg-4 col-md-6">
+                    <nav aria-label="breadcrumb" class="float-right mt-2">
+                        <ol class="breadcrumb bg-transparent p-0 mb-0">
+                            <?php echo $apps_urls ?? ''; ?>
+                        </ol>
+                    </nav>
                 </div>
             </div>
         </div>
@@ -39,30 +56,10 @@
     <!-- Main Content -->
     <section class="content">
         <div class="container-fluid">
-            <!-- Navigation Buttons -->
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="btn-group" role="group">
-                        <?= $apps_urls ?? '' ?>
-                    </div>
-                    <div class="float-right">
-                        <span class="badge badge-info">
-                            <i class="fas fa-layer-group"></i> Total: <?= $totalApps ?? 0 ?>
-                        </span>
-                        <span class="badge badge-secondary ml-1">
-                            <i class="fas fa-microchip"></i> System: <?= $systemAppsCount ?? 0 ?>
-                        </span>
-                        <span class="badge badge-success ml-1">
-                            <i class="fas fa-user"></i> User: <?= $userAppsCount ?? 0 ?>
-                        </span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Apps Table -->
             <div class="row">
                 <div class="col-12">
-                    <div class="card card-primary">
+                    <div class="card card-secondary">
                         <div class="card-header">
                             <h3 class="card-title">
                                 <i class="fas fa-list mr-1"></i>
@@ -76,7 +73,7 @@
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped">
+                                <table class="table table-hover table-striped tabledump">
                                     <thead>
                                     <tr>
                                         <th width="30%">App Name</th>

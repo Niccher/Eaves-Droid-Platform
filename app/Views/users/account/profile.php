@@ -229,7 +229,7 @@
                                                     </div>
                                                     <h5 class="card-title">Applications</h5>
                                                     <p class="card-text"><?php echo $total_apps; ?> installed apps</p>
-                                                    <a href="<?php echo base_url('account/exportData/apps'); ?>" class="btn btn-outline-primary btn-block">
+                                                    <a href="<?php echo base_url('account/exportData/apps'); ?>" class="btn btn-outline-primary btn-block export-link" data-type="Applications">
                                                         <i class="fas fa-download mr-1"></i> Export Apps
                                                     </a>
                                                 </div>
@@ -244,7 +244,7 @@
                                                     </div>
                                                     <h5 class="card-title">Contacts</h5>
                                                     <p class="card-text"><?php echo $total_contacts; ?> saved contacts</p>
-                                                    <a href="<?php echo base_url('account/exportData/contacts'); ?>" class="btn btn-outline-success btn-block">
+                                                    <a href="<?php echo base_url('account/exportData/contacts'); ?>" class="btn btn-outline-success btn-block export-link" data-type="Contacts">
                                                         <i class="fas fa-download mr-1"></i> Export Contacts
                                                     </a>
                                                 </div>
@@ -259,7 +259,7 @@
                                                     </div>
                                                     <h5 class="card-title">SMS Messages</h5>
                                                     <p class="card-text"><?php echo $total_sms; ?> SMS messages</p>
-                                                    <a href="<?php echo base_url('account/exportData/sms'); ?>" class="btn btn-outline-info btn-block">
+                                                    <a href="<?php echo base_url('account/exportData/sms'); ?>" class="btn btn-outline-info btn-block export-link" data-type="SMS">
                                                         <i class="fas fa-download mr-1"></i> Export SMS
                                                     </a>
                                                 </div>
@@ -274,7 +274,7 @@
                                                     </div>
                                                     <h5 class="card-title">Call Logs</h5>
                                                     <p class="card-text"><?php echo $total_calls; ?> call records</p>
-                                                    <a href="<?php echo base_url('account/exportData/calls'); ?>" class="btn btn-outline-warning btn-block">
+                                                    <a href="<?php echo base_url('account/exportData/calls'); ?>" class="btn btn-outline-warning btn-block export-link" data-type="Calls">
                                                         <i class="fas fa-download mr-1"></i> Export Calls
                                                     </a>
                                                 </div>
@@ -299,7 +299,7 @@
                                                     <li>All call logs</li>
                                                     <li>Export metadata and timestamps</li>
                                                 </ul>
-                                                <a href="<?php echo base_url('account/exportData/all'); ?>" class="btn btn-primary btn-lg btn-block">
+                                                <a href="<?php echo base_url('account/exportData/all'); ?>" class="btn btn-primary btn-lg btn-block export-link" data-type="All Data">
                                                     <i class="fas fa-file-archive mr-2"></i> Export All Data
                                                 </a>
                                             </div>

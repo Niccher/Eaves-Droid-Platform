@@ -13,7 +13,7 @@ class ContactController extends BaseController
         $data['info'] = '';
 
         return view('headers_footers/head_landing')
-            . view('headers_footers/sidebar_landing', $titl)
+//            . view('headers_footers/sidebar_landing', $titl)
             . view('landing/contact', $data)
             . view('headers_footers/footer_landing');
     }

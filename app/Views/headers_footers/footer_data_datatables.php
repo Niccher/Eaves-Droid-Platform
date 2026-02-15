@@ -24,19 +24,18 @@
     <script src="<?php echo base_url('assets/plugins/datatables/datatables.min.js'); ?>"></script>
 
     <script>
-        $('.tabledump').DataTable(
-            {
-                "pageLength": 25,
-                // dom: 'Bfrtip',
-                dom: 'Bfrt',
-                buttons: [
-                    'copyHtml5',
-                    'excelHtml5',
-                    'csvHtml5',
-                    'pdfHtml5'
-                ]
-            }
-        );
+        $('.tabledump').DataTable({
+            "pageLength": 50,
+            "responsive": true,
+            "autoWidth": false,
+            "dom": '<"row mb-2"<"col-sm-6"B><"col-sm-6"f>>rt<"row mt-2"<"col-sm-6"i><"col-sm-6"p>>',
+            buttons: [
+                'copyHtml5',
+                'excelHtml5',
+                'csvHtml5',
+                'pdfHtml5'
+            ]
+        });
 
         // Export data notification handler
         $(document).on('click', '.export-link', function(e) {
