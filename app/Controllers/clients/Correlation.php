@@ -248,4 +248,229 @@ class Correlation extends BaseClientController{
             . view('headers_footers/footer_users');
     }
 
+    public function advanced()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        // Financial Intelligence data
+        $transactions = $this->finderModel->get_financial_transactions($this->userId);
+        $spendingByMonth = [];
+        $totalSpending = 0;
+        
+        foreach ($transactions as $tx) {
+            if ($tx['type'] !== 'income') {
+                $month = $tx['month'];
+                if (!isset($spendingByMonth[$month])) $spendingByMonth[$month] = 0;
+                $spendingByMonth[$month] += $tx['amount'];
+                $totalSpending += $tx['amount'];
+            }
+        }
+        
+        $data['financial_summary'] = [
+            'transactions' => array_slice($transactions, 0, 10), // Recent 10
+            'spendingByMonth' => $spendingByMonth,
+            'totalSpending' => $totalSpending
+        ];
+
+        // Analysis Stats for the dashboard
+        $data['sms_analysis'] = $this->finderModel->get_categorized_sms_counts($this->userId);
+        $data['call_analysis'] = $this->finderModel->get_categorized_call_counts($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/advanced_analysis', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    public function finance_analysis()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        // Financial Intelligence data
+        $transactions = $this->finderModel->get_financial_transactions($this->userId);
+        
+        // Group by month and type for charts
+        $spendingByMonth = [];
+        $spendingByType = [
+            'utility' => 0,
+            'airtime' => 0,
+            'transfer' => 0,
+            'personal' => 0,
+            'transfer' => 0
+        ];
+        $totalSpending = 0;
+        $incomeByMonth = [];
+        
+        foreach ($transactions as $tx) {
+            $month = $tx['month'];
+            if ($tx['type'] === 'income') {
+                if (!isset($incomeByMonth[$month])) $incomeByMonth[$month] = 0;
+                $incomeByMonth[$month] += $tx['amount'];
+            } else {
+                if (!isset($spendingByMonth[$month])) $spendingByMonth[$month] = 0;
+                $spendingByMonth[$month] += $tx['amount'];
+                
+                if (!isset($spendingByType[$tx['type']])) $spendingByType[$tx['type']] = 0;
+                $spendingByType[$tx['type']] += $tx['amount'];
+                
+                $totalSpending += $tx['amount'];
+            }
+        }
+
+        $data['financial_data'] = [
+            'transactions' => $transactions,
+            'spendingByMonth' => $spendingByMonth,
+            'spendingByType' => $spendingByType,
+            'incomeByMonth' => $incomeByMonth,
+            'totalSpending' => $totalSpending
+        ];
+
+        // Pagination
+        $page = $this->request->getGet('page') ?? 1;
+        $perPage = 20;
+        $total = count($transactions);
+        $offset = ($page - 1) * $perPage;
+        
+        // Slice for table view
+        $data['financial_data']['transactions'] = array_slice($transactions, $offset, $perPage);
+        
+        $pager = \Config\Services::pager();
+        $data['pager_links'] = $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/finance_analysis', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    public function location_analysis()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $data['locations'] = $this->finderModel->get_location_history($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/location_analysis', $data)
+            . view('users/correlation/location_analysis', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    public function device_pulse()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $data['device'] = $this->finderModel->get_device_health($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/device_pulse', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    public function social_analysis()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $data['social_graph'] = $this->finderModel->get_social_graph($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/social_analysis', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    public function generate_report()
+    {
+        // Disable debug toolbar to prevent HTML injection into PDF binary
+        if (ENVIRONMENT !== 'production') {
+            service('toolbar')->respond();
+        }
+
+        // Fetch data
+        $data['user_info'] = $this->finderModel->basic_user();
+        $data['counts'] = $this->getUserDataCounts();
+
+        $transactions = $this->finderModel->get_financial_transactions($this->userId);
+        $totalSpending = 0;
+        foreach ($transactions as $tx) {
+            if ($tx['type'] !== 'income') $totalSpending += $tx['amount'];
+        }
+        $data['financial_summary'] = [
+            'total_spending' => $totalSpending,
+            'tx_count' => count($transactions),
+            'recent_tx' => array_slice($transactions, 0, 5)
+        ];
+
+        $data['social_graph'] = $this->finderModel->get_social_graph($this->userId, 10);
+        $data['device'] = $this->finderModel->get_device_health($this->userId);
+        $data['date'] = date('F j, Y');
+
+        // Clean all strings for UTF-8 and HTML safety
+        $data = $this->utf8CleanArray($data);
+
+        // Load view (ensure view file has no BOM/whitespace)
+        $html = view('users/correlation/report_template', $data);
+
+        // Generate PDF
+        require_once ROOTPATH . 'vendor/autoload.php';
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->set_option('defaultFont', 'DejaVu Sans');
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // Explicitly set headers and stream
+        header('Content-Type: application/pdf');
+        $dompdf->stream("Intelligence_Report_" . date('Y-m-d') . ".pdf", ["Attachment" => false]);
+        exit;
+    }
+
+    /**
+     * Recursively clean array data: convert to UTF-8 and escape for HTML.
+     */
+    private function utf8CleanArray($data) {
+        if (is_array($data)) {
+            return array_map([$this, 'utf8CleanArray'], $data);
+        }
+        if (is_string($data)) {
+            // Convert to UTF-8 if not already
+            $enc = mb_detect_encoding($data, mb_detect_order(), true);
+            if ($enc && $enc !== 'UTF-8') {
+                $data = mb_convert_encoding($data, 'UTF-8', $enc);
+            } elseif (!$enc) {
+                // Fallback: assume it's UTF-8 but clean invalid sequences
+                $data = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+            }
+            // Escape for HTML output (use ENT_QUOTES to handle both quotes)
+            return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+        }
+        return $data;
+    }
+
 }

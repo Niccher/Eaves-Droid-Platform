@@ -1,0 +1,135 @@
+<!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+        <!-- Content Header -->
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-4 align-items-center">
+                    <div class="col-lg-8 col-md-6">
+                        <div class="d-flex align-items-center">
+                            <h1 class="h2 mb-0">
+                                <i class="fas fa-users text-warning mr-2"></i>
+                                Social Analysis
+                            </h1>
+                        </div>
+                        <p class="text-muted mt-2 mb-0">Relationship mapping based on interaction frequency</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card card-outline card-warning">
+                            <div class="card-header">
+                                <h3 class="card-title">Top Connections Graph</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="socialChart" style="min-height: 400px; height: 400px; max-height: 400px; max-width: 100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card card-outline card-warning">
+                            <div class="card-header">
+                                <h3 class="card-title">Top 10 Influencers</h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-striped table-valign-middle">
+                                    <thead>
+                                    <tr>
+                                        <th>Contact</th>
+                                        <th>Score</th>
+                                        <th>Type</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach (array_slice($social_graph, 0, 10) as $contact): ?>
+                                    <tr>
+                                        <td>
+                                            <?= $contact['name'] !== 'Unknown' ? $contact['name'] : $contact['number'] ?>
+                                            <br>
+                                            <small class="text-muted"><?= $contact['number'] ?></small>
+                                        </td>
+                                        <td><?= $contact['score'] ?></td>
+                                        <td>
+                                            <?php if($contact['calls'] > $contact['sms']): ?>
+                                                <i class="fas fa-phone text-success mr-1"></i> Call Dominant
+                                            <?php else: ?>
+                                                <i class="fas fa-comment text-info mr-1"></i> SMS Dominant
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+<!-- ChartJS -->
+<script src="<?= base_url('assets/plugins/chart.js/Chart.min.js') ?>"></script>
+<script>
+    $(function () {
+        var ctx = document.getElementById('socialChart').getContext('2d');
+        var socialData = <?= json_encode(array_slice($social_graph, 0, 20)) ?>;
+
+        var datasets = socialData.map(function(contact) {
+            return {
+                label: contact.name !== 'Unknown' ? contact.name : contact.number,
+                data: [{
+                    x: contact.sms,
+                    y: contact.calls,
+                    r: Math.min(Math.max((contact.score / 10), 5), 30) // Scale radius
+                }],
+                backgroundColor: contact.calls > contact.sms ? 'rgba(40, 167, 69, 0.6)' : 'rgba(23, 162, 184, 0.6)',
+                borderColor: contact.calls > contact.sms ? 'rgba(40, 167, 69, 1)' : 'rgba(23, 162, 184, 1)',
+            };
+        });
+
+        // Bubble chart for Interactions: X=SMS, Y=Calls, Size=Total Score
+        new Chart(ctx, {
+            type: 'bubble',
+            data: {
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: 'Interaction Analysis (X: SMS, Y: Calls, Size: Score)'
+                },
+                scales: {
+                    xAxes: [{
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'SMS Count'
+                        }
+                    }],
+                    yAxes: [{
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Call Count'
+                        }
+                    }]
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function(t, d) {
+                            var rLabel = d.datasets[t.datasetIndex].label;
+                            return rLabel + ': Calls=' + t.yLabel + ', SMS=' + t.xLabel;
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>

@@ -24,6 +24,9 @@
                             <button type="button" class="btn btn-primary" id="refreshAnalysis">
                                 <i class="fas fa-sync-alt mr-1"></i> Refresh Analysis
                             </button>
+                            <a href="<?= base_url('analysis/advanced') ?>" class="btn btn-info ml-2">
+                                <i class="fas fa-microchip mr-1"></i> Advanced Analysis
+                            </a>
                             <button type="button" class="btn btn-outline-secondary ml-2" data-toggle="modal" data-target="#analysisSettings">
                                 <i class="fas fa-cog mr-1"></i> Settings
                             </button>

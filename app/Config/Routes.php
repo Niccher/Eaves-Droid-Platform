@@ -544,6 +544,12 @@ $routes->group('', [
          * Detailed Call Analysis.
          */
         $routes->get('calls', 'Correlation::call_analysis', ['as' => 'analysis-calls']);
+       $routes->get('advanced', 'Correlation::advanced', ['as' => 'analysis-advanced']);
+       $routes->get('advanced/finance', 'Correlation::finance_analysis', ['as' => 'analysis-advanced-finance']);
+       $routes->get('advanced/location', 'Correlation::location_analysis', ['as' => 'analysis-advanced-location']);
+       $routes->get('advanced/device', 'Correlation::device_pulse', ['as' => 'analysis-advanced-device']);
+       $routes->get('advanced/social', 'Correlation::social_analysis', ['as' => 'analysis-advanced-social']);
+       $routes->get('advanced/report', 'Correlation::generate_report', ['as' => 'analysis-advanced-report']);
 
         /**
          * Displays financial SMS analysis.

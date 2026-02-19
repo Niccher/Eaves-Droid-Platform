@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class Mod_Finder extends Model
 {
-    protected $table = '';
+    protected $table = 'tbl_users';
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
     protected $returnType = 'array';
@@ -1083,13 +1083,7 @@ class Mod_Finder extends Model
         $filtered = [];
 
         foreach ($all_sms as $sms) {
-            $raw_body = $sms['body'];
-            $decoded_body = base64_decode($raw_body, true);
-            if ($decoded_body !== false && mb_check_encoding($decoded_body, 'UTF-8')) {
-                $body_text = $decoded_body;
-            } else {
-                $body_text = $raw_body;
-            }
+            $body_text = $this->decode_sms_body($sms['body']);
             
             $sms['body'] = $body_text; // Return decoded body
             $body = strtolower($body_text);
@@ -1330,5 +1324,243 @@ class Mod_Finder extends Model
             ->orderBy('last_modified', 'DESC')
             ->get()
             ->getResultArray();
+    }
+
+    /**
+     * Extracts financial transactions from SMS for Advanced Analysis.
+     */
+    public function get_financial_transactions(int $userId): array
+    {
+        $all_sms = $this->db->table('tbl_sms')
+            ->select('address, body, sms_date')
+            ->where('owner_id', $userId)
+            ->orderBy('sms_date', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $transactions = [];
+        $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
+        $fin_keys = ['kes', 'ksh', 'paid', 'received', 'credited', 'debited', 'balance', 'transaction'];
+
+        foreach ($all_sms as $sms) {
+            $body_text = $this->decode_sms_body($sms['body']);
+            $body = strtolower($body_text);
+            $addr = strtolower($sms['address']);
+            $addr_len = strlen($addr);
+
+            $is_fin = in_array($addr, $fin_senders);
+            if (!$is_fin && $addr_len < 10) {
+                foreach ($fin_keys as $key) {
+                    if (strpos($body, $key) !== false) {
+                        $is_fin = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($is_fin) {
+                // Regex for amount: Ksh/KES followed by numbers (supports comma as thousand separator)
+                if (preg_match('/(?:ksh|kes)[\s]?([\d,]+(?:\.\d{2})?)/i', $body, $matches)) {
+                    $amount = (float) str_replace(',', '', $matches[1]);
+                    
+                    // Categorization
+                    $type = 'personal';
+                    if (strpos($body, 'kplc') !== false || strpos($body, 'token') !== false) $type = 'utility';
+                    else if (strpos($body, 'airtime') !== false) $type = 'airtime';
+                    else if (strpos($body, 'sent to') !== false || strpos($body, 'paid to') !== false) $type = 'transfer';
+                    else if (strpos($body, 'received') !== false || strpos($body, 'credited') !== false) $type = 'income';
+
+                    $transactions[] = [
+                        'date'        => $sms['sms_date'],
+                        'amount'      => $amount,
+                        'type'        => $type,
+                        'description' => $body_text,
+                        'sender'      => $sms['address'],
+                        'month'       => date('Y-m', $sms['sms_date'] / 1000)
+                    ];
+                }
+            }
+        }
+
+        return $transactions;
+    }
+    /**
+     * Get all location records for heatmap.
+     */
+    public function get_location_history(int $userId): array
+    {
+        return $this->db->table('tbl_location')
+            ->select('latitude, longitude, accuracy, location_time')
+            ->where('owner_id', $userId)
+            ->where('status', 'success')
+            ->orderBy('location_time', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Get device health stats from profile.
+     */
+
+    public function get_device_health(int $userId): array
+    {
+        // Try getting device_id from location updates first (most frequent)
+        $query = $this->db->table('tbl_location')
+            ->select('device_id')
+            ->where('owner_id', $userId)
+            ->orderBy('location_time', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRow();
+        
+        $device_id = $query ? $query->device_id : null;
+
+        // Fallback to apps if no location data
+        if (!$device_id) {
+            $query = $this->db->table('tbl_apps')
+                ->select('device_id')
+                ->where('owner_id', $userId)
+                ->orderBy('updated_at', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRow();
+            $device_id = $query ? $query->device_id : null;
+        }
+
+        if (!$device_id) return [];
+
+        $profile = $this->db->table('tbl_device_profile')
+            ->where('device_id', $device_id)
+            ->get()
+            ->getRowArray() ?? [];
+
+        // Get latest activity for network/battery
+        $activity = $this->db->table('tbl_activity')
+            ->where('owner_id', $userId)
+            ->where('device_id', $device_id)
+            ->orderBy('extracted_at', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        // Get latest access log for IP
+        $log = $this->db->table('tbl_user_actions')
+            ->select('ip_address, created_at')
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        // Merge data
+        if ($activity) {
+            $profile['network_type'] = $activity['network_type'];
+            $profile['battery_level'] = $activity['battery_level']; // Prefer activity battery if newer
+            $profile['charging_status'] = $activity['charging_status'];
+            $profile['last_activity_time'] = $activity['extracted_at'];
+        }
+
+        if ($log) {
+            $profile['last_ip_address'] = $log['ip_address'];
+            $profile['last_login_time'] = $log['created_at'];
+        }
+
+        return $profile;
+    }
+
+    /**
+     * Get social graph data (top contacts by interaction).
+     */
+    public function get_social_graph(int $userId, int $limit = 20): array
+    {
+        // 1. Get SMS counts
+        $sms_data = $this->db->table('tbl_sms')
+            ->select('address, COUNT(*) as count')
+            ->where('owner_id', $userId)
+            ->groupBy('address')
+            ->get()
+            ->getResultArray();
+
+        // 2. Get Call counts
+        $call_data = $this->db->table('tbl_logs')
+            ->select('phone_number, contact_name, COUNT(*) as count')
+            ->where('owner_id', $userId)
+            ->groupBy('phone_number')
+            ->get()
+            ->getResultArray();
+
+        // 3. Merge and Score
+        $social_map = [];
+
+        foreach ($sms_data as $sms) {
+            $num = $sms['address'];
+            if (!isset($social_map[$num])) {
+                $social_map[$num] = ['number' => $num, 'name' => 'Unknown', 'sms' => 0, 'calls' => 0, 'score' => 0];
+            }
+            $social_map[$num]['sms'] += $sms['count'];
+            $social_map[$num]['score'] += $sms['count'] * 1; // 1 point per SMS
+        }
+
+        foreach ($call_data as $call) {
+            $num = $call['phone_number'];
+            if (!isset($social_map[$num])) {
+                $social_map[$num] = ['number' => $num, 'name' => $call['contact_name'] ?: 'Unknown', 'sms' => 0, 'calls' => 0, 'score' => 0];
+            } else {
+                if ($social_map[$num]['name'] === 'Unknown' && !empty($call['contact_name'])) {
+                    $social_map[$num]['name'] = $call['contact_name'];
+                }
+            }
+            $social_map[$num]['calls'] += $call['count'];
+            $social_map[$num]['score'] += $call['count'] * 5; // 5 points per Call
+        }
+
+        // 4. Resolve Names from Contacts table for remaining Unknowns
+        $unknowns = array_keys(array_filter($social_map, fn($c) => $c['name'] === 'Unknown'));
+        if (!empty($unknowns)) {
+            // Processing unknowns in chunks to avoid query limits if needed, but for top 20 it's fine.
+            // Actually querying all potential matches.
+             $contacts = $this->db->table('tbl_contacts')
+                ->select('phone_numbers, display_name')
+                 ->where('owner_id', $userId)
+                ->get()
+                ->getResultArray();
+            
+            foreach ($contacts as $contact) {
+                $nums = json_decode($contact['phone_numbers'], true);
+                $name = $contact['display_name'];
+                
+                if (is_array($nums)) {
+                    foreach ($nums as $num) {
+                        if (isset($social_map[$num])) {
+                             $social_map[$num]['name'] = $name;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. Sort by score
+        usort($social_map, fn($a, $b) => $b['score'] <=> $a['score']);
+
+        return array_slice($social_map, 0, $limit);
+    }
+
+    /**
+     * Helper to decode SMS body if base64 encoded.
+     *
+     * @param string $body
+     * @return string
+     */
+    protected function decode_sms_body(string $body): string
+    {
+        $text = $body;
+        // Only decode if it looks like base64 or if it's long enough to be an encoded msg
+        if (strlen($body) > 4 && preg_match('/^[a-zA-Z0-9\/\+=]+$/', $body)) {
+            $decoded = base64_decode($body, true);
+            if ($decoded !== false && mb_check_encoding($decoded, 'UTF-8')) {
+                $text = $decoded;
+            }
+        }
+        return $text;
     }
 }
