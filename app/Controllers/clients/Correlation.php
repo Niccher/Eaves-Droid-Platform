@@ -299,14 +299,31 @@ class Correlation extends BaseClientController{
         // Financial Intelligence data
         $transactions = $this->finderModel->get_financial_transactions($this->userId);
         
+        // Extract unique senders for the filter
+        $senders = [];
+        foreach ($transactions as $tx) {
+            $senders[] = $tx['sender'];
+        }
+        $data['senders'] = array_unique($senders);
+        asort($data['senders']);
+
+        // Handle filtering
+        $selectedSender = $this->request->getGet('sender');
+        $data['selected_sender'] = $selectedSender;
+
+        if ($selectedSender) {
+            $transactions = array_filter($transactions, function($tx) use ($selectedSender) {
+                return $tx['sender'] === $selectedSender;
+            });
+        }
+
         // Group by month and type for charts
         $spendingByMonth = [];
         $spendingByType = [
             'utility' => 0,
             'airtime' => 0,
             'transfer' => 0,
-            'personal' => 0,
-            'transfer' => 0
+            'personal' => 0
         ];
         $totalSpending = 0;
         $incomeByMonth = [];
@@ -416,6 +433,11 @@ class Correlation extends BaseClientController{
         $data['user_info'] = $this->finderModel->basic_user();
         $data['counts'] = $this->getUserDataCounts();
 
+        // Detailed Communication Stats
+        $data['sms_analysis'] = $this->finderModel->get_categorized_sms_counts($this->userId);
+        $data['call_analysis'] = $this->finderModel->get_categorized_call_counts($this->userId);
+
+        // Financial Intelligence data (Expanded)
         $transactions = $this->finderModel->get_financial_transactions($this->userId);
         $totalSpending = 0;
         foreach ($transactions as $tx) {
@@ -424,11 +446,26 @@ class Correlation extends BaseClientController{
         $data['financial_summary'] = [
             'total_spending' => $totalSpending,
             'tx_count' => count($transactions),
-            'recent_tx' => array_slice($transactions, 0, 5)
+            'recent_tx' => array_slice($transactions, 0, 15) // Show 15 instead of 5
         ];
 
+        // Social & Contacts
         $data['social_graph'] = $this->finderModel->get_social_graph($this->userId, 10);
         $data['device'] = $this->finderModel->get_device_health($this->userId);
+
+        // Apps Intelligence (New)
+        $apps = $this->finderModel->get_apps($this->userId, 10);
+        $data['top_apps'] = array_map(function($app) {
+            return [
+                'name' => $app['Name'],
+                'package' => $app['Package'],
+                'install_time' => $app['first_install_time']
+            ];
+        }, $apps);
+
+        // Location History (New)
+        $data['recent_locations'] = $this->finderModel->get_locations($this->userId, 5);
+
         $data['date'] = date('F j, Y');
 
         // Clean all strings for UTF-8 and HTML safety

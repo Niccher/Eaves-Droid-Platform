@@ -15,6 +15,23 @@
                                     Total Spending: <b>Ksh <?= number_format($financial_data['totalSpending'] ?? 0, 2) ?></b>
                                 </span>
                             </div>
+                            <!-- Sender Filter -->
+                            <div class="ml-4 dropdown">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-toggle="dropdown">
+                                    <i class="fas fa-filter mr-1"></i>
+                                    <?= $selected_sender ? esc($selected_sender) : 'All Senders' ?>
+                                </button>
+                                <div class="dropdown-menu shadow-sm scrollable-menu" style="max-height: 300px; overflow-y: auto;">
+                                    <a class="dropdown-item <?= !$selected_sender ? 'active' : '' ?>" href="<?= base_url('analysis/advanced/finance') ?>">All Senders</a>
+                                    <div class="dropdown-divider"></div>
+                                    <?php foreach ($senders as $sender): ?>
+                                        <a class="dropdown-item <?= $selected_sender == $sender ? 'active' : '' ?>" 
+                                           href="<?= base_url('analysis/advanced/finance?sender=' . urlencode($sender)) ?>">
+                                            <?= esc($sender) ?>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
                         </div>
                         <p class="text-muted mt-2 mb-0">Automated spending analysis and transaction tracking from your mobile wallet</p>
                     </div>

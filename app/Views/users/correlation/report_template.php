@@ -60,6 +60,51 @@
     </div>
 </div>
 
+<!-- Communication Profile -->
+<div class="section">
+    <div class="section-title">Communication Intelligence Profile</div>
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2" style="background-color: #f8f9fa;">SMS Breakdown</th>
+                <th colspan="2" style="background-color: #f8f9fa;">Call Breakdown</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="width: 20%; color: #666;">Financial</td>
+                <td style="width: 30%; font-weight: bold;"><?= $sms_analysis['financial'] ?></td>
+                <td style="width: 20%; color: #666;">Family</td>
+                <td style="width: 30%; font-weight: bold;"><?= $call_analysis['family'] ?></td>
+            </tr>
+            <tr>
+                <td style="color: #666;">Promotional</td>
+                <td style="font-weight: bold;"><?= $sms_analysis['promo'] ?></td>
+                <td style="color: #666;">Business</td>
+                <td style="font-weight: bold;"><?= $call_analysis['business'] ?></td>
+            </tr>
+            <tr>
+                <td style="color: #666;">Malicious</td>
+                <td style="font-weight: bold; color: #dc3545;"><?= $sms_analysis['malicious'] ?></td>
+                <td style="color: #666;">Spam/Unknown</td>
+                <td style="font-weight: bold; color: #dc3545;"><?= $call_analysis['spam'] ?></td>
+            </tr>
+            <tr>
+                <td style="color: #666;">Personal</td>
+                <td style="font-weight: bold;"><?= $sms_analysis['personal'] ?></td>
+                <td style="color: #666;">Urgent</td>
+                <td style="font-weight: bold; color: #ffc107;"><?= $call_analysis['urgent'] ?></td>
+            </tr>
+            <tr>
+                <td style="color: #666;">Service Alerts</td>
+                <td style="font-weight: bold;"><?= $sms_analysis['service'] ?></td>
+                <td style="color: #666;">New Contacts</td>
+                <td style="font-weight: bold;"><?= $call_analysis['new'] ?></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
 <!-- Financial Intel -->
 <div class="section">
     <div class="section-title">Financial Intelligence</div>
@@ -138,6 +183,58 @@
             </tr>
         </table>
     </div>
+<?php endif; ?>
+
+<!-- App Intelligence -->
+<?php if (!empty($top_apps)): ?>
+<div class="section">
+    <div class="section-title">App Intelligence (Top 10)</div>
+    <table>
+        <thead>
+        <tr>
+            <th>App Name</th>
+            <th>Package</th>
+            <th>Installed At</th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($top_apps as $app): ?>
+            <tr>
+                <td><?= $app['name'] ?></td>
+                <td><?= $app['package'] ?></td>
+                <td><?= !empty($app['install_time']) ? date('M d, Y', $app['install_time'] / 1000) : 'N/A' ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
+
+<!-- Location Trails -->
+<?php if (!empty($recent_locations)): ?>
+<div class="section">
+    <div class="section-title">Location Trails (Recent 5)</div>
+    <table>
+        <thead>
+        <tr>
+            <th>Time</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Accuracy</th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($recent_locations as $loc): ?>
+            <tr>
+                <td><?= date('M d, H:i', strtotime($loc['extracted_at'])) ?></td>
+                <td><?= $loc['latitude'] ?></td>
+                <td><?= $loc['longitude'] ?></td>
+                <td><?= $loc['accuracy'] ?>m</td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
 <?php endif; ?>
 
 <div style="font-size: 10px; color: #999; text-align: center; margin-top: 50px;">
