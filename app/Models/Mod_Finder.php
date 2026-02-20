@@ -1705,6 +1705,211 @@ class Mod_Finder extends Model
 
         return array_slice($timeline, 0, $limit);
     }
+    /**
+     * Privacy Audit: Analyze permissions for risk scoring.
+     */
+    public function get_app_privacy_audit(int $userId): array
+    {
+        $apps = $this->db->table('tbl_apps')
+            ->select('app_name, package_name, permissions')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        $audit = [];
+        $highRiskPerms = ['android.permission.READ_SMS', 'android.permission.RECEIVE_SMS', 'android.permission.SEND_SMS', 'android.permission.RECORD_AUDIO', 'android.permission.CAMERA', 'android.permission.ACCESS_FINE_LOCATION'];
+        
+        foreach ($apps as $app) {
+            $perms = explode(',', $app['permissions']);
+            $score = 0;
+            $risks = [];
+
+            if (in_array('android.permission.READ_SMS', $perms)) {
+                $score += 3;
+                $risks[] = 'Reads Private Messages';
+            }
+            if (in_array('android.permission.INTERNET', $perms)) {
+                $score += 1;
+            }
+            if (in_array('android.permission.ACCESS_FINE_LOCATION', $perms)) {
+                $score += 2;
+                $risks[] = 'Tracks Precise Location';
+            }
+            if (in_array('android.permission.RECORD_AUDIO', $perms)) {
+                $score += 3;
+                $risks[] = 'Can Record Audio';
+            }
+
+            // Dangerous Combos
+            if (in_array('android.permission.READ_SMS', $perms) && in_array('android.permission.INTERNET', $perms)) {
+                $score += 2;
+                $risks[] = 'SMS + Cloud (Privacy Risk)';
+            }
+            if (in_array('android.permission.CAMERA', $perms) && in_array('android.permission.INTERNET', $perms)) {
+                $score += 2;
+                $risks[] = 'Camera + Cloud (Leakage Risk)';
+            }
+
+            if ($score > 0) {
+                $audit[] = [
+                    'name' => $app['app_name'],
+                    'package' => $app['package_name'],
+                    'score' => $score,
+                    'risks' => $risks
+                ];
+            }
+        }
+
+        usort($audit, fn($a, $b) => $b['score'] <=> $a['score']);
+        return $audit;
+    }
+
+    /**
+     * Subscription Forecast: Detect recurring bills in SMS.
+     */
+    public function get_subscription_forecast(int $userId): array
+    {
+        $sms = $this->db->table('tbl_sms')
+            ->select('address, body, sms_date')
+            ->where('owner_id', $userId)
+            ->where('type_code', 1) // Financial SMS
+            ->orderBy('sms_date', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $forecast = [];
+        $keywords = ['subscription', 'renew', 'bill', 'token', 'payment', 'premium', 'account'];
+        
+        foreach ($sms as $s) {
+            $body = strtolower($this->decode_sms_body($s['body']));
+            $is_sub = false;
+            foreach ($keywords as $kw) {
+                if (strpos($body, $kw) !== false) {
+                    $is_sub = true;
+                    break;
+                }
+            }
+
+            if ($is_sub) {
+                if (preg_match('/(?:ksh|kes)[\\s]?([\\d,]+(?:\\.\\d{2})?)/i', $body, $matches)) {
+                    $amount = (float) str_replace(',', '', $matches[1]);
+                    $sender = strtoupper($s['address']);
+                    
+                    if (!isset($forecast[$sender])) {
+                        $forecast[$sender] = [
+                            'amount' => $amount,
+                            'count' => 0,
+                            'last_date' => $s['sms_date']
+                        ];
+                    }
+                    $forecast[$sender]['count']++;
+                }
+            }
+        }
+
+        return $forecast;
+    }
+
+    /**
+     * App Category Distribution based on package name.
+     */
+    public function get_app_category_dist(int $userId): array
+    {
+        $apps = $this->db->table('tbl_apps')
+            ->select('package_name, is_system_app')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        $dist = [
+            'Social' => 0,
+            'Finance' => 0,
+            'Entertainment' => 0,
+            'Productivity' => 0,
+            'Tools' => 0,
+            'System' => 0,
+            'Other' => 0
+        ];
+
+        foreach ($apps as $app) {
+            if ($app['is_system_app']) {
+                $dist['System']++;
+                continue;
+            }
+
+            $pkg = $app['package_name'];
+            if (preg_match('/whatsapp|facebook|instagram|tiktok|twitter|linkedin|snapchat/i', $pkg)) $dist['Social']++;
+            else if (preg_match('/bank|kcb|equity|mcoop|pay|binance|stripe|paypal/i', $pkg)) $dist['Finance']++;
+            else if (preg_match('/netflix|youtube|spotify|music|player|video/i', $pkg)) $dist['Entertainment']++;
+            else if (preg_match('/office|mail|calendar|slack|note|drive/i', $pkg)) $dist['Productivity']++;
+            else if (preg_match('/cleaner|antivirus|browser|launcher|tool/i', $pkg)) $dist['Tools']++;
+            else $dist['Other']++;
+        }
+
+        return $dist;
+    }
+
+    /**
+     * Storage Forensics: Deep file distribution analysis.
+     */
+    public function get_storage_forensics(int $userId): array
+    {
+        $files = $this->db->table('tbl_device_files')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        $stats = [
+            'total_size' => 0,
+            'count' => count($files),
+            'top_files' => [],
+            'by_source' => [
+                'WhatsApp' => 0,
+                'Camera/DCIM' => 0,
+                'Downloads' => 0,
+                'Other' => 0
+            ],
+            'by_age' => [
+                'Old (>1yr)' => 0,
+                'Mid (6mo-1yr)' => 0,
+                'Recent' => 0
+            ]
+        ];
+
+        $now = time() * 1000;
+        $sixMonths = 15552000000; // 6 months in ms
+        $oneYear = 31104000000;   // 1 year in ms
+
+        foreach ($files as $f) {
+            $size = (int)$f['size_bytes'];
+            $stats['total_size'] += $size;
+
+            // By Source
+            $path = $f['path'];
+            if (stripos($path, 'WhatsApp') !== false) $stats['by_source']['WhatsApp'] += $size;
+            else if (stripos($path, 'DCIM') !== false) $stats['by_source']['Camera/DCIM'] += $size;
+            else if (stripos($path, 'Download') !== false) $stats['by_source']['Downloads'] += $size;
+            else $stats['by_source']['Other'] += $size;
+
+            // By Age
+            $age = $now - (int)$f['last_modified'];
+            if ($age > $oneYear) $stats['by_age']['Old (>1yr)']++;
+            else if ($age > $sixMonths) $stats['by_age']['Mid (6mo-1yr)']++;
+            else $stats['by_age']['Recent']++;
+
+            // For Top Files
+            $stats['top_files'][] = [
+                'name' => $f['name'],
+                'size' => $size,
+                'path' => $path
+            ];
+        }
+
+        usort($stats['top_files'], fn($a, $b) => $b['size'] <=> $a['size']);
+        $stats['top_files'] = array_slice($stats['top_files'], 0, 10);
+
+        return $stats;
+    }
 
     /**
      * Helper to decode SMS body if base64 encoded.

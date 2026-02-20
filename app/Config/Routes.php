@@ -546,10 +546,12 @@ $routes->group('', [
         $routes->get('calls', 'Correlation::call_analysis', ['as' => 'analysis-calls']);
        $routes->get('advanced', 'Correlation::advanced', ['as' => 'analysis-advanced']);
        $routes->get('advanced/finance', 'Correlation::finance_analysis', ['as' => 'analysis-advanced-finance']);
-       $routes->get('advanced/location', 'Correlation::location_analysis', ['as' => 'analysis-advanced-location']);
-       $routes->get('advanced/device', 'Correlation::device_pulse', ['as' => 'analysis-advanced-device']);
        $routes->get('advanced/social', 'Correlation::social_analysis', ['as' => 'analysis-advanced-social']);
        $routes->get('advanced/lifestyle', 'Correlation::lifestyle_analysis', ['as' => 'analysis-advanced-lifestyle']);
+       $routes->get('advanced/privacy', 'Correlation::privacy_audit', ['as' => 'analysis-advanced-privacy']);
+       $routes->get('advanced/subscriptions', 'Correlation::subscription_tracker', ['as' => 'analysis-advanced-subscriptions']);
+       $routes->get('advanced/apps', 'Correlation::app_portfolio', ['as' => 'analysis-advanced-apps']);
+       $routes->get('advanced/storage', 'Correlation::storage_intelligence', ['as' => 'analysis-advanced-storage']);
        $routes->get('advanced/report', 'Correlation::generate_report', ['as' => 'analysis-advanced-report']);
 
         /**

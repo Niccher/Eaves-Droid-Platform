@@ -201,6 +201,107 @@
                         </div>
                     </div>
                 </div>
+                <!-- Privacy & Finance Intelligence -->
+                <div class="row mt-4">
+                    <!-- Privacy Audit -->
+                    <div class="col-md-6">
+                        <div class="card card-outline card-danger shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-user-shield mr-2"></i>
+                                    Privacy & Permission Audit
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-danger">Security</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>Identify high-risk applications based on dangerous permission combinations and background access patterns.</p>
+                                <div class="alert alert-light border">
+                                    <i class="fas fa-shield-alt mr-2"></i> Risk Scoring & Sensitivity Evaluation.
+                                </div>
+                                <a href="<?= base_url('analysis/advanced/privacy') ?>" class="btn btn-danger btn-block">
+                                    <i class="fas fa-search-plus mr-1"></i> Start Privacy Audit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Tracker -->
+                    <div class="col-md-6">
+                        <div class="card card-outline card-success shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-calendar-check mr-2"></i>
+                                    Subscription Tracker
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-success">Proactive</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>Forecast monthly financial commitments by detecting recurring billing patterns in SMS history.</p>
+                                <div class="alert alert-light border">
+                                    <i class="fas fa-coins mr-2"></i> Bill Detection & Expense Forecasting.
+                                </div>
+                                <a href="<?= base_url('analysis/advanced/subscriptions') ?>" class="btn btn-success btn-block">
+                                    <i class="fas fa-receipt mr-1"></i> View Subscriptions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Portfolio & Storage Intelligence -->
+                <div class="row mt-4">
+                    <!-- App Portfolio -->
+                    <div class="col-md-6">
+                        <div class="card card-outline card-primary shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-th-large mr-2"></i>
+                                    App Portfolio Profiling
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-primary">Logic</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>Categorize the user's digital life (Social, Finance, Productivity) based on installed application distribution.</p>
+                                <div class="alert alert-light border">
+                                    <i class="fas fa-chart-pie mr-2"></i> Usage Categorization & Patterns.
+                                </div>
+                                <a href="<?= base_url('analysis/advanced/apps') ?>" class="btn btn-primary btn-block">
+                                    <i class="fas fa-briefcase mr-1"></i> View App Portfolio
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Storage Forensics -->
+                    <div class="col-md-6">
+                        <div class="card card-outline card-info shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-hdd mr-2"></i>
+                                    Media & Storage Forensics
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-info">Files</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>Analyze disk usage by source (WhatsApp vs Camera) and identify aging media content or large space hogs.</p>
+                                <div class="alert alert-light border">
+                                    <i class="fas fa-folder-open mr-2"></i> Storage Health & Source Auditing.
+                                </div>
+                                <a href="<?= base_url('analysis/advanced/storage') ?>" class="btn btn-info btn-block">
+                                    <i class="fas fa-database mr-1"></i> Open Storage Forensics
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Intelligence Reports -->
                 <div class="row mt-4">

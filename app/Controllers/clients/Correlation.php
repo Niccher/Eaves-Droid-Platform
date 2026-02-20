@@ -524,6 +524,74 @@ class Correlation extends BaseClientController{
     }
 
     /**
+     * Privacy & Permission Audit.
+     */
+    public function privacy_audit()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts());
+
+        $data['audit'] = $this->finderModel->get_app_privacy_audit($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/privacy_audit', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    /**
+     * Recurring Bills & Subscription Tracker.
+     */
+    public function subscription_tracker()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts());
+
+        $data['forecast'] = $this->finderModel->get_subscription_forecast($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/subscription_tracker', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    /**
+     * App Portfolio & Categorization.
+     */
+    public function app_portfolio()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts());
+
+        $data['categories'] = $this->finderModel->get_app_category_dist($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/app_portfolio', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    /**
+     * Media & Storage Intelligence.
+     */
+    public function storage_intelligence()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts());
+
+        $data['storage'] = $this->finderModel->get_storage_forensics($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/storage_intelligence', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    /**
      * Recursively clean array data: convert to UTF-8 and escape for HTML.
      */
     private function utf8CleanArray($data) {
