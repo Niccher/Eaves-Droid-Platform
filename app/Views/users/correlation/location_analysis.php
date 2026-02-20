@@ -26,15 +26,22 @@
                         </div>
                         <p class="text-muted mt-2 mb-0">Interactive heatmap and movement path analysis from device GPS data</p>
                     </div>
-                    <div class="col-lg-4 col-md-6">
-                        <nav aria-label="breadcrumb" class="float-right mt-2">
-                            <ol class="breadcrumb bg-transparent p-0 mb-0">
-                                <li class="breadcrumb-item"><a href="<?= base_url('home') ?>"><i class="fas fa-home mr-1"></i>Home</a></li>
-                                <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>">Intelligence</a></li>
-                                <li class="breadcrumb-item"><a href="<?= base_url('analysis/advanced') ?>">Advanced</a></li>
-                                <li class="breadcrumb-item active">Location</li>
-                            </ol>
-                        </nav>
+                    <div class="col-lg-4 col-md-12 mt-3 mt-lg-0">
+                        <form action="<?= base_url('analysis/advanced/location') ?>" method="get" class="form-inline float-right">
+                            <div class="input-group input-group-sm mr-2">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-calendar-alt"></i></span>
+                                </div>
+                                <input type="date" name="start_date" translate="no" class="form-control border-left-0" value="<?= esc($start_date) ?>" placeholder="Start Date">
+                            </div>
+                            <div class="input-group input-group-sm mr-2">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-calendar-alt"></i></span>
+                                </div>
+                                <input type="date" name="end_date" translate="no" class="form-control border-left-0" value="<?= esc($end_date) ?>" placeholder="End Date">
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -126,15 +133,36 @@
             const heatData = locations.map(l => [parseFloat(l.latitude), parseFloat(l.longitude), 0.5]);
             const heatLayer = L.heatLayer(heatData, {radius: 25, blur: 15, maxZoom: 17}).addTo(map);
 
-            // Prepare Path Layer
+            // Prepare Path Layer with Markers
             const pathPoints = locations.map(l => [parseFloat(l.latitude), parseFloat(l.longitude)]);
             const pathLayer = L.polyline(pathPoints, {color: '#007bff', weight: 3, opacity: 0.6});
+            
+            const markerGroup = L.layerGroup();
+            locations.forEach((l, i) => {
+                // Only add markers for every 5th point to avoid clutter, or if it's the start/end
+                if (i % 5 === 0 || i === 0 || i === locations.length - 1) {
+                    const marker = L.circleMarker([parseFloat(l.latitude), parseFloat(l.longitude)], {
+                        radius: 5,
+                        fillColor: i === 0 ? "#28a745" : (i === locations.length - 1 ? "#dc3545" : "#007bff"),
+                        color: "#fff",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).bindPopup(`
+                        <strong>Time:</strong> ${new Date(l.extracted_at).toLocaleString()}<br>
+                        <strong>Accuracy:</strong> ${l.accuracy}m<br>
+                        <a href="https://www.google.com/maps?q=${l.latitude},${l.longitude}" target="_blank">View on Google Maps</a>
+                    `);
+                    markerGroup.addLayer(marker);
+                }
+            });
 
             // Toggle Controls
             $('#toggleHeatmap').click(function() {
                 $(this).addClass('active');
                 $('#togglePaths').removeClass('active');
                 map.removeLayer(pathLayer);
+                map.removeLayer(markerGroup);
                 heatLayer.addTo(map);
             });
 
@@ -143,6 +171,7 @@
                 $('#toggleHeatmap').removeClass('active');
                 map.removeLayer(heatLayer);
                 pathLayer.addTo(map);
+                markerGroup.addTo(map);
                 map.fitBounds(pathLayer.getBounds());
             });
 
@@ -163,10 +192,17 @@
                 
                 sorted.forEach((s, i) => {
                     const label = i === 0 ? 'Home (Likely)' : (i === 1 ? 'Office (Likely)' : 'Frequent Point');
+                    const coords = s[0];
                     list.append(`
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-map-marker-alt text-primary mr-2"></i> ${label}</span>
-                            <span class="badge badge-primary badge-pill">${s[1]} hits</span>
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span><i class="fas fa-map-marker-alt text-primary mr-2"></i> ${label}</span>
+                                <span class="badge badge-primary badge-pill">${s[1]} hits</span>
+                            </div>
+                            <div class="text-xs text-muted">
+                                <i class="fas fa-external-link-alt mr-1"></i> 
+                                <a href="https://www.google.com/maps?q=${coords}" target="_blank">Open in Google Maps</a>
+                            </div>
                         </li>
                     `);
                 });

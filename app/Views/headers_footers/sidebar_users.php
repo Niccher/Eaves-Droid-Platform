@@ -202,6 +202,15 @@
                         </li>
 
                         <li class="nav-item">
+                            <a href="<?php echo base_url('analysis/timeline'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'timeline') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-stream"></i>
+                                <p>Timeline</p>
+                                <span class="badge badge-success float-right">New</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
                             <a href="<?php echo base_url('account/requests'); ?>"
                                class="nav-link <?php echo (isset($pag) && $pag == 'requests') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-terminal"></i>

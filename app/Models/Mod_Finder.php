@@ -1389,13 +1389,40 @@ class Mod_Finder extends Model
      */
     public function get_location_history(int $userId): array
     {
-        return $this->db->table('tbl_location')
-            ->select('latitude, longitude, accuracy, location_time')
-            ->where('owner_id', $userId)
-            ->where('status', 'success')
-            ->orderBy('location_time', 'ASC')
-            ->get()
-            ->getResultArray();
+        try {
+            return $this->db->table('tbl_location')
+                ->where('owner_id', $userId)
+                ->orderBy('extracted_at', 'ASC')
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_location_history error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Gets location history for user filtered by date.
+     *
+     * @param int $userId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
+     */
+    public function get_location_history_filtered(int $userId, string $startDate, string $endDate): array
+    {
+        try {
+            return $this->db->table('tbl_location')
+                ->where('owner_id', $userId)
+                ->where('extracted_at >=', $startDate . ' 00:00:00')
+                ->where('extracted_at <=', $endDate . ' 23:59:59')
+                ->orderBy('extracted_at', 'ASC')
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_location_history_filtered error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**
@@ -1543,6 +1570,140 @@ class Mod_Finder extends Model
         usort($social_map, fn($a, $b) => $b['score'] <=> $a['score']);
 
         return array_slice($social_map, 0, $limit);
+    }
+
+    /**
+     * Aggregates mobility data for lifestyle profiling.
+     */
+    public function get_mobility_aggregates(int $userId): array
+    {
+        $activities = $this->db->table('tbl_activity')
+            ->where('owner_id', $userId)
+            ->orderBy('activity_time', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $stats = [
+            'STILL' => 0,
+            'WALKING' => 0,
+            'IN_VEHICLE' => 0,
+            'ON_BICYCLE' => 0,
+            'RUNNING' => 0,
+            'TILTING' => 0,
+            'UNKNOWN' => 0,
+            'screen_on' => 0,
+            'screen_off' => 0
+        ];
+
+        if (empty($activities)) return $stats;
+
+        foreach ($activities as $act) {
+            $type = strtoupper($act['activity_type'] ?? 'UNKNOWN');
+            if (isset($stats[$type])) {
+                $stats[$type]++;
+            } else {
+                $stats['UNKNOWN']++;
+            }
+
+            if ($act['screen_on'] == 1) $stats['screen_on']++;
+            else $stats['screen_off']++;
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Gets a unified chronological timeline of user events.
+     */
+    public function get_unified_timeline(int $userId, int $limit = 50): array
+    {
+        $timeline = [];
+
+        // 1. Fetch SMS
+        $sms = $this->db->table('tbl_sms')
+            ->select('address, body, sms_date, sms_type')
+            ->where('owner_id', $userId)
+            ->orderBy('sms_date', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
+
+        foreach ($sms as $s) {
+            $timeline[] = [
+                'type' => 'sms',
+                'title' => ($s['sms_type'] === 'inbox' ? 'Received SMS from ' : 'Sent SMS to ') . $s['address'],
+                'body' => $this->decode_sms_body($s['body']),
+                'time' => (int) $s['sms_date'],
+                'icon' => 'fas fa-envelope',
+                'color' => 'bg-primary'
+            ];
+        }
+
+        // 2. Fetch Calls
+        $calls = $this->db->table('tbl_logs')
+            ->select('phone_number, contact_name, call_type, call_date, duration_seconds')
+            ->where('owner_id', $userId)
+            ->orderBy('call_date', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
+
+        foreach ($calls as $c) {
+            $timeline[] = [
+                'type' => 'call',
+                'title' => ucfirst($c['call_type']) . ' call with ' . ($c['contact_name'] ?? $c['phone_number']),
+                'body' => 'Duration: ' . $c['duration_seconds'] . 's',
+                'time' => (int) $c['call_date'],
+                'icon' => 'fas fa-phone',
+                'color' => $c['call_type'] === 'missed' ? 'bg-danger' : 'bg-success'
+            ];
+        }
+
+        // 3. Fetch Significant Activities
+        $activities = $this->db->table('tbl_activity')
+            ->select('activity_type, activity_time, confidence, info')
+            ->where('owner_id', $userId)
+            ->where('confidence >', 70)
+            ->orderBy('activity_time', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
+
+        foreach ($activities as $a) {
+            $timeline[] = [
+                'type' => 'activity',
+                'title' => 'Activity Change: ' . ucfirst($a['activity_type'] ?? 'Unknown'),
+                'body' => 'Confidence: ' . $a['confidence'] . '% ' . ($a['info'] ? '- ' . $a['info'] : ''),
+                'time' => (int) $a['activity_time'],
+                'icon' => $a['activity_type'] === 'still' ? 'fas fa-bed' : 'fas fa-walking',
+                'color' => 'bg-info'
+            ];
+        }
+
+        // 4. Fetch Locations (Significant moves)
+        $locations = $this->db->table('tbl_location')
+            ->select('latitude, longitude, provider, location_time')
+            ->where('owner_id', $userId)
+            ->orderBy('location_time', 'DESC')
+            ->limit($limit / 2)
+            ->get()
+            ->getResultArray();
+
+        foreach ($locations as $l) {
+            $timeline[] = [
+                'type' => 'location',
+                'title' => 'Location Update (' . $l['provider'] . ')',
+                'body' => 'Coordinates: ' . $l['latitude'] . ', ' . $l['longitude'],
+                'time' => (int) $l['location_time'],
+                'icon' => 'fas fa-map-marker-alt',
+                'color' => 'bg-warning'
+            ];
+        }
+
+        // Sort combined timeline by time DESC
+        usort($timeline, fn($a, $b) => $b['time'] <=> $a['time']);
+
+        return array_slice($timeline, 0, $limit);
     }
 
     /**

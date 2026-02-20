@@ -549,7 +549,13 @@ $routes->group('', [
        $routes->get('advanced/location', 'Correlation::location_analysis', ['as' => 'analysis-advanced-location']);
        $routes->get('advanced/device', 'Correlation::device_pulse', ['as' => 'analysis-advanced-device']);
        $routes->get('advanced/social', 'Correlation::social_analysis', ['as' => 'analysis-advanced-social']);
+       $routes->get('advanced/lifestyle', 'Correlation::lifestyle_analysis', ['as' => 'analysis-advanced-lifestyle']);
        $routes->get('advanced/report', 'Correlation::generate_report', ['as' => 'analysis-advanced-report']);
+
+        /**
+         * Universal Timeline.
+         */
+        $routes->get('timeline', 'Correlation::intelligence_timeline', ['as' => 'analysis-timeline']);
 
         /**
          * Displays financial SMS analysis.

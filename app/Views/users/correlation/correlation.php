@@ -21,15 +21,9 @@
                     </div>
                     <div class="col-lg-4 col-md-6">
                         <div class="float-right mt-2">
-                            <button type="button" class="btn btn-primary" id="refreshAnalysis">
-                                <i class="fas fa-sync-alt mr-1"></i> Refresh Analysis
-                            </button>
                             <a href="<?= base_url('analysis/advanced') ?>" class="btn btn-info ml-2">
                                 <i class="fas fa-microchip mr-1"></i> Advanced Analysis
                             </a>
-                            <button type="button" class="btn btn-outline-secondary ml-2" data-toggle="modal" data-target="#analysisSettings">
-                                <i class="fas fa-cog mr-1"></i> Settings
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -192,10 +186,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="float-right">
-                                            <button type="button" class="btn btn-sm btn-outline-info" id="runAnalysis">
-                                                <i class="fas fa-play mr-1"></i> Run New Analysis
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary ml-2" id="exportReport">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="exportReport">
                                                 <i class="fas fa-download mr-1"></i> Export Report
                                             </button>
                                         </div>
@@ -255,56 +246,6 @@
         </section>
     </div>
 
-    <!-- Analysis Settings Modal -->
-    <div class="modal fade" id="analysisSettings" tabindex="-1" role="dialog" aria-labelledby="analysisSettingsLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="analysisSettingsLabel">
-                        <i class="fas fa-cog mr-2"></i>Analysis Settings
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="settingsForm">
-                        <div class="form-group">
-                            <label><i class="fas fa-bell mr-1"></i> Alert Notifications</label>
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="financialAlerts" checked>
-                                <label class="custom-control-label" for="financialAlerts">Financial transaction alerts</label>
-                            </div>
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="securityAlerts" checked>
-                                <label class="custom-control-label" for="securityAlerts">Security threat alerts</label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="analysisFrequency"><i class="fas fa-sync-alt mr-1"></i> Analysis Frequency</label>
-                            <select class="form-control" id="analysisFrequency">
-                                <option value="realtime">Real-time</option>
-                                <option value="hourly" selected>Hourly</option>
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="confidenceThreshold"><i class="fas fa-chart-line mr-1"></i> Confidence Threshold</label>
-                            <input type="range" class="custom-range" id="confidenceThreshold" min="50" max="100" value="85">
-                            <small class="text-muted">Minimum confidence level: <span id="thresholdValue">85%</span></small>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveSettings">
-                        <i class="fas fa-save mr-1"></i> Save Settings
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <style>
         .info-box {
@@ -465,39 +406,6 @@
                         display: false
                     }
                 }
-            });
-
-            // Refresh analysis
-            $('#refreshAnalysis').click(function() {
-                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Analyzing...');
-                setTimeout(() => {
-                    $(this).prop('disabled', false).html('<i class="fas fa-sync-alt mr-1"></i> Refresh Analysis');
-                    alert('Analysis refreshed successfully!');
-                }, 1500);
-            });
-
-            // Run new analysis
-            $('#runAnalysis').click(function() {
-                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Processing...');
-                setTimeout(() => {
-                    $(this).prop('disabled', false).html('<i class="fas fa-play mr-1"></i> Run New Analysis');
-                    alert('New analysis completed! Check the insights table for updated results.');
-                }, 2000);
-            });
-
-            // Export report
-            $('#exportReport').click(function() {
-                alert('Export feature would generate a detailed PDF/CSV report');
-            });
-
-            // Settings modal
-            $('#confidenceThreshold').on('input', function() {
-                $('#thresholdValue').text($(this).val() + '%');
-            });
-
-            $('#saveSettings').click(function() {
-                alert('Settings saved successfully!');
-                $('#analysisSettings').modal('hide');
             });
 
             // Navigation tabs

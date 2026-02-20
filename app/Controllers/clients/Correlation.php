@@ -123,18 +123,6 @@ class Correlation extends BaseClientController{
             . view('headers_footers/tail_analyze_sms', $data);
     }
 
-    public function set_sms_rules(){
-        //$model_finder = new Mod_Finder();
-        $model_crypt = new Mod_Crypt();
-        $model_extract = new Mod_Extract();
-        //$encrypter = \Config\Services::encrypter();
-        // if (!auth()->loggedIn()){ return redirect()->to('login'); } // Handled in parent
-
-        $pg = 'correlation';
-        $data['pag'] = 'analysis';
-        $data["user_info"] = $this->finderModel->basic_user();
-    }
-
     public function set_sms_datapoints($owner){
         //$model_finder = new Mod_Finder();
 
@@ -379,11 +367,18 @@ class Correlation extends BaseClientController{
         $counts = $this->getUserDataCounts();
         $data = array_merge($data, $counts);
 
-        $data['locations'] = $this->finderModel->get_location_history($this->userId);
+        // Filters
+        $data['start_date'] = $this->request->getGet('start_date');
+        $data['end_date'] = $this->request->getGet('end_date');
+
+        if ($data['start_date'] && $data['end_date']) {
+            $data['locations'] = $this->finderModel->get_location_history_filtered($this->userId, $data['start_date'], $data['end_date']);
+        } else {
+            $data['locations'] = $this->finderModel->get_location_history($this->userId);
+        }
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
-            . view('users/correlation/location_analysis', $data)
             . view('users/correlation/location_analysis', $data)
             . view('headers_footers/footer_users');
     }
@@ -486,6 +481,46 @@ class Correlation extends BaseClientController{
         header('Content-Type: application/pdf');
         $dompdf->stream("Intelligence_Report_" . date('Y-m-d') . ".pdf", ["Attachment" => false]);
         exit;
+    }
+
+    /**
+     * Lifestyle & Mobility Profiling dashboard.
+     */
+    public function lifestyle_analysis()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $data['mobility'] = $this->finderModel->get_mobility_aggregates($this->userId);
+        
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/lifestyle_analysis', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    /**
+     * Universal Intelligence Timeline.
+     */
+    public function intelligence_timeline()
+    {
+        $data['pag'] = 'timeline';
+        $data["user_info"] = $this->finderModel->basic_user();
+        
+        // Stats
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $data['timeline'] = $this->finderModel->get_unified_timeline($this->userId, 100);
+        
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/intelligence_timeline', $data)
+            . view('headers_footers/footer_users');
     }
 
     /**

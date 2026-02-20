@@ -151,6 +151,56 @@
                         </div>
                     </div>
                 </div>
+                <!-- Lifestyle & Timeline Features -->
+                <div class="row mt-4">
+                    <!-- Lifestyle Profile -->
+                    <div class="col-md-6">
+                        <div class="card card-outline card-secondary shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-walking mr-2"></i>
+                                    Lifestyle & Mobility
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-secondary">New</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>Analyze activity patterns (walking, driving, still) and screen time habits to build a lifestyle profile.</p>
+                                <div class="alert alert-light border">
+                                    <i class="fas fa-history mr-2"></i> Movement Trends & Digital Balance.
+                                </div>
+                                <a href="<?= base_url('analysis/advanced/lifestyle') ?>" class="btn btn-secondary btn-block">
+                                    <i class="fas fa-fingerprint mr-1"></i> View Lifestyle Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Intelligence Timeline -->
+                    <div class="col-md-6">
+                        <div class="card card-outline card-dark shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-history mr-2"></i>
+                                    Universal Timeline
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-dark">Feed</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>A vertical chronological story of the day, merging SMS, calls, and location updates into one feed.</p>
+                                <div class="alert alert-light border">
+                                    <i class="fas fa-stream mr-2"></i> Chronological Event Sequencing.
+                                </div>
+                                <a href="<?= base_url('analysis/timeline') ?>" class="btn btn-dark btn-block">
+                                    <i class="fas fa-list-ul mr-1"></i> Open Timeline Feed
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Intelligence Reports -->
                 <div class="row mt-4">
