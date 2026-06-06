@@ -1,135 +1,76 @@
-</main>
+    </div>
+    <!-- /.content-wrapper -->
 
-<!-- Footer -->
-<footer>
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-4 mb-4">
-                <h4 class="mb-3">
-                    <i class="fas fa-chart-bar mr-2"></i>Prj Images
-                </h4>
-                <p class="text-light">Mobile Data Intelligence Platform providing comprehensive analysis and visualization of your mobile data.</p>
-                <div class="social-links mt-3">
-                    <a href="#"><i class="fab fa-twitter"></i></a>
-                    <a href="#"><i class="fab fa-github"></i></a>
-                    <a href="#"><i class="fab fa-linkedin"></i></a>
-                    <a href="#"><i class="fab fa-youtube"></i></a>
+    <!-- Main Footer -->
+    <footer class="main-footer bg-dark border-top-0 py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-5 mb-4">
+                    <h5 class="text-white text-bold mb-4">
+                        <i class="fas fa-chart-bar mr-2 text-primary"></i>
+                        <span class="font-weight-light">Prj Images</span>
+                    </h5>
+                    <p class="text-light" style="font-size: 1.1rem; line-height: 1.7; opacity: 0.9;">Prj Images is a cutting-edge mobile data intelligence platform that helps users analyze and visualize their digital footprint with precision and security.</p>
+                    <div class="mt-4">
+                        <a href="#" class="text-light mr-4"><i class="fab fa-facebook fa-xl"></i></a>
+                        <a href="#" class="text-light mr-4"><i class="fab fa-twitter fa-xl"></i></a>
+                        <a href="#" class="text-light mr-4"><i class="fab fa-linkedin fa-xl"></i></a>
+                        <a href="#" class="text-light"><i class="fab fa-github fa-xl"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4 ml-auto">
+                    <h6 class="text-white text-bold mb-4" style="font-size: 1.2rem;">Quick Links</h6>
+                    <ul class="list-unstyled" style="font-size: 1.05rem;">
+                        <li class="mb-3"><a href="<?= base_url('landing') ?>" class="text-light hover-primary">Home</a></li>
+                        <li class="mb-3"><a href="<?= base_url('aboutus') ?>" class="text-light hover-primary">About Us</a></li>
+                        <li class="mb-3"><a href="<?= base_url('download') ?>" class="text-light hover-primary">Download</a></li>
+                        <li class="mb-3"><a href="<?= base_url('contactus') ?>" class="text-light hover-primary">Support</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <h6 class="text-white text-bold mb-4" style="font-size: 1.2rem;">Resources</h6>
+                    <ul class="list-unstyled" style="font-size: 1.05rem;">
+                        <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">FAQ</a></li>
+                        <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">Terms of Service</a></li>
+                        <li class="mb-3"><a href="<?= base_url('howto') ?>" class="text-light hover-primary">How It Works</a></li>
+                    </ul>
                 </div>
             </div>
-
-            <div class="col-lg-2 col-md-6 mb-4">
-                <h5 class="mb-3">Platform</h5>
-                <ul class="list-unstyled footer-links">
-                    <li class="mb-2"><a href="<?php echo base_url('landing'); ?>">Home</a></li>
-                    <li class="mb-2"><a href="<?php echo base_url('aboutus'); ?>">About</a></li>
-                    <li class="mb-2"><a href="<?php echo base_url('download'); ?>">Download</a></li>
-                    <li class="mb-2"><a href="<?php echo base_url('how-to'); ?>">How it Works</a></li>
-                </ul>
-            </div>
-
-            <div class="col-lg-3 col-md-6 mb-4">
-                <h5 class="mb-3">Support</h5>
-                <ul class="list-unstyled footer-links">
-                    <li class="mb-2"><a href="<?php echo base_url('faqs_terms'); ?>">FAQ</a></li>
-                    <li class="mb-2"><a href="<?php echo base_url('contactus'); ?>">Contact</a></li>
-                    <li class="mb-2"><a href="#">Documentation</a></li>
-                    <li class="mb-2"><a href="#">Privacy Policy</a></li>
-                </ul>
-            </div>
-
-            <div class="col-lg-3 mb-4">
-                <h5 class="mb-3">Contact</h5>
-                <p class="text-light mb-2">
-                    <i class="fas fa-envelope mr-2"></i> support@prjimages.com
-                </p>
-                <p class="text-light mb-2">
-                    <i class="fas fa-phone mr-2"></i> +1 (555) 123-4567
-                </p>
-                <p class="text-light">
-                    <i class="fas fa-clock mr-2"></i> Mon-Fri: 9AM-6PM EST
-                </p>
+            <hr class="border-secondary my-5">
+            <div class="row" style="font-size: 1rem;">
+                <div class="col-md-12 text-center text-light" style="opacity: 0.8;">
+                    <strong>Copyright &copy; 2020-<?php echo date('Y') ?> <a href="<?= base_url('landing') ?>" class="text-primary">Prj Images</a>.</strong> All rights reserved.
+                </div>
             </div>
         </div>
+    </footer>
+    
+    <style>
+        .hover-primary:hover { color: #007bff !important; transition: 0.3s; text-decoration: none; }
+        .text-light { color: #f8f9fa !important; }
+        .fa-xl { font-size: 1.5em; }
+    </style>
+</div>
+<!-- ./wrapper -->
 
-        <hr class="bg-secondary">
-
-        <div class="row">
-            <div class="col-md-6">
-                <p class="mb-0 text-light">
-                    &copy; <?php echo date('Y'); ?> Prj Images. All rights reserved.
-                </p>
-            </div>
-            <div class="col-md-6 text-md-right">
-                <p class="mb-0 text-light">
-                    <i class="fas fa-shield-alt mr-1"></i> Secure & Encrypted Platform
-                </p>
-            </div>
-        </div>
-    </div>
-</footer>
-
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- REQUIRED SCRIPTS -->
+<!-- Bootstrap 4 -->
+<script src="<?php echo base_url('assets/plugins/bootstrap/js/bootstrap.bundle.min.js?v=1.4'); ?>"></script>
+<!-- AdminLTE App -->
+<script src="<?php echo base_url('assets/js/adminlte.min.js?v=1.4'); ?>"></script>
 
 <script>
-    // Back to Top Button
-    const backToTop = document.getElementById('backToTop');
-    window.addEventListener('scroll', function() {
-        if (window.pageYOffset > 300) {
-            backToTop.classList.add('show');
-        } else {
-            backToTop.classList.remove('show');
-        }
-    });
-
-    backToTop.addEventListener('click', function(e) {
-        e.preventDefault();
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    });
-
-    // Smooth scrolling for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            if (this.getAttribute('href') === '#') return;
-
-            const targetId = this.getAttribute('href');
-            const targetElement = document.querySelector(targetId);
-
-            if (targetElement) {
-                e.preventDefault();
-                window.scrollTo({
-                    top: targetElement.offsetTop - 80,
-                    behavior: 'smooth'
-                });
-            }
-        });
-    });
-
-    // Initialize tooltips
     $(function () {
         $('[data-toggle="tooltip"]').tooltip();
-    });
-
-    // Animate elements on scroll
-    function animateOnScroll() {
-        const elements = document.querySelectorAll('.feature-icon, .stat-card, .pricing-card');
-
-        elements.forEach(element => {
-            const elementTop = element.getBoundingClientRect().top;
-            const elementVisible = 150;
-
-            if (elementTop < window.innerHeight - elementVisible) {
-                element.classList.add('animated');
+        
+        // Active link refinement
+        var path = window.location.pathname;
+        $('.nav-link').each(function() {
+            if (path.includes($(this).attr('href'))) {
+                $(this).addClass('active');
             }
         });
-    }
-
-    window.addEventListener('scroll', animateOnScroll);
-    animateOnScroll();
+    });
 </script>
 </body>
 </html>

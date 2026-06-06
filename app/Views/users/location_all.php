@@ -29,12 +29,8 @@
                     <p class="text-muted mt-2 mb-0">GPS and Network location tracking history</p>
                 </div>
                 <div class="col-lg-4 col-md-6">
-                    <div class="float-right mt-2">
-                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                            <?php echo $nav_urls; ?>
-                        </div>
-                    </div>
                 </div>
+
             </div>
         </div>
     </section>

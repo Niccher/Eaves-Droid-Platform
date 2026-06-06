@@ -14,17 +14,24 @@ class Mod_Extract extends Model
      * @param string $contactNumber2
      * @return array
      */
-    public function get_sms_between_contacts(int $user_id, string $contactNumber1, string $contactNumber2): array
+    public function get_sms_between_contacts(int $user_id, array $numbers): array
     {
         try {
-            return $this->db->table('tbl_sms')
+            $builder = $this->db->table('tbl_sms')
                 ->select('*, address as sms_number, body as sms_body, sms_date as sms_time')
                 ->where('owner_id', $user_id)
-                ->groupStart()
-                    ->where('address', $contactNumber1)
-                    ->orWhere('address', $contactNumber2)
-                ->groupEnd()
-                ->orderBy('sms_date', 'DESC')
+                ->groupStart();
+
+            foreach ($numbers as $i => $num) {
+                if ($i === 0) {
+                    $builder->where('address', $num);
+                } else {
+                    $builder->orWhere('address', $num);
+                }
+            }
+
+            return $builder->groupEnd()
+                ->orderBy('sms_date', 'ASC')
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {
@@ -34,24 +41,26 @@ class Mod_Extract extends Model
     }
 
     /**
-     * Gets logs between contacts.
-     *
-     * @param int $user_id
-     * @param string $contactNumber1
-     * @param string $contactNumber2
-     * @return array
+     * Gets logs between contacts, supports all phone number variants.
      */
-    public function get_logs_between_contacts(int $user_id, string $contactNumber1, string $contactNumber2): array
+    public function get_logs_between_contacts(int $user_id, array $numbers): array
     {
         try {
-            return $this->db->table('tbl_logs')
+            $builder = $this->db->table('tbl_logs')
                 ->select('*, call_type as Type, phone_number as Caller, call_date as Timestamp, duration_seconds as Durations')
                 ->where('owner_id', $user_id)
-                ->groupStart()
-                    ->where('phone_number', $contactNumber1)
-                    ->orWhere('phone_number', $contactNumber2)
-                ->groupEnd()
-                ->orderBy('call_date', 'DESC')
+                ->groupStart();
+
+            foreach ($numbers as $i => $num) {
+                if ($i === 0) {
+                    $builder->where('phone_number', $num);
+                } else {
+                    $builder->orWhere('phone_number', $num);
+                }
+            }
+
+            return $builder->groupEnd()
+                ->orderBy('call_date', 'ASC')
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {

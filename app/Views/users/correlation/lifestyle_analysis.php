@@ -76,6 +76,48 @@
                     </div>
                 </div>
             </div>
+
+            <div class="row">
+                <!-- App Usage & Screentime -->
+                <div class="col-md-12">
+                    <div class="card card-outline card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-mobile-alt text-primary mr-2"></i> App Usage & Screentime</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-12 text-center">
+                                    <h4 class="text-primary"><?= number_format(($mobility['total_screentime_ms'] ?? 0) / 60000) ?> mins</h4>
+                                    <span class="text-muted">Total Foreground Screentime</span>
+                                </div>
+                            </div>
+                            <?php if (!empty($mobility['top_apps'])): ?>
+                                <h5>Top 5 Apps by Usage</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>App Name</th>
+                                                <th>Time Spent</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($mobility['top_apps'] as $app): ?>
+                                            <tr>
+                                                <td><?= esc($app['name']) ?></td>
+                                                <td><?= number_format($app['time'] / 60000) ?> mins</td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-muted">No app usage data available.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 </div>

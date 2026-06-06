@@ -54,7 +54,7 @@ class Location extends BaseClientController
         return array_merge($this->getUserDataCounts(), [
             'pag' => $type === 'location' ? 'location' : 'activities',
             'title' => $type === 'location' ? 'Location History' : 'Device Activity',
-            'nav_urls' => $this->getLocationNavigationUrls($type)
         ]);
     }
+
 }

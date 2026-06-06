@@ -302,6 +302,56 @@
                         </div>
                     </div>
                 </div>
+                <!-- Psychographic & Geospatial Intelligence -->
+                <div class="row mt-4">
+                    <!-- Sentiment Analysis -->
+                    <div class="col-md-6">
+                        <div class="card card-outline card-warning shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-smile mr-2"></i>
+                                    Sentiment & Social Tone
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-warning">Pro</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>Perform automated sentiment analysis on SMS history to identify the emotional health of key relationships.</p>
+                                <div class="alert alert-light border">
+                                    <i class="fas fa-heartbeat mr-2"></i> Emotional Profiling & Social Health.
+                                </div>
+                                <a href="<?= base_url('analysis/advanced/sentiment') ?>" class="btn btn-warning btn-block">
+                                    <i class="fas fa-brain mr-1"></i> Analyze Relationship Tone
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Geospatial Hotspots -->
+                    <div class="col-md-6">
+                        <div class="card card-outline card-success shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-map-marked-alt mr-2"></i>
+                                    Geo-Hotspot Clustering
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-success">Location</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>Automatically cluster coordinate pings to identify and name "Home," "Work," and frequent social bases.</p>
+                                <div class="alert alert-light border">
+                                    <i class="fas fa-draw-polygon mr-2"></i> Base of Operations Analysis.
+                                </div>
+                                <a href="<?= base_url('analysis/advanced/hotspots') ?>" class="btn btn-success btn-block">
+                                    <i class="fas fa-thumbtack mr-1"></i> View Physical Bases
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Intelligence Reports -->
                 <div class="row mt-4">

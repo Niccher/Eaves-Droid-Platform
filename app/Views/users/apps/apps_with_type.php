@@ -198,117 +198,101 @@
     </section>
 </div>
 
-<!-- App Details Modal -->
+<!-- Modern App Details Modal -->
 <div class="modal fade" id="appDetailsModal" tabindex="-1" role="dialog" aria-labelledby="appDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="appDetailsModalLabel">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    App Details
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-0 pb-0" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); padding: 1.5rem;">
+                <h5 class="modal-title text-white font-weight-bold" id="appDetailsModalLabel">
+                    <i class="fas fa-layer-group mr-2 opacity-75"></i> Application Insight
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close text-white opacity-75" data-dismiss="modal" aria-label="Close" style="text-shadow: none;">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-3 text-center">
-                        <div id="appIconContainer" class="mb-3">
-                            <img id="appIcon" src="" alt="App Icon" class="img-fluid rounded-circle" style="max-width: 100px;">
-                        </div>
-                        <h5 id="appName" class="font-weight-bold"></h5>
-                        <p id="appPackage" class="text-muted small"></p>
-                        <div id="appBadges" class="mt-2"></div>
+            <div class="modal-body p-0">
+                <!-- Header Card -->
+                <div class="bg-light p-4 border-bottom d-flex align-items-center">
+                    <div id="appIconContainer" class="mr-4">
+                        <img id="appIcon" src="" alt="App Icon" class="shadow-sm" style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover;">
                     </div>
-                    <div class="col-md-9">
-                        <div class="row">
-                            <!-- Basic Info -->
-                            <div class="col-md-6">
-                                <h6 class="border-bottom pb-2">
-                                    <i class="fas fa-info-circle text-primary mr-1"></i>
-                                    Basic Information
-                                </h6>
-                                <table class="table table-sm">
-                                    <tr>
-                                        <td><i class="fas fa-code text-muted mr-1"></i> Version Name:</td>
-                                        <td><span id="appVersionName" class="font-weight-bold"></span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-hashtag text-muted mr-1"></i> Version Code:</td>
-                                        <td><span id="appVersionCode" class="badge badge-info"></span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-weight text-muted mr-1"></i> App Size:</td>
-                                        <td><span id="appSize" class="badge"></span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-shield-alt text-muted mr-1"></i> Permissions:</td>
-                                        <td><span id="appPermissions" class="badge badge-warning"></span></td>
-                                    </tr>
-                                </table>
-                            </div>
+                    <div class="flex-grow-1">
+                        <h4 id="appName" class="font-weight-bold mb-1 text-dark"></h4>
+                        <p id="appPackage" class="text-muted mb-2" style="font-family: monospace;"></p>
+                        <div id="appBadges" class="d-flex gap-2"></div>
+                    </div>
+                </div>
 
-                            <!-- SDK Info -->
-                            <div class="col-md-6">
-                                <h6 class="border-bottom pb-2">
-                                    <i class="fas fa-cogs text-primary mr-1"></i>
-                                    SDK Information
-                                </h6>
-                                <table class="table table-sm">
-                                    <tr>
-                                        <td><i class="fas fa-bullseye text-muted mr-1"></i> Target SDK:</td>
-                                        <td><span id="appTargetSdk" class="badge badge-dark"></span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-arrow-down text-muted mr-1"></i> Min SDK:</td>
-                                        <td><span id="appMinSdk" class="badge badge-secondary"></span></td>
-                                    </tr>
-                                </table>
+                <div class="row m-0">
+                    <div class="col-md-7 p-4 border-right">
+                        <h6 class="text-uppercase text-muted font-weight-bold mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">
+                            <i class="fas fa-info-circle mr-2"></i>Technical Specs
+                        </h6>
+                        <ul class="list-group list-group-flush mb-4">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0 pt-0">
+                                <span><i class="fas fa-code text-muted mr-2"></i>Version</span>
+                                <span id="appVersionName" class="font-weight-bold text-dark"></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                                <span><i class="fas fa-hashtag text-muted mr-2"></i>Build Code</span>
+                                <span id="appVersionCode" class="badge badge-light border text-dark"></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                                <span><i class="fas fa-weight-hanging text-muted mr-2"></i>Size</span>
+                                <span id="appSize" class="badge"></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0 pb-0">
+                                <span><i class="fas fa-shield-alt text-muted mr-2"></i>Permissions</span>
+                                <span id="appPermissions" class="badge badge-warning"></span>
+                            </li>
+                        </ul>
+
+                        <h6 class="text-uppercase text-muted font-weight-bold mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">
+                            <i class="fas fa-cogs mr-2"></i>SDK Environment
+                        </h6>
+                        <div class="d-flex justify-content-between">
+                            <div class="p-3 bg-light rounded text-center w-100 mr-2 border">
+                                <small class="d-block text-muted mb-1">Target SDK</small>
+                                <span id="appTargetSdk" class="font-weight-bold text-dark h5 mb-0"></span>
+                            </div>
+                            <div class="p-3 bg-light rounded text-center w-100 ml-2 border">
+                                <small class="d-block text-muted mb-1">Min SDK</small>
+                                <span id="appMinSdk" class="font-weight-bold text-dark h5 mb-0"></span>
                             </div>
                         </div>
-
-                        <!-- Installation Times -->
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <h6 class="border-bottom pb-2">
-                                    <i class="fas fa-clock text-primary mr-1"></i>
-                                    Installation Timeline
-                                </h6>
-                                <div class="timeline">
-                                    <div class="timeline-item">
-                                        <i class="fas fa-download bg-success"></i>
-                                        <div class="timeline-item-content">
-                                            <span class="font-weight-bold">First Installed:</span>
-                                            <span id="appFirstInstall" class="text-muted ml-2"></span>
-                                        </div>
-                                    </div>
-                                    <div class="timeline-item">
-                                        <i class="fas fa-sync-alt bg-info"></i>
-                                        <div class="timeline-item-content">
-                                            <span class="font-weight-bold">Last Updated:</span>
-                                            <span id="appLastUpdate" class="text-muted ml-2"></span>
-                                        </div>
-                                    </div>
+                    </div>
+                    <div class="col-md-5 p-4 bg-light">
+                        <h6 class="text-uppercase text-muted font-weight-bold mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">
+                            <i class="fas fa-clock mr-2"></i>Timeline
+                        </h6>
+                        <div class="timeline-modern mb-4">
+                            <div class="timeline-step">
+                                <div class="step-icon bg-success"><i class="fas fa-download"></i></div>
+                                <div class="step-content">
+                                    <small class="text-muted d-block text-uppercase">First Installed</small>
+                                    <span id="appFirstInstall" class="font-weight-bold text-dark"></span>
+                                </div>
+                            </div>
+                            <div class="timeline-step mt-3">
+                                <div class="step-icon bg-info"><i class="fas fa-sync-alt"></i></div>
+                                <div class="step-content">
+                                    <small class="text-muted d-block text-uppercase">Last Updated</small>
+                                    <span id="appLastUpdate" class="font-weight-bold text-dark"></span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Permissions List -->
-                        <div class="row mt-3" id="permissionsSection" style="display: none;">
-                            <div class="col-12">
-                                <h6 class="border-bottom pb-2">
-                                    <i class="fas fa-list text-primary mr-1"></i>
-                                    Permission List
-                                </h6>
-                                <div id="appPermissionsList" class="permissions-list"></div>
-                            </div>
+                        <div id="permissionsSection" style="display: none;">
+                            <h6 class="text-uppercase text-muted font-weight-bold mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">
+                                <i class="fas fa-list mr-2"></i>Access Rights
+                            </h6>
+                            <div id="appPermissionsList" class="permissions-list border bg-white shadow-sm"></div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <div class="modal-footer border-top-0 bg-light py-3">
+                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" data-dismiss="modal">Close Insight</button>
             </div>
         </div>
     </div>
@@ -316,7 +300,7 @@
 
 <style>
     .avatar-circle {
-        border-radius: 50%;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -326,38 +310,52 @@
         padding: 2px 6px;
     }
     .permissions-list {
-        max-height: 200px;
+        max-height: 220px;
         overflow-y: auto;
-        background: #f8f9fa;
-        border-radius: 5px;
-        padding: 10px;
+        border-radius: 8px;
+        padding: 12px;
     }
     .permissions-list .permission-item {
-        padding: 3px 0;
-        border-bottom: 1px solid #eee;
+        padding: 6px 0;
+        border-bottom: 1px solid #f1f1f1;
+        font-size: 0.85rem;
     }
-    .timeline {
+    .permissions-list .permission-item:last-child {
+        border-bottom: none;
+    }
+    .timeline-modern {
         position: relative;
-        padding-left: 30px;
+        padding-left: 10px;
     }
-    .timeline-item {
-        position: relative;
-        margin-bottom: 15px;
-    }
-    .timeline-item i {
+    .timeline-modern::before {
+        content: '';
         position: absolute;
-        left: -30px;
-        top: 0;
-        width: 20px;
-        height: 20px;
+        left: 24px;
+        top: 20px;
+        bottom: 20px;
+        width: 2px;
+        background: #e9ecef;
+    }
+    .timeline-step {
+        display: flex;
+        align-items: flex-start;
+        position: relative;
+        z-index: 1;
+    }
+    .timeline-step .step-icon {
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
+        margin-right: 15px;
+        box-shadow: 0 0 0 4px #f8f9fa;
     }
-    .timeline-item-content {
-        padding-left: 10px;
+    .timeline-step .step-content {
+        flex: 1;
+        padding-top: 4px;
     }
 </style>
 
@@ -383,16 +381,27 @@
             document.getElementById('appVersionCode').textContent = app.Code || 'N/A';
 
             // Set app icon
-            const appIcon = document.getElementById('appIcon');
+            let appIcon = document.getElementById('appIcon');
+            if (!appIcon) {
+                document.getElementById('appIconContainer').innerHTML = '<img id="appIcon" src="" alt="App Icon" class="shadow-sm" style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover;">';
+                appIcon = document.getElementById('appIcon');
+            }
+
             if (app.app_icon) {
                 appIcon.src = 'data:image/png;base64,' + app.app_icon;
                 appIcon.style.display = 'block';
+                const placeholder = document.getElementById('appIconContainer').querySelector('.avatar-circle');
+                if (placeholder) placeholder.remove();
             } else {
                 appIcon.style.display = 'none';
-                document.getElementById('appIconContainer').innerHTML =
-                    '<div class="avatar-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width:100px;height:100px;">' +
-                    '<i class="fas fa-mobile-alt fa-2x"></i>' +
-                    '</div>';
+                if (!document.getElementById('appIconContainer').querySelector('.avatar-circle')) {
+                    const div = document.createElement('div');
+                    div.className = 'avatar-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow-sm';
+                    div.style.width = '80px';
+                    div.style.height = '80px';
+                    div.innerHTML = '<i class="fas fa-mobile-alt fa-2x"></i>';
+                    document.getElementById('appIconContainer').appendChild(div);
+                }
             }
 
             // Set app badges

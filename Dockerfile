@@ -1,38 +1,39 @@
-# Use the official PHP Apache image
 FROM php:8.2-apache
 
-# Install system dependencies and PHP extensions
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    nano \
     libicu-dev \
-    default-mysql-client \
-    libonig-dev \
+    libmariadb-dev \
+    libzip-dev \
     unzip \
-    && docker-php-ext-configure intl \
-    && docker-php-ext-install mysqli pdo pdo_mysql intl
+    zip \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+    intl \
+    mysqli \
+    pdo_mysql \
+    gd \
+    zip
 
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
-RUN cat <<EOF > /etc/apache2/sites-available/000-default.conf
-<VirtualHost *:80>
-    ServerAdmin webmaster@localhost
-    DocumentRoot /var/www/html
-
-    ErrorLog ${APACHE_LOG_DIR}/error.log
-    CustomLog ${APACHE_LOG_DIR}/access.log combined
-
-    <Directory "/var/www/html/public">
-        AllowOverride All
-        Require all granted
-    </Directory>
-</VirtualHost>
-EOF
-
+# Enable Apache mod_rewrite
 RUN a2enmod rewrite
-RUN service apache2 restart
-# Copy application files to the container
-COPY .. /var/www/html
 
-RUN chmod -R 777 /var/www/html/writable/session
+# Set Apache document root to /var/www/html/public
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Expose port 80 for web traffic
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy application files
+COPY . .
+
+# Set permissions for writable directory
+RUN chown -R www-data:www-data /var/www/html/writable
+
+# Expose port 80
 EXPOSE 80

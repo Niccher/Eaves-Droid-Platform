@@ -1,181 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8"/>
-    <title>Prj Images - Register</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-          content="Prj Images is a mobile data analysis platform that transforms raw mobile data into actionable insights through advanced analysis and visualization"/>
-    <meta name="keywords"
-          content="mobile data analysis, android data collection, data visualization, call analysis, SMS correlation, file structure generation"/>
-    <meta content="domino" name="author"/>
-    <meta content="support@chegecache.co.ke" name="support"/>
-    <meta content="https://chegecache.co.ke/" name="Website"/>
-    <meta content="Prj Images" name="application-name"/>
-    <meta content="mobile data intelligence, data analysis platform" name="keywords"/>
-    <!-- favicon -->
-    <link rel="shortcut icon" href="<?= base_url('images/favicon.ico') ?>">
-    <!-- Bootstrap -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
-    <!-- Icons -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/materialdesignicons.min.css" rel="stylesheet"
-          type="text/css"/>
-    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
-    <!-- Main css -->
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/style.min.css" rel="stylesheet" type="text/css"
-          id="theme-opt"/>
-    <link href="https://prjs4.chegecache.co.ke/assets/landing/css/colors/default.css" rel="stylesheet" id="color-opt">
-    <style>
-        .bg-overlay-primary {
-            background: linear-gradient(90deg, #4e73df 0%, #4e73df 100%);
-            opacity: 0.9;
-            position: absolute;
-            height: 100%;
-            width: 100%;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            top: 0;
-        }
-    </style>
-</head>
-<body>
-<!-- Loader -->
-<div id="preloader">
-    <div id="status">
-        <div class="spinner">
-            <div class="bounce1"></div>
-            <div class="bounce2"></div>
-            <div class="bounce3"></div>
+<?= view('headers_footers/head_landing', ['pag' => 'register']) ?>
+
+<div class="content-wrapper" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 50px 0;">
+    <div class="register-box">
+        <div class="register-logo">
+            <a href="<?= base_url('/') ?>" class="text-white">
+                <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8; width: 60px; height: 60px;">
+                <span class="font-weight-light text-bold">Prj Images</span>
+            </a>
         </div>
-    </div>
-</div>
-<!-- Loader -->
-<!-- Back to home Start -->
-<div class="back-to-home rounded d-none d-sm-block">
-    <a href="<?= base_url('/') ?>" class="text-white rounded d-inline-block text-center"><i
-                class="mdi mdi-home"></i></a>
-</div>
-<!-- Back to home End -->
-<!-- Hero Start -->
-<section class="bg-home d-flex align-items-center"
-         style="background: url('<?= base_url('images/authentication.jpg') ?>') center center;">
-    <div class="bg-overlay bg-overlay-primary"></div>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-5 col-md-7">
-                <div class="login_page bg-white rounded p-4">
-                    <div class="text-center">
-                        <h4 class="mb-3">Register for a new membership to get started.</h4>
-                    </div>
-                    <!-- Display validation errors -->
-                    <?php if (session('errors') !== null) : ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <?php if (is_array(session('errors'))) : ?>
+
+        <div class="card card-outline card-primary shadow-lg">
+            <div class="card-body register-card-body rounded">
+                <p class="login-box-msg text-bold">Register a new membership</p>
+
+                <!-- Display validation errors -->
+                <?php if (session('errors') !== null) : ?>
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <?php if (is_array(session('errors'))) : ?>
+                            <ul class="mb-0 pl-3">
                                 <?php foreach (session('errors') as $error) : ?>
-                                    <?= esc($error) ?><br>
+                                    <li><?= esc($error) ?></li>
                                 <?php endforeach ?>
-                            <?php else : ?>
-                                <?= esc(session('errors')) ?>
-                            <?php endif ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </ul>
+                        <?php else : ?>
+                            <?= esc(session('errors')) ?>
+                        <?php endif ?>
+                    </div>
+                <?php endif ?>
+
+                <form action="<?= url_to('register') ?>" method="post">
+                    <?= csrf_field() ?>
+                    <div class="input-group mb-3">
+                        <input type="text" name="username" class="form-control form-control-lg" placeholder="Full name" value="<?= old('username') ?>" required>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-user"></span>
+                            </div>
                         </div>
-                    <?php endif ?>
-                    <?php if (session('message') !== null) : ?>
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <?= session('message') ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="email" name="email" class="form-control form-control-lg" placeholder="Email" value="<?= old('email') ?>" required>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-envelope"></span>
+                            </div>
                         </div>
-                    <?php endif ?>
-                    <form class="login-form" method="post" action="<?= url_to('register') ?>">
-                        <?= csrf_field() ?>
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                                    <input type="text"
-                                           class="form-control"
-                                           name="username"
-                                           placeholder="Full name"
-                                           value="<?= old('username') ?>"
-                                           required>
-                                </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="password" name="password" class="form-control form-control-lg" placeholder="Password" required>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-lock"></span>
                             </div>
-                            <!--end col-->
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input type="email"
-                                           class="form-control"
-                                           name="email"
-                                           placeholder="Email"
-                                           value="<?= old('email') ?>"
-                                           required>
-                                </div>
-                            </div>
-                            <!--end col-->
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Password <span class="text-danger">*</span></label>
-                                    <input type="password"
-                                           class="form-control"
-                                           name="password"
-                                           placeholder="Password"
-                                           required>
-                                </div>
-                            </div>
-                            <!--end col-->
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Confirm Password <span
-                                                class="text-danger">*</span></label>
-                                    <input type="password"
-                                           class="form-control"
-                                           name="password_confirm"
-                                           placeholder="Retype password"
-                                           required>
-                                </div>
-                            </div>
-                            <!--end col-->
-                            <div class="col-lg-12 mb-0">
-                                <button type="submit" class="btn btn-primary w-100">Create Account</button>
-                            </div>
-                            <!--end col-->
-                            <div class="col-12 text-center">
-                                <p class="mb-0 mt-4">
-                                    <small class="text-dark me-2">Already have an account ?</small>
-                                    <a href="<?= url_to('login') ?>" class="text-dark fw-bold">Sign In</a>
-                                </p>
-                            </div>
-                            <!--end col-->
                         </div>
-                        <!--end row-->
-                    </form>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="password" name="password_confirm" class="form-control form-control-lg" placeholder="Retype password" required>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-lock"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="icheck-primary">
+                                <input type="checkbox" id="agreeTerms" name="terms" value="agree" required>
+                                <label for="agreeTerms">
+                                    I agree to the <a href="<?= base_url('terms') ?>">terms</a>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- /.col -->
+                        <div class="col-4">
+                            <button type="submit" class="btn btn-primary btn-block shadow-sm text-bold">Register</button>
+                        </div>
+                        <!-- /.col -->
+                    </div>
+                </form>
+
+                <div class="mt-4 text-center">
+                    <a href="<?= url_to('login') ?>" class="text-primary small text-bold">I already have a membership</a>
                 </div>
             </div>
-            <!--end col-->
-        </div>
-        <!--end row-->
+            <!-- /.form-box -->
+        </div><!-- /.card -->
     </div>
-    <!--end container-->
-</section>
-<!--end section-->
-<!-- Hero End -->
-<!-- javascript -->
-<script src="https://prjs4.chegecache.co.ke/assets/landing/js/bootstrap.bundle.min.js"></script>
-<!-- Icons -->
-<script src="https://prjs4.chegecache.co.ke/assets/landing/js/feather.min.js"></script>
-<!-- Icons -->
-<script src="https://prjs4.chegecache.co.ke/assets/landing/js/switcher.js"></script>
-<!-- Main Js -->
-<script src="https://prjs4.chegecache.co.ke/assets/landing/js/app.js"></script>
-<script>
-    // Hide preloader when page loads
-    document.addEventListener('DOMContentLoaded', function () {
-        setTimeout(function () {
-            document.getElementById('preloader').style.display = 'none';
-        }, 500);
-    });
-</script>
-</body>
-</html>
+</div>
+
+<?= view('headers_footers/footer_landing') ?>
+
+

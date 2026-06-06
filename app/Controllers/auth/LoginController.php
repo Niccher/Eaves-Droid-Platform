@@ -58,20 +58,20 @@ class LoginController extends Controller
         $result = $auth->attempt($credentials, $remember);
 
         if (!$result->isOK()) {
+            // If an action is required (like 2FA or email activation), redirect to that action
+            if ($result->extraInfo() instanceof \CodeIgniter\Shield\Entities\User === false && isset($result->extraInfo()['action'])) {
+                return redirect()->to($result->extraInfo()['action']);
+            }
+
             // Login failed (e.g., bad password, user not found)
             return redirect()->route('login')
                 ->withInput()
                 ->with('error', $result->reason());
         }
 
-        // If an action is required (like 2FA), redirect to that action
-        if ($result->extraInfo()['action'] ?? null) {
-            return redirect()->to($result->extraInfo()['action']);
-        }
-
         // Success! Redirect to intended page or dashboard
         $session = session();
-        $redirect = $session->getTempdata('redirect_url') ?? '/home';
+        $redirect = $session->getTempdata('beforeLoginUrl') ?? '/home';
 
         return redirect()->to($redirect)->with('message', 'Welcome back!');
     }

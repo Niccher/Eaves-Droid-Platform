@@ -114,7 +114,8 @@
     
     <script>
         $(document).ready(function() {
-            const locations = <?= json_encode($locations) ?>;
+            const rawLocations = <?= json_encode($locations) ?>;
+            const locations = rawLocations.filter(l => l.latitude != null && l.longitude != null && !isNaN(parseFloat(l.latitude)) && !isNaN(parseFloat(l.longitude)));
             
             if (locations.length === 0) {
                 $('#map').html('<div class="d-flex h-100 align-items-center justify-content-center bg-light text-muted">No location data available for this user.</div>');
@@ -122,7 +123,7 @@
             }
 
             // Initialize Map
-            const firstLoc = [locations[0].latitude, locations[0].longitude];
+            const firstLoc = [parseFloat(locations[0].latitude), parseFloat(locations[0].longitude)];
             const map = L.map('map').setView(firstLoc, 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -149,7 +150,7 @@
                         opacity: 1,
                         fillOpacity: 0.8
                     }).bindPopup(`
-                        <strong>Time:</strong> ${new Date(l.extracted_at).toLocaleString()}<br>
+                        <strong>Time:</strong> ${new Date(parseInt(l.location_time)).toLocaleString()}<br>
                         <strong>Accuracy:</strong> ${l.accuracy}m<br>
                         <a href="https://www.google.com/maps?q=${l.latitude},${l.longitude}" target="_blank">View on Google Maps</a>
                     `);

@@ -1,39 +1,56 @@
 version: '3.8'
 
 services:
-  php:
-    build: ./site
-    container_name: codei-php-v4
+  # --- PHP APPLICATION ---
+  app:
+    build: .                
+    image: ci4_app_image     
+    container_name: ci4_app
     restart: always
     ports:
-      - "8070:80"
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      - app.baseURL=${APP_BASE_URL:-http://localhost:8080/}
+      - database.default.hostname=${DATABASE_HOSTNAME:-db}
+      - database.default.database=${MYSQL_DATABASE}
+      - database.default.username=${MYSQL_USER}
+      - database.default.password=${MYSQL_PASSWORD}
+      - database.default.DBDriver=MySQLi
+      - CI_ENVIRONMENT=development
     depends_on:
-      mysql:
-        condition: service_healthy
+      - db
 
-  mysql:
+  # --- MYSQL DATABASE ---
+  db:
     image: mysql:8.0
-    container_name: codei-mysql-v4
+    container_name: ci4_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: karball_psw
-      MYSQL_DATABASE: chegecac_prj_imgs_v4
-      MYSQL_USER: appuser
-      MYSQL_PASSWORD: appuser_psw
-      MYSQL_INITDB_SKIP_TZINFO: 1
-    command: --sql-mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
-
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-    volumes:
-      - my_vol:/var/lib/mysql
-      - ./my_db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./app/Database/Migrations:/docker-entrypoint-initdb.d:ro
+
+  # --- PHPMYADMIN ---
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: ci4_phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      - PMA_HOST=${DATABASE_HOSTNAME:-db}
+      - PMA_USER=${MYSQL_USER}
+      - PMA_PASSWORD=${MYSQL_PASSWORD}
+    depends_on:
+      - db
 
 volumes:
-  my_vol:
+  db_data:

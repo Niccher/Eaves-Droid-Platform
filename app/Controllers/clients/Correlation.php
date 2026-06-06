@@ -533,6 +533,15 @@ class Correlation extends BaseClientController{
         $data = array_merge($data, $this->getUserDataCounts());
 
         $data['audit'] = $this->finderModel->get_app_privacy_audit($this->userId);
+        
+        $allScams = $this->finderModel->get_scam_sms_audit($this->userId);
+        $page = (int) ($this->request->getGet('page') ?? 1);
+        $perPage = 10;
+        $total = count($allScams);
+        
+        $pager = \Config\Services::pager();
+        $data['scams'] = array_slice($allScams, ($page - 1) * $perPage, $perPage);
+        $data['pager'] = $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -592,6 +601,41 @@ class Correlation extends BaseClientController{
     }
 
     /**
+     * Sentiment & Relationship Health.
+     */
+    public function sentiment_analysis()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts());
+
+        $data['sentiment'] = $this->finderModel->get_sentiment_profile($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/sentiment_analysis', $data)
+            . view('headers_footers/footer_users');
+    }
+
+
+    /**
+     * Geospatial Hotspot Clustering.
+     */
+    public function geoclustering_hotspots()
+    {
+        $data['pag'] = 'analysis';
+        $data["user_info"] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts());
+
+        $data['clusters'] = $this->finderModel->get_geospatial_clusters($this->userId);
+
+        return view('headers_footers/head_users')
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/geospatial_hotspots', $data)
+            . view('headers_footers/footer_users');
+    }
+
+    /**
      * Recursively clean array data: convert to UTF-8 and escape for HTML.
      */
     private function utf8CleanArray($data) {
@@ -611,6 +655,70 @@ class Correlation extends BaseClientController{
             return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
         }
         return $data;
+    }
+
+    /**
+     * Digital Wellbeing & Screen Time Analytics.
+     */
+    public function digital_wellbeing()
+    {
+        $data['pag']       = 'intelligence';
+        $data['sub_pag']   = 'wellbeing';
+        $data['user_info'] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts());
+
+        // Raw heatmap rows → keyed by date string for JS
+        $heatmapRaw = $this->finderModel->get_daily_usage_heatmap($this->userId);
+        $heatmapData = [];
+        foreach ($heatmapRaw as $row) {
+            $heatmapData[$row['date']] = (int) round($row['total_time_ms'] / 60000); // ms → minutes
+        }
+
+        // Dopamine vs Productivity split
+        $split = $this->finderModel->get_dopamine_vs_productivity($this->userId);
+        $totalMs = max(1, $split['dopamine_ms'] + $split['productivity_ms'] + $split['other_ms']);
+        $data['dopamine_pct']    = round($split['dopamine_ms']    / $totalMs * 100, 1);
+        $data['productivity_pct'] = round($split['productivity_ms'] / $totalMs * 100, 1);
+        $data['other_pct']       = round($split['other_ms']        / $totalMs * 100, 1);
+        $data['dopamine_hrs']    = round($split['dopamine_ms']    / 3600000, 1);
+        $data['productivity_hrs'] = round($split['productivity_ms'] / 3600000, 1);
+        $data['other_hrs']       = round($split['other_ms']        / 3600000, 1);
+
+        // Top apps
+        $topApps = $this->finderModel->get_top_time_sink_apps($this->userId, 7);
+        $topAppsLabels = [];
+        $topAppsValues = [];
+        foreach ($topApps as $app) {
+            $topAppsLabels[] = $app['app_name'] ?: $app['package_name'];
+            $topAppsValues[] = (int) round($app['total_time_ms'] / 60000); // minutes
+        }
+
+        $data['heatmap_json']       = json_encode($heatmapData);
+        $data['top_apps_labels']    = json_encode($topAppsLabels);
+        $data['top_apps_values']    = json_encode($topAppsValues);
+        $data['has_data']           = !empty($heatmapRaw);
+
+        return view('headers_footers/head_users', $data)
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/digital_wellbeing', $data)
+            . view('headers_footers/footer_users', $data);
+    }
+    /**
+     * Behavioral Anomaly & Pattern-of-Life Analysis.
+     */
+    public function behavioral_anomalies()
+    {
+        $data['pag']       = 'intelligence';
+        $data['sub_pag']   = 'anomalies';
+        $data['user_info'] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts());
+
+        $data['anomalies'] = $this->finderModel->get_behavioral_anomalies($this->userId);
+
+        return view('headers_footers/head_users', $data)
+            . view('headers_footers/sidebar_users', $data)
+            . view('users/correlation/behavioral_anomalies', $data)
+            . view('headers_footers/footer_users', $data);
     }
 
 }

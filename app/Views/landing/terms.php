@@ -1,70 +1,87 @@
-<?php //include('head_landing.php'); ?>
-
     <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="container">
-            <div class="row">
-                <div class="col-12 text-center">
-                    <h1 class="display-4 font-weight-bold mb-4">Terms of Service</h1>
-                    <p class="lead mb-4">Please read these terms carefully before using our platform</p>
-                </div>
-            </div>
+    <div class="bg-primary py-5 shadow-sm" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
+        <div class="container text-center text-white">
+            <h1 class="display-4 font-weight-bold">Terms of Service</h1>
+            <p class="lead">Please read these terms carefully before using our platform</p>
         </div>
-    </section>
+    </div>
 
     <!-- Terms Section -->
-    <section class="py-5">
+    <section class="content py-5">
         <div class="container">
             <div class="row">
-                <div class="col-lg-8 mx-auto">
+                <div class="col-md-3">
                     <!-- Terms Navigation -->
-                    <nav class="nav nav-pills flex-column flex-sm-row mb-4">
-                        <a class="flex-sm-fill text-sm-center nav-link active" data-toggle="pill" href="#overview">
-                            <i class="fas fa-info-circle mr-2"></i>Overview
-                        </a>
-                        <a class="flex-sm-fill text-sm-center nav-link" data-toggle="pill" href="#access">
-                            <i class="fas fa-key mr-2"></i>Access
-                        </a>
-                        <a class="flex-sm-fill text-sm-center nav-link" data-toggle="pill" href="#content">
-                            <i class="fas fa-file-alt mr-2"></i>Content
-                        </a>
-                        <a class="flex-sm-fill text-sm-center nav-link" data-toggle="pill" href="#privacy">
-                            <i class="fas fa-shield-alt mr-2"></i>Privacy
-                        </a>
-                    </nav>
+                    <div class="card card-primary card-outline shadow-sm sticky-top" style="top: 20px;">
+                        <div class="card-header">
+                            <h3 class="card-title text-bold">Sections</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="nav nav-pills flex-column">
+                                <li class="nav-item">
+                                    <a class="nav-link active" data-toggle="pill" href="#overview">
+                                        <i class="fas fa-info-circle mr-2"></i> Overview
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-toggle="pill" href="#access">
+                                        <i class="fas fa-key mr-2"></i> Access
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-toggle="pill" href="#content">
+                                        <i class="fas fa-file-alt mr-2"></i> Content
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-toggle="pill" href="#privacy">
+                                        <i class="fas fa-shield-alt mr-2"></i> Privacy
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- Terms Content -->
+                <div class="col-md-9">
                     <div class="tab-content">
                         <!-- Overview -->
                         <div class="tab-pane fade show active" id="overview">
-                            <div class="card border-0 shadow-sm">
+                            <div class="card card-outline card-primary shadow-sm">
+                                <div class="card-header">
+                                    <h3 class="card-title text-bold">Platform Overview</h3>
+                                </div>
                                 <div class="card-body">
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-exclamation-triangle mr-2"></i>
-                                        <strong>Important:</strong> These Terms of Use describe the legally binding terms and conditions that oversee your use of the Site.
+                                    <div class="callout callout-warning shadow-sm">
+                                        <h5 class="text-bold"><i class="fas fa-exclamation-triangle mr-2 text-warning"></i> Important Notice</h5>
+                                        <p class="mb-0 small">These Terms of Use describe the legally binding terms and conditions that oversee your use of the Site.</p>
                                     </div>
                                     <p>The Prj Images website located at <strong><?= base_url() ?></strong> is a copyrighted work belonging to Prj Images.</p>
-                                    <p>BY LOGGING INTO THE SITE, YOU ARE BEING COMPLIANT THAT THESE TERMS and you represent that you have the authority and capacity to enter into these Terms.</p>
-                                    <p class="text-danger">
-                                        <i class="fas fa-exclamation-circle mr-2"></i>
-                                        YOU SHOULD BE AT LEAST 18 YEARS OF AGE TO ACCESS THE SITE. IF YOU DISAGREE WITH ALL OF THE PROVISION OF THESE TERMS, DO NOT LOG INTO AND/OR USE THE SITE.
-                                    </p>
+                                    <p>BY LOGGING INTO THE SITE, YOU ARE COMPLIANT THAT THESE TERMS and you represent that you have the authority and capacity to enter into these Terms.</p>
+                                    
+                                    <div class="callout callout-danger shadow-sm mt-4">
+                                        <h5 class="text-bold text-danger"><i class="fas fa-exclamation-circle mr-2"></i> Age Restriction</h5>
+                                        <p class="mb-0 small">YOU MUST BE AT LEAST 18 YEARS OF AGE TO ACCESS THE SITE. IF YOU DISAGREE WITH ANY PROVISION, DO NOT LOG INTO OR USE THE PLATFORM.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Access -->
                         <div class="tab-pane fade" id="access">
-                            <div class="card border-0 shadow-sm">
+                            <div class="card card-outline card-primary shadow-sm">
+                                <div class="card-header">
+                                    <h3 class="card-title text-bold">License & Access</h3>
+                                </div>
                                 <div class="card-body">
-                                    <p><strong>Subject to these Terms.</strong> Company grants you a non-transferable, non-exclusive, revocable, limited license to access the Site solely for your own personal, noncommercial use.</p>
+                                    <p class="text-muted"><strong>Subject to these Terms:</strong> Company grants you a non-transferable, non-exclusive, revocable, limited license to access the Site solely for your own personal, noncommercial use.</p>
 
-                                    <div class="alert alert-danger mt-4">
-                                        <h5><i class="fas fa-ban mr-2"></i>Certain Restrictions</h5>
-                                        <ul class="mb-0">
-                                            <li>You shall not sell, rent, lease, transfer, assign, distribute, host, or otherwise commercially exploit the Site</li>
-                                            <li>You shall not change, make derivative works of, disassemble, reverse compile or reverse engineer any part of the Site</li>
-                                            <li>You shall not access the Site in order to build a similar or competitive website</li>
+                                    <div class="callout callout-danger mt-4 shadow-sm">
+                                        <h5 class="text-bold text-danger"><i class="fas fa-ban mr-2"></i> Usage Restrictions</h5>
+                                        <ul class="mb-0 small mt-2">
+                                            <li>Do not commercially exploit the Site in any way.</li>
+                                            <li>Do not reverse engineer, disassemble, or change any part of the Site.</li>
+                                            <li>Do not access the Site to build a similar or competitive service.</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -73,38 +90,29 @@
 
                         <!-- Content -->
                         <div class="tab-pane fade" id="content">
-                            <div class="card border-0 shadow-sm">
+                            <div class="card card-outline card-primary shadow-sm">
+                                <div class="card-header">
+                                    <h3 class="card-title text-bold">User Content Responsibility</h3>
+                                </div>
                                 <div class="card-body">
-                                    <p><strong>User Content.</strong> "User Content" means any and all information and content that a user submits to the Site. You are exclusively responsible for your User Content.</p>
+                                    <p class="text-muted">"User Content" means any and all information and content that a user submits to the Site. You are exclusively responsible for your User Content.</p>
 
                                     <div class="row mt-4">
                                         <div class="col-md-6 mb-3">
-                                            <div class="card border-success h-100">
-                                                <div class="card-body">
-                                                    <h5 class="text-success">
-                                                        <i class="fas fa-check-circle mr-2"></i>Acceptable Use
-                                                    </h5>
-                                                    <ul class="mb-0">
-                                                        <li>Your own original content</li>
-                                                        <li>Properly licensed material</li>
-                                                        <li>Respectful communication</li>
-                                                        <li>Lawful purposes only</li>
-                                                    </ul>
+                                            <div class="info-box shadow-sm bg-success">
+                                                <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text text-bold">Acceptable Use</span>
+                                                    <span class="info-box-number small font-weight-normal">Original content, properly licensed, respectful communication.</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <div class="card border-danger h-100">
-                                                <div class="card-body">
-                                                    <h5 class="text-danger">
-                                                        <i class="fas fa-times-circle mr-2"></i>Prohibited Content
-                                                    </h5>
-                                                    <ul class="mb-0">
-                                                        <li>Copyright infringement</li>
-                                                        <li>Harassing content</li>
-                                                        <li>Malicious software</li>
-                                                        <li>Spam or phishing</li>
-                                                    </ul>
+                                            <div class="info-box shadow-sm bg-danger">
+                                                <span class="info-box-icon"><i class="fas fa-times-circle"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text text-bold">Prohibited Content</span>
+                                                    <span class="info-box-number small font-weight-normal">Infringement, harassment, malware, or phishing.</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -115,30 +123,39 @@
 
                         <!-- Privacy -->
                         <div class="tab-pane fade" id="privacy">
-                            <div class="card border-0 shadow-sm">
+                            <div class="card card-outline card-primary shadow-sm">
+                                <div class="card-header">
+                                    <h3 class="card-title text-bold">Privacy & Cookies</h3>
+                                </div>
                                 <div class="card-body">
-                                    <p><strong>Cookies and Web Beacons.</strong> Like any other website, Prj Images uses 'cookies'. These cookies are used to store information including visitors' preferences, and the pages on the website that the visitor accessed or visited.</p>
+                                    <p class="text-muted">Like any other website, Prj Images uses 'cookies' to store information including visitors' preferences and accessed pages.</p>
 
                                     <div class="row mt-4">
                                         <div class="col-md-4 mb-3">
-                                            <div class="text-center p-3 border rounded">
-                                                <i class="fas fa-user-shield fa-2x text-primary mb-2"></i>
-                                                <h6>Data Protection</h6>
-                                                <p class="text-muted small mb-0">We protect your personal information</p>
+                                            <div class="card card-outline card-info h-100 text-center">
+                                                <div class="card-body">
+                                                    <i class="fas fa-user-shield fa-2x text-info mb-2"></i>
+                                                    <h6 class="text-bold">Protection</h6>
+                                                    <p class="small text-muted mb-0">Secure handling of personal data.</p>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <div class="text-center p-3 border rounded">
-                                                <i class="fas fa-cookie-bite fa-2x text-primary mb-2"></i>
-                                                <h6>Cookie Control</h6>
-                                                <p class="text-muted small mb-0">Manage cookie preferences anytime</p>
+                                            <div class="card card-outline card-info h-100 text-center">
+                                                <div class="card-body">
+                                                    <i class="fas fa-cookie-bite fa-2x text-info mb-2"></i>
+                                                    <h6 class="text-bold">Cookies</h6>
+                                                    <p class="small text-muted mb-0">Control your preferences anytime.</p>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <div class="text-center p-3 border rounded">
-                                                <i class="fas fa-eye-slash fa-2x text-primary mb-2"></i>
-                                                <h6>No Tracking</h6>
-                                                <p class="text-muted small mb-0">We don't sell your data to third parties</p>
+                                            <div class="card card-outline card-info h-100 text-center">
+                                                <div class="card-body">
+                                                    <i class="fas fa-eye-slash fa-2x text-info mb-2"></i>
+                                                    <h6 class="text-bold">No Tracking</h6>
+                                                    <p class="small text-muted mb-0">We never sell your personal data.</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -147,14 +164,14 @@
                         </div>
                     </div>
 
-                    <!-- Acceptance Section -->
-                    <div class="card border-0 shadow-sm bg-light mt-4">
-                        <div class="card-body p-5 text-center">
+                    <!-- Acceptance -->
+                    <div class="card bg-light shadow-sm mt-4 text-center p-4">
+                        <div class="card-body">
                             <i class="fas fa-file-contract fa-3x text-primary mb-3"></i>
-                            <h3 class="text-primary mb-3">By using our service, you agree to these terms</h3>
-                            <p class="text-muted mb-4">Please read these terms carefully before using our platform.</p>
-                            <a href="<?= base_url('privacy-policy') ?>" class="btn btn-primary">
-                                <i class="fas fa-user-shield mr-2"></i>Privacy Policy
+                            <h3 class="text-bold">Agreement</h3>
+                            <p class="text-muted">By using our service, you agree to these Terms of Service.</p>
+                            <a href="<?= base_url('privacy-policy') ?>" class="btn btn-primary shadow-sm px-4">
+                                <i class="fas fa-user-shield mr-2"></i>View Privacy Policy
                             </a>
                         </div>
                     </div>
@@ -162,5 +179,6 @@
             </div>
         </div>
     </section>
+
 
 <?php //include('footer_landing.php'); ?>

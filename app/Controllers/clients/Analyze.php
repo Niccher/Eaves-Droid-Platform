@@ -3,50 +3,81 @@
 namespace App\Controllers\clients;
 
 use App\Controllers\BaseController;
-
 use App\Models\Mod_Finder;
 use App\Models\Mod_Crypt;
 use App\Models\Mod_Extract;
-use CodeIgniter\Model;
 
-class Analyze extends BaseController{
+class Analyze extends BaseClientController
+{
+    /**
+     * Build all phone number variants for a given raw number.
+     * Handles: +2547XXXXXXXX, 07XXXXXXXX, #07XXXXXXXX
+     */
+    private function buildNumberVariants(string $rawNumber): array
+    {
+        $number = str_replace(' ', '', $rawNumber);
+        // Strip leading # if present
+        $clean = ltrim($number, '#');
+        $variants = [];
 
-    public function sms($target_contact){
-	    $model_finder = new Mod_Finder();
-	    $model_crypt = new Mod_Crypt();
-	    $model_extract = new Mod_Extract();
-	    
-	    $encrypter = \Config\Services::encrypter();
-	    if (!auth()->loggedIn()){
-		    return redirect()->to('login');
-	    }
+        if (str_starts_with($clean, '+254')) {
+            // +254711111111  →  also add 0711111111 and #0711111111
+            $local   = '0' . substr($clean, 4);
+            $hash    = '#' . $local;
+            $variants = [$clean, $local, $hash];
+        } elseif (str_starts_with($clean, '254') && strlen($clean) >= 12) {
+            // 254711111111 (without +)
+            $intl    = '+' . $clean;
+            $local   = '0' . substr($clean, 3);
+            $hash    = '#' . $local;
+            $variants = [$intl, $clean, $local, $hash];
+        } elseif (str_starts_with($clean, '0')) {
+            // 0711111111  →  also add +254711111111 and #0711111111
+            $intl    = '+254' . substr($clean, 1);
+            $hash    = '#' . $clean;
+            $variants = [$intl, $clean, $hash];
+        } else {
+            $variants = [$number];
+        }
 
-	    $data['pag'] = 'sms_analyse';
-	    $data["user_info"] = $model_finder->basic_user();
+        return array_unique($variants);
+    }
 
-	    $decod_url = $model_crypt->base64url_decode($target_contact);
+    public function sms($target_contact)
+    {
+        $model_finder  = new Mod_Finder();
+        $model_crypt   = new Mod_Crypt();
+        $model_extract = new Mod_Extract();
+        $encrypter     = \Config\Services::encrypter();
+
+        if (!auth()->loggedIn()) {
+            return redirect()->to('login');
+        }
+
+        $data['pag']       = 'sms_analyse';
+        $data['user_info'] = $model_finder->basic_user();
+
+        // Populate sidebar counts
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $decod_url  = $model_crypt->base64url_decode($target_contact);
         $contact_id = $encrypter->decrypt(base64_decode($decod_url));
-
-        $contact = $model_extract->get_contact_at($contact_id);
+        $contact    = $model_extract->get_contact_at($contact_id);
 
         if (!$contact) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Contact not found");
         }
 
-        $number = substr($contact['Number'], 0, 1);
-        $new_number = $contact['Number'];
-        $old_number = $contact['Number'];
+        $variants = $this->buildNumberVariants($contact['Number'] ?? '');
 
-        if ( $number == 0) {
-            $new_number = "+254". substr($contact['Number'], 1);
-        }else if ( $number == "+") {
-            $old_number = $contact['Number'];
-        }
-
-        $data['sms_person'] = str_replace(" ", "", $new_number);
-        $data['sms_saved'] = $contact['Name'];
-
-        $data['sms_thread'] = $model_extract->get_sms_between_contacts($data["user_info"]['id'], str_replace(" ", "", $new_number), str_replace(" ", "", $old_number));
+        $data['sms_person']  = $contact['Number'] ?? '';
+        $data['sms_saved']   = $contact['Name']   ?? 'Unknown';
+        $data['number_variants'] = $variants;
+        $data['sms_thread']  = $model_extract->get_sms_between_contacts(
+            $data['user_info']['id'],
+            $variants
+        );
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -54,42 +85,41 @@ class Analyze extends BaseController{
             . view('headers_footers/footer_users');
     }
 
-    public function calls($target_contact){
-        $model_finder = new Mod_Finder();
-        $model_crypt = new Mod_Crypt();
+    public function calls($target_contact)
+    {
+        $model_finder  = new Mod_Finder();
+        $model_crypt   = new Mod_Crypt();
         $model_extract = new Mod_Extract();
+        $encrypter     = \Config\Services::encrypter();
 
-        $encrypter = \Config\Services::encrypter();
-        if (!auth()->loggedIn()){
+        if (!auth()->loggedIn()) {
             return redirect()->to('login');
         }
 
-        $data['pag'] = 'sms_analyse';
-        $data["user_info"] = $model_finder->basic_user();
+        $data['pag']       = 'sms_analyse';
+        $data['user_info'] = $model_finder->basic_user();
 
-        $decod_url = $model_crypt->base64url_decode($target_contact);
+        // Populate sidebar counts
+        $counts = $this->getUserDataCounts();
+        $data = array_merge($data, $counts);
+
+        $decod_url  = $model_crypt->base64url_decode($target_contact);
         $contact_id = $encrypter->decrypt(base64_decode($decod_url));
-
-        $contact = $model_extract->get_contact_at($contact_id);
+        $contact    = $model_extract->get_contact_at($contact_id);
 
         if (!$contact) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Contact not found");
         }
 
-	    $number = substr($contact['Number'], 0, 1);
-	    $new_number = $contact['Number'];
-	    $old_number = $contact['Number'];
+        $variants = $this->buildNumberVariants($contact['Number'] ?? '');
 
-	    if ( $number == 0) {
-		    $new_number = "+254". substr($contact['Number'], 1);
-	    }else if ( $number == "+") {
-		    $old_number = $contact['Number'];
-	    }
-
-        $data['log_person'] = str_replace(" ", "", $new_number);
-        $data['log_saved'] = $contact['Name'];
-
-        $data['log_thread'] = $model_extract->get_logs_between_contacts($data["user_info"]['id'], str_replace(" ", "", $new_number), str_replace(" ", "", $old_number));
+        $data['log_person']      = $contact['Number'] ?? '';
+        $data['log_saved']       = $contact['Name']   ?? 'Unknown';
+        $data['number_variants'] = $variants;
+        $data['log_thread']      = $model_extract->get_logs_between_contacts(
+            $data['user_info']['id'],
+            $variants
+        );
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)

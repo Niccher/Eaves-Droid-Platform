@@ -17,7 +17,7 @@ class RegisterController extends Controller
     public function registerView()
     {
         if (auth()->loggedIn()) {
-            return redirect()->to('/dashboard');
+            return redirect()->to('/home');
         }
 
         return view('auth/register');
@@ -41,7 +41,7 @@ class RegisterController extends Controller
         $users = model(UserModel::class);
 
         $allowedPostFields = array_merge(
-            \CodeIgniter\Shield\Config\Auth::VALID_FIELDS,
+            config('Auth')->validFields,
             ['username']
         );
 
@@ -122,7 +122,7 @@ class RegisterController extends Controller
             $auth->login($user);
 
             // Registration successful
-            return redirect()->to('/dashboard')->with('message', 'Registration successful! Welcome to our platform.');
+            return redirect()->to('/home')->with('message', 'Registration successful! Welcome to our platform.');
 
         } catch (\Exception $e) {
             // Rollback on error
@@ -141,10 +141,11 @@ class RegisterController extends Controller
      */
     protected function getValidationRules(): array
     {
-        $passwordRules = array_merge(
-            \CodeIgniter\Shield\Authentication\Passwords::getValidationRules(),
-            ['strong_password']
-        );
+        $passwordRules = [
+            'required',
+            \CodeIgniter\Shield\Authentication\Passwords::getMaxLengthRule(),
+            'strong_password'
+        ];
 
         return [
             'username' => [

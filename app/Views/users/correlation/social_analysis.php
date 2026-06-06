@@ -76,7 +76,7 @@
     </div>
 
 <!-- ChartJS -->
-<script src="<?= base_url('assets/plugins/chart.js/Chart.min.js') ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
 <script>
     $(function () {
         var ctx = document.getElementById('socialChart').getContext('2d');

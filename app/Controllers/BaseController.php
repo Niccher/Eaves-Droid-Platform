@@ -35,14 +35,14 @@ abstract class BaseController extends Controller
      *
      * @var array
      */
-    protected $helpers = ['url','form','cookie','file','download','path','text', 'string','date','encryption', 'error'];
+    protected $helpers = ['url','form','cookie','file','download','path','text', 'string','date','encryption', 'error', 'time'];
 	//protected $helpers = ['form', 'inflector', 'text', 'session', 'url', 'filesystem'];
 
     /**
-     * Be sure to declare properties for any property fetch you initialized.
-     * The creation of dynamic property is deprecated in PHP 8.2.
+     * @var \CodeIgniter\Pager\Pager
      */
-    // protected $session;
+    protected $pager;
+
 
     /**
      * @return void

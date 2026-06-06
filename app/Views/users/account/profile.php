@@ -280,6 +280,51 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 border">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-file-alt fa-3x text-secondary"></i>
+                                                    </div>
+                                                    <h5 class="card-title">Files Metadata</h5>
+                                                    <p class="card-text"><?php echo $total_files; ?> file records</p>
+                                                    <a href="<?php echo base_url('account/exportData/files'); ?>" class="btn btn-outline-secondary btn-block export-link" data-type="Files">
+                                                        <i class="fas fa-download mr-1"></i> Export Files
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 border">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-map-marked-alt fa-3x text-danger"></i>
+                                                    </div>
+                                                    <h5 class="card-title">Location History</h5>
+                                                    <p class="card-text"><?php echo $total_locations; ?> location points</p>
+                                                    <a href="<?php echo base_url('account/exportData/locations'); ?>" class="btn btn-outline-danger btn-block export-link" data-type="Locations">
+                                                        <i class="fas fa-download mr-1"></i> Export Locations
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 border border-primary">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-microchip fa-3x text-primary"></i>
+                                                    </div>
+                                                    <h5 class="card-title">Advanced Data</h5>
+                                                    <p class="card-text">Sensors, Bluetooth, Accounts, etc.</p>
+                                                    <a href="<?php echo base_url('account/exportData/advanced'); ?>" class="btn btn-outline-primary btn-block export-link" data-type="Advanced Data">
+                                                        <i class="fas fa-download mr-1"></i> Export Advanced
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="mt-4">
@@ -374,6 +419,51 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 border border-danger">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-file-excel fa-3x text-danger"></i>
+                                                    </div>
+                                                    <h5 class="card-title text-danger">Delete Files</h5>
+                                                    <p class="card-text"><?php echo $total_files; ?> file records will be removed</p>
+                                                    <a href="<?php echo base_url('account/deleteData/files'); ?>" class="btn btn-outline-danger btn-block">
+                                                        <i class="fas fa-trash mr-1"></i> Delete Files
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 border border-danger">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-map-marker-alt fa-3x text-danger"></i>
+                                                    </div>
+                                                    <h5 class="card-title text-danger">Delete Locations</h5>
+                                                    <p class="card-text"><?php echo $total_locations; ?> records will be removed</p>
+                                                    <a href="<?php echo base_url('account/deleteData/locations'); ?>" class="btn btn-outline-danger btn-block">
+                                                        <i class="fas fa-trash mr-1"></i> Delete Locations
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 border border-danger">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-database fa-3x text-danger"></i>
+                                                    </div>
+                                                    <h5 class="card-title text-danger">Delete Advanced</h5>
+                                                    <p class="card-text">All sensor and system data removed</p>
+                                                    <a href="<?php echo base_url('account/deleteData/advanced'); ?>" class="btn btn-outline-danger btn-block">
+                                                        <i class="fas fa-trash mr-1"></i> Delete Advanced
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="mt-4">
@@ -391,6 +481,8 @@
                                                     <li>All saved contacts</li>
                                                     <li>All SMS messages</li>
                                                     <li>All call logs</li>
+                                                    <li>All file metadata and location history</li>
+                                                    <li>All advanced extracted data</li>
                                                 </ul>
                                                 <p><strong>This action cannot be undone!</strong></p>
                                                 <a href="<?php echo base_url('account/deleteData/all'); ?>" class="btn btn-danger btn-lg btn-block">

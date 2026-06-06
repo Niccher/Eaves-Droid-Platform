@@ -2,17 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Prj Images - Mobile Data Intelligence Platform</title>
+    <title>Prj Images | Advanced Mobile Forensic & Data Intelligence Platform</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-          content="Prj Images is a mobile data analysis platform that transforms raw mobile data into actionable insights through advanced analysis and visualization"/>
-    <meta name="keywords"
-          content="mobile data analysis, android data collection, data visualization, call analysis, SMS correlation, file structure generation"/>
+    <meta name="description" content="A powerful, free mobile data intelligence platform designed for deep analysis of Android device data, including call logs, SMS correlation, and file structure visualization."/>
+    <meta name="keywords" content="mobile forensics, android data analysis, SMS correlation tool, call log analyzer, mobile data intelligence, digital forensics platform"/>
     <meta content="domino" name="author"/>
     <meta content="support@chegecache.co.ke" name="support"/>
     <meta content="https://chegecache.co.ke/" name="Website"/>
     <meta content="Prj Images" name="application-name"/>
-    <meta content="mobile data intelligence, data analysis platform" name="keywords"/>
+
+    <link rel="shortcut icon" href="<?= base_url('assets/img/favicon.png') ?>" type="image/x-icon">
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">

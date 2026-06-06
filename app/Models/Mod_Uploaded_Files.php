@@ -45,7 +45,8 @@ class Mod_Uploaded_Files extends Model
         'file_size_bytes' => 'required|is_natural',
         'token_used' => 'required|max_length[255]',
         'device_checksum' => 'required|max_length[100]',
-        'file_category' => 'required|in_list[apps,sms,contacts,logs,files,location]'
+        'file_category' => 'required|in_list[apps,sms,contacts,logs,files,location,device,device_context,context,network,network_info,accounts,calendar,app,app_usage,usage,notifications,bluetooth,sensors,sensor]'
+
     ];
 
     protected $validationMessages = [];

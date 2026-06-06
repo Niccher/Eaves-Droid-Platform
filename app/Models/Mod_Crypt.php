@@ -99,6 +99,41 @@ class Mod_Crypt extends Model
     }
 
     /**
+     * Decrypts binary file content with AES-128-CBC.
+     *
+     * @param string $value
+     * @return string|false
+     */
+    public function decrypt_media(string $value)
+    {
+        try {
+            $cipher_algo = "AES-128-CBC";
+            $crypt_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW'; // Prefer .env
+            $crypt_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f="; // Prefer .env
+
+            // First, try assuming raw data
+            $dec_val = openssl_decrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
+            if ($dec_val !== false) {
+                return $dec_val;
+            }
+
+            // Second, try assuming base64 input
+            $base64_decoded_input = base64_decode($value);
+            if ($base64_decoded_input !== false) {
+                $dec_val2 = openssl_decrypt($base64_decoded_input, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
+                if ($dec_val2 !== false) {
+                    return $dec_val2;
+                }
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'decrypt_media error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Decrypts file content with AES-128-CBC.
      *
      * @param string $value

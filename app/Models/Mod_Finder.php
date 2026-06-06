@@ -63,9 +63,11 @@ class Mod_Finder extends Model
      * @param string $table
      * @param int $user_id
      * @param array $extraWhere Optional extra where conditions
+     * @param string|null $blockColumn Optional column for exclusions
+     * @param array $blockedValues Optional values to exclude
      * @return int
      */
-    protected function getCount(string $table, int $user_id, array $extraWhere = []): int
+    protected function getCount(string $table, int $user_id, array $extraWhere = [], ?string $blockColumn = null, array $blockedValues = []): int
     {
         try {
             $builder = $this->db->table($table);
@@ -76,6 +78,9 @@ class Mod_Finder extends Model
 
             if (!empty($extraWhere)) {
                 $builder->where($extraWhere);
+            }
+            if ($blockColumn && !empty($blockedValues)) {
+                $builder->whereNotIn($blockColumn, $blockedValues);
             }
             return $builder->countAllResults();
         } catch (\Exception $e) {
@@ -152,6 +157,69 @@ class Mod_Finder extends Model
         }
     }
 
+    public function deleteLocationByUser(int $user_id): bool
+    {
+        try {
+            return $this->db->table('tbl_location')->where('owner_id', $user_id)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'deleteLocationByUser error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteActivityByUser(int $user_id): bool
+    {
+        try {
+            return $this->db->table('tbl_activity')->where('owner_id', $user_id)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'deleteActivityByUser error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteDeviceFilesByUser(int $user_id): bool
+    {
+        try {
+            return $this->db->table('tbl_device_files')->where('owner_id', $user_id)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'deleteDeviceFilesByUser error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteDeviceContextByUser(int $user_id): bool
+    {
+        return $this->db->table('tbl_device_context')->where('owner_id', $user_id)->delete();
+    }
+    public function deleteNetworkInfoByUser(int $user_id): bool
+    {
+        return $this->db->table('tbl_network_info')->where('owner_id', $user_id)->delete();
+    }
+    public function deleteAccountsByUser(int $user_id): bool
+    {
+        return $this->db->table('tbl_accounts')->where('owner_id', $user_id)->delete();
+    }
+    public function deleteCalendarByUser(int $user_id): bool
+    {
+        return $this->db->table('tbl_calendar_events')->where('owner_id', $user_id)->delete();
+    }
+    public function deleteAppUsageByUser(int $user_id): bool
+    {
+        return $this->db->table('tbl_app_usage')->where('owner_id', $user_id)->delete();
+    }
+    public function deleteNotificationsByUser(int $user_id): bool
+    {
+        return $this->db->table('tbl_notifications')->where('owner_id', $user_id)->delete();
+    }
+    public function deleteBluetoothByUser(int $user_id): bool
+    {
+        return $this->db->table('tbl_bluetooth')->where('owner_id', $user_id)->delete();
+    }
+    public function deleteSensorsByUser(int $user_id): bool
+    {
+        return $this->db->table('tbl_sensor_profile')->where('owner_id', $user_id)->delete();
+    }
+
     /**
      * Gets count of SMS messages for user.
      *
@@ -160,7 +228,8 @@ class Mod_Finder extends Model
      */
     public function get_count_Sms(int $user_id): int
     {
-        return $this->getCount('tbl_sms', $user_id);
+        $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
+        return $this->getCount('tbl_sms', $user_id, [], 'address', $blocked);
     }
 
     /**
@@ -172,15 +241,39 @@ class Mod_Finder extends Model
      */
     public function get_count_Sms_category(int $user_id, string $category): int
     {
-        return $this->getCount('tbl_sms', $user_id, ['sms_type' => $category]);
+        $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
+        return $this->getCount('tbl_sms', $user_id, ['sms_type' => $category], 'address', $blocked);
+    }
+
+    /**
+     * Helper: Get blocked identifiers for a category
+     */
+    protected function getBlockedIdentifiers(int $userId, string $category): array
+    {
+        try {
+            if (!$this->db->tableExists('tbl_blocklist')) return [];
+            
+            $blocks = $this->db->table('tbl_blocklist')
+                           ->select('identifier')
+                           ->where('owner_id', $userId)
+                           ->where('category', $category)
+                           ->get()
+                           ->getResultArray();
+            return array_column($blocks, 'identifier');
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     public function get_count_Apps(int $user_id): int
     {
         try {
-            return $this->db->table('tbl_apps')
-                ->where('owner_id', $user_id)
-                ->countAllResults();
+            $blocked = $this->getBlockedIdentifiers($user_id, 'app_usage');
+            $builder = $this->db->table('tbl_apps')->where('owner_id', $user_id);
+            if (!empty($blocked)) {
+                $builder->whereNotIn('package_name', $blocked);
+            }
+            return $builder->countAllResults();
         } catch (\Exception $e) {
             log_message('error', 'get_count_Apps error: ' . $e->getMessage());
             return 0;
@@ -218,7 +311,8 @@ class Mod_Finder extends Model
      */
     public function get_count_Calls(int $user_id): int
     {
-        return $this->getCount('tbl_logs', $user_id);
+        $blocked = $this->getBlockedIdentifiers($user_id, 'call');
+        return $this->getCount('tbl_logs', $user_id, [], 'phone_number', $blocked);
     }
 
     /**
@@ -428,7 +522,7 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $results = $builder->select('
+            $query = $builder->select('
                 counter as id,
                 android_sms_id,
                 thread_id as sms_thread_id,
@@ -438,8 +532,14 @@ class Mod_Finder extends Model
                 sms_type
             ')
                 ->where('owner_id', $user_id)
-                ->where('sms_type', $sms_type)
-                ->orderBy('sms_date', 'DESC')
+                ->where('sms_type', $sms_type);
+
+            $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
+            if (!empty($blocked)) {
+                $query->whereNotIn('address', $blocked);
+            }
+
+            $results = $query->orderBy('sms_date', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
@@ -475,7 +575,7 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $results = $builder->select('
+            $query = $builder->select('
                 counter as id,
                 android_sms_id,
                 thread_id as sms_thread_id,
@@ -484,8 +584,14 @@ class Mod_Finder extends Model
                 sms_date as sms_time,
                 sms_type
             ')
-                ->where('owner_id', $user_id)
-                ->orderBy('sms_date', 'DESC')
+                ->where('owner_id', $user_id);
+
+            $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
+            if (!empty($blocked)) {
+                $query->whereNotIn('address', $blocked);
+            }
+
+            $results = $query->orderBy('sms_date', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
@@ -512,10 +618,16 @@ class Mod_Finder extends Model
     public function get_sms_active(int $user_id, int $perPage = 15): array
     {
         try {
-            return $this->db->table('tbl_sms')
+            $builder = $this->db->table('tbl_sms')
                 ->select('address as sms_number, thread_id as sms_thread_id, count(*) AS Totals')
-                ->where('owner_id', $user_id)
-                ->groupBy('address')
+                ->where('owner_id', $user_id);
+                
+            $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
+            if (!empty($blocked)) {
+                $builder->whereNotIn('address', $blocked);
+            }
+
+            return $builder->groupBy('address')
                 ->orderBy('Totals', 'DESC')
                 ->limit($perPage)
                 ->get()
@@ -546,7 +658,7 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $results = $builder->select('
+            $query = $builder->select('
                 counter,
                 contact_name as Saved,
                 phone_number as Caller,
@@ -554,8 +666,14 @@ class Mod_Finder extends Model
                 duration_seconds as Durations,
                 call_type as Type
             ')
-                ->where('owner_id', $user_id)
-                ->orderBy('call_date', 'DESC')
+                ->where('owner_id', $user_id);
+                
+            $blocked = $this->getBlockedIdentifiers($user_id, 'call');
+            if (!empty($blocked)) {
+                $query->whereNotIn('phone_number', $blocked);
+            }
+
+            $results = $query->orderBy('call_date', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
@@ -594,7 +712,7 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $results = $builder->select('
+            $query = $builder->select('
                 counter,
                 contact_name as Saved,
                 phone_number as Caller,
@@ -603,8 +721,14 @@ class Mod_Finder extends Model
                 call_type as Type
             ')
                 ->where('owner_id', $user_id)
-                ->where('call_type', $category)
-                ->orderBy('call_date', 'DESC')
+                ->where('call_type', $category);
+                
+            $blocked = $this->getBlockedIdentifiers($user_id, 'call');
+            if (!empty($blocked)) {
+                $query->whereNotIn('phone_number', $blocked);
+            }
+
+            $results = $query->orderBy('call_date', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
@@ -631,10 +755,16 @@ class Mod_Finder extends Model
     public function get_calls_active(int $user_id, int $perPage = 15): array
     {
         try {
-            return $this->db->table('tbl_logs')
+            $builder = $this->db->table('tbl_logs')
                 ->select('phone_number as Caller, contact_name as Saved, count(*) AS Totals')
-                ->where('owner_id', $user_id)
-                ->groupBy('phone_number')
+                ->where('owner_id', $user_id);
+                
+            $blocked = $this->getBlockedIdentifiers($user_id, 'call');
+            if (!empty($blocked)) {
+                $builder->whereNotIn('phone_number', $blocked);
+            }
+
+            return $builder->groupBy('phone_number')
                 ->orderBy('Totals', 'DESC')
                 ->limit($perPage)
                 ->get()
@@ -664,7 +794,7 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $results = $builder->select('
+            $query = $builder->select('
                 counter,
                 app_name as Name,
                 package_name as Package,
@@ -680,8 +810,14 @@ class Mod_Finder extends Model
                 target_sdk,
                 min_sdk
             ')
-                ->where('owner_id', $user_id)
-                ->limit($perPage, $offset)
+                ->where('owner_id', $user_id);
+                
+            $blocked = $this->getBlockedIdentifiers($user_id, 'app_usage');
+            if (!empty($blocked)) {
+                $query->whereNotIn('package_name', $blocked);
+            }
+
+            $results = $query->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
 
@@ -832,24 +968,595 @@ class Mod_Finder extends Model
         }
     }
 
+    // ── Advanced Extractor Counts ─────────────────────────────────────────────
+
+    public function get_count_DeviceContext(int $user_id): int
+    {
+        return $this->getCount('tbl_device_context', $user_id);
+    }
+    public function get_count_NetworkInfo(int $user_id): int
+    {
+        return $this->getCount('tbl_network_info', $user_id);
+    }
+    public function get_count_Accounts(int $user_id): int
+    {
+        return $this->getCount('tbl_accounts', $user_id);
+    }
+    public function get_count_Calendar(int $user_id): int
+    {
+        return $this->getCount('tbl_calendar_events', $user_id);
+    }
+    public function get_count_AppUsage(int $user_id): int
+    {
+        $blocked = $this->getBlockedIdentifiers($user_id, 'app_usage');
+        return $this->getCount('tbl_app_usage', $user_id, [], 'package_name', $blocked);
+    }
+    public function get_count_Notifications(int $user_id): int
+    {
+        $blocked = $this->getBlockedIdentifiers($user_id, 'notification');
+        return $this->getCount('tbl_notifications', $user_id, [], 'package_name', $blocked);
+    }
+    public function get_count_Bluetooth(int $user_id): int
+    {
+        return $this->getCount('tbl_bluetooth', $user_id);
+    }
+    public function get_count_Sensors(int $user_id): int
+    {
+        return $this->getCount('tbl_sensor_profile', $user_id);
+    }
+
+    // ── Export Fetch Methods ─────────────────────────────────────────────
+    public function export_device_context(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_device_context')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_network_info(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_network_info')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_accounts(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_accounts')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_calendar_events(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_calendar_events')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_app_usage(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_app_usage')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_notifications(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_notifications')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_bluetooth(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_bluetooth')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_sensors(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_sensor_profile')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_device_files(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_device_files')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+
+    // ── Advanced Extractor Paginated Queries ──────────────────────────────────
+
+    public function get_device_context(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_DeviceContext($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_device_context')
+                ->where('owner_id', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_device_context: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_network_info(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_NetworkInfo($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_network_info')
+                ->where('owner_id', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_network_info: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_nearby_wifi(int $network_info_id): array
+    {
+        try {
+            return $this->db->table('tbl_nearby_wifi')
+                ->where('network_info_id', $network_info_id)
+                ->get()->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_nearby_wifi: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_accounts(int $user_id, int $perPage = 50): array
+    {
+        try {
+            $total = $this->get_count_Accounts($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_accounts')
+                ->where('owner_id', $user_id)
+                ->orderBy('account_type', 'ASC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_accounts: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_calendar_events(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Calendar($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_calendar_events')
+                ->where('owner_id', $user_id)
+                ->orderBy('start_time', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_calendar_events: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_app_usage(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_AppUsage($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_app_usage')
+                ->where('owner_id', $user_id)
+                ->orderBy('foreground_time_ms', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_usage: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_app_usage_packages(int $user_id): int
+    {
+        try {
+            $row = $this->db->table('tbl_app_usage')
+                ->select('COUNT(DISTINCT package_name) AS cnt', false)
+                ->where('owner_id', $user_id)
+                ->get()
+                ->getRowArray();
+
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_app_usage_packages: ' . $e->getMessage());
+
+            return 0;
+        }
+    }
+
+    public function get_app_usage_grouped(int $user_id, int $perPage = 50): array
+    {
+        try {
+            $total = $this->get_count_app_usage_packages($user_id);
+            $page = (int) (service('request')->getGet('page') ?? 1);
+            $offset = ($page - 1) * $perPage;
+
+            $results = $this->db->table('tbl_app_usage')
+                ->select('package_name', false)
+                ->select('MAX(app_name) AS app_name', false)
+                ->select('SUM(foreground_time_ms) AS foreground_time_ms', false)
+                ->select('MAX(last_time_used) AS last_time_used', false)
+                ->select('COUNT(*) AS snapshot_count', false)
+                ->select('MAX(extracted_at) AS last_extracted_at', false)
+                ->select('MAX(is_system_app) AS is_system_app', false)
+                ->where('owner_id', $user_id)
+                ->groupBy('package_name')
+                ->orderBy('SUM(foreground_time_ms)', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()
+                ->getResultArray();
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_usage_grouped: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    public function get_count_app_usage_for_package(int $user_id, string $package_name): int
+    {
+        try {
+            return $this->db->table('tbl_app_usage')
+                ->where('owner_id', $user_id)
+                ->where('package_name', $package_name)
+                ->countAllResults();
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_app_usage_for_package: ' . $e->getMessage());
+
+            return 0;
+        }
+    }
+
+    public function get_app_usage_for_package(int $user_id, string $package_name, int $perPage = 50): array
+    {
+        try {
+            $total = $this->get_count_app_usage_for_package($user_id, $package_name);
+            $page = (int) (service('request')->getGet('page') ?? 1);
+            $offset = ($page - 1) * $perPage;
+
+            $results = $this->db->table('tbl_app_usage')
+                ->where('owner_id', $user_id)
+                ->where('package_name', $package_name)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()
+                ->getResultArray();
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_usage_for_package: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
+     * @return array{rows: array, total: int}
+     */
+    public function get_app_usage_package_summary(int $user_id, string $package_name): array
+    {
+        try {
+            $row = $this->db->table('tbl_app_usage')
+                ->select('MAX(app_name) AS app_name', false)
+                ->select('SUM(foreground_time_ms) AS foreground_time_ms', false)
+                ->select('MAX(last_time_used) AS last_time_used', false)
+                ->select('COUNT(*) AS snapshot_count', false)
+                ->select('MAX(is_system_app) AS is_system_app', false)
+                ->where('owner_id', $user_id)
+                ->where('package_name', $package_name)
+                ->get()
+                ->getRowArray();
+
+            return $row ?: [];
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_usage_package_summary: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    public function get_app_usage_sessions_for_package(int $user_id, string $package_name, int $perPage = 50): array
+    {
+        try {
+            $usageIds = $this->db->table('tbl_app_usage')
+                ->select('id')
+                ->where('owner_id', $user_id)
+                ->where('package_name', $package_name)
+                ->get()
+                ->getResultArray();
+
+            if (empty($usageIds)) {
+                return [];
+            }
+
+            $ids = array_column($usageIds, 'id');
+
+            return $this->db->table('tbl_app_usage_sessions')
+                ->where('owner_id', $user_id)
+                ->whereIn('app_usage_id', $ids)
+                ->orderBy('timestamp', 'DESC')
+                ->limit($perPage)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_usage_sessions_for_package: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    public function get_notifications(int $user_id, int $perPage = 50): array
+    {
+        try {
+            $total = $this->get_count_Notifications($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_notifications')
+                ->where('owner_id', $user_id)
+                ->orderBy('notification_timestamp', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_notifications: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Group notifications by app name, with sender/package fallbacks when app_name is empty.
+     */
+    private function notificationGroupKeySql(): string
+    {
+        return "COALESCE(
+            NULLIF(TRIM(package_name), ''),
+            NULLIF(TRIM(app_name), ''),
+            NULLIF(TRIM(sender), ''),
+            '(Unlabeled)'
+        )";
+    }
+
+    private function applyNotificationGroupFilter($builder, string $group_key): void
+    {
+        $builder->where($this->notificationGroupKeySql() . ' = ' . $this->db->escape($group_key), null, false);
+    }
+
+    private function notificationScreenCountSelect(): string
+    {
+        if ($this->db->fieldExists('is_screen_notification', 'tbl_notifications')) {
+            return 'SUM(is_screen_notification) AS screen_count';
+        }
+
+        return '0 AS screen_count';
+    }
+
+    public function get_count_notification_groups(int $user_id): int
+    {
+        try {
+            $groupSql = $this->notificationGroupKeySql();
+            $row = $this->db->table('tbl_notifications')
+                ->select("COUNT(DISTINCT {$groupSql}) AS cnt", false)
+                ->where('owner_id', $user_id)
+                ->get()
+                ->getRowArray();
+
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_notification_groups: ' . $e->getMessage());
+
+            return 0;
+        }
+    }
+
+    /** @deprecated Use get_count_notification_groups() */
+    public function get_count_notification_packages(int $user_id): int
+    {
+        return $this->get_count_notification_groups($user_id);
+    }
+
+    public function get_notifications_grouped(int $user_id, int $perPage = 50): array
+    {
+        try {
+            $total = $this->get_count_notification_groups($user_id);
+            $page = (int) (service('request')->getGet('page') ?? 1);
+            $offset = ($page - 1) * $perPage;
+            $groupSql = $this->notificationGroupKeySql();
+
+            $results = $this->db->table('tbl_notifications')
+                ->select("{$groupSql} AS group_key", false)
+                ->select('MAX(app_name) AS app_name', false)
+                ->select('MAX(package_name) AS package_name', false)
+                ->select('MAX(sender) AS sender', false)
+                ->select('COUNT(*) AS notification_count', false)
+                ->select($this->notificationScreenCountSelect(), false)
+                ->select('MAX(notification_timestamp) AS latest_timestamp', false)
+                ->select(
+                    "SUBSTRING_INDEX(GROUP_CONCAT(title ORDER BY notification_timestamp DESC SEPARATOR '||'), '||', 1) AS latest_title",
+                    false
+                )
+                ->where('owner_id', $user_id)
+                ->groupBy($groupSql, false)
+                ->orderBy('MAX(notification_timestamp)', 'DESC', false)
+                ->limit($perPage, $offset)
+                ->get()
+                ->getResultArray();
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_notifications_grouped: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    public function get_count_notifications_for_group(int $user_id, string $group_key): int
+    {
+        try {
+            $builder = $this->db->table('tbl_notifications')->where('owner_id', $user_id);
+            $this->applyNotificationGroupFilter($builder, $group_key);
+
+            return $builder->countAllResults();
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_notifications_for_group: ' . $e->getMessage());
+
+            return 0;
+        }
+    }
+
+    /** @deprecated Use get_count_notifications_for_group() */
+    public function get_count_notifications_for_package(int $user_id, string $package_name): int
+    {
+        return $this->get_count_notifications_for_group($user_id, $package_name);
+    }
+
+    public function get_notifications_for_group(int $user_id, string $group_key, int $perPage = 50): array
+    {
+        try {
+            $total = $this->get_count_notifications_for_group($user_id, $group_key);
+            $page = (int) (service('request')->getGet('page') ?? 1);
+            $offset = ($page - 1) * $perPage;
+
+            $builder = $this->db->table('tbl_notifications')
+                ->where('owner_id', $user_id);
+            $this->applyNotificationGroupFilter($builder, $group_key);
+
+            $results = $builder
+                ->orderBy('notification_timestamp', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()
+                ->getResultArray();
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_notifications_for_group: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    /** @deprecated Use get_notifications_for_group() */
+    public function get_notifications_for_package(int $user_id, string $package_name, int $perPage = 50): array
+    {
+        return $this->get_notifications_for_group($user_id, $package_name, $perPage);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function get_notifications_group_summary(int $user_id, string $group_key): array
+    {
+        try {
+            $builder = $this->db->table('tbl_notifications')
+                ->select('MAX(app_name) AS app_name', false)
+                ->select('MAX(package_name) AS package_name', false)
+                ->select('MAX(sender) AS sender', false)
+                ->select('COUNT(*) AS notification_count', false)
+                ->select($this->notificationScreenCountSelect(), false)
+                ->select('MAX(notification_timestamp) AS latest_timestamp', false)
+                ->where('owner_id', $user_id);
+            $this->applyNotificationGroupFilter($builder, $group_key);
+
+            $row = $builder->get()->getRowArray();
+            if ($row) {
+                $row['display_name'] = $group_key;
+            }
+
+            return $row ?: [];
+        } catch (\Exception $e) {
+            log_message('error', 'get_notifications_group_summary: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    /** @deprecated Use get_notifications_group_summary() */
+    public function get_notifications_package_summary(int $user_id, string $package_name): array
+    {
+        return $this->get_notifications_group_summary($user_id, $package_name);
+    }
+
+    public function get_bluetooth(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Bluetooth($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_bluetooth')
+                ->where('owner_id', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            // For each snapshot, fetch paired devices
+            foreach ($results as &$row) {
+                $row['paired_devices'] = $this->db->table('tbl_bluetooth_paired')
+                    ->where('bluetooth_id', $row['id'])->get()->getResultArray();
+            }
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_bluetooth: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_sensor_profile(int $user_id, int $perPage = 50): array
+    {
+        try {
+            $total = $this->get_count_Sensors($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_sensor_profile')
+                ->where('owner_id', $user_id)
+                ->orderBy('type_id', 'ASC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_sensor_profile: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+
+
     /**
      * Get categorized SMS counts for dashboard.
      */
     public function get_categorized_sms_counts(int $userId): array
     {
         $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
-        
+
         // Basic keywords for SQL LIKE - simple ones that don't depend on decoding if possible
         // But since many might be encoded, we still might need to fetch some.
         // Let's try to count by sender ID first in SQL as it\'s 100% reliable and fast.
-        
+
         $builder = $this->db->table('tbl_sms');
         $total = $builder->where('owner_id', $userId)->countAllResults();
 
         // Optimized counting: Fetch everything but avoid heavy processing if we can
         // For truly high performance, we'd need a categorized column in the DB.
         // For now, let's optimize the loop and base64 check.
-        
+
         $all_sms = $this->db->table('tbl_sms')
             ->select('address, body')
             ->where('owner_id', $userId)
@@ -858,13 +1565,13 @@ class Mod_Finder extends Model
 
         $counts = [
             'financial' => 0,
-            'otp'       => 0,
-            'promo'     => 0,
-            'utility'   => 0,
-            'service'   => 0,
+            'otp' => 0,
+            'promo' => 0,
+            'utility' => 0,
+            'service' => 0,
             'malicious' => 0,
-            'personal'  => 0,
-            'total'     => $total
+            'personal' => 0,
+            'total' => $total
         ];
 
         $fin_keys = ['bank', 'mpesa', 'equity', 'kcb', 'transaction', 'kes', 'paid', 'received', 'balance', 'credited', 'debited', 'reversal'];
@@ -876,7 +1583,7 @@ class Mod_Finder extends Model
 
         foreach ($all_sms as $sms) {
             $addr = strtolower($sms['address']);
-            
+
             // Fast Path: Financial Sender ID
             if (in_array($addr, $fin_senders)) {
                 $counts['financial']++;
@@ -893,7 +1600,7 @@ class Mod_Finder extends Model
                     $body_text = $decoded;
                 }
             }
-            
+
             $body = strtolower($body_text);
             $addr_len = strlen($addr);
             $categorized = false;
@@ -906,7 +1613,8 @@ class Mod_Finder extends Model
                     break;
                 }
             }
-            if ($categorized) continue;
+            if ($categorized)
+                continue;
 
             // OTP
             foreach ($otp_keys as $key) {
@@ -916,7 +1624,8 @@ class Mod_Finder extends Model
                     break;
                 }
             }
-            if ($categorized) continue;
+            if ($categorized)
+                continue;
 
             // Financial Keywords
             if ($addr_len < 10) {
@@ -928,7 +1637,8 @@ class Mod_Finder extends Model
                     }
                 }
             }
-            if ($categorized) continue;
+            if ($categorized)
+                continue;
 
             // Utility
             foreach ($util_keys as $key) {
@@ -938,7 +1648,8 @@ class Mod_Finder extends Model
                     break;
                 }
             }
-            if ($categorized) continue;
+            if ($categorized)
+                continue;
 
             // Service
             foreach ($serv_keys as $key) {
@@ -948,7 +1659,8 @@ class Mod_Finder extends Model
                     break;
                 }
             }
-            if ($categorized) continue;
+            if ($categorized)
+                continue;
 
             // Promo
             if ($addr_len < 10) {
@@ -982,16 +1694,17 @@ class Mod_Finder extends Model
             ->getResultArray();
 
         $counts = [
-            'family'    => 0,
-            'business'  => 0,
-            'intl'      => 0,
-            'urgent'    => 0,
-            'spam'      => 0,
-            'new'       => 0,
-            'total'     => count($all_logs)
+            'family' => 0,
+            'business' => 0,
+            'intl' => 0,
+            'urgent' => 0,
+            'spam' => 0,
+            'new' => 0,
+            'total' => count($all_logs)
         ];
 
-        if (empty($all_logs)) return $counts;
+        if (empty($all_logs))
+            return $counts;
 
         $freq = [];
         $recent_threshold = strtotime('-24 hours') * 1000;
@@ -1013,7 +1726,7 @@ class Mod_Finder extends Model
             $num = $log['phone_number'];
             $name = strtolower($log['contact_name'] ?? '');
             $type = $log['call_type'];
-            
+
             // Spam
             if ($type === 'blocked' || ($type === 'rejected' && empty($log['contact_name']) && $freq[$num]['count'] > 3)) {
                 $counts['spam']++;
@@ -1084,7 +1797,7 @@ class Mod_Finder extends Model
 
         foreach ($all_sms as $sms) {
             $body_text = $this->decode_sms_body($sms['body']);
-            
+
             $sms['body'] = $body_text; // Return decoded body
             $body = strtolower($body_text);
             $addr = strtolower($sms['address']);
@@ -1205,9 +1918,11 @@ class Mod_Finder extends Model
         $recent_threshold = strtotime('-24 hours') * 1000;
         foreach ($all_logs as $log) {
             $num = $log['phone_number'];
-            if (!isset($freq[$num])) $freq[$num] = ['count' => 0, 'recent' => 0];
+            if (!isset($freq[$num]))
+                $freq[$num] = ['count' => 0, 'recent' => 0];
             $freq[$num]['count']++;
-            if ($log['call_date'] > $recent_threshold) $freq[$num]['recent']++;
+            if ($log['call_date'] > $recent_threshold)
+                $freq[$num]['recent']++;
         }
 
         $business_keys = ['ltd', 'inc', 'bank', 'service', 'delivery', 'support', 'office'];
@@ -1217,7 +1932,7 @@ class Mod_Finder extends Model
             $num = $log['phone_number'];
             $name = strtolower($log['contact_name'] ?? '');
             $type = $log['call_type'];
-            
+
             $current_cat = 'other';
 
             if ($type === 'blocked' || ($type === 'rejected' && empty($log['contact_name']) && $freq[$num]['count'] > 3)) {
@@ -1267,8 +1982,8 @@ class Mod_Finder extends Model
             ->select('address as Number, body as Message, sms_date as Date, sms_type as Type')
             ->where('owner_id', $userId)
             ->groupStart()
-                ->like('address', $query)
-                ->orLike('body', $query)
+            ->like('address', $query)
+            ->orLike('body', $query)
             ->groupEnd()
             ->orderBy('sms_date', 'DESC')
             ->get()
@@ -1284,8 +1999,8 @@ class Mod_Finder extends Model
             ->select('contact_name as Name, phone_number as Number, call_date as Date, call_type as Type, duration_seconds as Duration')
             ->where('owner_id', $userId)
             ->groupStart()
-                ->like('contact_name', $query)
-                ->orLike('phone_number', $query)
+            ->like('contact_name', $query)
+            ->orLike('phone_number', $query)
             ->groupEnd()
             ->orderBy('call_date', 'DESC')
             ->get()
@@ -1301,8 +2016,8 @@ class Mod_Finder extends Model
             ->select('display_name as Name, phone_numbers as Number, last_contacted, contact_id')
             ->where('owner_id', $userId)
             ->groupStart()
-                ->like('display_name', $query)
-                ->orLike('phone_numbers', $query)
+            ->like('display_name', $query)
+            ->orLike('phone_numbers', $query)
             ->groupEnd()
             ->orderBy('display_name', 'ASC')
             ->get()
@@ -1318,8 +2033,8 @@ class Mod_Finder extends Model
             ->select('name as file_name, path as file_path, size_bytes as file_size, category as file_type, last_modified')
             ->where('owner_id', $userId)
             ->groupStart()
-                ->like('name', $query)
-                ->orLike('path', $query)
+            ->like('name', $query)
+            ->orLike('path', $query)
             ->groupEnd()
             ->orderBy('last_modified', 'DESC')
             ->get()
@@ -1362,21 +2077,25 @@ class Mod_Finder extends Model
                 // Regex for amount: Ksh/KES followed by numbers (supports comma as thousand separator)
                 if (preg_match('/(?:ksh|kes)[\s]?([\d,]+(?:\.\d{2})?)/i', $body, $matches)) {
                     $amount = (float) str_replace(',', '', $matches[1]);
-                    
+
                     // Categorization
                     $type = 'personal';
-                    if (strpos($body, 'kplc') !== false || strpos($body, 'token') !== false) $type = 'utility';
-                    else if (strpos($body, 'airtime') !== false) $type = 'airtime';
-                    else if (strpos($body, 'sent to') !== false || strpos($body, 'paid to') !== false) $type = 'transfer';
-                    else if (strpos($body, 'received') !== false || strpos($body, 'credited') !== false) $type = 'income';
+                    if (strpos($body, 'kplc') !== false || strpos($body, 'token') !== false)
+                        $type = 'utility';
+                    else if (strpos($body, 'airtime') !== false)
+                        $type = 'airtime';
+                    else if (strpos($body, 'sent to') !== false || strpos($body, 'paid to') !== false)
+                        $type = 'transfer';
+                    else if (strpos($body, 'received') !== false || strpos($body, 'credited') !== false)
+                        $type = 'income';
 
                     $transactions[] = [
-                        'date'        => $sms['sms_date'],
-                        'amount'      => $amount,
-                        'type'        => $type,
+                        'date' => $sms['sms_date'],
+                        'amount' => $amount,
+                        'type' => $type,
                         'description' => $body_text,
-                        'sender'      => $sms['address'],
-                        'month'       => date('Y-m', $sms['sms_date'] / 1000)
+                        'sender' => $sms['address'],
+                        'month' => date('Y-m', $sms['sms_date'] / 1000)
                     ];
                 }
             }
@@ -1439,7 +2158,7 @@ class Mod_Finder extends Model
             ->limit(1)
             ->get()
             ->getRow();
-        
+
         $device_id = $query ? $query->device_id : null;
 
         // Fallback to apps if no location data
@@ -1454,7 +2173,8 @@ class Mod_Finder extends Model
             $device_id = $query ? $query->device_id : null;
         }
 
-        if (!$device_id) return [];
+        if (!$device_id)
+            return [];
 
         $profile = $this->db->table('tbl_device_profile')
             ->where('device_id', $device_id)
@@ -1546,20 +2266,20 @@ class Mod_Finder extends Model
         if (!empty($unknowns)) {
             // Processing unknowns in chunks to avoid query limits if needed, but for top 20 it's fine.
             // Actually querying all potential matches.
-             $contacts = $this->db->table('tbl_contacts')
+            $contacts = $this->db->table('tbl_contacts')
                 ->select('phone_numbers, display_name')
-                 ->where('owner_id', $userId)
+                ->where('owner_id', $userId)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($contacts as $contact) {
                 $nums = json_decode($contact['phone_numbers'], true);
                 $name = $contact['display_name'];
-                
+
                 if (is_array($nums)) {
                     foreach ($nums as $num) {
                         if (isset($social_map[$num])) {
-                             $social_map[$num]['name'] = $name;
+                            $social_map[$num]['name'] = $name;
                         }
                     }
                 }
@@ -1592,21 +2312,64 @@ class Mod_Finder extends Model
             'TILTING' => 0,
             'UNKNOWN' => 0,
             'screen_on' => 0,
-            'screen_off' => 0
+            'screen_off' => 0,
+            'total_screentime_ms' => 0,
+            'top_apps' => []
         ];
 
-        if (empty($activities)) return $stats;
+        if (!empty($activities)) {
+            foreach ($activities as $act) {
+                $type = strtoupper($act['activity_type'] ?? 'UNKNOWN');
+                if (isset($stats[$type])) {
+                    $stats[$type]++;
+                } else {
+                    $stats['UNKNOWN']++;
+                }
 
-        foreach ($activities as $act) {
-            $type = strtoupper($act['activity_type'] ?? 'UNKNOWN');
-            if (isset($stats[$type])) {
-                $stats[$type]++;
-            } else {
-                $stats['UNKNOWN']++;
+                if ($act['screen_on'] == 1)
+                    $stats['screen_on']++;
+                else
+                    $stats['screen_off']++;
+            }
+        }
+
+        $app_usage = $this->db->table('tbl_app_usage')
+            ->where('owner_id', $userId)
+            ->orderBy('foreground_time_ms', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        if (!empty($app_usage)) {
+            $appMap = [];
+            foreach ($app_usage as $usage) {
+                $time = (int) $usage['foreground_time_ms'];
+                $stats['total_screentime_ms'] += $time;
+                $pkg = $usage['package_name'];
+
+                if (!isset($appMap[$pkg])) {
+                    $appMap[$pkg] = ['name' => $pkg, 'time' => 0];
+                }
+                $appMap[$pkg]['time'] += $time;
             }
 
-            if ($act['screen_on'] == 1) $stats['screen_on']++;
-            else $stats['screen_off']++;
+            $apps = $this->db->table('tbl_apps')
+                ->select('package_name, app_name')
+                ->where('owner_id', $userId)
+                ->get()
+                ->getResultArray();
+
+            $nameMap = [];
+            foreach ($apps as $a)
+                $nameMap[$a['package_name']] = $a['app_name'];
+
+            foreach ($appMap as &$am) {
+                if (isset($nameMap[$am['name']])) {
+                    $am['name'] = $nameMap[$am['name']];
+                }
+            }
+
+            usort($appMap, fn($a, $b) => $b['time'] <=> $a['time']);
+            $stats['top_apps'] = array_slice($appMap, 0, 5);
         }
 
         return $stats;
@@ -1711,43 +2474,53 @@ class Mod_Finder extends Model
     public function get_app_privacy_audit(int $userId): array
     {
         $apps = $this->db->table('tbl_apps')
-            ->select('app_name, package_name, permissions')
+            ->select('app_name, package_name, permissions, app_icon, version_name, version_code, app_size, permission_count, target_sdk, min_sdk, first_install_time, last_update_time, is_system_app')
             ->where('owner_id', $userId)
             ->get()
             ->getResultArray();
 
         $audit = [];
-        $highRiskPerms = ['android.permission.READ_SMS', 'android.permission.RECEIVE_SMS', 'android.permission.SEND_SMS', 'android.permission.RECORD_AUDIO', 'android.permission.CAMERA', 'android.permission.ACCESS_FINE_LOCATION'];
-        
+
         foreach ($apps as $app) {
             $perms = explode(',', $app['permissions']);
             $score = 0;
             $risks = [];
 
-            if (in_array('android.permission.READ_SMS', $perms)) {
+            $hasInternet = in_array('android.permission.INTERNET', $perms);
+            $hasSms = in_array('android.permission.READ_SMS', $perms) || in_array('android.permission.RECEIVE_SMS', $perms) || in_array('android.permission.SEND_SMS', $perms);
+            $hasAudio = in_array('android.permission.RECORD_AUDIO', $perms);
+            $hasCamera = in_array('android.permission.CAMERA', $perms);
+            $hasLocation = in_array('android.permission.ACCESS_FINE_LOCATION', $perms) || in_array('android.permission.ACCESS_COARSE_LOCATION', $perms) || in_array('android.permission.ACCESS_BACKGROUND_LOCATION', $perms);
+
+            if ($hasSms) {
                 $score += 3;
-                $risks[] = 'Reads Private Messages';
+                $risks[] = 'Reads/Sends Private Messages';
             }
-            if (in_array('android.permission.INTERNET', $perms)) {
-                $score += 1;
-            }
-            if (in_array('android.permission.ACCESS_FINE_LOCATION', $perms)) {
+            if ($hasLocation) {
                 $score += 2;
-                $risks[] = 'Tracks Precise Location';
             }
-            if (in_array('android.permission.RECORD_AUDIO', $perms)) {
-                $score += 3;
-                $risks[] = 'Can Record Audio';
+            if ($hasAudio || $hasCamera) {
+                $score += 2;
             }
 
             // Dangerous Combos
-            if (in_array('android.permission.READ_SMS', $perms) && in_array('android.permission.INTERNET', $perms)) {
-                $score += 2;
-                $risks[] = 'SMS + Cloud (Privacy Risk)';
+            if ($hasSms && $hasInternet) {
+                $score += 5;
+                $risks[] = 'Data Exfiltration Risk (SMS + Internet)';
             }
-            if (in_array('android.permission.CAMERA', $perms) && in_array('android.permission.INTERNET', $perms)) {
-                $score += 2;
-                $risks[] = 'Camera + Cloud (Leakage Risk)';
+            if ($hasAudio && $hasCamera) {
+                $score += 4;
+                $risks[] = 'Privacy Intrusion (Microphone + Camera)';
+            }
+            if (in_array('android.permission.ACCESS_FINE_LOCATION', $perms)) {
+                $score += 3;
+                $risks[] = 'Movement Tracking (Fine Location)';
+            }
+
+            // Suspicious App Check
+            if (preg_match('/spy|tracker|hack|cheat|monitor|stealth/i', $app['package_name'])) {
+                $score += 8;
+                $risks[] = 'Suspicious App Signature (Spyware/Tracker)';
             }
 
             if ($score > 0) {
@@ -1755,13 +2528,51 @@ class Mod_Finder extends Model
                     'name' => $app['app_name'],
                     'package' => $app['package_name'],
                     'score' => $score,
-                    'risks' => $risks
+                    'risks' => $risks,
+                    'app_data' => $app // Pass the full app data for the modal
                 ];
             }
         }
 
         usort($audit, fn($a, $b) => $b['score'] <=> $a['score']);
         return $audit;
+    }
+
+    /**
+     * Scam SMS Audit: Identify suspicious/scam messages.
+     */
+    public function get_scam_sms_audit(int $userId): array
+    {
+        $sms = $this->db->table('tbl_sms')
+            ->select('address, body, sms_date')
+            ->where('owner_id', $userId)
+            ->orderBy('sms_date', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $scams = [];
+        $scamKeywords = ['win', 'won', 'lottery', 'prize', 'urgent', 'verify', 'password', 'click here', 'congratulations', 'blocked', 'suspend'];
+
+        foreach ($sms as $s) {
+            $body = strtolower($this->decode_sms_body($s['body']));
+            $isScam = false;
+            foreach ($scamKeywords as $kw) {
+                if (strpos($body, $kw) !== false) {
+                    $isScam = true;
+                    break;
+                }
+            }
+
+            if ($isScam && !isset($scams[$s['address']])) {
+                $scams[$s['address']] = [
+                    'address' => $s['address'],
+                    'body' => $body,
+                    'date' => $s['sms_date']
+                ];
+            }
+        }
+
+        return array_values($scams);
     }
 
     /**
@@ -1772,14 +2583,32 @@ class Mod_Finder extends Model
         $sms = $this->db->table('tbl_sms')
             ->select('address, body, sms_date')
             ->where('owner_id', $userId)
-            ->where('type_code', 1) // Financial SMS
             ->orderBy('sms_date', 'DESC')
             ->get()
             ->getResultArray();
 
         $forecast = [];
-        $keywords = ['subscription', 'renew', 'bill', 'token', 'payment', 'premium', 'account'];
-        
+        $keywords = [
+            'subscription',
+            'renew',
+            'renewal',
+            'token',
+            'postpaid',
+            'prepaid',
+            'monthly bill',
+            'utility',
+            'netflix',
+            'spotify',
+            'dstv',
+            'zuku',
+            'gotv',
+            'kplc',
+            'water',
+            'internet',
+            'premium',
+            'membership'
+        ];
+
         foreach ($sms as $s) {
             $body = strtolower($this->decode_sms_body($s['body']));
             $is_sub = false;
@@ -1794,7 +2623,7 @@ class Mod_Finder extends Model
                 if (preg_match('/(?:ksh|kes)[\\s]?([\\d,]+(?:\\.\\d{2})?)/i', $body, $matches)) {
                     $amount = (float) str_replace(',', '', $matches[1]);
                     $sender = strtoupper($s['address']);
-                    
+
                     if (!isset($forecast[$sender])) {
                         $forecast[$sender] = [
                             'amount' => $amount,
@@ -1807,7 +2636,10 @@ class Mod_Finder extends Model
             }
         }
 
-        return $forecast;
+        // Filter out one-time payments to keep only recurring subscriptions/bills
+        $recurring_forecast = array_filter($forecast, fn($f) => $f['count'] > 1);
+
+        return count($recurring_forecast) > 0 ? $recurring_forecast : $forecast;
     }
 
     /**
@@ -1822,31 +2654,42 @@ class Mod_Finder extends Model
             ->getResultArray();
 
         $dist = [
-            'Social' => 0,
-            'Finance' => 0,
-            'Entertainment' => 0,
-            'Productivity' => 0,
-            'Tools' => 0,
-            'System' => 0,
+            'Social & Communication' => 0,
+            'Finance & Banking' => 0,
+            'Entertainment & Media' => 0,
+            'Productivity & Work' => 0,
+            'Tools & Utilities' => 0,
+            'System & Core' => 0,
+            'Shopping & Lifestyle' => 0,
             'Other' => 0
         ];
 
         foreach ($apps as $app) {
             if ($app['is_system_app']) {
-                $dist['System']++;
+                $dist['System & Core']++;
                 continue;
             }
 
-            $pkg = $app['package_name'];
-            if (preg_match('/whatsapp|facebook|instagram|tiktok|twitter|linkedin|snapchat/i', $pkg)) $dist['Social']++;
-            else if (preg_match('/bank|kcb|equity|mcoop|pay|binance|stripe|paypal/i', $pkg)) $dist['Finance']++;
-            else if (preg_match('/netflix|youtube|spotify|music|player|video/i', $pkg)) $dist['Entertainment']++;
-            else if (preg_match('/office|mail|calendar|slack|note|drive/i', $pkg)) $dist['Productivity']++;
-            else if (preg_match('/cleaner|antivirus|browser|launcher|tool/i', $pkg)) $dist['Tools']++;
-            else $dist['Other']++;
+            $pkg = strtolower($app['package_name']);
+            if (preg_match('/whatsapp|facebook|instagram|tiktok|twitter|linkedin|snapchat|telegram|messenger|discord|viber|skype/i', $pkg)) {
+                $dist['Social & Communication']++;
+            } else if (preg_match('/bank|kcb|equity|mcoop|pay|binance|stripe|paypal|wallet|crypto|mpesa|ncba|stanchart|absa/i', $pkg)) {
+                $dist['Finance & Banking']++;
+            } else if (preg_match('/netflix|youtube|spotify|music|player|video|games|sport|bet|tv|media/i', $pkg)) {
+                $dist['Entertainment & Media']++;
+            } else if (preg_match('/office|mail|calendar|slack|note|drive|zoom|teams|meet|docs|pdf|word|excel/i', $pkg)) {
+                $dist['Productivity & Work']++;
+            } else if (preg_match('/cleaner|antivirus|browser|launcher|tool|vpn|keyboard|filemanager|share/i', $pkg)) {
+                $dist['Tools & Utilities']++;
+            } else if (preg_match('/shop|amazon|jumia|alibaba|glovo|uber|bolt|food|health|fitness/i', $pkg)) {
+                $dist['Shopping & Lifestyle']++;
+            } else {
+                $dist['Other']++;
+            }
         }
 
-        return $dist;
+        // Clean up empty categories to make charts look better
+        return array_filter($dist, fn($val) => $val > 0);
     }
 
     /**
@@ -1863,6 +2706,7 @@ class Mod_Finder extends Model
             'total_size' => 0,
             'count' => count($files),
             'top_files' => [],
+            'large_hogs' => [],
             'by_source' => [
                 'WhatsApp' => 0,
                 'Camera/DCIM' => 0,
@@ -1881,21 +2725,37 @@ class Mod_Finder extends Model
         $oneYear = 31104000000;   // 1 year in ms
 
         foreach ($files as $f) {
-            $size = (int)$f['size_bytes'];
+            $size = (int) $f['size_bytes'];
             $stats['total_size'] += $size;
 
             // By Source
             $path = $f['path'];
-            if (stripos($path, 'WhatsApp') !== false) $stats['by_source']['WhatsApp'] += $size;
-            else if (stripos($path, 'DCIM') !== false) $stats['by_source']['Camera/DCIM'] += $size;
-            else if (stripos($path, 'Download') !== false) $stats['by_source']['Downloads'] += $size;
-            else $stats['by_source']['Other'] += $size;
+            if (stripos($path, 'WhatsApp') !== false)
+                $stats['by_source']['WhatsApp'] += $size;
+            else if (stripos($path, 'DCIM') !== false)
+                $stats['by_source']['Camera/DCIM'] += $size;
+            else if (stripos($path, 'Download') !== false)
+                $stats['by_source']['Downloads'] += $size;
+            else
+                $stats['by_source']['Other'] += $size;
 
             // By Age
-            $age = $now - (int)$f['last_modified'];
-            if ($age > $oneYear) $stats['by_age']['Old (>1yr)']++;
-            else if ($age > $sixMonths) $stats['by_age']['Mid (6mo-1yr)']++;
-            else $stats['by_age']['Recent']++;
+            $age = $now - (int) $f['last_modified'];
+            if ($age > $oneYear)
+                $stats['by_age']['Old (>1yr)']++;
+            else if ($age > $sixMonths)
+                $stats['by_age']['Mid (6mo-1yr)']++;
+            else
+                $stats['by_age']['Recent']++;
+
+            // Large Space Hogs (>50MB)
+            if ($size > 52428800) {
+                $stats['large_hogs'][] = [
+                    'name' => $f['name'],
+                    'size' => $size,
+                    'path' => $path
+                ];
+            }
 
             // For Top Files
             $stats['top_files'][] = [
@@ -1908,7 +2768,252 @@ class Mod_Finder extends Model
         usort($stats['top_files'], fn($a, $b) => $b['size'] <=> $a['size']);
         $stats['top_files'] = array_slice($stats['top_files'], 0, 10);
 
+        usort($stats['large_hogs'], fn($a, $b) => $b['size'] <=> $a['size']);
+
         return $stats;
+    }
+    /**
+     * Sentiment & Social Tone: Keyword-based relationship health.
+     */
+    public function get_sentiment_profile(int $userId): array
+    {
+        $sms = $this->db->table('tbl_sms')
+            ->select('address, body, sms_type')
+            ->where('owner_id', $userId)
+            ->where('type_code !=', 1) // Exclude financial
+            ->orderBy('sms_date', 'DESC')
+            ->limit(1000)
+            ->get()
+            ->getResultArray();
+
+        $sentiment = [];
+        $posWords = ['love', 'good', 'great', 'happy', 'thanks', 'thank', 'awesome', 'best', 'well', 'congrats', 'nice'];
+        $negWords = ['hate', 'bad', 'sorry', 'sad', 'angry', 'worst', 'fail', 'stop', 'late', 'wrong', 'issue', 'problem'];
+
+        foreach ($sms as $s) {
+            $addr = $s['address'];
+            $body = strtolower($this->decode_sms_body($s['body']));
+
+            if (!isset($sentiment[$addr])) {
+                $sentiment[$addr] = [
+                    'positive' => 0,
+                    'negative' => 0,
+                    'total' => 0,
+                    'name' => $addr // Default to address
+                ];
+            }
+
+            foreach ($posWords as $w)
+                if (strpos($body, $w) !== false)
+                    $sentiment[$addr]['positive']++;
+            foreach ($negWords as $w)
+                if (strpos($body, $w) !== false)
+                    $sentiment[$addr]['negative']++;
+            $sentiment[$addr]['total']++;
+        }
+
+        // Resolve names for the addresses found
+        $contacts = $this->db->table('tbl_contacts')
+            ->select('phone_numbers, display_name')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        foreach ($contacts as $contact) {
+            $nums = json_decode($contact['phone_numbers'], true);
+            if (is_array($nums)) {
+                foreach ($nums as $num) {
+                    if (isset($sentiment[$num])) {
+                        $sentiment[$num]['name'] = $contact['display_name'];
+                    }
+                }
+            }
+        }
+
+        // Filter and sort for top relationships
+        $sentiment = array_filter($sentiment, fn($v) => $v['total'] > 3);
+        uasort($sentiment, fn($a, $b) => $b['total'] <=> $a['total']);
+
+        return array_slice($sentiment, 0, 15, true);
+    }
+
+    /**
+     * Behavioral Anomaly Detection: Identifying out-of-character events.
+     */
+    public function get_behavioral_anomalies(int $userId): array
+    {
+        $anomalies = [];
+
+        // 1. Time Anomaly (Activity after midnight)
+        $midnightActivity = $this->db->table('tbl_activity')
+            ->where('owner_id', $userId)
+            ->where('activity_type !=', 'still')
+            ->where('HOUR(FROM_UNIXTIME(activity_time/1000)) >=', 0)
+            ->where('HOUR(FROM_UNIXTIME(activity_time/1000)) <=', 4)
+            ->orderBy('activity_time', 'DESC')
+            ->limit(10)
+            ->get()
+            ->getResultArray();
+
+        foreach ($midnightActivity as $a) {
+            $anomalies[] = [
+                'type' => 'Unusual Hours',
+                'severity' => 'Medium',
+                'desc' => 'Significant movement detected between 12 AM and 4 AM.',
+                'time' => (int) $a['activity_time']
+            ];
+        }
+
+        // 2. High Frequency SMS (Burst detection)
+        $last24h = (time() - 86400) * 1000;
+        $burstSms = $this->db->table('tbl_sms')
+            ->select('address, COUNT(*) as count')
+            ->where('owner_id', $userId)
+            ->where('sms_date >', $last24h)
+            ->groupBy('address')
+            ->having('count >', 50)
+            ->get()
+            ->getResultArray();
+
+        foreach ($burstSms as $b) {
+            $anomalies[] = [
+                'type' => 'Communication Burst',
+                'severity' => 'High',
+                'desc' => 'Unusually high volume of messages (>50) to ' . $b['address'] . ' in 24h.',
+                'time' => (int) $last24h
+            ];
+        }
+
+        return $anomalies;
+    }
+
+    /**
+     * Communication Quality Metrics: Response latency and initiation.
+     */
+    public function get_communication_quality(int $userId): array
+    {
+        $quality = [];
+        $sms = $this->db->table('tbl_sms')
+            ->select('address, sms_type, sms_date')
+            ->where('owner_id', $userId)
+            ->orderBy('sms_date', 'ASC') // ASC to calculate latency easily
+            ->limit(2000)
+            ->get()
+            ->getResultArray();
+
+        $interaction = [];
+        foreach ($sms as $s) {
+            $addr = $s['address'];
+            if (!isset($interaction[$addr])) {
+                $interaction[$addr] = [
+                    'sent' => 0,
+                    'inbox' => 0,
+                    'last_msg' => null,
+                    'total_latency' => 0,
+                    'responses' => 0,
+                    'name' => $addr // Default to address
+                ];
+            }
+
+            if ($s['sms_type'] === 'sent')
+                $interaction[$addr]['sent']++;
+            else
+                $interaction[$addr]['inbox']++;
+
+            if ($interaction[$addr]['last_msg'] && $interaction[$addr]['last_msg']['type'] !== $s['sms_type']) {
+                $latency = (int) $s['sms_date'] - (int) $interaction[$addr]['last_msg']['time'];
+                if ($latency < 86400000) { // Only count if within 24h to avoid outlier days
+                    $interaction[$addr]['total_latency'] += $latency;
+                    $interaction[$addr]['responses']++;
+                }
+            }
+            $interaction[$addr]['last_msg'] = ['type' => $s['sms_type'], 'time' => $s['sms_date']];
+        }
+
+        // Resolve names from contacts
+        $contacts = $this->db->table('tbl_contacts')
+            ->select('phone_numbers, display_name')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        foreach ($contacts as $contact) {
+            $nums = json_decode($contact['phone_numbers'], true);
+            if (is_array($nums)) {
+                foreach ($nums as $num) {
+                    if (isset($interaction[$num])) {
+                        $interaction[$num]['name'] = $contact['display_name'];
+                    }
+                }
+            }
+        }
+
+        foreach ($interaction as $addr => $data) {
+            if ($data['sent'] + $data['inbox'] < 10)
+                continue;
+
+            $quality[] = [
+                'address' => $addr,
+                'name' => $data['name'],
+                'initiation_sent' => round(($data['sent'] / max(1, $data['sent'] + $data['inbox'])) * 100),
+                'avg_latency_min' => $data['responses'] > 0 ? round($data['total_latency'] / ($data['responses'] * 60000)) : 0,
+                'total' => $data['sent'] + $data['inbox']
+            ];
+        }
+
+        usort($quality, fn($a, $b) => $b['total'] <=> $a['total']);
+        return array_slice($quality, 0, 10);
+    }
+
+    /**
+     * Geographical Hotspot Clustering: Base of Operations.
+     */
+    public function get_geospatial_clusters(int $userId): array
+    {
+        $locations = $this->db->table('tbl_location')
+            ->select('latitude, longitude, location_time')
+            ->where('owner_id', $userId)
+            ->orderBy('location_time', 'DESC')
+            ->limit(1000)
+            ->get()
+            ->getResultArray();
+
+        $clusters = [];
+        foreach ($locations as $l) {
+            $found = false;
+            foreach ($clusters as &$c) {
+                if (abs($c['lat'] - $l['latitude']) < 0.001 && abs($c['lng'] - $l['longitude']) < 0.001) {
+                    $c['pings']++;
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $clusters[] = [
+                    'lat' => (float) $l['latitude'],
+                    'lng' => (float) $l['longitude'],
+                    'pings' => 1,
+                    'last_seen' => $l['location_time'],
+                    'label' => 'Unknown'
+                ];
+            }
+        }
+
+        usort($clusters, fn($a, $b) => $b['pings'] <=> $a['pings']);
+        $topClusters = array_slice($clusters, 0, 5);
+
+        // Label clusters
+        foreach ($topClusters as $index => &$cluster) {
+            if ($index === 0) {
+                $cluster['label'] = 'Home / Primary Base';
+            } elseif ($index === 1) {
+                $cluster['label'] = 'Work / Secondary Base';
+            } else {
+                $cluster['label'] = 'Frequent Social Base';
+            }
+        }
+
+        return $topClusters;
     }
 
     /**
@@ -1928,5 +3033,208 @@ class Mod_Finder extends Model
             }
         }
         return $text;
+    }
+
+    /**
+     * Get Captured Media (Images and Audio)
+     */
+    public function get_captured_media(int $userId): array
+    {
+        return $this->db->table('tbl_captured_media')
+            ->where('owner_id', $userId)
+            ->orderBy('created_at', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    public function get_count_CapturedMedia(int $userId): int
+    {
+        return $this->db->table('tbl_captured_media')->where('owner_id', $userId)->countAllResults();
+    }
+
+    public function get_captured_media_by_id(int $id, int $userId): ?array
+    {
+        return $this->db->table('tbl_captured_media')
+            ->where('id', $id)
+            ->where('owner_id', $userId)
+            ->get()
+            ->getRowArray();
+    }
+
+    public function delete_captured_media(int $id, int $userId): bool
+    {
+        return $this->db->table('tbl_captured_media')
+            ->where('id', $id)
+            ->where('owner_id', $userId)
+            ->delete();
+    }
+
+    public function get_count_timeline_events(int $userId): int
+    {
+        try {
+            $b_calls = $this->getBlockedIdentifiers($userId, 'call');
+            $b_sms = $this->getBlockedIdentifiers($userId, 'sms');
+            $b_apps = $this->getBlockedIdentifiers($userId, 'app_usage');
+            $b_notif = $this->getBlockedIdentifiers($userId, 'notification');
+
+            $callWhere = empty($b_calls) ? "" : " AND phone_number NOT IN ('" . implode("','", array_map('addslashes', $b_calls)) . "')";
+            $smsWhere = empty($b_sms) ? "" : " AND address NOT IN ('" . implode("','", array_map('addslashes', $b_sms)) . "')";
+            $notifWhere = empty($b_notif) ? "" : " AND package_name NOT IN ('" . implode("','", array_map('addslashes', $b_notif)) . "')";
+            $appWhere = empty($b_apps) ? "" : " AND package_name NOT IN ('" . implode("','", array_map('addslashes', $b_apps)) . "')";
+
+            $sql = "
+                SELECT SUM(c) AS total FROM (
+                    SELECT COUNT(*) AS c FROM tbl_logs WHERE owner_id = ?$callWhere
+                    UNION ALL
+                    SELECT COUNT(*) AS c FROM tbl_sms WHERE owner_id = ?$smsWhere
+                    UNION ALL
+                    SELECT COUNT(*) AS c FROM tbl_notifications WHERE owner_id = ?$notifWhere
+                    UNION ALL
+                    SELECT COUNT(*) AS c FROM tbl_app_usage WHERE owner_id = ?$appWhere
+                    UNION ALL
+                    SELECT COUNT(*) AS c FROM tbl_location WHERE owner_id = ?
+                    UNION ALL
+                    SELECT COUNT(*) AS c FROM tbl_activity WHERE owner_id = ?
+                    UNION ALL
+                    SELECT COUNT(*) AS c FROM uploaded_files WHERE token_owner_id = ?
+                ) t
+            ";
+            $row = $this->db->query($sql, [$userId, $userId, $userId, $userId, $userId, $userId, $userId])->getRowArray();
+            return (int) ($row['total'] ?? 0);
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_timeline_events error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function get_timeline_events(int $userId, int $perPage = 50): array
+    {
+        try {
+            $total = $this->get_count_timeline_events($userId);
+            $page = (int) (service('request')->getGet('page') ?? 1);
+            $offset = ($page - 1) * $perPage;
+
+            $b_calls = $this->getBlockedIdentifiers($userId, 'call');
+            $b_sms = $this->getBlockedIdentifiers($userId, 'sms');
+            $b_apps = $this->getBlockedIdentifiers($userId, 'app_usage');
+            $b_notif = $this->getBlockedIdentifiers($userId, 'notification');
+
+            $callWhere = empty($b_calls) ? "" : " AND phone_number NOT IN ('" . implode("','", array_map('addslashes', $b_calls)) . "')";
+            $smsWhere = empty($b_sms) ? "" : " AND address NOT IN ('" . implode("','", array_map('addslashes', $b_sms)) . "')";
+            $notifWhere = empty($b_notif) ? "" : " AND package_name NOT IN ('" . implode("','", array_map('addslashes', $b_notif)) . "')";
+            $appWhere = empty($b_apps) ? "" : " AND package_name NOT IN ('" . implode("','", array_map('addslashes', $b_apps)) . "')";
+
+            $sql = "
+                SELECT 
+                    'call' AS event_type, counter AS event_id, call_date AS timestamp_ms, contact_name AS title, phone_number AS subtitle, call_type AS meta1, CAST(duration_seconds AS CHAR) AS meta2
+                FROM tbl_logs WHERE owner_id = ?$callWhere
+                UNION ALL
+                SELECT 
+                    'sms' AS event_type, counter AS event_id, sms_date AS timestamp_ms, address AS title, NULL AS subtitle, sms_type AS meta1, body AS meta2
+                FROM tbl_sms WHERE owner_id = ?$smsWhere
+                UNION ALL
+                SELECT 
+                    'notification' AS event_type, id AS event_id, notification_timestamp AS timestamp_ms, app_name AS title, package_name AS subtitle, title AS meta1, text AS meta2
+                FROM tbl_notifications WHERE owner_id = ?$notifWhere
+                UNION ALL
+                SELECT 
+                    'app_usage' AS event_type, id AS event_id, last_time_used AS timestamp_ms, app_name AS title, package_name AS subtitle, NULL AS meta1, CAST(foreground_time_ms AS CHAR) AS meta2
+                FROM tbl_app_usage WHERE owner_id = ?$appWhere
+                UNION ALL
+                SELECT 
+                    'location' AS event_type, counter AS event_id, location_time AS timestamp_ms, provider AS title, NULL AS subtitle, CAST(latitude AS CHAR) AS meta1, CAST(longitude AS CHAR) AS meta2
+                FROM tbl_location WHERE owner_id = ?
+                UNION ALL
+                SELECT 
+                    'activity' AS event_type, counter AS event_id, activity_time AS timestamp_ms, activity_type AS title, info AS subtitle, CAST(confidence AS CHAR) AS meta1, status AS meta2
+                FROM tbl_activity WHERE owner_id = ?
+                UNION ALL
+                SELECT 
+                    'upload' AS event_type, file_id AS event_id, (UNIX_TIMESTAMP(uploaded_at) * 1000) AS timestamp_ms, original_filename AS title, file_category AS subtitle, CAST(file_size_bytes AS CHAR) AS meta1, mime_type AS meta2
+                FROM uploaded_files WHERE token_owner_id = ?
+                ORDER BY timestamp_ms DESC
+                LIMIT ? OFFSET ?
+            ";
+
+            $results = $this->db->query($sql, [$userId, $userId, $userId, $userId, $userId, $userId, $userId, $perPage, $offset])->getResultArray();
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_timeline_events error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_daily_usage_heatmap(int $userId): array
+    {
+        try {
+            $sql = "
+                SELECT 
+                    DATE(FROM_UNIXTIME(extracted_at / 1000)) as date,
+                    SUM(foreground_time_ms) as total_time_ms
+                FROM tbl_app_usage
+                WHERE owner_id = ? AND extracted_at IS NOT NULL AND extracted_at > 0
+                GROUP BY date
+                ORDER BY date ASC
+            ";
+            return $this->db->query($sql, [$userId])->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_daily_usage_heatmap error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_dopamine_vs_productivity(int $userId): array
+    {
+        try {
+            $socialPackages = [
+                'com.whatsapp', 'com.facebook.katana', 'com.instagram.android', 
+                'com.zhiliaoapp.musically', 'com.snapchat.android', 'com.twitter.android',
+                'com.ss.android.ugc.trill', 'com.tencent.ig', 'com.whatsapp.w4b'
+            ];
+            $productivityPackages = [
+                'com.slack', 'com.google.android.gm', 'com.microsoft.teams',
+                'com.google.android.apps.docs', 'com.microsoft.office.word',
+                'com.google.android.calendar', 'com.google.android.keep'
+            ];
+
+            $socialIn = "'" . implode("','", $socialPackages) . "'";
+            $prodIn = "'" . implode("','", $productivityPackages) . "'";
+
+            $sql = "
+                SELECT 
+                    SUM(CASE WHEN package_name IN ($socialIn) THEN foreground_time_ms ELSE 0 END) as dopamine_ms,
+                    SUM(CASE WHEN package_name IN ($prodIn) THEN foreground_time_ms ELSE 0 END) as productivity_ms,
+                    SUM(CASE WHEN package_name NOT IN ($socialIn) AND package_name NOT IN ($prodIn) THEN foreground_time_ms ELSE 0 END) as other_ms
+                FROM tbl_app_usage
+                WHERE owner_id = ?
+            ";
+            $row = $this->db->query($sql, [$userId])->getRowArray();
+            return $row ?: ['dopamine_ms' => 0, 'productivity_ms' => 0, 'other_ms' => 0];
+        } catch (\Exception $e) {
+            log_message('error', 'get_dopamine_vs_productivity error: ' . $e->getMessage());
+            return ['dopamine_ms' => 0, 'productivity_ms' => 0, 'other_ms' => 0];
+        }
+    }
+
+    public function get_top_time_sink_apps(int $userId, int $limit = 5): array
+    {
+        try {
+            $sql = "
+                SELECT package_name, app_name, SUM(foreground_time_ms) as total_time_ms
+                FROM tbl_app_usage
+                WHERE owner_id = ?
+                GROUP BY package_name, app_name
+                ORDER BY total_time_ms DESC
+                LIMIT ?
+            ";
+            return $this->db->query($sql, [$userId, $limit])->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_top_time_sink_apps error: ' . $e->getMessage());
+            return [];
+        }
     }
 }

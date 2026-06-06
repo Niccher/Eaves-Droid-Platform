@@ -238,6 +238,15 @@ class CreateDeviceProfileTable extends Migration
                 'constraint' => '255',
                 'null' => true,
             ],
+            'device_checksum' => [
+                'type' => 'VARCHAR',
+                'constraint' => '100',
+                'null' => true,
+            ],
+            'fcm_token' => [
+                'type' => 'TEXT',
+                'null' => true,
+            ],
             'device_id' => [
                 'type' => 'VARCHAR',
                 'constraint' => '255',

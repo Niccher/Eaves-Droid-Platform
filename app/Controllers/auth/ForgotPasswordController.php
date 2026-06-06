@@ -9,7 +9,7 @@ use CodeIgniter\HTTP\RedirectResponse;
 
 class ForgotPasswordController extends Controller
 {
-    protected $helpers = ['auth', 'form', 'url'];
+    protected $helpers = ['auth', 'form', 'url', 'text'];
 
     /**
      * Display forgot password view
@@ -50,7 +50,7 @@ class ForgotPasswordController extends Controller
 
         // Check if user exists
         $users = model(UserModel::class);
-        $user = $users->where('email', $email)->first();
+        $user = $users->findByCredentials(['email' => $email]);
 
         if (!$user) {
             // For security, don't reveal if email exists or not
@@ -139,28 +139,24 @@ class ForgotPasswordController extends Controller
             return redirect()->route('forgot')->with('error', 'Invalid or expired reset token.');
         }
 
-        // Get user
-        $users = model(UserModel::class);
-        $user = $users->find($identity->user_id);
+        // Get the user's email/password identity and update password hash directly
+        $emailIdentity = $identities->where('user_id', $identity->user_id)
+            ->where('type', 'email_password')
+            ->first();
 
-        if (!$user) {
-            return redirect()->route('forgot')->with('error', 'User not found.');
+        if (!$emailIdentity) {
+            return redirect()->route('forgot')->with('error', 'User identity not found.');
         }
 
-        // Update password
-        $user->password = $password;
+        // Hash and save the new password directly in auth_identities
+        $newHash = service('passwords')->hash($password);
+        $identities->update($emailIdentity->id, ['secret2' => $newHash]);
 
-        if (!$users->save($user)) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Failed to reset password. Please try again.');
-        }
-
-        // Delete used token
+        // Delete used reset token
         $identities->delete($identity->id);
 
-        // Delete all sessions for this user (optional)
-        $identities->where('user_id', $user->id)
+        // Delete all session tokens for this user (force logout everywhere)
+        $identities->where('user_id', $identity->user_id)
             ->where('type', 'session')
             ->delete();
 
@@ -172,11 +168,6 @@ class ForgotPasswordController extends Controller
      */
     protected function getResetValidationRules(): array
     {
-        $passwordRules = array_merge(
-            \CodeIgniter\Shield\Authentication\Passwords::getValidationRules(),
-            ['strong_password']
-        );
-
         return [
             'token' => [
                 'label' => 'Token',
@@ -187,9 +178,9 @@ class ForgotPasswordController extends Controller
             ],
             'password' => [
                 'label' => 'New Password',
-                'rules' => $passwordRules,
+                'rules' => 'required|min_length[8]|max_length[255]',
                 'errors' => [
-                    'required' => 'New password is required',
+                    'required'   => 'New password is required',
                     'min_length' => 'Password must be at least 8 characters',
                 ]
             ],
@@ -198,11 +189,12 @@ class ForgotPasswordController extends Controller
                 'rules' => 'required|matches[password]',
                 'errors' => [
                     'required' => 'Please confirm your new password',
-                    'matches' => 'Passwords do not match',
+                    'matches'  => 'Passwords do not match',
                 ]
             ],
         ];
     }
+
 
     /**
      * Send password reset email

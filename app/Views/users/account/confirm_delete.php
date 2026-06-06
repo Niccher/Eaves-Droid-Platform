@@ -36,22 +36,60 @@
                                 <?php
                                 $typeNames = [
                                     'apps' => 'all your applications',
+                                    'calls' => 'all your call logs',
                                     'call_logs' => 'all your call logs',
                                     'contacts' => 'all your contacts',
                                     'sms' => 'all your SMS messages',
-                                    'all' => 'ALL your data (apps, calls, contacts, SMS)'
+                                    'files' => 'all your file metadata',
+                                    'locations' => 'all your location and activity history',
+                                    'advanced' => 'all your advanced extracted data',
+                                    'all' => 'ALL your data (apps, calls, contacts, SMS, files, locations, advanced data)'
                                 ];
-                                echo $typeNames[$delete_type] ?? 'selected data';
+                                echo '<strong>' . ($typeNames[$delete_type] ?? 'selected data') . '</strong>';
                                 ?>.
                             </div>
 
                             <div class="callout callout-danger">
-                                <h5><i class="fas fa-info-circle"></i> Important Information</h5>
-                                <ul>
-                                    <li>This action cannot be undone</li>
-                                    <li>All selected data will be permanently removed</li>
-                                    <li>You will not be able to recover this data</li>
-                                    <li>This action will be logged in your access history</li>
+                                <h5><i class="fas fa-list-ul mr-2"></i> Items to be Deleted:</h5>
+                                <ul class="mb-0">
+                                    <?php if ($delete_type === 'apps' || $delete_type === 'all'): ?>
+                                        <li>Applications: <strong><?php echo $total_apps; ?></strong> records</li>
+                                    <?php endif; ?>
+                                    <?php if ($delete_type === 'calls' || $delete_type === 'call_logs' || $delete_type === 'all'): ?>
+                                        <li>Call Logs: <strong><?php echo $total_calls; ?></strong> records</li>
+                                    <?php endif; ?>
+                                    <?php if ($delete_type === 'contacts' || $delete_type === 'all'): ?>
+                                        <li>Contacts: <strong><?php echo $total_contacts; ?></strong> records</li>
+                                    <?php endif; ?>
+                                    <?php if ($delete_type === 'sms' || $delete_type === 'all'): ?>
+                                        <li>SMS Messages: <strong><?php echo $total_sms; ?></strong> records</li>
+                                    <?php endif; ?>
+                                    <?php if ($delete_type === 'files' || $delete_type === 'all'): ?>
+                                        <li>File Metadata: <strong><?php echo $total_files; ?></strong> records</li>
+                                    <?php endif; ?>
+                                    <?php if ($delete_type === 'locations' || $delete_type === 'all'): ?>
+                                        <li>Location Points: <strong><?php echo $total_locations; ?></strong> records</li>
+                                        <li>Activities: <strong><?php echo $total_activities; ?></strong> records</li>
+                                    <?php endif; ?>
+                                    <?php if ($delete_type === 'advanced' || $delete_type === 'all'): ?>
+                                        <li>Device Context: <strong><?php echo $total_device; ?></strong> records</li>
+                                        <li>Network Information: <strong><?php echo $total_network; ?></strong> records</li>
+                                        <li>User Accounts: <strong><?php echo $total_accounts; ?></strong> records</li>
+                                        <li>Calendar Events: <strong><?php echo $total_calendar; ?></strong> records</li>
+                                        <li>App Usage Stats: <strong><?php echo $total_app_usage; ?></strong> records</li>
+                                        <li>Notifications: <strong><?php echo $total_notifications; ?></strong> records</li>
+                                        <li>Bluetooth Devices: <strong><?php echo $total_bluetooth; ?></strong> records</li>
+                                        <li>Sensor Profiles: <strong><?php echo $total_sensors; ?></strong> records</li>
+                                    <?php endif; ?>
+                                </ul>
+                            </div>
+
+                            <div class="callout callout-warning">
+                                <h5><i class="fas fa-info-circle mr-2"></i> Important Information</h5>
+                                <ul class="mb-0">
+                                    <li>This action <strong>cannot be undone</strong></li>
+                                    <li>Data will be permanently wiped from our secure servers</li>
+                                    <li>Associated logs and metadata will also be removed</li>
                                 </ul>
                             </div>
 

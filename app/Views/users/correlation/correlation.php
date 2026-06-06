@@ -195,51 +195,7 @@
                             </div>
                         </div>
 
-                        <!-- Quick Actions -->
-                        <div class="row mt-4">
-                            <div class="col-md-4">
-                                <div class="info-box bg-gradient-info">
-                                    <span class="info-box-icon">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                    </span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Financial Analysis</span>
-                                        <span class="info-box-number"><?php echo $financialSMS ?? 0 ?> transactions</span>
-                                        <a href="<?php echo base_url('analysis/sms/finance'); ?>" class="btn btn-light btn-sm mt-2">
-                                            <i class="fas fa-external-link-alt mr-1"></i> View Details
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="info-box bg-gradient-warning">
-                                    <span class="info-box-icon">
-                                        <i class="fas fa-ad"></i>
-                                    </span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Promotional Filter</span>
-                                        <span class="info-box-number"><?php echo $promotionalSMS ?? 0 ?> messages</span>
-                                        <a href="<?php echo base_url('analysis/sms/promotion'); ?>" class="btn btn-light btn-sm mt-2">
-                                            <i class="fas fa-external-link-alt mr-1"></i> Manage Ads
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="info-box bg-gradient-danger">
-                                    <span class="info-box-icon">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Security Threats</span>
-                                        <span class="info-box-number"><?php echo $maliciousSMS ?? 0 ?> detected</span>
-                                        <a href="<?php echo base_url('analysis/sms/malicious'); ?>" class="btn btn-light btn-sm mt-2">
-                                            <i class="fas fa-external-link-alt mr-1"></i> Review Threats
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>

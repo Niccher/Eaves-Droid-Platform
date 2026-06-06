@@ -1032,12 +1032,51 @@ class Account extends BaseClientController
                     $data = $this->finderModel->get_sms($this->userId, 1000);
                     $filename = 'sms_export_' . date('Y-m-d_H-i-s') . '.json';
                     break;
+                case 'files':
+                    $data = $this->finderModel->export_device_files($this->userId, 1000);
+                    $filename = 'files_metadata_export_' . date('Y-m-d_H-i-s') . '.json';
+                    break;
+                case 'locations':
+                    $data = [
+                        'locations' => $this->finderModel->get_locations($this->userId, 1000),
+                        'activities' => $this->finderModel->get_activities($this->userId, 1000)
+                    ];
+                    $filename = 'location_history_export_' . date('Y-m-d_H-i-s') . '.json';
+                    break;
+                case 'advanced':
+                    $data = [
+                        'device_context' => $this->finderModel->export_device_context($this->userId),
+                        'network_info' => $this->finderModel->export_network_info($this->userId),
+                        'accounts' => $this->finderModel->export_accounts($this->userId),
+                        'calendar' => $this->finderModel->export_calendar_events($this->userId),
+                        'app_usage' => $this->finderModel->export_app_usage($this->userId),
+                        'notifications' => $this->finderModel->export_notifications($this->userId),
+                        'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
+                        'sensors' => $this->finderModel->export_sensors($this->userId),
+                    ];
+                    $filename = 'advanced_data_export_' . date('Y-m-d_H-i-s') . '.json';
+                    break;
                 case 'all':
                     $data = [
                         'apps' => $this->finderModel->get_apps($this->userId, 1000),
                         'calls' => $this->finderModel->get_call_logs($this->userId, 1000),
                         'contacts' => $this->finderModel->get_contacts($this->userId, 1000),
                         'sms' => $this->finderModel->get_sms($this->userId, 1000),
+                        'files' => $this->finderModel->export_device_files($this->userId, 1000),
+                        'location' => [
+                            'locations' => $this->finderModel->get_locations($this->userId, 1000),
+                            'activities' => $this->finderModel->get_activities($this->userId, 1000)
+                        ],
+                        'advanced' => [
+                            'device_context' => $this->finderModel->export_device_context($this->userId),
+                            'network_info' => $this->finderModel->export_network_info($this->userId),
+                            'accounts' => $this->finderModel->export_accounts($this->userId),
+                            'calendar' => $this->finderModel->export_calendar_events($this->userId),
+                            'app_usage' => $this->finderModel->export_app_usage($this->userId),
+                            'notifications' => $this->finderModel->export_notifications($this->userId),
+                            'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
+                            'sensors' => $this->finderModel->export_sensors($this->userId),
+                        ],
                         'export_info' => [
                             'exported_at' => date('Y-m-d H:i:s'),
                             'user_id' => $this->userId,
@@ -1094,12 +1133,17 @@ class Account extends BaseClientController
 
         // Show confirmation view for GET requests
         if ($this->request->getMethod() !== 'post') {
-            return $this->renderView('confirm_delete', [
+            $viewData = [
                 'pag' => 'account_profile',
                 'user_info' => $this->userData,
                 'delete_type' => $type,
                 'csrf_token' => csrf_hash(),
-            ]);
+            ];
+            
+            // Add data counts for more detailed confirmation
+            $viewData = array_merge($viewData, $this->getUserDataCounts());
+            
+            return $this->renderView('confirm_delete', $viewData);
         }
 
         // Validate CSRF token
@@ -1136,13 +1180,44 @@ class Account extends BaseClientController
                     $success = $this->finderModel->deleteSmsByUser($this->userId);
                     $message = 'All SMS messages deleted successfully';
                     break;
+                case 'files':
+                    $success = $this->finderModel->deleteDeviceFilesByUser($this->userId);
+                    $message = 'All file metadata deleted successfully';
+                    break;
+                case 'locations':
+                    $success = $this->finderModel->deleteLocationByUser($this->userId) && $this->finderModel->deleteActivityByUser($this->userId);
+                    $message = 'All location and activity history deleted successfully';
+                    break;
+                case 'advanced':
+                    $success = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
+                               $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
+                               $this->finderModel->deleteAccountsByUser($this->userId) &&
+                               $this->finderModel->deleteCalendarByUser($this->userId) &&
+                               $this->finderModel->deleteAppUsageByUser($this->userId) &&
+                               $this->finderModel->deleteNotificationsByUser($this->userId) &&
+                               $this->finderModel->deleteBluetoothByUser($this->userId) &&
+                               $this->finderModel->deleteSensorsByUser($this->userId);
+                    $message = 'All advanced extracted data deleted successfully';
+                    break;
                 case 'all':
                     $apps = $this->finderModel->deleteAppsByUser($this->userId);
                     $calls = $this->finderModel->deleteCallsByUser($this->userId);
                     $contacts = $this->finderModel->deleteContactsByUser($this->userId);
                     $sms = $this->finderModel->deleteSmsByUser($this->userId);
-                    $success = ($apps && $calls && $contacts && $sms);
-                    $message = 'All data deleted successfully';
+                    $files = $this->finderModel->deleteDeviceFilesByUser($this->userId);
+                    $locations = $this->finderModel->deleteLocationByUser($this->userId);
+                    $activities = $this->finderModel->deleteActivityByUser($this->userId);
+                    $advanced = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
+                                $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
+                                $this->finderModel->deleteAccountsByUser($this->userId) &&
+                                $this->finderModel->deleteCalendarByUser($this->userId) &&
+                                $this->finderModel->deleteAppUsageByUser($this->userId) &&
+                                $this->finderModel->deleteNotificationsByUser($this->userId) &&
+                                $this->finderModel->deleteBluetoothByUser($this->userId) &&
+                                $this->finderModel->deleteSensorsByUser($this->userId);
+                                
+                    $success = ($apps && $calls && $contacts && $sms && $files && $locations && $activities && $advanced);
+                    $message = 'All your data has been completely wiped successfully';
                     break;
                 default:
                     session()->setFlashdata('error', 'Invalid delete type');

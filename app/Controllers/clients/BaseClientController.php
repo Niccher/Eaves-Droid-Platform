@@ -63,9 +63,19 @@ class BaseClientController extends BaseController
             'total_calls'      => $this->finderModel->get_count_Calls($this->userId),
             'total_locations'  => $this->finderModel->get_count_Location($this->userId),
             'total_activities' => $this->finderModel->get_count_Activity($this->userId),
+            'total_device'     => $this->finderModel->get_count_DeviceContext($this->userId),
+            'total_network'    => $this->finderModel->get_count_NetworkInfo($this->userId),
+            'total_accounts'   => $this->finderModel->get_count_Accounts($this->userId),
+            'total_calendar'   => $this->finderModel->get_count_Calendar($this->userId),
+            'total_app_usage'  => $this->finderModel->get_count_AppUsage($this->userId),
+            'total_notifications' => $this->finderModel->get_count_Notifications($this->userId),
+            'total_bluetooth'  => $this->finderModel->get_count_Bluetooth($this->userId),
+            'total_sensors'    => $this->finderModel->get_count_Sensors($this->userId),
+            'total_media'      => $this->finderModel->get_count_CapturedMedia($this->userId),
             'active_sms'       => $this->finderModel->get_sms_active($this->userId),
             'active_calls'     => $this->finderModel->get_calls_active($this->userId),
         ];
+
     }
 
     /**
@@ -156,14 +166,18 @@ class BaseClientController extends BaseController
         $buttons = [
             'location' => ($activeView === 'location') ? 'btn-primary' : 'btn-outline-primary',
             'activity' => ($activeView === 'activity') ? 'btn-primary' : 'btn-outline-primary',
+            'advanced' => ($activeView === 'advanced') ? 'btn-primary' : 'btn-outline-primary',
         ];
 
         return '
             <a class="btn ' . $buttons['location'] . '" href="' . base_url("location") . '">Locations</a>
             &nbsp;&nbsp;
             <a class="btn ' . $buttons['activity'] . '" href="' . base_url("activities") . '">Activities</a>
+            &nbsp;&nbsp;
+            <a class="btn ' . $buttons['advanced'] . '" href="' . base_url("advanced/device") . '">Advanced Data</a>
             &nbsp;&nbsp;';
     }
+
 
     /**
      * Get page titles for different SMS views.
