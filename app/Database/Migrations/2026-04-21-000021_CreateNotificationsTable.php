@@ -52,6 +52,32 @@ class CreateNotificationsTable extends Migration
                 'type' => 'TEXT',
                 'null' => true,
             ],
+            'sender' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 255,
+                'null'       => true,
+            ],
+            'sub_text' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 500,
+                'null'       => true,
+            ],
+            'category' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
+                'null'       => true,
+            ],
+            'visibility' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 50,
+                'null'       => true,
+            ],
+            'is_screen_notification' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 0,
+                'null'       => false,
+            ],
             'notification_timestamp' => [
                 'type'       => 'BIGINT',
                 'constraint' => 20,
@@ -86,6 +112,9 @@ class CreateNotificationsTable extends Migration
         $this->forge->addKey('action');
         $this->forge->addKey('notification_timestamp');
         $this->forge->addKey('extracted_at');
+        $this->forge->addKey('sender');
+        $this->forge->addKey('is_screen_notification');
+
         $this->forge->addUniqueKey(
             ['owner_id', 'device_id', 'notification_id', 'notification_timestamp', 'action'],
             'uq_notification_entry'

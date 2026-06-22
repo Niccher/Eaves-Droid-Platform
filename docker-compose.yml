@@ -1,56 +1,20 @@
 version: '3.8'
 
 services:
-  # --- PHP APPLICATION ---
-  app:
-    build: .                
-    image: ci4_app_image     
-    container_name: ci4_app
-    restart: always
+  webapp:
+    build: .
+    container_name: prjs4-webapp
     ports:
-      - "8080:80"
+      - "9007:80"
     volumes:
       - .:/var/www/html
+      - /var/www/html/writable
     environment:
-      - app.baseURL=${APP_BASE_URL:-http://localhost:8080/}
-      - database.default.hostname=${DATABASE_HOSTNAME:-db}
-      - database.default.database=${MYSQL_DATABASE}
-      - database.default.username=${MYSQL_USER}
-      - database.default.password=${MYSQL_PASSWORD}
-      - database.default.DBDriver=MySQLi
       - CI_ENVIRONMENT=development
-    depends_on:
-      - db
+    networks:
+      - shared-network
 
-  # --- MYSQL DATABASE ---
-  db:
-    image: mysql:8.0
-    container_name: ci4_db
-    restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-    ports:
-      - "3307:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-      - ./app/Database/Migrations:/docker-entrypoint-initdb.d:ro
-
-  # --- PHPMYADMIN ---
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: ci4_phpmyadmin
-    restart: always
-    ports:
-      - "8081:80"
-    environment:
-      - PMA_HOST=${DATABASE_HOSTNAME:-db}
-      - PMA_USER=${MYSQL_USER}
-      - PMA_PASSWORD=${MYSQL_PASSWORD}
-    depends_on:
-      - db
-
-volumes:
-  db_data:
+networks:
+  shared-network:
+    name: hosts-shared-network
+    external: true
