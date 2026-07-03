@@ -221,7 +221,7 @@ class Auth extends ShieldAuth
     public array $sessionConfig = [
         'field'              => 'user_v4',
         'allowRemembering'   => true,
-        'rememberCookieName' => 'prjs4_remember',
+        'rememberCookieName' => 'eaves_droid_remember',
         'rememberLength'     => 30 * DAY,
     ];
 

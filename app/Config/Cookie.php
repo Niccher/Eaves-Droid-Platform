@@ -14,7 +14,7 @@ class Cookie extends BaseConfig
      *
      * Set a cookie name prefix if you need to avoid collisions.
      */
-    public string $prefix = 'prjs4_';
+    public string $prefix = 'eaves_droid_';
 
     /**
      * --------------------------------------------------------------------------

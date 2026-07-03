@@ -33,7 +33,7 @@ class Security extends BaseConfig
      *
      * Token name for Cross Site Request Forgery protection.
      */
-    public string $tokenName = 'prjs4_csrf_token';
+    public string $tokenName = 'eaves_droid_csrf_token';
 
     /**
      * --------------------------------------------------------------------------
@@ -51,7 +51,7 @@ class Security extends BaseConfig
      *
      * Cookie name for Cross Site Request Forgery protection.
      */
-    public string $cookieName = 'prjs4_csrf_cookie';
+    public string $cookieName = 'eaves_droid_csrf_cookie';
 
     /**
      * --------------------------------------------------------------------------

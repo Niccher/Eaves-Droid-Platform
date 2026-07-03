@@ -1,77 +1,178 @@
-# Prj Images - Mobile Data Intelligence Platform
+# 🚀 Eaves Droid
 
-Prj Images is a powerful web-based platform built on **CodeIgniter 4** designed to analyze, visualize, and manage mobile data (SMS, Calls, Contacts, Apps, and Locations) extracted from Android devices.
+> A professional, highly-scalable CodeIgniter 4 web application built for modern workflows.
 
-## 🚀 Project Overview
+The analytical brain of a Device Intelligence & Insights System that ingests data sent by an Android collector app (SMS, call logs, contacts, apps, GPS) and processes them into rich dashboards surfacing behavioral patterns.
 
-The system acts as a central hub for data visualization and device management. It features an "Intelligence Dashboard" that uses statistical analysis to categorize communication patterns (Financial, Security, Spam, etc.) and provides remote command capabilities via Firebase.
-
-### Key Features
-- **Intelligence Dashboard**: Automated categorization of SMS and Call logs using keyword-based analysis.
-- **Remote Commands**: Send real-time extraction requests to connected Android devices.
-- **Secure Profiles**: Encrypted user bios and secure multi-factor ready authentication.
-- **Data Export**: Comprehensive data export in CSV/ZIP formats.
-- **Device Management**: Track connected devices, session history, and activity logs.
-
-## 🛠 Technology Stack
-
-- **Backend**: PHP 8.1+ (CodeIgniter 4 framework)
-- **Authentication**: CodeIgniter Shield
-- **Frontend**: AdminLTE 3 (Bootstrap 4), DataTables, Chart.js
-- **Database**: MySQL/MariaDB
-- **Security**: AES-256 data encryption for sensitive fields
-
-## 🏗 Internal Logic & Architecture
-
-### 1. Data Models
-- **`Mod_Finder`**: The core data engine. It handles complex SQL queries for data counts and implements the **categorization logic** for SMS (Financial, OTP, Malicious) and Calls (Family, Business, Spam).
-- **`Mod_User`**: Manages the link between Shield authentication and custom `user_profiles`. It also handles API token generation and device hardware mapping.
-- **`Mod_Crypt`**: A dedicated security layer that uses a server-side secret key to encrypt and decrypt sensitive user information like bios.
-
-### 2. Remote Command Flow
-The system utilizes **Firebase Cloud Messaging (FCM)**. When a user sends a command (e.g., "Extract SMS") from the Web Dashboard:
-1. The controller identifies the target device's latest FCM token.
-2. A data message is sent via `FirebaseLib`.
-3. The Android app receives the "action" and begins the background extraction process.
-
-### 3. Data Intelligence
-The `Mod_Finder` uses an array-based keyword matching system (Heuristics) to categorize data:
-- **Financial**: Detects bank names and transaction keywords (KCB, M-Pesa, etc).
-- **Security**: Flags OTPs and verification codes.
-- **Threats**: Identifies common scam patterns (lottery wins, prize alerts).
-
-## ⚙️ Setup Instructions
-
-### Prerequisites
-- Apache/Nginx (PHP 8.1 support)
-- MySQL/MariaDB
-- Composer (for dependency management)
-
-### Installation Steps
-1. **Clone & Extract**: Place the project files in your web root (e.g., `/opt/lampp/htdocs/`).
-2. **Database Configuration**:
-   - Create a database in MySQL.
-   - Update `app/Config/Database.php` with your credentials.
-   - Run migrations: `php spark migrate`.
-3. **Environment Setup**:
-   - Rename `env` to `.env`.
-   - Set `CI_ENVIRONMENT = production` (or `development` for debugging).
-   - Set your `app.baseURL`.
-4. **Permissions**:
-   - Ensure `writable/` and `public/uploads/` are writable by the web server:
-     ```bash
-     chmod -R 777 writable/
-     chmod -R 777 public/uploads/
-     ```
-5. **Security Key**: Set your encryption key in `app/Config/Encryption.php`.
-
-## 📁 Directory Structure
-
-- `app/Controllers/clients`: Authenticated user controllers.
-- `app/Models`: Data models and intelligence logic.
-- `app/Views/users`: Dashboard and data viewing screens.
-- `public/uploads/profiles`: User avatars.
-- `writable/`: Logs, cache, and session data.
+[![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?style=for-the-badge&logo=php&logoColor=white)](#)
+[![CodeIgniter 4](https://img.shields.io/badge/CodeIgniter-4.x-EF4223?style=for-the-badge&logo=codeigniter&logoColor=white)](#)
+[![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](#)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 ---
-*Developed as part of the Prj Images Ecosystem.*
+
+## 📖 1. About the Project
+
+**Eaves Droid** is a robust and flexible web application designed to solve complex developer workflows with ease. Built on the lightning-fast CodeIgniter 4 framework, this project acts as a complete, out-of-the-box solution for providing developers deep insights, multi-source analytics, and cross-data correlation for Android ecosystems. 
+
+Our target users are developers, power users, and teams looking for an open-source solution that emphasizes performance, security, and developer experience (DX). 
+
+**What makes this project unique?**
+Every component of this application is fully containerized. From the zero-configuration automated database migrations on boot, to the host-mapped persistent storage volumes—this project guarantees a frictionless setup experience whether you are running it on a local machine or deploying it to a cloud server.
+
+---
+
+## ✨ 2. Features
+
+- 🐳 **Instant Setup**: 100% Dockerized architecture. Go from zero to running in under 60 seconds.
+- 🔄 **Automated Migrations**: Database tables and schemas are built automatically when the container boots.
+- 💾 **Smart Persistence**: Database records and uploaded media safely persist on your local filesystem, completely isolated from container lifecycle events.
+- 🛡️ **Hardened Security**: Features built-in CSRF protection, strictly configured session handling, and environment-driven configurations.
+- 📊 **Integrated Database Management**: Comes bundled with a dedicated `phpMyAdmin` container for real-time database visualization.
+
+---
+
+## 🛠️ 3. Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Backend Framework** | [CodeIgniter 4](https://codeigniter.com/) |
+| **Language** | PHP 8.3 |
+| **Database** | MySQL 8.4 |
+| **Database Manager** | phpMyAdmin |
+| **Containerization** | Docker & Docker Compose |
+| **Dependency Manager** | Composer |
+
+---
+
+## 📋 4. Prerequisites
+
+Before you begin, ensure you have the following installed on your machine:
+- [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
+- [Git](https://git-scm.com/)
+
+*(If you choose to run without Docker, you will need PHP 8.3+, Composer, and a local MySQL server).*
+
+---
+
+## 🚀 5. Installation & Setup (Detailed)
+
+### Option 1: Using Docker (Preferred & Easiest)
+
+This repository includes a pre-configured `docker-compose.yml` file. It completely eliminates the need to manually install PHP, web servers, or databases on your local machine.
+
+#### 1. Clone the repository
+```bash
+git clone https://github.com/yourusername/eaves-droid-webapp.git
+cd "Eaves Droid WebApp"
+```
+
+#### 2. Configure Environment Variables
+Copy the provided environment template:
+```bash
+cp .env.example .env
+```
+*(Note: The defaults in `.env.example` are specifically pre-configured to work perfectly with the Docker environment out of the box).*
+
+#### 3. Build and Run
+Spin up the application, MySQL database, and phpMyAdmin in detached mode:
+```bash
+docker compose up --build -d
+```
+
+#### 4. Access the Application
+Once the containers finish booting, database migrations run automatically. You can access your services at:
+- **Application**: [http://localhost:9007](http://localhost:9007)
+- **phpMyAdmin**: [http://localhost:9000](http://localhost:9000)
+
+**Useful Docker Commands:**
+- Stop the application: `docker compose down`
+- View live application logs: `docker compose logs -f eaves-droid`
+- Restart the application: `docker compose restart eaves-droid`
+
+### Option 2: Local Development (Without Docker)
+
+If you prefer a traditional local setup (e.g., XAMPP, Laragon, or Laravel Valet):
+
+1. **Clone the repo** and run `composer install` in the root directory.
+2. **Copy `.env.example`** to `.env`.
+3. **Configure the Database**: Update the `database.default.*` variables inside your `.env` to match your local MySQL credentials.
+4. **Run Migrations**: Build the necessary database tables by executing:
+   ```bash
+   php spark migrate --all
+   ```
+5. **Serve the Application**:
+   ```bash
+   php spark serve
+   ```
+
+---
+
+## 🗄️ 6. Database Configuration
+
+If you are using the Docker setup, the database configuration is completely automated.
+
+**Development Credentials:**
+- **Host:** `mysql`
+- **Database Name:** `db_eaves_droid`
+- **Username:** `root`
+- **Password:** `root_password`
+
+You can visually manage this database by navigating to [http://localhost:9000](http://localhost:9000) and logging into phpMyAdmin with the credentials above.
+
+---
+
+## 📖 7. Usage
+
+1. **Sign Up / Login**: Navigate to the homepage to create your first administrative account.
+2. **Dashboard**: Access the main dashboard to view analytics and metrics.
+3. **File Management**: Any artifacts or files you upload within the application will be securely persisted inside the `/writable/uploads` directory on your local machine.
+
+---
+
+## 📁 8. Project Structure
+
+```text
+.
+├── app/            # Core application logic (Controllers, Models, Views)
+├── public/         # Document root (accessible to the web)
+├── writable/       # Cache, logs, sessions, and persisted uploads
+├── system/         # CodeIgniter 4 framework files
+├── docker-compose.yml # Standalone Docker orchestration
+├── entrypoint.sh   # Automated migration startup script
+└── Dockerfile      # PHP-Apache container build instructions
+```
+
+---
+
+## 🤝 9. Contributing
+
+We welcome contributions from the community! To contribute:
+
+1. **Fork** the repository.
+2. **Create a new branch**: `git checkout -b feature/your-feature-name`
+3. **Commit your changes**: `git commit -m 'Add some feature'`
+4. **Push to the branch**: `git push origin feature/your-feature-name`
+5. **Open a Pull Request**.
+
+Please ensure you run tests and verify your changes inside the Docker environment before submitting.
+
+---
+
+## 📄 10. License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## 📸 11. Screenshots & Demo
+
+*(Screenshots coming soon)*
+
+---
+
+## 💬 12. Support & Acknowledgments
+
+- Built with ❤️ using [CodeIgniter 4](https://codeigniter.com/).
+- UI components powered by modern web standards.
