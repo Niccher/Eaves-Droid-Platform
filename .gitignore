@@ -128,3 +128,9 @@ nb-configuration.xml
 
 writable/credentials/firebase_service_account.json
 writable/firebase_credentials.json
+
+# Ignore writable logs and debugbar
+writable/logs/*
+!writable/logs/index.html
+writable/debugbar/*
+!writable/debugbar/index.html

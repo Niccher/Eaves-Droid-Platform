@@ -109,7 +109,7 @@ class App extends BaseConfig
      *
      * @see https://www.php.net/manual/en/timezones.php for list of timezones supported by PHP.
      */
-    public string $appTimezone = 'UTC';
+    public string $appTimezone = 'Africa/Nairobi';
 
     /**
      * --------------------------------------------------------------------------
@@ -175,4 +175,10 @@ class App extends BaseConfig
      * @see http://www.w3.org/TR/CSP/
      */
     public bool $CSPEnabled = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->baseURL = env('app.baseURL', $this->baseURL);
+    }
 }

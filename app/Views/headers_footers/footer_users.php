@@ -28,7 +28,7 @@
     <!-- overlayScrollbars -->
     <script src="<?php echo base_url('assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js?v=1.4'); ?>"></script>
     <!-- AdminLTE App -->
-    <script src="<?php echo base_url('assets/js/adminlte.js?v=1.4'); ?>"></script>
+    <script src="<?php echo base_url('assets/js/adminlte.min.js?v=1.4'); ?>"></script>
     </body>
 </html>
 
