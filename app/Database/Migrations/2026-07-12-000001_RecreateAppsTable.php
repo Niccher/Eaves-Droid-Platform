@@ -4,10 +4,14 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateAppsTable extends Migration
+class RecreateAppsTable extends Migration
 {
     public function up()
     {
+        // Drop existing table if it exists (data loss is acceptable per user request)
+        $this->forge->dropTable('tbl_apps', true);
+
+        // Recreate table with updated unique constraint
         $this->forge->addField([
             'counter' => [
                 'type'           => 'INT',
@@ -137,7 +141,8 @@ class CreateAppsTable extends Migration
         ]);
 
         $this->forge->addPrimaryKey('counter');
-        $this->forge->addUniqueKey(['package_name', 'device_id']);
+        // Composite unique key now includes owner_id
+        $this->forge->addUniqueKey(['package_name', 'device_id', 'owner_id']);
         $this->forge->addKey('package_name');
         $this->forge->addKey('device_id');
         $this->forge->addKey('is_system_app');
@@ -157,11 +162,13 @@ class CreateAppsTable extends Migration
         $this->forge->addKey(['owner_id', 'package_name']);
         $this->forge->addKey(['owner_id', 'app_name']);
 
-        $this->forge->createTable('tbl_apps', true);
+        $this->forge->createTable('tbl_apps');
     }
 
     public function down()
     {
-        $this->forge->dropTable('tbl_apps');
+        // Drop the recreated table
+        $this->forge->dropTable('tbl_apps', true);
     }
 }
+?>

@@ -211,6 +211,26 @@ class Mod_Finder extends Model
     {
         return $this->db->table('tbl_notifications')->where('owner_id', $user_id)->delete();
     }
+
+    /**
+     * Delete notifications for a specific app (package) for a user.
+     *
+     * @param int $user_id
+     * @param string $packageName
+     * @return bool
+     */
+    public function delete_notifications_by_app(int $user_id, string $packageName): bool
+    {
+        try {
+            $builder = $this->db->table('tbl_notifications');
+            return $builder->where('owner_id', $user_id)
+                           ->where('package_name', $packageName)
+                           ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_notifications_by_app error: ' . $e->getMessage());
+            return false;
+        }
+    }
     public function deleteBluetoothByUser(int $user_id): bool
     {
         return $this->db->table('tbl_bluetooth')->where('owner_id', $user_id)->delete();

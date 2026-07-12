@@ -34,7 +34,7 @@ $typeConfig = [
                     <p class="text-muted mb-0">Unified correlated event stream — <?= number_format(count($timeline)) ?> events</p>
                 </div>
                 <div class="col-sm-6 text-right">
-                    <a href="<?= base_url('analysis/advanced_timeline') ?>" class="btn btn-info btn-sm">
+                    <a href="<?= base_url('analysis/timeline') ?>" class="btn btn-info btn-sm">
                         <i class="fas fa-stream mr-1"></i> View Device Timeline
                     </a>
                 </div>

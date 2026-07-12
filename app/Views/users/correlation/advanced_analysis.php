@@ -65,7 +65,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/finance') ?>" class="btn btn-success btn-block">
+                                <a href="<?= base_url('analysis/finance') ?>" class="btn btn-success btn-block">
                                     <i class="fas fa-chart-line mr-1"></i> Open Finance Dashboard
                                 </a>
                             </div>
@@ -89,7 +89,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-thmr-2"></i> Heatmap & Daily Pathing Visualization.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/location') ?>" class="btn btn-primary btn-block">
+                                <a href="<?= base_url('analysis/location') ?>" class="btn btn-primary btn-block">
                                     <i class="fas fa-map mr-1"></i> View Heatmap & Paths
                                 </a>
                             </div>
@@ -123,7 +123,7 @@
                                         <small>Signal</small>
                                     </div>
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/device') ?>" class="btn btn-info btn-block mt-4">
+                                <a href="<?= base_url('analysis') ?>" class="btn btn-info btn-block mt-4">
                                     <i class="fas fa-heartbeat mr-1"></i> View Health Monitor
                                 </a>
                             </div>
@@ -144,7 +144,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-project-diagram mr-2"></i> Top 10 Connections & New Contact Alerts.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/social') ?>" class="btn btn-warning btn-block">
+                                <a href="<?= base_url('analysis/social') ?>" class="btn btn-warning btn-block">
                                     <i class="fas fa-network-wired mr-1"></i> Open Social Map
                                 </a>
                             </div>
@@ -170,7 +170,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-history mr-2"></i> Movement Trends & Digital Balance.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/lifestyle') ?>" class="btn btn-secondary btn-block">
+                                <a href="<?= base_url('analysis/lifestyle') ?>" class="btn btn-secondary btn-block">
                                     <i class="fas fa-fingerprint mr-1"></i> View Lifestyle Profile
                                 </a>
                             </div>
@@ -220,7 +220,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-shield-alt mr-2"></i> Risk Scoring & Sensitivity Evaluation.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/privacy') ?>" class="btn btn-danger btn-block">
+                                <a href="<?= base_url('analysis/privacy') ?>" class="btn btn-danger btn-block">
                                     <i class="fas fa-search-plus mr-1"></i> Start Privacy Audit
                                 </a>
                             </div>
@@ -244,7 +244,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-coins mr-2"></i> Bill Detection & Expense Forecasting.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/subscriptions') ?>" class="btn btn-success btn-block">
+                                <a href="<?= base_url('analysis/subscriptions') ?>" class="btn btn-success btn-block">
                                     <i class="fas fa-receipt mr-1"></i> View Subscriptions
                                 </a>
                             </div>
@@ -271,7 +271,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-chart-pie mr-2"></i> Usage Categorization & Patterns.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/apps') ?>" class="btn btn-primary btn-block">
+                                <a href="<?= base_url('analysis/apps') ?>" class="btn btn-primary btn-block">
                                     <i class="fas fa-briefcase mr-1"></i> View App Portfolio
                                 </a>
                             </div>
@@ -295,7 +295,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-folder-open mr-2"></i> Storage Health & Source Auditing.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/storage') ?>" class="btn btn-info btn-block">
+                                <a href="<?= base_url('analysis/storage') ?>" class="btn btn-info btn-block">
                                     <i class="fas fa-database mr-1"></i> Open Storage Forensics
                                 </a>
                             </div>
@@ -321,7 +321,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-heartbeat mr-2"></i> Emotional Profiling & Social Health.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/sentiment') ?>" class="btn btn-warning btn-block">
+                                <a href="<?= base_url('analysis/sentiment') ?>" class="btn btn-warning btn-block">
                                     <i class="fas fa-brain mr-1"></i> Analyze Relationship Tone
                                 </a>
                             </div>
@@ -345,7 +345,7 @@
                                 <div class="alert alert-light border">
                                     <i class="fas fa-draw-polygon mr-2"></i> Base of Operations Analysis.
                                 </div>
-                                <a href="<?= base_url('analysis/advanced/hotspots') ?>" class="btn btn-success btn-block">
+                                <a href="<?= base_url('analysis/hotspots') ?>" class="btn btn-success btn-block">
                                     <i class="fas fa-thumbtack mr-1"></i> View Physical Bases
                                 </a>
                             </div>
@@ -369,7 +369,7 @@
                                         <p>Generate professional-grade summary reports in PDF format for weekly activity or specific investigation cases.</p>
                                     </div>
                                     <div class="col-md-4">
-                                        <a href="<?= base_url('analysis/advanced/report') ?>" target="_blank" class="btn btn-danger btn-block">
+                                        <a href="<?= base_url('analysis/report') ?>" target="_blank" class="btn btn-danger btn-block">
                                             <i class="fas fa-download mr-1"></i> Generate Weekly Report
                                         </a>
                                     </div>

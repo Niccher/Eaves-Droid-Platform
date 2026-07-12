@@ -22,11 +22,11 @@
                                     <?= $selected_sender ? esc($selected_sender) : 'All Senders' ?>
                                 </button>
                                 <div class="dropdown-menu shadow-sm scrollable-menu" style="max-height: 300px; overflow-y: auto;">
-                                    <a class="dropdown-item <?= !$selected_sender ? 'active' : '' ?>" href="<?= base_url('analysis/advanced/finance') ?>">All Senders</a>
+                                    <a class="dropdown-item <?= !$selected_sender ? 'active' : '' ?>" href="<?= base_url('analysis/finance') ?>">All Senders</a>
                                     <div class="dropdown-divider"></div>
                                     <?php foreach ($senders as $sender): ?>
                                         <a class="dropdown-item <?= $selected_sender == $sender ? 'active' : '' ?>" 
-                                           href="<?= base_url('analysis/advanced/finance?sender=' . urlencode($sender)) ?>">
+                                           <form action="<?= base_url('analysis/location') ?>" method="get" class="form-inline float-right">">
                                             <?= esc($sender) ?>
                                         </a>
                                     <?php endforeach; ?>
@@ -40,7 +40,7 @@
                             <ol class="breadcrumb bg-transparent p-0 mb-0">
                                 <li class="breadcrumb-item"><a href="<?= base_url('home') ?>"><i class="fas fa-home mr-1"></i>Home</a></li>
                                 <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>">Intelligence</a></li>
-                                <li class="breadcrumb-item"><a href="<?= base_url('analysis/advanced') ?>">Advanced</a></li>
+                                
                                 <li class="breadcrumb-item active">Finance</li>
                             </ol>
                         </nav>

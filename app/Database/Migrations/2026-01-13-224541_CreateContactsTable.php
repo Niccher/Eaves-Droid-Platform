@@ -150,7 +150,7 @@ class CreateContactsTable extends Migration
         $this->forge->addKey('last_sync');
         $this->forge->addKey('updated_at');
 
-        $this->forge->createTable('tbl_contacts');
+        $this->forge->createTable('tbl_contacts', true);
     }
 
     public function down()

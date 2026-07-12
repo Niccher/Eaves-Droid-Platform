@@ -27,7 +27,7 @@
                         <p class="text-muted mt-2 mb-0">Interactive heatmap and movement path analysis from device GPS data</p>
                     </div>
                     <div class="col-lg-4 col-md-12 mt-3 mt-lg-0">
-                        <form action="<?= base_url('analysis/advanced/location') ?>" method="get" class="form-inline float-right">
+                        <form action="<?= base_url('analysis/location') ?>" method="get" class="form-inline float-right">
                             <div class="input-group input-group-sm mr-2">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text bg-white border-right-0"><i class="fas fa-calendar-alt"></i></span>

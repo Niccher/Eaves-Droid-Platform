@@ -189,10 +189,15 @@ if (!empty($detail_mode)) {
                                 </td>
                                 <td><small class="text-muted"><?= htmlspecialchars($preview) ?></small></td>
                                 <td class="text-center">
-                                    <a href="<?= base_url('advanced/notifications/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-warning" title="View all notifications">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
+						<a href="<?= base_url('advanced/notifications/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-warning mr-1" title="View all notifications">
+							<i class="fas fa-eye"></i>
+						</a>
+						<form method="post" action="<?= base_url('advanced/notifications/delete/' . $pkgEnc) ?>" style="display:inline;" onsubmit="return confirm('Delete all notifications for this app?');">
+							<button type="submit" class="btn btn-sm btn-outline-danger" title="Delete all notifications">
+								<i class="fas fa-trash-alt"></i>
+							</button>
+						</form>
+					</td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>

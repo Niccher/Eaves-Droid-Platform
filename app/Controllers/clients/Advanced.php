@@ -475,4 +475,26 @@ class Advanced extends BaseClientController
 
         return $this->fail('Failed to delete media record');
     }
+
+    /** POST /advanced/notifications/delete/(:any) */
+    public function delete_notifications_by_app($pkgEnc = null)
+    {
+        // Support both route segment and POST data
+        if ($pkgEnc === null) {
+            // Try POST parameter first, then URI segment
+            $pkgEnc = $this->request->getPost('pkg') ?? $this->request->uri->getSegment(4);
+        }
+        $packageName = $this->decodePackageSegment($pkgEnc);
+        if (!$packageName) {
+            // Set flash error and redirect back
+            $this->session->setFlashdata('error', 'Invalid package name');
+            return redirect()->to(base_url('advanced/notifications'));
+        }
+        if ($this->finderModel->delete_notifications_by_app($this->userId, $packageName)) {
+            $this->session->setFlashdata('success', 'All notifications for the app have been deleted');
+            return redirect()->to(base_url('advanced/notifications'));
+        }
+        $this->session->setFlashdata('error', 'Failed to delete notifications for the app');
+        return redirect()->to(base_url('advanced/notifications'));
+    }
 }

@@ -21,7 +21,7 @@
                     </div>
                     <div class="col-lg-4 col-md-6">
                         <div class="float-right mt-2">
-                            <a href="<?= base_url('analysis/advanced') ?>" class="btn btn-info ml-2">
+                            <a href="<?= base_url('analysis') ?>" class="btn btn-info ml-2">
                                 <i class="fas fa-microchip mr-1"></i> Advanced Analysis
                             </a>
                         </div>

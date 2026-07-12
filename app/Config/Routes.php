@@ -429,6 +429,7 @@ $routes->group('', [
         $routes->post('datatable/notifications', '\App\Controllers\api\v1\DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
         $routes->get('bluetooth', 'Advanced::bluetooth', ['as' => 'adv-bluetooth']);
         $routes->get('sensors', 'Advanced::sensors', ['as' => 'adv-sensors']);
+        $routes->post('notifications/delete/(:any)', 'Advanced::delete_notifications_by_app');
     });
 
     $routes->get('advanced/media', 'Advanced::remote_media');
@@ -555,7 +556,7 @@ $routes->group('', [
          * @param int|null $page Page number
          * @return string
          */
-        $routes->get('/', 'Correlation::index', ['as' => 'analysis-dashboard']);
+        $routes->get('/', 'Correlation::advanced', ['as' => 'analysis-dashboard']);
         $routes->get('(:num)', 'Correlation::index/$1');
 
         /**
@@ -567,19 +568,33 @@ $routes->group('', [
          * Detailed Call Analysis.
          */
         $routes->get('calls', 'Correlation::call_analysis', ['as' => 'analysis-calls']);
-        $routes->get('advanced', 'Correlation::advanced', ['as' => 'analysis-advanced']);
-        $routes->get('advanced/finance', 'Correlation::finance_analysis', ['as' => 'analysis-advanced-finance']);
-        $routes->get('advanced/social', 'Correlation::social_analysis', ['as' => 'analysis-advanced-social']);
-        $routes->get('advanced/lifestyle', 'Correlation::lifestyle_analysis', ['as' => 'analysis-advanced-lifestyle']);
-        $routes->get('advanced/privacy', 'Correlation::privacy_audit', ['as' => 'analysis-advanced-privacy']);
-        $routes->get('advanced/subscriptions', 'Correlation::subscription_tracker', ['as' => 'analysis-advanced-subscriptions']);
-        $routes->get('advanced/apps', 'Correlation::app_portfolio', ['as' => 'analysis-advanced-apps']);
-        $routes->get('advanced/storage', 'Correlation::storage_intelligence', ['as' => 'analysis-advanced-storage']);
-        $routes->get('advanced/sentiment', 'Correlation::sentiment_analysis', ['as' => 'analysis-advanced-sentiment']);
-        $routes->get('advanced/device', 'Correlation::device_pulse', ['as' => 'analysis-advanced-device']);
-        $routes->get('advanced/location', 'Correlation::location_analysis', ['as' => 'analysis-advanced-location']);
-        $routes->get('advanced/hotspots', 'Correlation::geoclustering_hotspots', ['as' => 'analysis-advanced-hotspots']);
-        $routes->get('advanced/report', 'Correlation::generate_report', ['as' => 'analysis-advanced-report']);
+        // $routes->get('advanced', 'Correlation::advanced', ['as' => 'analysis-advanced']); // Deprecated
+        // Deprecated advanced routes - kept for reference
+// $routes->get('advanced', 'Correlation::advanced', ['as' => 'analysis-advanced']);
+// $routes->get('advanced/finance', 'Correlation::finance_analysis', ['as' => 'analysis-advanced-finance']);
+// $routes->get('advanced/social', 'Correlation::social_analysis', ['as' => 'analysis-advanced-social']);
+// $routes->get('advanced/lifestyle', 'Correlation::lifestyle_analysis', ['as' => 'analysis-advanced-lifestyle']);
+// $routes->get('advanced/privacy', 'Correlation::privacy_audit', ['as' => 'analysis-advanced-privacy']);
+// $routes->get('advanced/subscriptions', 'Correlation::subscription_tracker', ['as' => 'analysis-advanced-subscriptions']);
+// $routes->get('advanced/apps', 'Correlation::app_portfolio', ['as' => 'analysis-advanced-apps']);
+// $routes->get('advanced/storage', 'Correlation::storage_intelligence', ['as' => 'analysis-advanced-storage']);
+// $routes->get('advanced/sentiment', 'Correlation::sentiment_analysis', ['as' => 'analysis-advanced-sentiment']);
+// $routes->get('advanced/device', 'Correlation::device_pulse', ['as' => 'analysis-advanced-device']);
+// $routes->get('advanced/location', 'Correlation::location_analysis', ['as' => 'analysis-advanced-location']);
+// $routes->get('advanced/hotspots', 'Correlation::geoclustering_hotspots', ['as' => 'analysis-advanced-hotspots']);
+// $routes->get('advanced/report', 'Correlation::generate_report', ['as' => 'analysis-advanced-report']);
+        $routes->get('social', 'Correlation::social_analysis', ['as' => 'analysis-social']);
+        $routes->get('lifestyle', 'Correlation::lifestyle_analysis', ['as' => 'analysis-lifestyle']);
+        $routes->get('privacy', 'Correlation::privacy_audit', ['as' => 'analysis-privacy']);
+        $routes->get('subscriptions', 'Correlation::subscription_tracker', ['as' => 'analysis-subscriptions']);
+        $routes->get('apps', 'Correlation::app_portfolio', ['as' => 'analysis-apps']);
+        $routes->get('finance', 'Correlation::finance_analysis', ['as' => 'analysis-finance']);
+        $routes->get('storage', 'Correlation::storage_intelligence', ['as' => 'analysis-storage']);
+        $routes->get('sentiment', 'Correlation::sentiment_analysis', ['as' => 'analysis-sentiment']);
+        $routes->get('device', 'Correlation::device_pulse', ['as' => 'analysis-device']);
+        $routes->get('location', 'Correlation::location_analysis', ['as' => 'analysis-location']);
+        $routes->get('hotspots', 'Correlation::geoclustering_hotspots', ['as' => 'analysis-hotspots']);
+        $routes->get('report', 'Correlation::generate_report', ['as' => 'analysis-report']);
 
         /**
          * Digital Wellbeing.
