@@ -7,11 +7,12 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
+    libxml2-dev \
     zip \
     unzip \
     git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) intl mysqli pdo_mysql zip gd
+    && docker-php-ext-install -j$(nproc) intl mysqli pdo_mysql zip gd xml dom
 
 # Enable Apache rewrite module
 RUN a2enmod rewrite headers
@@ -39,3 +40,5 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT ["entrypoint.sh"]
 EXPOSE 80
+# Increase PHP upload limits
+RUN echo "upload_max_filesize = 120M\npost_max_size = 120M" > /usr/local/etc/php/conf.d/uploads.ini
