@@ -628,7 +628,7 @@ $routes->group('', [
     $routes->group('anomalies', static function ($routes) {
         $routes->get('/',          'Anomalies::index',      ['as' => 'anomalies-info']);
         $routes->get('algorithms', 'Anomalies::algorithms', ['as' => 'anomalies-algorithms']);
-        $routes->get('results',    'Anomalies::results',    ['as' => 'anomalies-results']);
+        $routes->match(['get', 'post'], 'results', 'Anomalies::results', ['as' => 'anomalies-results']);
     });
 
         /**
