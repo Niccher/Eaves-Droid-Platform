@@ -604,7 +604,7 @@ $routes->group('', [
         /**
          * Behavioral Anomaly Analysis.
          */
-        $routes->get('anomalies', 'Correlation::behavioral_anomalies', ['as' => 'analysis-anomalies']);
+        $routes->get('behavioral-anomalies', 'Correlation::behavioral_anomalies', ['as' => 'analysis-anomalies']);
 
         /**
          * Universal Timeline.
@@ -618,6 +618,18 @@ $routes->group('', [
         $routes->post('blocklist/add', 'Blocklist::add', ['as' => 'analysis-blocklist-add']);
         $routes->post('blocklist/delete/(:num)', 'Blocklist::delete/$1', ['as' => 'analysis-blocklist-delete']);
         $routes->get('advanced_timeline', 'Advanced::timeline', ['as' => 'adv-timeline']);
+
+    // =============================================================
+    // 5.6 ANOMALIES WIZARD ROUTES
+    // URL: /analysis/anomalies  (Step 1)
+    // URL: /analysis/anomalies/algorithms  (Step 2)
+    // URL: /analysis/anomalies/results  (Step 3)
+    // =============================================================
+    $routes->group('anomalies', static function ($routes) {
+        $routes->get('/',          'Anomalies::index',      ['as' => 'anomalies-info']);
+        $routes->get('algorithms', 'Anomalies::algorithms', ['as' => 'anomalies-algorithms']);
+        $routes->get('results',    'Anomalies::results',    ['as' => 'anomalies-results']);
+    });
 
         /**
          * Displays financial SMS analysis.
