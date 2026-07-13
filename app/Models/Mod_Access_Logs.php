@@ -180,14 +180,80 @@ class Mod_Access_Logs extends Model
      */
     public function logAction($data)
     {
+        $request = service('request');
+        $agent = $request->getUserAgent();
+
         // Add IP address if not provided
         if (!isset($data['ip_address'])) {
-            $data['ip_address'] = service('request')->getIPAddress();
+            $data['ip_address'] = $request->getIPAddress();
         }
 
         // Add user agent if not provided
         if (!isset($data['user_agent'])) {
-            $data['user_agent'] = service('request')->getUserAgent()->getAgentString();
+            $data['user_agent'] = $agent->getAgentString();
+        }
+
+        // Parse user agent to populate device fields if not explicitly provided
+        $uaString = $data['user_agent'];
+        
+        if (!isset($data['device_type'])) {
+            if ($agent->isMobile()) {
+                $data['device_type'] = 'mobile';
+            } elseif ($agent->isRobot()) {
+                $data['device_type'] = 'bot';
+            } else {
+                if (stripos($uaString, 'okhttp') !== false || stripos($uaString, 'android') !== false) {
+                    $data['device_type'] = 'mobile';
+                } else {
+                    $data['device_type'] = 'desktop';
+                }
+            }
+        }
+
+        if (!isset($data['operating_system'])) {
+            $data['operating_system'] = $agent->getPlatform();
+            if (empty($data['operating_system']) || $data['operating_system'] === 'Unknown Platform') {
+                if (stripos($uaString, 'android') !== false) {
+                    $data['operating_system'] = 'Android';
+                } elseif (stripos($uaString, 'windows') !== false) {
+                    $data['operating_system'] = 'Windows';
+                } elseif (stripos($uaString, 'macintosh') !== false || stripos($uaString, 'mac os') !== false) {
+                    $data['operating_system'] = 'macOS';
+                } elseif (stripos($uaString, 'linux') !== false) {
+                    $data['operating_system'] = 'Linux';
+                } else {
+                    $data['operating_system'] = 'Unknown OS';
+                }
+            }
+        }
+
+        if (!isset($data['browser'])) {
+            if ($agent->isBrowser()) {
+                $data['browser'] = $agent->getBrowser() . ' ' . $agent->getVersion();
+            } else {
+                if (stripos($uaString, 'okhttp') !== false) {
+                    $data['browser'] = 'OkHttp Client';
+                } elseif (stripos($uaString, 'postman') !== false) {
+                    $data['browser'] = 'Postman';
+                } else {
+                    $data['browser'] = 'API Client';
+                }
+            }
+        }
+
+        if (!isset($data['device_name'])) {
+            if ($data['device_type'] === 'mobile') {
+                $matches = [];
+                if (preg_match('/\b(android\s+\d+;\s+)?([^;\/]+)\s+build\b/i', $uaString, $matches)) {
+                    $data['device_name'] = trim($matches[2]);
+                } elseif (preg_match('/\(([^;]+);\s+[^;]+;\s+Android\s+[^;]+;\s+([^)]+)\)/i', $uaString, $matches)) {
+                    $data['device_name'] = trim($matches[2]);
+                } else {
+                    $data['device_name'] = $agent->isMobile() ? ($agent->getMobile() ?: 'Android Mobile') : 'Desktop PC';
+                }
+            } else {
+                $data['device_name'] = 'Desktop PC';
+            }
         }
 
         // Add user ID from session if not provided

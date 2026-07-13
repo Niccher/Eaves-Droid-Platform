@@ -4,6 +4,7 @@ namespace App\Controllers\clients;
 
 use App\Controllers\BaseController;
 use App\Models\Mod_Finder;
+use Config\Services;
 
 class BaseClientController extends BaseController
 {
@@ -11,6 +12,7 @@ class BaseClientController extends BaseController
     protected $userData;
     protected $userId;
     protected $perPage = 50;
+    protected $session;
 
     /**
      * Initialize controller.
@@ -34,6 +36,9 @@ class BaseClientController extends BaseController
             // Don't return the redirect, just throw an exception or use helper
             throw new \RuntimeException('Authentication required');
         }
+
+        // Initialize session service
+        $this->session = Services::session();
 
         // Initialize models
         $this->finderModel = new Mod_Finder();

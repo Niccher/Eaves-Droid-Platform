@@ -177,6 +177,14 @@
                                         <span class="badge badge-success ml-2"><?php echo $androidLogsCount ?? 0; ?></span>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link <?php echo ($activeTab === 'uploads') ? 'active' : '';?>"
+                                       href="<?php echo base_url('account/access_logs/uploads'); ?>">
+                                        <i class="fas fa-file-upload mr-2"></i>
+                                        File Uploads
+                                        <span class="badge badge-info ml-2"><?php echo $fileLogsCount ?? 0; ?></span>
+                                    </a>
+                                </li>
                             </ul>
                         </div>
 
@@ -200,6 +208,9 @@
                                      id="android" role="tabpanel">
                                     <?php echo renderLogsTable($androidLogs, 'Android Activities'); ?>
                                 </div>
+                                 <div class="tab-pane fade <?php echo ($activeTab === 'uploads') ? 'show active' : ''; ?>" id="uploads" role="tabpanel">
+                                     <?php echo renderLogsTable($fileLogs, 'File Uploads'); ?>
+                                 </div>
                             </div>
                         </div>
 

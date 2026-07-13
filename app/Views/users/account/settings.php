@@ -36,38 +36,33 @@
                             </h3>
                         </div>
                         <div class="card-body">
+                            <!-- Explanation / Help Banner -->
+                            <div class="alert alert-light border shadow-sm mb-4">
+                                <h5 class="text-primary font-weight-bold mb-2">
+                                    <i class="fas fa-info-circle mr-1"></i> Account Settings Overview
+                                </h5>
+                                <p class="text-secondary mb-0" style="font-size: 1.02rem;">
+                                    Use this page to manage your device API connection credentials, view connected mobile terminals, and review the recent activity timeline. Keep your active token private.
+                                </p>
+                            </div>
+
                             <!-- Tabs Navigation -->
                             <div class="row mb-4">
                                 <div class="col-md-12">
-                                    <ul class="nav nav-tabs nav-justified" id="settingsTabs" role="tablist">
+                                    <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
                                         <li class="nav-item">
                                             <a class="nav-link active" id="api-tokens-tab" data-toggle="tab" href="#api-tokens" role="tab">
-                                                <div class="text-center">
-                                                    <i class="fas fa-key fa-2x mb-2 text-primary"></i>
-                                                    <h5 class="mb-1">API Tokens</h5>
-                                                    <p class="mb-0 text-muted small">Manage authentication tokens</p>
-                                                    <span class="badge badge-primary mt-1"><?php echo $total_tokens ?? 0 ?></span>
-                                                </div>
+                                                <i class="fas fa-key mr-1"></i> API Tokens
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link" id="devices-tab" data-toggle="tab" href="#devices" role="tab">
-                                                <div class="text-center">
-                                                    <i class="fas fa-laptop fa-2x mb-2 text-success"></i>
-                                                    <h5 class="mb-1">Devices</h5>
-                                                    <p class="mb-0 text-muted small">Connected devices</p>
-                                                    <span class="badge badge-success mt-1"><?php echo count($user_devices) ?? 0 ?></span>
-                                                </div>
+                                                <i class="fas fa-mobile-alt mr-1"></i> Connected Devices (Last 10 Devices)
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link" id="recent-uploads-tab" data-toggle="tab" href="#recent-uploads" role="tab">
-                                                <div class="text-center">
-                                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-warning"></i>
-                                                    <h5 class="mb-1">Recent Uploads</h5>
-                                                    <p class="mb-0 text-muted small">Latest files</p>
-                                                    <span class="badge badge-warning mt-1"><?php echo count($recent_files) ?? 0 ?></span>
-                                                </div>
+                                                <i class="fas fa-cloud-upload-alt mr-1"></i> Recent Uploads (Last 10 Uploads)
                                             </a>
                                         </li>
                                     </ul>
@@ -77,174 +72,150 @@
                             <!-- Tab Content -->
                             <div class="tab-content" id="settingsTabsContent">
 
-                                <!-- API Tokens Tab - Redesigned -->
+                                <!-- API Tokens Tab -->
                                 <div class="tab-pane fade show active" id="api-tokens" role="tabpanel">
-                                    <div class="alert alert-info mb-4">
+                                    <div class="alert alert-info mb-4 shadow-sm">
                                         <i class="fas fa-info-circle mr-2"></i>
-                                        <strong>API Token Management:</strong> Manage your authentication tokens for Android app and API access. Tokens expire after 30 days.
+                                        <strong>API Token Management:</strong> Use this token to authorize the extractor client on your Android terminal. Registered tokens automatically expire after 30 days.
                                     </div>
 
                                     <div class="row">
-                                        <!-- Current Token Display -->
-                                        <div class="col-lg-6">
-                                            <div class="card card-primary shadow-sm">
+                                        <!-- Current Token Display & Action -->
+                                        <div class="col-lg-6 mb-4">
+                                            <div class="card card-primary shadow-sm h-100 mb-0">
                                                 <div class="card-header bg-primary text-white">
                                                     <h5 class="card-title mb-0">
                                                         <i class="fab fa-android mr-2"></i>
                                                         Current API Token
                                                     </h5>
                                                 </div>
-                                                <div class="card-body">
-                                                    <div class="form-group">
-                                                        <label for="currentToken" class="font-weight-bold">
-                                                            <i class="fas fa-key mr-2"></i>
-                                                            Token Value
-                                                        </label>
-                                                        <div class="input-group input-group-lg mb-3">
-                                                            <input type="text"
-                                                                   class="form-control font-monospace"
-                                                                   id="currentToken"
-                                                                   value="<?php echo htmlspecialchars($currentTokenDisplay); ?>"
-                                                                   readonly>
-                                                            <div class="input-group-append">
-                                                                <button class="btn btn-outline-primary" type="button" id="copyTokenBtn" data-toggle="tooltip" title="Copy to clipboard">
-                                                                    <i class="fas fa-copy"></i>
-                                                                </button>
-                                                                <button class="btn btn-outline-secondary" type="button" id="toggleTokenBtn" data-toggle="tooltip" title="Show/Hide token">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </button>
+                                                <div class="card-body d-flex flex-column justify-content-between">
+                                                    <div>
+                                                        <div class="form-group">
+                                                            <label for="currentToken" class="font-weight-bold">
+                                                                <i class="fas fa-key mr-2 text-primary"></i>
+                                                                Token Value
+                                                            </label>
+                                                            <div class="input-group input-group-lg mb-3">
+                                                                <input type="text"
+                                                                       class="form-control font-monospace"
+                                                                       id="currentToken"
+                                                                       value="<?php echo htmlspecialchars($currentTokenDisplay); ?>"
+                                                                       readonly>
+                                                                <div class="input-group-append">
+                                                                    <button class="btn btn-outline-primary" type="button" id="copyTokenBtn" data-toggle="tooltip" title="Copy to clipboard">
+                                                                        <i class="fas fa-copy"></i>
+                                                                    </button>
+                                                                    <button class="btn btn-outline-secondary" type="button" id="toggleTokenBtn" data-toggle="tooltip" title="Show/Hide token">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                        </div>
 
-                                                        <!-- Token Metadata -->
-                                                        <div class="row">
-                                                            <div class="col-md-6">
-                                                                <div class="card mb-3">
-                                                                    <div class="card-body">
-                                                                        <small class="text-muted">Created</small>
-                                                                        <div class="font-weight-bold">
-                                                                            <i class="far fa-calendar-alt mr-1"></i>
-                                                                            <?php echo !empty($user_token['created_at']) ? date('M d, Y', strtotime($user_token['created_at'])) : 'N/A'; ?>
+                                                            <!-- Token Metadata -->
+                                                            <div class="row">
+                                                                <div class="col-md-6">
+                                                                    <div class="card mb-3">
+                                                                        <div class="card-body p-2 text-center">
+                                                                            <small class="text-muted d-block">Created</small>
+                                                                            <span class="font-weight-bold text-sm">
+                                                                                <i class="far fa-calendar-alt mr-1 text-primary"></i>
+                                                                                <?php echo !empty($user_token['created_at']) ? date('M d, Y', strtotime($user_token['created_at'])) : 'N/A'; ?>
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="card mb-3">
+                                                                        <div class="card-body p-2 text-center">
+                                                                            <small class="text-muted d-block">Expires</small>
+                                                                            <span class="font-weight-bold text-sm">
+                                                                                <i class="far fa-calendar-times mr-1 text-danger"></i>
+                                                                                <?php echo $tokenExpiry ?? 'Never'; ?>
+                                                                            </span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-6">
-                                                                <div class="card mb-3">
-                                                                    <div class="card-body">
-                                                                        <small class="text-muted">Expires</small>
-                                                                        <div class="font-weight-bold">
-                                                                            <i class="far fa-calendar-times mr-1"></i>
-                                                                            <?php echo $tokenExpiry ?? 'Never'; ?>
-                                                                        </div>
-                                                                    </div>
+
+                                                            <!-- Token Status Badge -->
+                                                            <div class="mt-2 mb-3">
+                                                                <label class="text-muted text-sm d-block">Status</label>
+                                                                <div>
+                                                                    <?php if (!empty($user_token['status']) && $user_token['status'] == '00'): ?>
+                                                                        <span class="badge badge-success badge-lg p-2">
+                                                                            <i class="fas fa-check-circle mr-1"></i> ACTIVE
+                                                                        </span>
+                                                                        <small class="text-success ml-2">
+                                                                            <i class="fas fa-circle mr-1"></i> Ready for use
+                                                                        </small>
+                                                                    <?php else: ?>
+                                                                        <span class="badge badge-danger badge-lg p-2">
+                                                                            <i class="fas fa-times-circle mr-1"></i> INACTIVE
+                                                                        </span>
+                                                                        <small class="text-danger ml-2">
+                                                                            <i class="fas fa-circle mr-1"></i> Revoked/Expired
+                                                                        </small>
+                                                                    <?php endif; ?>
                                                                 </div>
                                                             </div>
                                                         </div>
+                                                    </div>
 
-                                                        <!-- Token Status Badge -->
-                                                        <div class="mt-3">
-                                                            <label>Status</label>
-                                                            <div>
-                                                                <?php if (!empty($user_token['status']) && $user_token['status'] == '00'): ?>
-                                                                    <span class="badge badge-success badge-lg p-2">
-                                                                        <i class="fas fa-check-circle mr-1"></i> ACTIVE
-                                                                    </span>
-                                                                    <small class="text-success ml-2">
-                                                                        <i class="fas fa-circle mr-1"></i> Ready for use
-                                                                    </small>
-                                                                <?php else: ?>
-                                                                    <span class="badge badge-danger badge-lg p-2">
-                                                                        <i class="fas fa-times-circle mr-1"></i> INACTIVE
-                                                                    </span>
-                                                                    <small class="text-danger ml-2">
-                                                                        <i class="fas fa-circle mr-1"></i> Token revoked or expired
-                                                                    </small>
-                                                                <?php endif; ?>
-                                                            </div>
+                                                    <!-- Prominent Regenerate Button inside the card itself (Highly Visible!) -->
+                                                    <div class="border-top pt-3 mt-2">
+                                                        <div class="alert alert-warning py-2 px-3 mb-3 text-xs">
+                                                            <i class="fas fa-exclamation-triangle mr-1"></i> Regenerating invalidates current Android configurations.
                                                         </div>
+                                                        <form action="<?php echo base_url('account/regenerateToken'); ?>" method="post" id="regenerateTokenForm">
+                                                            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                                            <button type="submit" class="btn btn-warning btn-block btn-lg font-weight-bold shadow-sm" id="regenerateTokenBtn">
+                                                                <i class="fas fa-sync-alt mr-2"></i> Regenerate Token
+                                                            </button>
+                                                        </form>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <!-- QR Code Section -->
-                                        <div class="col-lg-6">
-                                            <div class="card card-info shadow-sm">
+                                        <div class="col-lg-6 mb-4">
+                                            <div class="card card-info shadow-sm h-100 mb-0">
                                                 <div class="card-header bg-info text-white">
                                                     <h5 class="card-title mb-0">
                                                         <i class="fas fa-qrcode mr-2"></i>
                                                         QR Code Scanner
                                                     </h5>
                                                 </div>
-                                                <div class="card-body text-center">
-                                                    <p class="text-muted mb-3">
-                                                        Scan this QR code with your Android app for quick setup:
-                                                    </p>
+                                                <div class="card-body text-center d-flex flex-column justify-content-between">
+                                                    <div>
+                                                        <p class="text-muted mb-3">
+                                                            Scan this QR code with the extractor app scanner to quickly configure the API endpoint and active token:
+                                                        </p>
 
-                                                    <!-- QR Code Container -->
-                                                    <div class="mb-4" id="qrcode-container">
-                                                        <canvas id="qr-canvas" style="width:200px; height:200px; margin: 0 auto;"></canvas>
-                                                    </div>
-
-                                                    <div class="alert alert-light border">
-                                                        <small class="text-muted">
-                                                            <i class="fas fa-lightbulb mr-1"></i>
-                                                            <strong>Tip:</strong> Open the scanner in your Android app and point it at this QR code to automatically configure your token.
-                                                        </small>
-                                                    </div>
-
-                                                    <!-- QR Code Actions -->
-                                                    <div class="btn-group mt-2" role="group">
-                                                        <button type="button" class="btn btn-outline-info" id="downloadQRBtn">
-                                                            <i class="fas fa-download mr-1"></i> Download QR
-                                                        </button>
-                                                        <button type="button" class="btn btn-outline-info" id="printQRBtn">
-                                                            <i class="fas fa-print mr-1"></i> Print
-                                                        </button>
-                                                        <button type="button" class="btn btn-outline-info" id="refreshQRBtn">
-                                                            <i class="fas fa-redo mr-1"></i> Refresh
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Regenerate Token Section -->
-                                    <div class="row mt-4">
-                                        <div class="col-lg-8 offset-lg-2">
-                                            <div class="card card-warning shadow-sm">
-                                                <div class="card-header bg-warning text-white">
-                                                    <h5 class="card-title mb-0">
-                                                        <i class="fas fa-sync-alt mr-2"></i>
-                                                        Regenerate Token
-                                                    </h5>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="alert alert-warning border-warning">
-                                                        <h6><i class="fas fa-exclamation-triangle mr-2"></i> Important Notice</h6>
-                                                        <p class="mb-0">Regenerating your token will:</p>
-                                                        <ul class="mb-0 mt-2 pl-3">
-                                                            <li>Invalidate all current Android connections</li>
-                                                            <li>Require re-authentication on all devices</li>
-                                                            <li>Disconnect all active sessions</li>
-                                                            <li>Require updating the token in your Android app</li>
-                                                        </ul>
-                                                    </div>
-
-                                                    <form action="<?php echo base_url('account/regenerateToken'); ?>" method="post" id="regenerateTokenForm">
-                                                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-
-                                                        <div class="text-center">
-                                                            <button type="submit" class="btn btn-warning btn-lg px-5" id="regenerateTokenBtn">
-                                                                <i class="fas fa-sync-alt mr-2"></i> Regenerate Token
-                                                            </button>
-                                                            <p class="text-muted mt-2 small">
-                                                                This will generate a new 32-character token
-                                                            </p>
+                                                        <!-- QR Code Container -->
+                                                        <div class="mb-4" id="qrcode-container">
+                                                            <canvas id="qr-canvas" style="width:200px; height:200px; margin: 0 auto;"></canvas>
                                                         </div>
-                                                    </form>
+                                                    </div>
+
+                                                    <div>
+                                                        <!-- QR Code Actions -->
+                                                        <div class="btn-group mt-2 mb-3" role="group">
+                                                            <button type="button" class="btn btn-outline-info" id="downloadQRBtn">
+                                                                <i class="fas fa-download mr-1"></i> Download QR
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-info" id="printQRBtn">
+                                                                <i class="fas fa-print mr-1"></i> Print
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-info" id="refreshQRBtn">
+                                                                <i class="fas fa-redo mr-1"></i> Refresh
+                                                            </button>
+                                                        </div>
+                                                        <div class="alert alert-light border text-xs py-2 mb-0">
+                                                            <i class="fas fa-lightbulb mr-1 text-warning"></i> Scan from within the app settings pane.
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -253,46 +224,43 @@
 
                                 <!-- Devices Tab -->
                                 <div class="tab-pane fade" id="devices" role="tabpanel">
+                                    <div class="alert alert-light border shadow-sm mb-3">
+                                        <i class="fas fa-info-circle mr-2 text-success"></i>
+                                        <strong>Connected Devices:</strong> Below are the mobile devices that have authorized connections using your API tokens. A maximum of 10 active devices are displayed.
+                                    </div>
                                     <?php if (!empty($user_devices)): ?>
-                                        <div class="row">
-                                            <?php foreach ($user_devices as $device): ?>
-                                                <div class="col-md-6 col-lg-4 mb-4">
-                                                    <div class="card h-100 shadow-sm border-0 bg-light">
-                                                        <div class="card-body">
-                                                            <div class="d-flex align-items-center mb-3">
-                                                                <div class="bg-white p-3 rounded-circle shadow-sm mr-3">
-                                                                    <?php if (stripos($device['device_type'], 'mobile') !== false || stripos($device['device_type'], 'android') !== false): ?>
-                                                                        <i class="fas fa-mobile-alt fa-2x text-primary"></i>
-                                                                    <?php else: ?>
-                                                                        <i class="fas fa-laptop fa-2x text-info"></i>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                                <div>
-                                                                    <h5 class="card-title mb-0 font-weight-bold"><?php echo htmlspecialchars($device['device_name']); ?></h5>
-                                                                    <small class="text-muted"><?php echo htmlspecialchars($device['os']); ?></small>
-                                                                </div>
-                                                            </div>
-                                                            <ul class="list-unstyled mb-0">
-                                                                <li class="mb-2">
-                                                                    <i class="fas fa-globe text-muted mr-2" style="width: 20px;"></i>
-                                                                    <?php echo htmlspecialchars($device['browser']); ?>
-                                                                </li>
-                                                                <li class="mb-2">
-                                                                    <i class="fas fa-map-marker-alt text-muted mr-2" style="width: 20px;"></i>
-                                                                    <?php echo htmlspecialchars($device['ip_address']); ?>
-                                                                </li>
-                                                                <li>
-                                                                    <i class="far fa-clock text-muted mr-2" style="width: 20px;"></i>
-                                                                    Last seen: <?php echo $device['last_seen_formatted']; ?>
-                                                                </li>
-                                                            </ul>
-                                                        </div>
-                                                        <div class="card-footer bg-transparent border-top-0 text-right">
-                                                            <span class="badge badge-success">Connected</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            <?php endforeach; ?>
+                                        <div class="table-responsive shadow-sm border rounded bg-white">
+                                            <table class="table table-hover table-striped align-middle mb-0">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th>Device Name</th>
+                                                        <th>OS Version</th>
+                                                        <th>Agent / Browser</th>
+                                                        <th>IP Address</th>
+                                                        <th>Last Active</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($user_devices as $device): ?>
+                                                        <tr>
+                                                            <td class="font-weight-bold align-middle">
+                                                                <i class="fas fa-mobile-alt text-success mr-2"></i>
+                                                                <?php echo htmlspecialchars($device['device_name']); ?>
+                                                            </td>
+                                                            <td class="align-middle">
+                                                                <span class="badge badge-secondary"><?php echo htmlspecialchars($device['os']); ?></span>
+                                                            </td>
+                                                            <td class="align-middle"><?php echo htmlspecialchars($device['browser']); ?></td>
+                                                            <td class="align-middle"><code><?php echo htmlspecialchars($device['ip_address']); ?></code></td>
+                                                            <td class="align-middle text-muted"><?php echo $device['last_seen_formatted']; ?></td>
+                                                            <td class="align-middle">
+                                                                <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Authorized</span>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     <?php else: ?>
                                         <div class="text-center py-5">
@@ -300,7 +268,7 @@
                                                 <i class="fas fa-laptop-medical fa-4x text-muted opacity-50"></i>
                                             </div>
                                             <h5 class="text-muted">No devices found</h5>
-                                            <p class="text-muted small">Devices access history will appear here.</p>
+                                            <p class="text-muted small">Connected devices will appear here once registered.</p>
                                         </div>
                                     <?php endif; ?>
                                 </div>

@@ -105,6 +105,25 @@ class Receive extends BaseController
         // 10. Process file based on category
         $result = $this->processUploadedFile($newName, $owner, $fileInfo['category'], $fileRecordId);
 
+        $logModel = new Mod_Log_User_Action();
+        $logModel->logAction([
+            'user_id'         => $owner,
+            'action_category' => 'file',
+            'action_type'     => 'file_upload',
+            'action_severity' => 'low',
+            'device_type'     => 'mobile',
+            'success'         => ($result && $result['success']) ? 1 : 0,
+            'request_url'     => current_url(),
+            'resource_id'     => $fileRecordId,
+            'new_values'      => json_encode([
+                'filename' => $fileInfo['original_name'],
+                'size'     => $fileInfo['size'],
+                'category' => $fileInfo['category']
+            ]),
+            'error_message'   => ($result && $result['success']) ? '' : (is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed'),
+            'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+        ]);
+
         if ($result && $result['success']) {
             // Update file record status via model
             if ($fileRecordId > 0) {
@@ -115,7 +134,8 @@ class Receive extends BaseController
                 'status' => 'success',
                 'message' => 'File uploaded and processed successfully',
                 'file_id' => $newName,
-                'file_record_id' => $fileRecordId > 0 ? $fileRecordId : null,
+//                'file_record_id' => $fileRecordId > 0 ? $fileRecordId : null,
+                'file_record_id' => null,
                 'category' => $fileInfo['category'],
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
@@ -156,7 +176,7 @@ class Receive extends BaseController
         $token = $this->request->getPost('token');
         $time = $this->request->getPost('time');
         $ip = $this->request->getIPAddress();
-        
+
         // Link device info if provided
         $this->updateTokenDevice($token);
 
@@ -174,10 +194,9 @@ class Receive extends BaseController
                 'action_type'     => 'token_verification',
                 'action_severity' => 'low',
                 'device_type'     => 'mobile',
-                'success'         => 1,
+                'success'         => 0,
                 'request_url'     => current_url(),
                 'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
-
             ]);
             return $this->respond([
                 'success' => false,
@@ -210,14 +229,14 @@ class Receive extends BaseController
 //        );
 
         $logModel->logAction([
+            'user_id'         => $tokenData['owner_id'],
             'action_category' => 'authentication',
             'action_type'     => 'token_verification',
             'action_severity' => 'low',
-            'device'          => 'mobile',
-            'success'         => 0,
+            'device_type'     => 'mobile',
+            'success'         => 1,
             'request_url'     => current_url(),
             'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
-
         ]);
 
         return $this->respond([
@@ -264,7 +283,7 @@ class Receive extends BaseController
             'external_storage_total_gb', 'app_package', 'app_version',
             'extraction_timestamp', 'extractor_version'
         ];
-        
+
         $optionalFields = ['fcm_token'];
 
         $input = $this->request->getPost();
@@ -279,7 +298,7 @@ class Receive extends BaseController
         // Sanitize input
         $sanitizedData = [];
         $allFields = array_merge($requiredFields, $optionalFields);
-        
+
         foreach ($allFields as $field) {
             $sanitizedData[$field] = isset($input[$field]) ? htmlspecialchars($input[$field], ENT_QUOTES, 'UTF-8') : '';
         }
@@ -402,7 +421,7 @@ class Receive extends BaseController
     private function extractFileInfo(\CodeIgniter\HTTP\Files\UploadedFile $file, string $newName): array
     {
         $originalName = $file->getClientName();
-        
+
         // Priority: 1. POST parameter, 2. Filename prefix
         $category = $this->request->getPost('category');
         if (empty($category)) {
@@ -477,7 +496,7 @@ class Receive extends BaseController
             } elseif (isset($advancedMethodMap[$category])) {
                 $modelAdvanced     = new Mod_Parse_Advanced();
                 $method            = $advancedMethodMap[$category];
-                
+
                 // Pass category for media parsing to differentiate between image/audio
                 if ($method === 'parse_captured_media') {
                     $parsedCountOrBool = $modelAdvanced->$method($filename, $ownerId, $devicePrintId, $fileRecordId, $category);

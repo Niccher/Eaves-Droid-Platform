@@ -124,8 +124,8 @@ class Account extends BaseClientController
             $userVars = $this->getUserVars();
             $userToken = $this->ensureUserToken();
 
-            // Get user devices
-            $userDevices = $this->getUserDevices();
+            // Get user devices (limit to last 10)
+            $userDevices = array_slice($this->getUserDevices(), 0, 10);
 
             // Get usage metrics
             $usageMetrics = $this->getUsageMetrics();
@@ -138,7 +138,6 @@ class Account extends BaseClientController
                 'user_info' => $userData,
                 'user_vars' => $userVars,
                 'user_token' => $userToken,
-                'user_devices' => $userDevices,
                 'user_devices' => $userDevices,
                 'recent_files' => $this->getRecentFiles(),
                 'activeSessions' => $this->modUser->get_active_sessions_count($this->userId),
@@ -685,6 +684,7 @@ class Account extends BaseClientController
 
         $webLogs = [];
         $androidLogs = [];
+        $fileLogs = [];
         $allLogs = [];
 
         $statusCounts = [
@@ -741,6 +741,11 @@ class Account extends BaseClientController
                 $androidLogs[] = $log;
             }
 
+            // Categorize by category for file uploads
+            if (($log['action_category'] ?? '') === 'file' || ($log['action_type'] ?? '') === 'file_upload') {
+                $fileLogs[] = $log;
+            }
+
             $allLogs[] = $log;
 
             // Count statuses
@@ -748,6 +753,27 @@ class Account extends BaseClientController
                 $statusCounts[$status]++;
             }
         }
+
+        // Sort all lists by timestamp (newest first)
+        $sortByTimestamp = function($a, $b) {
+            return ($b['Timestamps'] ?? 0) <=> ($a['Timestamps'] ?? 0);
+        };
+        usort($allLogs, $sortByTimestamp);
+        usort($webLogs, $sortByTimestamp);
+        usort($androidLogs, $sortByTimestamp);
+        usort($fileLogs, $sortByTimestamp);
+
+        // Keep raw counts for the UI badges before slicing to 10
+        $totalLogsCount = count($allLogs);
+        $webLogsCount = count($webLogs);
+        $androidLogsCount = count($androidLogs);
+        $fileLogsCount = count($fileLogs);
+
+        // Limit all lists to the last 10 entries (per requirements)
+        $allLogs = array_slice($allLogs, 0, 10);
+        $webLogs = array_slice($webLogs, 0, 10);
+        $androidLogs = array_slice($androidLogs, 0, 10);
+        $fileLogs = array_slice($fileLogs, 0, 10);
 
         // Filter logs based on selected tab
         switch ($tab) {
@@ -757,23 +783,14 @@ class Account extends BaseClientController
             case 'android':
                 $displayLogs = $androidLogs;
                 break;
+            case 'uploads':
+            case 'file':
+                $displayLogs = $fileLogs;
+                break;
             default:
                 $displayLogs = $allLogs;
                 break;
         }
-
-        // Sort logs by timestamp (newest first)
-        usort($displayLogs, function($a, $b) {
-            return ($b['Timestamps'] ?? 0) <=> ($a['Timestamps'] ?? 0);
-        });
-
-        usort($webLogs, function($a, $b) {
-            return ($b['Timestamps'] ?? 0) <=> ($a['Timestamps'] ?? 0);
-        });
-
-        usort($androidLogs, function($a, $b) {
-            return ($b['Timestamps'] ?? 0) <=> ($a['Timestamps'] ?? 0);
-        });
 
         // Get last updated timestamp
         $lastUpdated = $this->getLastUpdated($displayLogs);
@@ -782,17 +799,19 @@ class Account extends BaseClientController
             'user_logs' => $displayLogs,
             'webLogs' => $webLogs,
             'androidLogs' => $androidLogs,
-            'webLogsCount' => count($webLogs),
-            'androidLogsCount' => count($androidLogs),
-            'totalLogs' => count($allLogs),
+            'fileLogs' => $fileLogs,
+            'webLogsCount' => $webLogsCount,
+            'androidLogsCount' => $androidLogsCount,
+            'fileLogsCount' => $fileLogsCount,
+            'totalLogs' => $totalLogsCount,
             'successfulLogins' => $statusCounts['success'],
             'failedAttempts' => $statusCounts['failed'],
             'suspiciousActivities' => $statusCounts['suspicious'],
             'lastUpdated' => $lastUpdated,
             'totalByDevice' => [
-                'web' => count($webLogs),
-                'android' => count($androidLogs),
-                'unknown' => count($allLogs) - count($webLogs) - count($androidLogs)
+                'web' => $webLogsCount,
+                'android' => $androidLogsCount,
+                'unknown' => $totalLogsCount - $webLogsCount - $androidLogsCount
             ],
             'activeTab' => $tab
         ];
