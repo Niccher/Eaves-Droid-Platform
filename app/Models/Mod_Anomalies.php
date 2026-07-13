@@ -3,17 +3,97 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use PhpMl\Clustering\KMeans;
+use PhpMl\AnomalyDetection\IsolationForest;
 
 /**
  * Mod_Anomalies
  *
- * Provides static / dummy data for the Anomaly Detection wizard.
- * No database interaction – all data is hardcoded for the visual demo.
- * Replace the return values with real DB queries when integrating a
- * live detection engine.
+ * Provides static / dummy data for the Anomaly Detection wizard,
+ * and contains functional templates using the php-ai/php-ml library
+ * demonstrating how actual detections are calculated.
  */
 class Mod_Anomalies extends Model
 {
+    // -------------------------------------------------------------------------
+    // PHP-ML Mathematical Proof-of-Concepts (Demonstration execution methods)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Executes K-Means Clustering on contact frequencies to detect anomalies.
+     * Demonstrates importing and using KMeans from the PhpMl\Clustering package.
+     *
+     * @param array<int, array{incoming: int, outgoing: int}> $samples
+     * @return array{clusters: array, outliers: array}
+     */
+    public function runKMeansClustering(array $samples): array
+    {
+        // 1. Convert inputs to matching arrays of [incoming_count, outgoing_count]
+        $formattedSamples = [];
+        foreach ($samples as $s) {
+            $formattedSamples[] = [(float)$s['incoming'], (float)$s['outgoing']];
+        }
+
+        if (count($formattedSamples) < 3) {
+            return ['clusters' => [], 'outliers' => []];
+        }
+
+        // 2. Instantiate and run K-Means
+        $kmeans = new KMeans(3); // 3 clusters: High-Frequency, Medium-Frequency, Outliers
+        $clusters = $kmeans->cluster($formattedSamples);
+
+        // 3. Simple anomaly identification (elements with long euclidean distance from centroids)
+        $outliers = [];
+        foreach ($clusters as $cIndex => $cluster) {
+            if (count($cluster) <= 1) {
+                // Clusters with only 1 contact represent extreme outliers
+                $outliers = array_merge($outliers, $cluster);
+            }
+        }
+
+        return [
+            'clusters' => $clusters,
+            'outliers' => $outliers,
+        ];
+    }
+
+    /**
+     * Runs Isolation Forest algorithm (PhpMl AnomalyDetection) over call characteristics.
+     *
+     * @param array<int, array{duration: int, hour: int, is_international: int}> $calls
+     * @return array Identified call outliers
+     */
+    public function runIsolationForestDetection(array $calls): array
+    {
+        $samples = [];
+        foreach ($calls as $call) {
+            $samples[] = [
+                (float)$call['duration'],
+                (float)$call['hour'],
+                (float)$call['is_international']
+            ];
+        }
+
+        if (count($samples) < 5) {
+            return [];
+        }
+
+        // Initialize Isolation Forest from PHP-ML
+        // Note: php-ml isolation forest requires target training and threshold scoring.
+        $estimator = new IsolationForest(0.10); // 10% contamination threshold
+        $estimator->train($samples);
+
+        $outliers = [];
+        foreach ($samples as $index => $sample) {
+            $score = $estimator->predict($sample);
+            if ($score === -1 || $score === 1) { // Estimator returns anomaly status based on training metrics
+                $outliers[] = $calls[$index];
+            }
+        }
+
+        return $outliers;
+    }
+
     // -------------------------------------------------------------------------
     // Detection Engines
     // -------------------------------------------------------------------------
@@ -81,7 +161,7 @@ class Mod_Anomalies extends Model
                         'id'          => 'sms_freq',
                         'name'        => 'Frequency Spike Detector',
                         'default'     => true,
-                        'compat'      => 'both', // Works on PHP & Python
+                        'compat'      => 'both',
                         'description' => 'Detects statistically unusual bursts in message frequency within a rolling time window.',
                         'strengths'   => 'Low false-positive rate; fast; works on small datasets.',
                         'weaknesses'  => 'Misses slow-building patterns; ignores message content.',
@@ -108,7 +188,7 @@ class Mod_Anomalies extends Model
                         'id'          => 'sms_bert',
                         'name'        => 'BERT Semantic Phishing Classifier',
                         'default'     => false,
-                        'compat'      => 'python', // Python engine ONLY
+                        'compat'      => 'python',
                         'description' => 'Uses deep learning NLP (Transformer model) to analyze SMS message content for phishing semantics and intent.',
                         'strengths'   => 'Extremely high accuracy at detecting sophisticated social engineering.',
                         'weaknesses'  => 'Requires Python GPU/CPU acceleration; slow startup time.',

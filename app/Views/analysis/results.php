@@ -224,7 +224,7 @@ document.getElementById('btn-reset').addEventListener('click', function () {
         cancelButtonText:  'Cancel'
     }).then(function (result) {
         if (result.isConfirmed) {
-            window.location.href = '<?= base_url('analysis/anomalies') ?>';
+            window.location.href = '<?= base_url('analysis/anomalies/results?reset=true') ?>';
         }
     });
 });

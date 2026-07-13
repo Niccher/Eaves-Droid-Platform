@@ -42,10 +42,15 @@ class Anomalies extends BaseClientController
      *
      * URL: GET /analysis/anomalies
      *
-     * @return string Rendered HTML
+     * @return string|\CodeIgniter\HTTP\RedirectResponse Rendered HTML or Redirect
      */
-    public function index(): string
+    public function index()
     {
+        // If results are already generated / configured, default landing is results page
+        if ($this->session->has('anomaly_engine') && $this->session->has('anomaly_algorithms')) {
+            return redirect()->to(base_url('analysis/anomalies/results'));
+        }
+
         $data = $this->baseData();
         $data['engines'] = $this->anomalyModel->getEngines();
 
@@ -57,14 +62,24 @@ class Anomalies extends BaseClientController
     // -------------------------------------------------------------------------
 
     /**
-     * Renders per-category algorithm selection (accordion with radio buttons).
+     * Renders per-category algorithm selection.
      *
      * URL: GET /analysis/anomalies/algorithms
      *
-     * @return string Rendered HTML
+     * @return string|\CodeIgniter\HTTP\RedirectResponse Rendered HTML or Redirect
      */
-    public function algorithms(): string
+    public function algorithms()
     {
+        $engine = $this->request->getGet('engine');
+        if ($engine) {
+            $this->session->set('anomaly_engine', $engine);
+        }
+
+        // If no engine in URL or Session, redirect to Step 1
+        if (!$this->session->has('anomaly_engine')) {
+            return redirect()->to(base_url('analysis/anomalies'));
+        }
+
         $data = $this->baseData();
         $data['categories'] = $this->anomalyModel->getAlgorithmCategories();
 
@@ -78,12 +93,36 @@ class Anomalies extends BaseClientController
     /**
      * Renders the static demo anomaly results table.
      *
-     * URL: GET /analysis/anomalies/results
+     * URL: GET/POST /analysis/anomalies/results
      *
-     * @return string Rendered HTML
+     * @return string|\CodeIgniter\HTTP\RedirectResponse Rendered HTML or Redirect
      */
-    public function results(): string
+    public function results()
     {
+        // If form is submitted via POST, save settings
+        if ($this->request->getMethod() === 'post') {
+            $algs = $this->request->getPost('algs');
+            if ($algs && is_array($algs)) {
+                $this->session->set('anomaly_algorithms', $algs);
+            }
+        }
+
+        // If we are resetting configurations
+        if ($this->request->getGet('reset') === 'true') {
+            $this->session->remove('anomaly_engine');
+            $this->session->remove('anomaly_algorithms');
+            return redirect()->to(base_url('analysis/anomalies'));
+        }
+
+        // Check if both configurations are in session; if not redirect to step 1
+        if (!$this->session->has('anomaly_engine')) {
+            return redirect()->to(base_url('analysis/anomalies'));
+        }
+        if (!$this->session->has('anomaly_algorithms')) {
+            $engine = $this->session->get('anomaly_engine');
+            return redirect()->to(base_url('analysis/anomalies/algorithms?engine=' . $engine));
+        }
+
         $data = $this->baseData();
 
         $results             = $this->anomalyModel->getDummyResults();
