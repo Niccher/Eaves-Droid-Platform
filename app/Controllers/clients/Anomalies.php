@@ -99,7 +99,7 @@ class Anomalies extends BaseClientController
      */
     public function results()
     {
-        // If form is submitted via POST, save settings
+        // ── Handle POST: algorithm selection form submitted
         if ($this->request->getMethod() === 'post') {
             $algs = $this->request->getPost('algs');
             if ($algs && is_array($algs)) {
@@ -107,28 +107,53 @@ class Anomalies extends BaseClientController
             }
         }
 
-        // If we are resetting configurations
+        // ── Handle reset: clear session and return to Step 1
         if ($this->request->getGet('reset') === 'true') {
             $this->session->remove('anomaly_engine');
             $this->session->remove('anomaly_algorithms');
             return redirect()->to(base_url('analysis/anomalies'));
         }
 
-        // Check if both configurations are in session; if not redirect to step 1
+        // ── Guard: must have engine configured (Step 1)
         if (!$this->session->has('anomaly_engine')) {
             return redirect()->to(base_url('analysis/anomalies'));
         }
+
+        // ── Guard: must have algorithms configured (Step 2)
         if (!$this->session->has('anomaly_algorithms')) {
             $engine = $this->session->get('anomaly_engine');
             return redirect()->to(base_url('analysis/anomalies/algorithms?engine=' . $engine));
         }
 
-        $data = $this->baseData();
+        $selectedEngine = $this->session->get('anomaly_engine') ?? 'php';
+        $selectedAlgs   = $this->session->get('anomaly_algorithms') ?? [];
 
-        $results             = $this->anomalyModel->getDummyResults();
-        $data['results']     = $results;
-        $data['severity_map']     = $this->anomalyModel->getSeverityMap();
-        $data['severity_counts']  = $this->anomalyModel->getSeverityCounts($results);
+        // ── Run detection via the appropriate engine
+        // PHP engine: real detection methods (with DB + static fallbacks)
+        // Python engine: placeholder – will delegate to Docker microservice in future
+        // $this->userId is set by BaseClientController::initController() from the authenticated user.
+        $userId = $this->userId;
+        if ($selectedEngine === 'php') {
+            $results = $this->anomalyModel->runPhpDetection($selectedAlgs, $userId);
+        } else {
+            // Python engine not yet connected; fall back to PHP pipeline with live data.
+            $results = $this->anomalyModel->runPhpDetection($selectedAlgs, $userId);
+        }
+
+        // Resolve engine label for the view badge
+        $engineLabels = [
+            'php'    => ['label' => 'PHP Engine',    'icon' => 'fab fa-php',    'badge' => 'primary'],
+            'python' => ['label' => 'Python Engine',  'icon' => 'fab fa-python', 'badge' => 'warning'],
+        ];
+        $engineMeta = $engineLabels[$selectedEngine] ?? $engineLabels['php'];
+
+        $data = $this->baseData();
+        $data['results']         = $results;
+        $data['selected_engine'] = $selectedEngine;
+        $data['engine_meta']     = $engineMeta;
+        $data['severity_map']    = $this->anomalyModel->getSeverityMap();
+        $data['severity_counts'] = $this->anomalyModel->getSeverityCounts($results);
+        $data['selected_algs']   = $selectedAlgs;
 
         return $this->renderWizardView('analysis/results', $data);
     }
