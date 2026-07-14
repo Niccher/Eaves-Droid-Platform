@@ -516,10 +516,10 @@ class Correlation extends BaseClientController{
         $data   = array_merge($data, $counts);
 
         // ── Basic timeline: high-level communication events (SMS + Calls only)
-        $data['basic_timeline'] = $this->finderModel->get_basic_timeline($this->userId, 200);
+        $data['basic_timeline'] = $this->finderModel->get_basic_timeline($this->userId, 100);
 
         // ── Advanced timeline: all event types in one chronological stream
-        $data['advanced_timeline'] = $this->finderModel->get_unified_timeline($this->userId, 300);
+        $data['advanced_timeline'] = $this->finderModel->get_unified_timeline($this->userId, 100);
 
         return view('headers_footers/head_users', $data)
             . view('headers_footers/sidebar_users', $data)

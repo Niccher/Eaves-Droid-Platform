@@ -162,49 +162,8 @@ $sevMap = $severity_map ?? [
     <section class="content">
         <div class="container-fluid">
 
-            <!-- ── Engine + Active Algorithms Banner ── -->
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="card card-outline card-<?= esc($engine_meta['badge']) ?> shadow-sm mb-0">
-                        <div class="card-body py-2 px-3">
-                            <div class="d-flex flex-wrap align-items-center" style="gap:.5rem;">
-                                <!-- Engine badge -->
-                                <span class="badge badge-<?= esc($engine_meta['badge']) ?> px-3 py-2" style="font-size:.85rem;">
-                                    <i class="<?= esc($engine_meta['icon']) ?> mr-1"></i>
-                                    <?= esc($engine_meta['label']) ?>
-                                </span>
-                                <span class="text-muted small font-weight-bold">Active algorithms:</span>
-                                <?php
-                                $algCatalogue = [
-                                    'sms'         => ['sms_freq' => 'Frequency Spike', 'sms_time' => 'Time-Pattern', 'sms_cluster' => 'Sender K-Means', 'sms_bert' => 'BERT Phishing'],
-                                    'contacts'    => ['contacts_freq' => 'Contact Frequency', 'contacts_dup' => 'Duplicate Detector', 'contacts_graph' => 'Graph GCN'],
-                                    'call_logs'   => ['calls_burst' => 'Short-Call Burst', 'calls_night' => 'Night Monitor', 'calls_isolation' => 'Isolation Forest'],
-                                    'locations'   => ['loc_geofence' => 'Geo-Fence', 'loc_speed' => 'Speed Anomaly', 'loc_dbscan' => 'DBSCAN Cluster'],
-                                    'apps'        => ['apps_rep' => 'Pkg Reputation', 'apps_perm' => 'Permission Detector', 'apps_autoencoder' => 'Autoencoder'],
-                                    'files'       => ['files_spike' => 'File Spike', 'files_ext' => 'Extension Mismatch', 'files_entropy' => 'Entropy Scanner'],
-                                    'activity'    => ['act_screen' => 'Screen-Time', 'act_switch' => 'App-Switch Rate', 'act_lstm' => 'LSTM Sequence'],
-                                    'device_info' => ['dev_hw' => 'HW Change', 'dev_net' => 'Network Profile', 'dev_oneclass' => 'One-Class SVM'],
-                                ];
-                                $badgeColors = ['sms'=>'danger','contacts'=>'success','call_logs'=>'warning','locations'=>'primary','apps'=>'info','files'=>'secondary','activity'=>'danger','device_info'=>'dark'];
-                                $hasActive = false;
-                                foreach (($selected_algs ?? []) as $cat => $algIds):
-                                    foreach ((array)$algIds as $algId):
-                                        $algName = $algCatalogue[$cat][$algId] ?? $algId;
-                                        $color   = $badgeColors[$cat] ?? 'secondary';
-                                        $hasActive = true;
-                                ?>
-                                <span class="badge badge-<?= $color ?>" style="font-size:.78rem; padding:.35em .65em;"><?= esc($algName) ?></span>
-                                <?php endforeach; endforeach; ?>
-                                <?php if (!$hasActive): ?>
-                                <span class="text-muted small"><em>All defaults</em></span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- ── Summary info-boxes ── -->
+
             <div class="row mb-3">
                 <div class="col-md-3 col-sm-6">
                     <div class="info-box shadow-sm">
@@ -244,20 +203,6 @@ $sevMap = $severity_map ?? [
                 </div>
             </div>
 
-            <!-- ── Disclaimer callout ── -->
-            <div class="callout callout-info bg-light shadow-sm mb-3">
-                <h5>
-                    <i class="<?= $selected_engine === 'python' ? 'fab fa-python' : 'fab fa-php' ?> mr-2 text-<?= esc($engine_meta['badge']) ?>"></i>
-                    <?= esc($engine_meta['label']) ?> — Live Detection Results
-                </h5>
-                <p class="mb-0 text-muted">
-                    <?php if ($selected_engine === 'python'): ?>
-                        The Python engine (Docker microservice) is not yet connected. Results shown use the PHP fallback pipeline. Deploy the Python container to activate deep-learning models.
-                    <?php else: ?>
-                        Results are computed by the <strong>PHP-ML pipeline</strong> using statistical algorithms (Z-Score, Haversine distance, K-Means, DBSCAN, pattern matching) against your live database. Where a table has no data, a labelled demo finding is shown.
-                    <?php endif; ?>
-                </p>
-            </div>
 
             <?php if (empty($results)): ?>
             <!-- Empty state -->
@@ -282,23 +227,20 @@ $sevMap = $severity_map ?? [
                     </div>
                 </div>
 
-                <!-- Category pills -->
+                <!-- Category pills (no "All" pill — first category is active) -->
                 <div class="card-body pt-2 pb-0">
                     <ul class="nav nav-pills nav-fill flex-wrap" id="cat-tabs" role="tablist" style="gap:.25rem;">
-                        <li class="nav-item">
-                            <a class="nav-link active" id="tab-all" data-toggle="pill" href="#pane-all" role="tab" aria-controls="pane-all" aria-selected="true">
-                                <i class="fas fa-list-ul mr-1"></i>All
-                                <span class="badge badge-light ml-1"><?= count($results) ?></span>
-                            </a>
-                        </li>
-                        <?php foreach ($grouped as $catName => $catRows):
-                            $cm = $catMeta[$catName] ?? ['icon' => 'fas fa-circle', 'color' => 'secondary'];
-                            $paneId = 'pane-' . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
-                            $tabId  = 'tab-'  . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
+                        <?php
+                        $firstCat = true;
+                        foreach ($grouped as $catName => $catRows):
+                            $cm      = $catMeta[$catName] ?? ['icon' => 'fas fa-circle', 'color' => 'secondary'];
+                            $paneId  = 'pane-' . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
+                            $tabId   = 'tab-'  . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
                             $highCnt = count(array_filter($catRows, fn($r) => ($r['severity'] ?? '') === 'High'));
                         ?>
                         <li class="nav-item">
-                            <a class="nav-link" id="<?= $tabId ?>" data-toggle="pill" href="#<?= $paneId ?>" role="tab" aria-controls="<?= $paneId ?>" aria-selected="false">
+                            <a class="nav-link <?= $firstCat ? 'active' : '' ?>" id="<?= $tabId ?>" data-toggle="pill"
+                               href="#<?= $paneId ?>" role="tab" aria-controls="<?= $paneId ?>" aria-selected="<?= $firstCat ? 'true' : 'false' ?>">
                                 <i class="<?= $cm['icon'] ?> mr-1"></i><?= esc($catName) ?>
                                 <span class="badge badge-<?= $cm['color'] ?> ml-1"><?= count($catRows) ?></span>
                                 <?php if ($highCnt > 0): ?>
@@ -306,71 +248,107 @@ $sevMap = $severity_map ?? [
                                 <?php endif; ?>
                             </a>
                         </li>
-                        <?php endforeach; ?>
+                        <?php $firstCat = false; endforeach; ?>
                     </ul>
                 </div>
+
 
                 <!-- Tab panes -->
                 <div class="card-body pt-3">
                     <div class="tab-content" id="cat-tabs-content">
 
-                        <!-- ── ALL pane ── -->
-                        <div class="tab-pane fade show active" id="pane-all" role="tabpanel">
-                            <?php renderTable('all', $results, $sevMap, $algMeta, $engine_meta); ?>
-                        </div>
-
-                        <!-- ── Per-category panes ── -->
-                        <?php foreach ($grouped as $catName => $catRows):
+                        <!-- Per-category panes (each has nested algorithm sub-tabs) -->
+                        <?php
+                        $firstCatPane = true;
+                        foreach ($grouped as $catName => $catRows):
                             $paneId = 'pane-' . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
-                            // Collect unique algorithms in this category
-                            $algsInCat = array_unique(array_column($catRows, 'algorithm'));
+                            $rowsByAlg = [];
+                            foreach ($catRows as $row) {
+                                $alg = $row['algorithm'] ?? 'Unknown';
+                                $rowsByAlg[$alg][] = $row;
+                            }
                         ?>
-                        <div class="tab-pane fade" id="<?= $paneId ?>" role="tabpanel">
+                        <div class="tab-pane fade <?= $firstCatPane ? 'show active' : '' ?>" id="<?= $paneId ?>" role="tabpanel">
+                            <!-- Algorithm sub-tab nav -->
+                            <ul class="nav nav-tabs flex-wrap mb-0" id="<?= $paneId ?>-alg-nav" role="tablist" style="border-bottom:2px solid #dee2e6;">
+                                <?php $firstAlg = true; foreach ($rowsByAlg as $algName => $algRows):
+                                    $am      = $algMeta[$algName] ?? null;
+                                    $mc      = $am['color'] ?? 'secondary';
+                                    $algHash = md5($paneId . $algName);
+                                    $highN   = count(array_filter($algRows, fn($r) => ($r['severity'] ?? '') === 'High'));
+                                ?>
+                                <li class="nav-item">
+                                    <a class="nav-link d-flex align-items-center <?= $firstAlg ? 'active' : '' ?>"
+                                       id="algtab-<?= $algHash ?>"
+                                       data-toggle="tab"
+                                       href="#algpane-<?= $algHash ?>"
+                                       role="tab"
+                                       style="font-size:.82rem; padding:.45rem .9rem;">
+                                        <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> mr-1 text-<?= $mc ?>"></i>
+                                        <?= esc($algName) ?>
+                                        <span class="badge badge-<?= $mc ?> ml-2"><?= count($algRows) ?></span>
+                                        <?php if ($highN > 0): ?>
+                                        <span class="badge badge-danger ml-1" title="<?= $highN ?> High severity"><i class="fas fa-bolt"></i></span>
+                                        <?php endif; ?>
+                                    </a>
+                                </li>
+                                <?php $firstAlg = false; endforeach; ?>
+                            </ul>
 
-                            <!-- Algorithm explanation cards -->
-                            <?php foreach ($algsInCat as $algName):
-                                $meta = $algMeta[$algName] ?? null;
-                                if (!$meta) continue;
-                                $mc = $meta['color'] ?? 'secondary';
-                            ?>
-                            <div class="card card-<?= $mc ?> card-outline shadow-sm mb-3">
-                                <div class="card-header py-2" style="cursor:pointer;"
-                                     data-toggle="collapse"
-                                     data-target="#alg-explain-<?= md5($paneId . $algName) ?>"
-                                     aria-expanded="false">
-                                    <h3 class="card-title mb-0">
-                                        <i class="<?= $meta['icon'] ?> text-<?= $mc ?> mr-2"></i>
-                                        <strong><?= esc($algName) ?></strong>
-                                        <small class="text-muted ml-2">— click to see how this algorithm works</small>
-                                    </h3>
-                                    <div class="card-tools">
-                                        <span class="btn btn-tool"><i class="fas fa-chevron-down"></i></span>
-                                    </div>
-                                </div>
-                                <div class="collapse" id="alg-explain-<?= md5($paneId . $algName) ?>">
-                                    <div class="card-body py-3">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6 class="text-<?= $mc ?> font-weight-bold">
-                                                    <i class="fas fa-cogs mr-1"></i> How it works
-                                                </h6>
-                                                <p class="text-muted mb-0" style="font-size:.875rem;"><?= esc($meta['how']) ?></p>
+                            <!-- Algorithm sub-tab panes -->
+                            <div class="tab-content border border-top-0 rounded-bottom" style="background:#fff;">
+                                <?php $firstAlg = true; foreach ($rowsByAlg as $algName => $algRows):
+                                    $am      = $algMeta[$algName] ?? null;
+                                    $mc      = $am['color'] ?? 'secondary';
+                                    $algHash = md5($paneId . $algName);
+                                ?>
+                                <div class="tab-pane fade <?= $firstAlg ? 'show active' : '' ?> p-3"
+                                     id="algpane-<?= $algHash ?>" role="tabpanel">
+
+                                    <!-- Explanation card — expanded by default (no collapse class) -->
+                                    <?php if ($am): ?>
+                                    <div class="card card-<?= $mc ?> card-outline shadow-sm mb-3">
+                                        <div class="card-header py-2">
+                                            <h3 class="card-title mb-0">
+                                                <i class="<?= $am['icon'] ?> text-<?= $mc ?> mr-2"></i>
+                                                <strong><?= esc($algName) ?></strong>
+                                                <small class="text-muted ml-2">— algorithm details</small>
+                                            </h3>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
                                             </div>
-                                            <div class="col-md-6 mt-3 mt-md-0">
-                                                <h6 class="text-<?= $mc ?> font-weight-bold">
-                                                    <i class="fas fa-lightbulb mr-1"></i> What the results mean
-                                                </h6>
-                                                <p class="text-muted mb-0" style="font-size:.875rem;"><?= esc($meta['means']) ?></p>
+                                        </div>
+                                        <!-- card-body is shown by default; data-card-widget="collapse" handles toggle -->
+                                        <div class="card-body py-3">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6 class="text-<?= $mc ?> font-weight-bold mb-2">
+                                                        <i class="fas fa-cogs mr-1"></i> How it works
+                                                    </h6>
+                                                    <p class="text-muted mb-0" style="font-size:.875rem; line-height:1.6;"><?= esc($am['how']) ?></p>
+                                                </div>
+                                                <div class="col-md-6 mt-3 mt-md-0">
+                                                    <h6 class="text-<?= $mc ?> font-weight-bold mb-2">
+                                                        <i class="fas fa-lightbulb mr-1"></i> What the results mean
+                                                    </h6>
+                                                    <p class="text-muted mb-0" style="font-size:.875rem; line-height:1.6;"><?= esc($am['means']) ?></p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
+                                    <?php endif; ?>
 
-                            <?php renderTable($paneId, $catRows, $sevMap, $algMeta, $engine_meta); ?>
+                                    <!-- Paginated results table — only rows for this algorithm -->
+                                    <?php renderTable('alg_' . $algHash, $algRows, $sevMap, $algMeta, $engine_meta); ?>
+
+                                </div>
+                                <?php $firstAlg = false; endforeach; ?>
+                            </div><!-- /.tab-content (algorithm level) -->
+
                         </div>
-                        <?php endforeach; ?>
+                        <?php $firstCatPane = false; endforeach; ?>
 
                     </div><!-- /.tab-content -->
                 </div><!-- /.card-body -->
@@ -382,12 +360,9 @@ $sevMap = $severity_map ?? [
             <div class="row mt-3 mb-4">
                 <div class="col-12 d-flex justify-content-between align-items-center flex-wrap" style="gap:.5rem;">
                     <button type="button" class="btn btn-outline-danger font-weight-bold" id="btn-reset">
-                        <i class="fas fa-trash-restore mr-1"></i> Reset Anomaly Detections
+                        <i class="fas fa-trash-restore mr-1"></i> Reset &amp; Reconfigure
                     </button>
                     <div class="d-flex flex-wrap" style="gap:.5rem;">
-                        <a href="<?= base_url('analysis/anomalies') ?>" class="btn btn-outline-secondary font-weight-bold">
-                            <i class="fas fa-cogs mr-1"></i> Change Engine
-                        </a>
                         <a href="<?= base_url('analysis/anomalies/algorithms?engine=' . esc($selected_engine)) ?>" class="btn btn-outline-primary font-weight-bold">
                             <i class="fas fa-sliders-h mr-1"></i> Change Algorithms
                         </a>

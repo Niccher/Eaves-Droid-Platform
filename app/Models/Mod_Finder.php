@@ -2464,96 +2464,243 @@ class Mod_Finder extends Model
     }
 
     /**
-     * Gets a unified chronological timeline of user events.
+     * Unified chronological timeline of ALL device events.
+     * Sources: SMS, Calls, Activities, Locations, App-Usage sessions,
+     *          App installs (tbl_apps), Device files, tbl_receive (upload events).
+     *
+     * Every source is wrapped in try/catch so a missing table never
+     * breaks the page. Final list is sorted DESC and sliced to $limit.
      */
-    public function get_unified_timeline(int $userId, int $limit = 50): array
+    public function get_unified_timeline(int $userId, int $limit = 100): array
     {
         $timeline = [];
+        $src      = (int) ceil($limit / 6); // per-source cap
 
-        // 1. Fetch SMS
-        $sms = $this->db->table('tbl_sms')
-            ->select('address, body, sms_date, sms_type')
-            ->where('owner_id', $userId)
-            ->orderBy('sms_date', 'DESC')
-            ->limit($limit)
-            ->get()
-            ->getResultArray();
+        // ── 1. SMS ────────────────────────────────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_sms')
+                ->select('address, body, sms_date, sms_type')
+                ->where('owner_id', $userId)
+                ->orderBy('sms_date', 'DESC')
+                ->limit($src)
+                ->get()->getResultArray();
 
-        foreach ($sms as $s) {
-            $timeline[] = [
-                'type' => 'sms',
-                'title' => ($s['sms_type'] === 'inbox' ? 'Received SMS from ' : 'Sent SMS to ') . $s['address'],
-                'body' => $this->decode_sms_body($s['body']),
-                'time' => (int) $s['sms_date'],
-                'icon' => 'fas fa-envelope',
-                'color' => 'bg-primary'
+            foreach ($rows as $r) {
+                $inbox = strtolower($r['sms_type'] ?? '') === 'inbox';
+                $timeline[] = [
+                    'type'  => 'sms',
+                    'title' => ($inbox ? 'Received SMS from ' : 'Sent SMS to ') . ($r['address'] ?? '?'),
+                    'body'  => mb_strimwidth($this->decode_sms_body($r['body'] ?? ''), 0, 300, '…'),
+                    'time'  => (int) ($r['sms_date'] ?? 0),
+                    'icon'  => $inbox ? 'fas fa-envelope-open-text' : 'fas fa-paper-plane',
+                    'color' => $inbox ? 'bg-primary' : 'bg-indigo',
+                ];
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline SMS: ' . $e->getMessage()); }
+
+        // ── 2. Calls ──────────────────────────────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_logs')
+                ->select('phone_number, contact_name, call_type, call_date, duration_seconds')
+                ->where('owner_id', $userId)
+                ->orderBy('call_date', 'DESC')
+                ->limit($src)
+                ->get()->getResultArray();
+
+            foreach ($rows as $r) {
+                $who  = !empty($r['contact_name']) ? $r['contact_name'] : ($r['phone_number'] ?? '?');
+                $type = strtolower($r['call_type'] ?? 'call');
+                $dur  = (int) ($r['duration_seconds'] ?? 0);
+                $timeline[] = [
+                    'type'     => 'call',
+                    'subtitle' => $type,
+                    'title'    => ucfirst($type) . ' call — ' . $who,
+                    'body'     => 'Duration: ' . $dur . 's' . ($dur === 0 && $type === 'missed' ? ' (missed)' : ''),
+                    'time'     => (int) ($r['call_date'] ?? 0),
+                    'icon'     => $type === 'missed' ? 'fas fa-phone-slash' : ($type === 'outgoing' ? 'fas fa-phone-alt' : 'fas fa-phone-incoming'),
+                    'color'    => $type === 'missed' ? 'bg-danger' : ($type === 'outgoing' ? 'bg-success' : 'bg-teal'),
+                ];
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline Calls: ' . $e->getMessage()); }
+
+        // ── 3. Physical activity ──────────────────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_activity')
+                ->select('activity_type, activity_time, confidence, screen_on, battery_level, network_type, info')
+                ->where('owner_id', $userId)
+                ->where('confidence >', 60)
+                ->orderBy('activity_time', 'DESC')
+                ->limit($src)
+                ->get()->getResultArray();
+
+            $actIcons = [
+                'still'      => 'fas fa-bed',
+                'walking'    => 'fas fa-walking',
+                'running'    => 'fas fa-running',
+                'in_vehicle' => 'fas fa-car',
+                'on_bicycle' => 'fas fa-bicycle',
+                'tilting'    => 'fas fa-redo',
             ];
-        }
+            foreach ($rows as $r) {
+                $atype  = strtolower($r['activity_type'] ?? 'unknown');
+                $screen = ($r['screen_on'] ?? 0) ? 'Screen ON' : 'Screen OFF';
+                $bat    = !empty($r['battery_level']) ? ' · Battery ' . $r['battery_level'] . '%' : '';
+                $net    = !empty($r['network_type'])  ? ' · Network: ' . $r['network_type']      : '';
+                $timeline[] = [
+                    'type'     => 'activity',
+                    'subtitle' => ucfirst($atype),
+                    'title'    => 'Activity: ' . ucfirst($atype),
+                    'body'     => $screen . $bat . $net . ' · Confidence: ' . $r['confidence'] . '%'
+                                  . (!empty($r['info']) ? ' · ' . $r['info'] : ''),
+                    'time'     => (int) ($r['activity_time'] ?? 0),
+                    'icon'     => $actIcons[$atype] ?? 'fas fa-running',
+                    'color'    => 'bg-info',
+                ];
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline Activity: ' . $e->getMessage()); }
 
-        // 2. Fetch Calls
-        $calls = $this->db->table('tbl_logs')
-            ->select('phone_number, contact_name, call_type, call_date, duration_seconds')
-            ->where('owner_id', $userId)
-            ->orderBy('call_date', 'DESC')
-            ->limit($limit)
-            ->get()
-            ->getResultArray();
+        // ── 4. Location check-ins ─────────────────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_location')
+                ->select('latitude, longitude, provider, accuracy, location_time')
+                ->where('owner_id', $userId)
+                ->orderBy('location_time', 'DESC')
+                ->limit((int) ceil($src / 2))
+                ->get()->getResultArray();
 
-        foreach ($calls as $c) {
-            $timeline[] = [
-                'type' => 'call',
-                'title' => ucfirst($c['call_type']) . ' call with ' . ($c['contact_name'] ?? $c['phone_number']),
-                'body' => 'Duration: ' . $c['duration_seconds'] . 's',
-                'time' => (int) $c['call_date'],
-                'icon' => 'fas fa-phone',
-                'color' => $c['call_type'] === 'missed' ? 'bg-danger' : 'bg-success'
-            ];
-        }
+            foreach ($rows as $r) {
+                $acc = !empty($r['accuracy']) ? ' · Accuracy: ' . round((float)$r['accuracy'], 1) . 'm' : '';
+                $timeline[] = [
+                    'type'     => 'location',
+                    'subtitle' => $r['provider'] ?? 'gps',
+                    'title'    => 'Location Update via ' . strtoupper($r['provider'] ?? 'GPS'),
+                    'body'     => 'Lat: ' . $r['latitude'] . '  Lng: ' . $r['longitude'] . $acc,
+                    'time'     => (int) ($r['location_time'] ?? 0),
+                    'icon'     => 'fas fa-map-marker-alt',
+                    'color'    => 'bg-warning',
+                ];
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline Location: ' . $e->getMessage()); }
 
-        // 3. Fetch Significant Activities
-        $activities = $this->db->table('tbl_activity')
-            ->select('activity_type, activity_time, confidence, info')
-            ->where('owner_id', $userId)
-            ->where('confidence >', 70)
-            ->orderBy('activity_time', 'DESC')
-            ->limit($limit)
-            ->get()
-            ->getResultArray();
+        // ── 5. App usage / screen sessions ───────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_app_usage')
+                ->select('package_name, app_name, foreground_time_ms, last_time_used')
+                ->where('owner_id', $userId)
+                ->where('last_time_used >', 0)
+                ->orderBy('last_time_used', 'DESC')
+                ->limit($src)
+                ->get()->getResultArray();
 
-        foreach ($activities as $a) {
-            $timeline[] = [
-                'type' => 'activity',
-                'title' => 'Activity Change: ' . ucfirst($a['activity_type'] ?? 'Unknown'),
-                'body' => 'Confidence: ' . $a['confidence'] . '% ' . ($a['info'] ? '- ' . $a['info'] : ''),
-                'time' => (int) $a['activity_time'],
-                'icon' => $a['activity_type'] === 'still' ? 'fas fa-bed' : 'fas fa-walking',
-                'color' => 'bg-info'
-            ];
-        }
+            foreach ($rows as $r) {
+                $appLabel = !empty($r['app_name']) ? $r['app_name'] : $r['package_name'];
+                $mins     = $r['foreground_time_ms'] > 0
+                    ? round($r['foreground_time_ms'] / 60000, 1) . ' min'
+                    : 'brief session';
+                $timeline[] = [
+                    'type'     => 'app_usage',
+                    'subtitle' => $r['package_name'] ?? '',
+                    'title'    => 'App Opened: ' . $appLabel,
+                    'body'     => 'Package: ' . ($r['package_name'] ?? '?') . ' · Session: ' . $mins,
+                    'time'     => (int) ($r['last_time_used'] ?? 0),
+                    'icon'     => 'fas fa-mobile-alt',
+                    'color'    => 'bg-indigo',
+                ];
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline AppUsage: ' . $e->getMessage()); }
 
-        // 4. Fetch Locations (Significant moves)
-        $locations = $this->db->table('tbl_location')
-            ->select('latitude, longitude, provider, location_time')
-            ->where('owner_id', $userId)
-            ->orderBy('location_time', 'DESC')
-            ->limit($limit / 2)
-            ->get()
-            ->getResultArray();
+        // ── 6. App installs ───────────────────────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_apps')
+                ->select('app_name, package_name, first_install_time, last_update_time, is_system_app, version_name')
+                ->where('owner_id', $userId)
+                ->where('first_install_time >', 0)
+                ->orderBy('first_install_time', 'DESC')
+                ->limit($src)
+                ->get()->getResultArray();
 
-        foreach ($locations as $l) {
-            $timeline[] = [
-                'type' => 'location',
-                'title' => 'Location Update (' . $l['provider'] . ')',
-                'body' => 'Coordinates: ' . $l['latitude'] . ', ' . $l['longitude'],
-                'time' => (int) $l['location_time'],
-                'icon' => 'fas fa-map-marker-alt',
-                'color' => 'bg-warning'
-            ];
-        }
+            foreach ($rows as $r) {
+                $label    = !empty($r['app_name']) ? $r['app_name'] : $r['package_name'];
+                $isSystem = ($r['is_system_app'] ?? 0) ? ' [System App]' : '';
+                $ver      = !empty($r['version_name']) ? ' v' . $r['version_name'] : '';
+                $timeline[] = [
+                    'type'     => 'upload',
+                    'subtitle' => 'app',
+                    'title'    => 'App Installed: ' . $label . $ver,
+                    'body'     => 'Package: ' . ($r['package_name'] ?? '?') . $isSystem,
+                    'time'     => (int) ($r['first_install_time'] ?? 0),
+                    'icon'     => 'fas fa-mobile-alt',
+                    'color'    => 'bg-indigo',
+                ];
+                // Also emit an update event if update time differs
+                $upd = (int) ($r['last_update_time'] ?? 0);
+                $ins = (int) ($r['first_install_time'] ?? 0);
+                if ($upd > 0 && $upd !== $ins) {
+                    $timeline[] = [
+                        'type'     => 'upload',
+                        'subtitle' => 'app',
+                        'title'    => 'App Updated: ' . $label . $ver,
+                        'body'     => 'Package: ' . ($r['package_name'] ?? '?'),
+                        'time'     => $upd,
+                        'icon'     => 'fas fa-sync-alt',
+                        'color'    => 'bg-teal',
+                    ];
+                }
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline Apps: ' . $e->getMessage()); }
 
-        // Sort combined timeline by time DESC
+        // ── 7. Device files ───────────────────────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_device_files')
+                ->select('name, path, size_bytes, last_modified, mime_type')
+                ->where('owner_id', $userId)
+                ->where('last_modified >', 0)
+                ->orderBy('last_modified', 'DESC')
+                ->limit($src)
+                ->get()->getResultArray();
+
+            foreach ($rows as $r) {
+                $size  = $r['size_bytes'] > 0 ? round($r['size_bytes'] / 1024, 1) . ' KB' : 'unknown size';
+                $mime  = !empty($r['mime_type']) ? ' · ' . $r['mime_type'] : '';
+                $timeline[] = [
+                    'type'     => 'file',
+                    'subtitle' => 'file',
+                    'title'    => 'File: ' . ($r['name'] ?? 'Unknown'),
+                    'body'     => 'Path: ' . ($r['path'] ?? '?') . ' · Size: ' . $size . $mime,
+                    'time'     => (int) ($r['last_modified'] ?? 0),
+                    'icon'     => 'fas fa-file-alt',
+                    'color'    => 'bg-secondary',
+                ];
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline Files: ' . $e->getMessage()); }
+
+        // ── 8. Data upload/receive events (tbl_receive) ───────────────────────
+        try {
+            $cols = $this->db->query("SHOW COLUMNS FROM tbl_receive")->getResultArray();
+            if (!empty($cols)) {
+                $rows = $this->db->table('tbl_receive')
+                    ->where('owner_id', $userId)
+                    ->orderBy('received_at', 'DESC')
+                    ->limit($src)
+                    ->get()->getResultArray();
+
+                foreach ($rows as $r) {
+                    $dtype = $r['data_type'] ?? ($r['type'] ?? 'data');
+                    $timeline[] = [
+                        'type'     => 'upload',
+                        'subtitle' => strtolower($dtype),
+                        'title'    => 'Data Upload: ' . ucfirst($dtype),
+                        'body'     => 'Records received from device · Source: ' . ($r['source'] ?? 'device'),
+                        'time'     => strtotime($r['received_at'] ?? '') ?: 0,
+                        'icon'     => 'fas fa-upload',
+                        'color'    => 'bg-teal',
+                    ];
+                }
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline Receive: ' . $e->getMessage()); }
+
+        // ── Sort all events DESC by time and slice ────────────────────────────
         usort($timeline, fn($a, $b) => $b['time'] <=> $a['time']);
-
         return array_slice($timeline, 0, $limit);
     }
     /**
