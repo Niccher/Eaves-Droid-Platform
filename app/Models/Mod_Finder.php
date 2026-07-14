@@ -2396,6 +2396,74 @@ class Mod_Finder extends Model
     }
 
     /**
+     * Basic timeline: SMS + Call events only (for the Basic Timeline pill).
+     *
+     * @param int $userId
+     * @param int $limit   Max rows per data source (total can be up to 2× limit)
+     * @return array       Chronologically sorted event array
+     */
+    public function get_basic_timeline(int $userId, int $limit = 200): array
+    {
+        $timeline = [];
+
+        // SMS events
+        try {
+            $sms = $this->db->table('tbl_sms')
+                ->select('address, body, sms_date, sms_type')
+                ->where('owner_id', $userId)
+                ->orderBy('sms_date', 'DESC')
+                ->limit($limit)
+                ->get()->getResultArray();
+
+            foreach ($sms as $s) {
+                $isInbox = strtolower($s['sms_type'] ?? '') === 'inbox';
+                $timeline[] = [
+                    'type'     => 'sms',
+                    'subtype'  => $isInbox ? 'inbox' : 'sent',
+                    'title'    => ($isInbox ? 'Received from ' : 'Sent to ') . ($s['address'] ?? '—'),
+                    'body'     => $this->decode_sms_body($s['body'] ?? ''),
+                    'meta'     => $s['address'] ?? '',
+                    'time'     => (int) ($s['sms_date'] ?? 0),
+                    'icon'     => $isInbox ? 'fas fa-envelope-open-text' : 'fas fa-paper-plane',
+                    'color'    => $isInbox ? 'bg-primary' : 'bg-indigo',
+                ];
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'get_basic_timeline SMS: ' . $e->getMessage());
+        }
+
+        // Call events
+        try {
+            $calls = $this->db->table('tbl_logs')
+                ->select('phone_number, contact_name, call_type, call_date, duration_seconds')
+                ->where('owner_id', $userId)
+                ->orderBy('call_date', 'DESC')
+                ->limit($limit)
+                ->get()->getResultArray();
+
+            foreach ($calls as $c) {
+                $who  = !empty($c['contact_name']) ? $c['contact_name'] : $c['phone_number'];
+                $type = strtolower($c['call_type'] ?? 'call');
+                $timeline[] = [
+                    'type'    => 'call',
+                    'subtype' => $type,
+                    'title'   => ucfirst($type) . ' call — ' . $who,
+                    'body'    => 'Duration: ' . (int) $c['duration_seconds'] . 's',
+                    'meta'    => $c['phone_number'] ?? '',
+                    'time'    => (int) ($c['call_date'] ?? 0),
+                    'icon'    => $type === 'missed' ? 'fas fa-phone-missed-call' : ($type === 'outgoing' ? 'fas fa-phone-outgoing' : 'fas fa-phone-incoming'),
+                    'color'   => $type === 'missed' ? 'bg-danger' : ($type === 'outgoing' ? 'bg-success' : 'bg-teal'),
+                ];
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'get_basic_timeline Calls: ' . $e->getMessage());
+        }
+
+        usort($timeline, fn($a, $b) => $b['time'] <=> $a['time']);
+        return $timeline;
+    }
+
+    /**
      * Gets a unified chronological timeline of user events.
      */
     public function get_unified_timeline(int $userId, int $limit = 50): array

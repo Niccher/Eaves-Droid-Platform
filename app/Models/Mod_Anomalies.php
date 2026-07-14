@@ -74,6 +74,56 @@ class Mod_Anomalies extends Model
     // =========================================================================
 
     /**
+     * Builds a random-but-sensible algorithm selection using only PHP-compatible
+     * algorithms. Always includes each category's default algorithm, then randomly
+     * adds 0 or 1 extra non-default PHP-compatible algorithm per category.
+     *
+     * Used by index() and the reset handler so users always land on a live result
+     * without having to step through the wizard manually.
+     *
+     * @return array  ['sms' => ['sms_freq', 'sms_time'], 'locations' => ['loc_geofence'], ...]
+     */
+    public function getRandomPhpAlgorithms(): array
+    {
+        $categories = $this->getAlgorithmCategories();
+        $selected   = [];
+
+        foreach ($categories as $catKey => $cat) {
+            // Only PHP-compatible algorithms (compat != 'python')
+            $phpAlgs = array_values(array_filter(
+                $cat['algorithms'],
+                fn($a) => ($a['compat'] ?? 'both') !== 'python'
+            ));
+
+            if (empty($phpAlgs)) {
+                continue;
+            }
+
+            // Always include defaults
+            $defaults = array_column(
+                array_filter($phpAlgs, fn($a) => !empty($a['default'])),
+                'id'
+            );
+
+            // Randomly add 0–1 non-default extras
+            $nonDefaults = array_values(array_diff(
+                array_column($phpAlgs, 'id'),
+                $defaults
+            ));
+
+            $extras = [];
+            if (!empty($nonDefaults) && rand(0, 1)) {
+                shuffle($nonDefaults);
+                $extras = [reset($nonDefaults)];
+            }
+
+            $selected[$catKey] = array_values(array_unique(array_merge($defaults, $extras)));
+        }
+
+        return $selected;
+    }
+
+    /**
      * Returns all data categories with their candidate algorithms.
      *
      * @return array

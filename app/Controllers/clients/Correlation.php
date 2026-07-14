@@ -508,19 +508,23 @@ class Correlation extends BaseClientController{
      */
     public function intelligence_timeline()
     {
-        $data['pag'] = 'timeline';
-        $data["user_info"] = $this->finderModel->basic_user();
-        
-        // Stats
-        $counts = $this->getUserDataCounts();
-        $data = array_merge($data, $counts);
+        $data['pag']       = 'analysis';
+        $data['sub_pag']   = 'timeline';
+        $data['user_info'] = $this->finderModel->basic_user();
 
-        $data['timeline'] = $this->finderModel->get_unified_timeline($this->userId, 100);
-        
-        return view('headers_footers/head_users')
+        $counts = $this->getUserDataCounts();
+        $data   = array_merge($data, $counts);
+
+        // ── Basic timeline: high-level communication events (SMS + Calls only)
+        $data['basic_timeline'] = $this->finderModel->get_basic_timeline($this->userId, 200);
+
+        // ── Advanced timeline: all event types in one chronological stream
+        $data['advanced_timeline'] = $this->finderModel->get_unified_timeline($this->userId, 300);
+
+        return view('headers_footers/head_users', $data)
             . view('headers_footers/sidebar_users', $data)
             . view('users/correlation/intelligence_timeline', $data)
-            . view('headers_footers/footer_users');
+            . view('headers_footers/footer_users', $data);
     }
 
     /**

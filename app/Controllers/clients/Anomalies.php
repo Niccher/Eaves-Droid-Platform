@@ -46,15 +46,17 @@ class Anomalies extends BaseClientController
      */
     public function index()
     {
-        // If results are already generated / configured, default landing is results page
+        // If already configured, go straight to results
         if ($this->session->has('anomaly_engine') && $this->session->has('anomaly_algorithms')) {
             return redirect()->to(base_url('analysis/anomalies/results'));
         }
 
-        $data = $this->baseData();
-        $data['engines'] = $this->anomalyModel->getEngines();
+        // Auto-configure: PHP engine + random selection of PHP-compatible algorithms,
+        // then redirect to results so the user doesn't have to step through the wizard.
+        $this->session->set('anomaly_engine', 'php');
+        $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
 
-        return $this->renderWizardView('analysis/info', $data);
+        return redirect()->to(base_url('analysis/anomalies/results'));
     }
 
     // -------------------------------------------------------------------------
@@ -107,11 +109,14 @@ class Anomalies extends BaseClientController
             }
         }
 
-        // ── Handle reset: clear session and return to Step 1
+        // ── Handle reset: clear session, auto-reconfigure with PHP defaults, go back to results
         if ($this->request->getGet('reset') === 'true') {
             $this->session->remove('anomaly_engine');
             $this->session->remove('anomaly_algorithms');
-            return redirect()->to(base_url('analysis/anomalies'));
+            // Auto-apply fresh PHP defaults so the user lands on results immediately
+            $this->session->set('anomaly_engine', 'php');
+            $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
+            return redirect()->to(base_url('analysis/anomalies/results'));
         }
 
         // ── Guard: must have engine configured (Step 1)
