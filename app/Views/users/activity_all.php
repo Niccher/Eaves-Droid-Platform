@@ -5,7 +5,6 @@
  * @var array $activity_dump
  * @var int $totalActivities
  * @var object $pager
- * @var string $nav_urls
  */
 ?>
 
@@ -28,9 +27,6 @@
                     </div>
                     <p class="text-muted mt-2 mb-0">Hardware status and user activity monitoring</p>
                 </div>
-                <div class="col-lg-4 col-md-6">
-                </div>
-
             </div>
         </div>
     </section>
@@ -57,18 +53,17 @@
                                 <table class="table table-hover table-striped mb-0 tabledump">
                                     <thead class="thead-light">
                                     <tr>
-                                        <th>Status/Activity</th>
-                                        <th>Interactive</th>
+                                        <th>Activity</th>
                                         <th>Battery</th>
-                                        <th>Network</th>
                                         <th>Screen</th>
+                                        <th>Network</th>
                                         <th>Timestamp</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <?php if (empty($activity_dump)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center py-5">
+                                            <td colspan="5" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-running fa-3x text-muted mb-3"></i>
                                                     <h4>No activity logs</h4>
@@ -79,37 +74,83 @@
                                     <?php else: ?>
                                         <?php foreach ($activity_dump as $act): ?>
                                             <?php
-                                            $time = isset($act['activity_time']) ? date('Y-m-d H:i:s', $act['activity_time'] / 1000) : 'N/A';
-                                            $interactiveBadge = ($act['is_interactive'] == 1) ? 'badge-success' : 'badge-danger';
-                                            $screenBadge = ($act['screen_on'] == 1) ? 'badge-success' : 'badge-secondary';
+                                            $activityTime = !empty($act['activity_time']) ? format_timestamp_display((int)$act['activity_time']) : '—';
+                                            $extractedAt = !empty($act['extracted_at']) ? format_timestamp_display((int)$act['extracted_at']) : '—';
+                                            $isInteractive = ($act['is_interactive'] ?? 0) == 1;
+                                            $screenOn = ($act['screen_on'] ?? 0) == 1;
+                                            $battery = $act['battery_level'] ?? null;
+                                            $charging = $act['charging_status'] ?? '';
+                                            $network = strtoupper($act['network_type'] ?? '—');
+                                            $activity = strtoupper($act['status'] ?? $act['activity_type'] ?? '—');
+
+                                            $actIcon = 'fa-question-circle';
+                                            $actColor = 'secondary';
+                                            if (strpos($activity, 'WALK') !== false || strpos($activity, 'RUN') !== false) {
+                                                $actIcon = 'fa-running'; $actColor = 'success';
+                                            } elseif (strpos($activity, 'STILL') !== false || strpos($activity, 'IDLE') !== false) {
+                                                $actIcon = 'fa-stop-circle'; $actColor = 'secondary';
+                                            } elseif (strpos($activity, 'VEHICLE') !== false || strpos($activity, 'DRIV') !== false) {
+                                                $actIcon = 'fa-car'; $actColor = 'info';
+                                            } elseif (strpos($activity, 'BICYCLE') !== false) {
+                                                $actIcon = 'fa-bicycle'; $actColor = 'warning';
+                                            } elseif (strpos($activity, 'TILT') !== false) {
+                                                $actIcon = 'fa-mobile-alt'; $actColor = 'dark';
+                                            } elseif (strpos($activity, 'UNKNOWN') !== false) {
+                                                $actIcon = 'fa-question'; $actColor = 'light';
+                                            }
+
+                                            $battColor = 'success';
+                                            if ($battery !== null) {
+                                                if ($battery <= 15) $battColor = 'danger';
+                                                elseif ($battery <= 30) $battColor = 'warning';
+                                            }
+
+                                            $netColor = 'secondary';
+                                            if (strpos($network, 'WIFI') !== false) $netColor = 'primary';
+                                            elseif (strpos($network, '4G') !== false || strpos($network, 'LTE') !== false) $netColor = 'success';
+                                            elseif (strpos($network, '3G') !== false) $netColor = 'info';
+                                            elseif (strpos($network, '2G') !== false || strpos($network, 'EDGE') !== false) $netColor = 'warning';
+                                            elseif (strpos($network, '—') !== false || empty($act['network_type'])) $netColor = 'light';
                                             ?>
                                             <tr>
                                                 <td>
-                                                    <div class="font-weight-bold"><?php echo strtoupper($act['status']); ?></div>
-                                                    <small class="text-muted"><?php echo $act['activity_type'] ?? 'IDLE'; ?> (Conf: <?php echo $act['confidence']; ?>%)</small>
-                                                </td>
-                                                <td>
-                                                    <span class="badge <?php echo $interactiveBadge; ?>">
-                                                        <?php echo ($act['is_interactive'] == 1) ? 'YES' : 'NO'; ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <div class="progress progress-xs" style="width: 60px;">
-                                                        <div class="progress-bar bg-<?php echo ($act['battery_level'] > 20) ? 'success' : 'danger'; ?>" style="width: <?php echo $act['battery_level']; ?>%"></div>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge badge-<?php echo $actColor; ?> p-2 mr-2" style="font-size:1rem;width:36px;">
+                                                            <i class="fas <?php echo $actIcon; ?>"></i>
+                                                        </span>
+                                                        <div>
+                                                            <strong><?php echo $activity; ?></strong>
+                                                            <br><small class="text-muted"><?php echo $isInteractive ? 'Interactive' : 'Background'; ?></small>
+                                                        </div>
                                                     </div>
-                                                    <small><?php echo $act['battery_level']; ?>% (<?php echo $act['charging_status']; ?>)</small>
                                                 </td>
-                                                <td>
-                                                    <span class="badge badge-info"><?php echo strtoupper($act['network_type'] ?? 'unknown'); ?></span>
+                                                <td class="align-middle">
+                                                    <?php if ($battery !== null): ?>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="progress progress-xs flex-grow-1 mr-2" style="max-width:60px;height:6px;">
+                                                                <div class="progress-bar bg-<?php echo $battColor; ?>" style="width:<?php echo $battery; ?>%"></div>
+                                                            </div>
+                                                            <small class="font-weight-bold text-<?php echo $battColor; ?>"><?php echo $battery; ?>%</small>
+                                                        </div>
+                                                        <?php if ($charging): ?>
+                                                            <small class="text-muted"><i class="fas fa-plug mr-1"></i><?php echo ucfirst($charging); ?></small>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
                                                 </td>
-                                                <td>
-                                                    <span class="badge <?php echo $screenBadge; ?>">
-                                                        <?php echo ($act['screen_on'] == 1) ? 'ON' : 'OFF'; ?>
+                                                <td class="align-middle">
+                                                    <span class="badge badge-<?php echo $screenOn ? 'success' : 'secondary'; ?> p-2" style="font-size:0.85rem;">
+                                                        <i class="fas <?php echo $screenOn ? 'fa-sun' : 'fa-moon'; ?> mr-1"></i>
+                                                        <?php echo $screenOn ? 'ON' : 'OFF'; ?>
                                                     </span>
                                                 </td>
-                                                <td>
-                                                    <div><?php echo $time; ?></div>
-                                                    <small class="text-muted">Extracted: <?php echo date('Y-m-d H:i:s', $act['extracted_at'] / 1000); ?></small>
+                                                <td class="align-middle">
+                                                    <span class="badge badge-<?php echo $netColor; ?> p-2"><?php echo $network; ?></span>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <div><?php echo $activityTime; ?></div>
+                                                    <?php if (!empty($act['extracted_at'])): ?><small class="text-muted">Extracted: <?php echo $extractedAt; ?></small><?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

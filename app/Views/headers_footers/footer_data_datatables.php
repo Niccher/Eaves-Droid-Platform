@@ -20,52 +20,46 @@
     <!-- Bootstrap 4 -->
     <script src="<?php echo base_url('assets/plugins/bootstrap/js/bootstrap.bundle.min.js'); ?>"></script>
     <script src="<?php echo base_url('assets/plugins/datatables/datatables.min.js'); ?>"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        $('.tabledump').DataTable({
-            "pageLength": 50,
-            "responsive": true,
-            "autoWidth": false,
-            "dom": '<"row mb-2"<"col-sm-6"B><"col-sm-6"f>>rt<"row mt-2"<"col-sm-6"i><"col-sm-6"p>>',
-            buttons: [
-                'copyHtml5',
-                'excelHtml5',
-                'csvHtml5',
-                'pdfHtml5'
-            ]
-        });
-
-        // Export data notification handler
-        $(document).on('click', '.export-link', function(e) {
-            const dataType = $(this).data('type') || 'Data';
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-            
-            // Add notification item
-            const notificationHtml = `
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fas fa-file-download mr-2 text-success"></i> Export completed for ${dataType}
-                    <span class="float-right text-muted text-sm">${timeStr}</span>
-                </a>
-            `;
-            
-            $('#dynamic-notifications').prepend(notificationHtml);
-            
-            // Update badge count
-            const badge = $('.navbar-badge');
-            let count = parseInt(badge.text()) || 0;
-            badge.text(count + 1);
-            
-            // Update header count
-            const header = $('#notification-header');
-            if (header.length) {
-                let headerText = header.text().trim();
-                let match = headerText.match(/(\d+)/);
-                if (match) {
-                    let newCount = parseInt(match[1]) + 1;
-                    header.html(`<i class="fas fa-bell mr-2"></i> ${newCount} Notifications`);
-                }
+        $(function () {
+            try {
+                $('.tabledump').DataTable({
+                    "paging": false,
+                    "info": false,
+                    "autoWidth": false,
+                    "dom": '<"row mb-2"<"col-sm-6"f><"col-sm-6 text-right"B>>rt',
+                    buttons: [{
+                        text: '<i class="fas fa-file-pdf mr-1"></i> PDF',
+                        className: 'btn btn-sm btn-danger',
+                        action: function (e, dt, node, config) {
+                            Swal.fire({
+                                title: 'Generating PDF...',
+                                text: 'Please wait while we prepare your document',
+                                allowOutsideClick: false,
+                                didOpen: () => { Swal.showLoading(); }
+                            });
+                            var element = document.querySelector('.tabledump');
+                            html2pdf().set({
+                                margin:       10,
+                                filename:     'export_' + Date.now() + '.pdf',
+                                image:        { type: 'jpeg', quality: 0.98 },
+                                html2canvas:  { scale: 2, letterRendering: true },
+                                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                            }).from(element).save().then(function() {
+                                Swal.close();
+                                Swal.fire({ icon: 'success', title: 'Export Complete', text: 'PDF has been downloaded', timer: 2000, showConfirmButton: false });
+                            }).catch(function() {
+                                Swal.close();
+                                Swal.fire({ icon: 'error', title: 'Export Failed', text: 'Could not generate PDF', timer: 3000, showConfirmButton: false });
+                            });
+                        }
+                    }]
+                });
+            } catch (e) {
+                console.warn('DataTable init failed:', e);
             }
         });
     </script>

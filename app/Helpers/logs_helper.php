@@ -83,14 +83,19 @@ if (!function_exists('renderLogsTable')) {
 
             // Format timestamp
             $timestamp = $log['Timestamps'] ?? time();
-            $formattedTime = date('M d, Y H:i:s', $timestamp);
+            $formattedTime = date('M d, Y, l H:i:s', $timestamp);
+
+            $fileSizeHtml = '';
+            if (!empty($log['file_size_formatted'])) {
+                $fileSizeHtml = ' <span class="badge badge-info">' . $log['file_size_formatted'] . '</span>';
+            }
 
             $html .= '
                 <tr>
                     <td>' . ($log['counter'] ?? $log['id'] ?? 'N/A') . '</td>
                     <td>
                         <i class="' . $categoryIcon . ' mr-2"></i>
-                        ' . htmlspecialchars($log['Action'] ?? 'Unknown Action') . '
+                        ' . htmlspecialchars($log['Action'] ?? 'Unknown Action') . $fileSizeHtml . '
                     </td>
                     <td>' . ucfirst($category) . '</td>
                     <td>' . $severityBadge . '</td>
@@ -110,6 +115,82 @@ if (!function_exists('renderLogsTable')) {
         </div>';
 
         return $html;
+    }
+}
+
+if (!function_exists('renderLogsSummary')) {
+    /**
+     * Renders a summary table of grouped log actions with frequency counters.
+     *
+     * @param array $groups [['action_type' => ..., 'action_category' => ..., 'frequency' => ..., 'last_occurrence' => ...]]
+     * @return string
+     */
+    function renderLogsSummary(array $groups): string
+    {
+        if (empty($groups)) {
+            return '
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle mr-2"></i>
+                No log entries found.
+            </div>';
+        }
+
+        $html = '
+        <div class="table-responsive">
+            <table class="table table-hover table-striped" id="logsSummaryTable">
+                <thead class="thead-light">
+                    <tr>
+                        <th><i class="fas fa-tasks mr-2"></i>Action</th>
+                        <th><i class="fas fa-tag mr-2"></i>Category</th>
+                        <th><i class="fas fa-sort-amount-down mr-2"></i>Frequency</th>
+                        <th><i class="fas fa-clock mr-2"></i>Last Occurrence</th>
+                    </tr>
+                </thead>
+                <tbody>';
+
+        foreach ($groups as $g) {
+            $action = htmlspecialchars($g['action_type'] ?? 'Unknown');
+            $category = htmlspecialchars($g['action_category'] ?? 'system');
+            $freq = (int) ($g['frequency'] ?? 1);
+            $lastOccurrence = !empty($g['last_occurrence'])
+                ? date('M d, Y, l H:i', strtotime($g['last_occurrence']))
+                : '—';
+
+            $color = $freq > 100 ? 'danger' : ($freq > 20 ? 'warning' : 'info');
+
+            $html .= '
+                <tr>
+                    <td><i class="' . getCategoryIcon($category) . ' mr-2"></i>' . $action . '</td>
+                    <td><span class="badge badge-secondary">' . ucfirst($category) . '</span></td>
+                    <td><span class="badge badge-' . $color . ' p-2">' . $freq . ' time' . ($freq !== 1 ? 's' : '') . '</span></td>
+                    <td><small class="text-muted">' . $lastOccurrence . '</small></td>
+                </tr>';
+        }
+
+        $html .= '
+                </tbody>
+            </table>
+        </div>';
+
+        return $html;
+    }
+}
+
+if (!function_exists('formatFileSize')) {
+    /**
+     * Formats bytes into a human-readable file size string.
+     */
+    function formatFileSize($bytes): string
+    {
+        if ($bytes === null || $bytes === '' || $bytes === 0) return '—';
+        $bytes = (float) $bytes;
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = 0;
+        while ($bytes >= 1024 && $i < count($units) - 1) {
+            $bytes /= 1024;
+            $i++;
+        }
+        return number_format($bytes, $i === 0 ? 0 : 1) . ' ' . $units[$i];
     }
 }
 

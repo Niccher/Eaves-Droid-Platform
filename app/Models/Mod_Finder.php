@@ -1024,6 +1024,10 @@ class Mod_Finder extends Model
     {
         return $this->getCount('tbl_sensor_profile', $user_id);
     }
+    public function get_count_SecurityAudit(int $user_id): int
+    {
+        return $this->getCount('tbl_security_audit', $user_id);
+    }
 
     // ── Export Fetch Methods ─────────────────────────────────────────────
     public function export_device_context(int $user_id, int $limit = 1000): array
@@ -1057,6 +1061,10 @@ class Mod_Finder extends Model
     public function export_sensors(int $user_id, int $limit = 1000): array
     {
         return $this->db->table('tbl_sensor_profile')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_security_audit(int $user_id, int $limit = 1000): array
+    {
+        return $this->db->table('tbl_security_audit')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_device_files(int $user_id, int $limit = 1000): array
     {
@@ -1265,6 +1273,50 @@ class Mod_Finder extends Model
     /**
      * @return array{rows: array, total: int}
      */
+    public function get_app_detail_by_package(int $user_id, string $package_name): array
+    {
+        try {
+            $row = $this->db->table('tbl_apps')
+                ->select('app_name, package_name, version_name, version_code, app_size, permission_count, target_sdk, min_sdk, first_install_time, last_update_time, is_system_app')
+                ->where('owner_id', $user_id)
+                ->where('package_name', $package_name)
+                ->get()
+                ->getRowArray();
+            if ($row && !empty($row['first_install_time'])) {
+                $ts = is_numeric($row['first_install_time'])
+                    ? (strlen($row['first_install_time']) > 11 ? (int)($row['first_install_time'] / 1000) : (int)$row['first_install_time'])
+                    : strtotime($row['first_install_time']);
+                $row['first_install_display'] = $ts ? date('M j, Y, g:i A', $ts) : '—';
+            } else {
+                $row['first_install_display'] = '—';
+            }
+            if ($row && !empty($row['last_update_time'])) {
+                $ts = is_numeric($row['last_update_time'])
+                    ? (strlen($row['last_update_time']) > 11 ? (int)($row['last_update_time'] / 1000) : (int)$row['last_update_time'])
+                    : strtotime($row['last_update_time']);
+                $row['last_update_display'] = $ts ? date('M j, Y, g:i A', $ts) : '—';
+            } else {
+                $row['last_update_display'] = '—';
+            }
+            if ($row && !empty($row['app_size'])) {
+                $size = (int)$row['app_size'];
+                if ($size > 1048576) {
+                    $row['app_size_display'] = round($size / 1048576, 1) . ' MB';
+                } elseif ($size > 1024) {
+                    $row['app_size_display'] = round($size / 1024, 1) . ' KB';
+                } else {
+                    $row['app_size_display'] = $size . ' B';
+                }
+            } else {
+                $row['app_size_display'] = '—';
+            }
+            return $row ?: [];
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_detail_by_package: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function get_app_usage_package_summary(int $user_id, string $package_name): array
     {
         try {
@@ -1557,7 +1609,41 @@ class Mod_Finder extends Model
         }
     }
 
-
+    public function get_security_audit(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_SecurityAudit($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->db->table('tbl_security_audit')
+                ->where('owner_id', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            if (!empty($results)) {
+                foreach ($results as &$r) {
+                    if (!empty($r['user_ca_certs_json'])) {
+                        $decoded = json_decode($r['user_ca_certs_json'], true);
+                        $r['user_ca_certs'] = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $r['user_ca_certs'] = [];
+                    }
+                    if (!empty($r['open_ports_json'])) {
+                        $decoded = json_decode($r['open_ports_json'], true);
+                        $r['open_ports'] = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $r['open_ports'] = [];
+                    }
+                }
+                unset($r);
+            }
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_security_audit: ' . $e->getMessage());
+            return [];
+        }
+    }
 
     /**
      * Get categorized SMS counts for dashboard.

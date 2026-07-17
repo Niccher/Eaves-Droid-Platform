@@ -44,7 +44,7 @@
                             <?php
                                 $lvl     = $r['battery_level_percent'] ?? 0;
                                 $barCol  = $lvl > 50 ? 'success' : ($lvl > 20 ? 'warning' : 'danger');
-                                $ts      = $r['extracted_at'] ? date('Y-m-d H:i', $r['extracted_at'] / 1000) : 'N/A';
+                                $ts      = !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—';
                                 $clip    = $r['clipboard_text'] ?? null;
                             ?>
                             <tr>
@@ -80,7 +80,7 @@
                                     <div><i class="fas fa-globe mr-1 text-primary"></i><?= htmlspecialchars($r['locale_display_language'] ?? '') ?> / <?= htmlspecialchars($r['locale_display_country'] ?? '') ?></div>
                                     <small class="text-muted"><i class="fas fa-clock mr-1"></i><?= htmlspecialchars($r['locale_timezone'] ?? '') ?></small>
                                 </td>
-                                <td><small><?= $ts ?></small></td>
+                                <td><?= $ts ?></td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>

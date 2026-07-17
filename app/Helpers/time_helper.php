@@ -73,6 +73,28 @@ if (! function_exists('package_url_decode')) {
     }
 }
 
+if (! function_exists('format_timestamp_display')) {
+    /**
+     * Format a millisecond epoch timestamp as HTML with call_logs-style icons.
+     * Returns e.g. '<i class="fas fa-calendar-day text-primary mr-1"></i> Jul 17, 2026
+     *          <small class="text-muted"><i class="fas fa-clock text-secondary mr-1"></i> 14:30:00
+     *          <span class="badge badge-light ml-1">Fri</span></small>'
+     */
+    function format_timestamp_display(?int $msTimestamp): string
+    {
+        if (empty($msTimestamp)) {
+            return '<span class="text-muted">—</span>';
+        }
+        $seconds = (int) floor($msTimestamp / 1000);
+        $dateOnly = date('M d, Y', $seconds);
+        $timeOnly = date('H:i:s', $seconds);
+        $dayName  = date('D', $seconds);
+        return '<i class="fas fa-calendar-day text-primary mr-1"></i> ' . $dateOnly
+            . ' <small class="text-muted"><i class="fas fa-clock text-secondary mr-1"></i> ' . $timeOnly
+            . ' <span class="badge badge-light ml-1">' . $dayName . '</span></small>';
+    }
+}
+
 if (! function_exists('format_ms_datetime')) {
     /**
      * Format ms timestamp for display (absolute).

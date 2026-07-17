@@ -21,7 +21,7 @@ class Location extends BaseClientController
             'location_dump' => $locations,
             'pager' => $this->finderModel->getPager(),
             'totalLocations' => $this->finderModel->get_count_Location($this->userId),
-            'current_type' => 'location'
+            'current_type' => 'location',
         ]);
 
         return $this->renderAppView('users/location_all', $data);
@@ -40,7 +40,7 @@ class Location extends BaseClientController
             'activity_dump' => $activities,
             'pager' => $this->finderModel->getPager(),
             'totalActivities' => $this->finderModel->get_count_Activity($this->userId),
-            'current_type' => 'activity'
+            'current_type' => 'activity',
         ]);
 
         return $this->renderAppView('users/activity_all', $data);

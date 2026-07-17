@@ -191,10 +191,10 @@
                         <div class="card-body">
                             <!-- Tab Content -->
                             <div class="tab-content" id="logsTabsContent">
-                                <!-- All Activity Tab -->
+                                <!-- All Activity Tab — grouped summary -->
                                 <div class="tab-pane fade <?php echo ($activeTab === 'all') ? 'show active' : ''; ?>"
                                      id="all" role="tabpanel">
-                                    <?php echo renderLogsTable($user_logs, 'All Activities'); ?>
+                                    <?php echo renderLogsSummary($grouped_logs ?? []); ?>
                                 </div>
 
                                 <!-- Web View Tab -->
@@ -228,8 +228,11 @@
                                             <button type="button" class="btn btn-outline-secondary btn-sm" id="exportLogsBtn">
                                                 <i class="fas fa-download mr-1"></i> Export
                                             </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="filterLogsBtn">
-                                                <i class="fas fa-filter mr-1"></i> Filter
+                                            <button type="button" class="btn btn-outline-danger btn-sm" id="clearLogsBtn">
+                                                <i class="fas fa-trash mr-1"></i> Clear
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info btn-sm" id="addNoteBtn">
+                                                <i class="fas fa-sticky-note mr-1"></i> Add Note
                                             </button>
                                             <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshLogsBtn">
                                                 <i class="fas fa-sync-alt mr-1"></i> Refresh
@@ -400,57 +403,93 @@
             }, 1000);
         });
 
-        // Filter logs
-        $('#filterLogsBtn').click(function() {
+        // Clear logs
+        $('#clearLogsBtn').click(function() {
             Swal.fire({
-                title: 'Filter Logs',
+                title: 'Clear Access Logs?',
+                text: 'This will permanently delete all your access logs. This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes, clear all',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '<?= base_url('account/clear_logs') ?>',
+                        type: 'POST',
+                        data: {
+                            <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                        },
+                        success: function(res) {
+                            if (res.success) {
+                                showToast('Logs cleared successfully!', 'success');
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                showToast('Failed to clear logs: ' + (res.message || 'Unknown error'), 'danger');
+                            }
+                        },
+                        error: function(xhr) {
+                            showToast('Error clearing logs: ' + xhr.statusText, 'danger');
+                        }
+                    });
+                }
+            });
+        });
+
+        // Add note
+        $('#addNoteBtn').click(function() {
+            Swal.fire({
+                title: 'Add Administrative Note',
                 html: `
                     <div class="text-left">
                         <div class="form-group">
-                            <label for="filterDate">Date Range</label>
-                            <select class="form-control" id="filterDate">
-                                <option value="all">All Time</option>
-                                <option value="today">Today</option>
-                                <option value="week">This Week</option>
-                                <option value="month">This Month</option>
-                            </select>
+                            <label for="noteText">Note</label>
+                            <textarea class="form-control" id="noteText" rows="4" placeholder="Enter your note here..."></textarea>
                         </div>
                         <div class="form-group">
-                            <label for="filterStatus">Status</label>
-                            <select class="form-control" id="filterStatus">
-                                <option value="all">All Status</option>
-                                <option value="success">Successful Only</option>
-                                <option value="failed">Failed Only</option>
-                                <option value="suspicious">Suspicious Only</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="filterCategory">Category</label>
-                            <select class="form-control" id="filterCategory">
-                                <option value="all">All Categories</option>
-                                <option value="authentication">Authentication</option>
+                            <label for="noteCategory">Category</label>
+                            <select class="form-control" id="noteCategory">
+                                <option value="general">General</option>
+                                <option value="investigation">Investigation</option>
+                                <option value="compliance">Compliance</option>
                                 <option value="security">Security</option>
-                                <option value="profile">Profile</option>
-                                <option value="system">System</option>
                             </select>
                         </div>
                     </div>
                 `,
                 showCancelButton: true,
-                confirmButtonText: 'Apply Filters',
+                confirmButtonText: 'Save Note',
                 cancelButtonText: 'Cancel',
                 preConfirm: () => {
-                    return {
-                        date: $('#filterDate').val(),
-                        status: $('#filterStatus').val(),
-                        category: $('#filterCategory').val()
-                    };
+                    const text = $('#noteText').val().trim();
+                    if (!text) {
+                        Swal.showValidationMessage('Note text is required');
+                        return false;
+                    }
+                    return { note: text, category: $('#noteCategory').val() };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    showToast('Filters applied!', 'success');
-                    // In a real implementation, you would make an AJAX request here
-                    console.log('Filters:', result.value);
+                    $.ajax({
+                        url: '<?= base_url('account/add_log_note') ?>',
+                        type: 'POST',
+                        data: {
+                            note: result.value.note,
+                            category: result.value.category,
+                            <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                        },
+                        success: function(res) {
+                            if (res.success) {
+                                showToast('Note added successfully!', 'success');
+                            } else {
+                                showToast('Failed to add note: ' + (res.message || 'Unknown error'), 'danger');
+                            }
+                        },
+                        error: function(xhr) {
+                            showToast('Error adding note: ' + xhr.statusText, 'danger');
+                        }
+                    });
                 }
             });
         });

@@ -429,6 +429,7 @@ $routes->group('', [
         $routes->post('datatable/notifications', '\App\Controllers\api\v1\DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
         $routes->get('bluetooth', 'Advanced::bluetooth', ['as' => 'adv-bluetooth']);
         $routes->get('sensors', 'Advanced::sensors', ['as' => 'adv-sensors']);
+        $routes->get('security_audit', 'Advanced::security_audit', ['as' => 'adv-security-audit']);
         $routes->post('notifications/delete/(:any)', 'Advanced::delete_notifications_by_app');
     });
 
@@ -749,6 +750,8 @@ $routes->group('', [
          * @return string
          */
         $routes->get('access_logs/(:any)', 'Account::access_logs/$1');
+        $routes->post('clear_logs', 'Account::clearLogs', ['as' => 'account-clear-logs']);
+        $routes->post('add_log_note', 'Account::addLogNote', ['as' => 'account-add-log-note']);
 
         /**
          * Displays security settings.

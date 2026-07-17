@@ -98,38 +98,6 @@
                 </div>
 
                 <div class="row mt-4">
-                    <!-- Device Pulse -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-info shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-heartbeat mr-2"></i>
-                                    Device "Pulse"
-                                </h3>
-                            </div>
-                            <div class="card-body">
-                                <p>Real-time health status: battery levels, storage availability, and network connectivity history.</p>
-                                <div class="row text-center mt-3">
-                                    <div class="col-4">
-                                        <H5 class="mb-0 text-success">85%</H5>
-                                        <small>Battery</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <H5 class="mb-0 text-info">12GB</H5>
-                                        <small>Storage Free</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <H5 class="mb-0 text-primary">LTE</H5>
-                                        <small>Signal</small>
-                                    </div>
-                                </div>
-                                <a href="<?= base_url('analysis') ?>" class="btn btn-info btn-block mt-4">
-                                    <i class="fas fa-heartbeat mr-1"></i> View Health Monitor
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Social Mapping -->
                     <div class="col-md-6">
                         <div class="card card-outline card-warning shadow-sm">
@@ -150,9 +118,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <!-- Lifestyle & Timeline Features -->
-                <div class="row mt-4">
+
                     <!-- Lifestyle Profile -->
                     <div class="col-md-6">
                         <div class="card card-outline card-secondary shadow-sm">
@@ -172,30 +138,6 @@
                                 </div>
                                 <a href="<?= base_url('analysis/lifestyle') ?>" class="btn btn-secondary btn-block">
                                     <i class="fas fa-fingerprint mr-1"></i> View Lifestyle Profile
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Intelligence Timeline -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-dark shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-history mr-2"></i>
-                                    Universal Timeline
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-dark">Feed</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>A vertical chronological story of the day, merging SMS, calls, and location updates into one feed.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-stream mr-2"></i> Chronological Event Sequencing.
-                                </div>
-                                <a href="<?= base_url('analysis/timeline') ?>" class="btn btn-dark btn-block">
-                                    <i class="fas fa-list-ul mr-1"></i> Open Timeline Feed
                                 </a>
                             </div>
                         </div>

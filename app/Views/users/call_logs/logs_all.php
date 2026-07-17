@@ -55,17 +55,16 @@
                                     <table class="table table-hover table-striped mb-0 tabledump">
                                         <thead class="thead-light">
                                         <tr>
-                                            <th width="25%">Contact</th>
+                                            <th width="30%">Contact</th>
                                             <th width="15%">Type</th>
-                                            <th width="20%">Time</th>
-                                            <th width="25%">Duration</th>
-                                            <th width="15%">Status</th>
+                                            <th width="25%">Time</th>
+                                            <th width="30%">Duration</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <?php if (empty($call_logs_dump)): ?>
                                             <tr>
-                                                <td colspan="5" class="text-center py-5">
+                                                <td colspan="4" class="text-center py-5">
                                                     <div class="empty-state">
                                                         <i class="fas fa-phone-slash fa-3x text-muted mb-3"></i>
                                                         <h4>No call logs found</h4>
@@ -224,13 +223,11 @@
                                                     $durationDisplay = sprintf('%d:%02d', $minutes, $seconds);
                                                 }
 
-                                                // Contact name and status
+                                                // Contact name
                                                 if (empty($call_log['Saved'])) {
                                                     $name = '<span class="text-danger"><i>Unsaved Contact</i></span>';
-                                                    $status = '<span class="badge badge-light border text-muted">Unsaved</span>';
                                                 } else {
                                                     $name = '<span class="text-dark font-weight-bold">' . htmlspecialchars($call_log['Saved']) . '</span>';
-                                                    $status = '<span class="badge badge-success">Saved</span>';
                                                 }
 
                                                 // Call type with icons and colors
@@ -326,9 +323,6 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </td>
-                                                    <td>
-                                                        <?php echo $status; ?>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>

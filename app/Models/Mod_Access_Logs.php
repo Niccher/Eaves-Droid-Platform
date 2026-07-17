@@ -127,6 +127,31 @@ class Mod_Access_Logs extends Model
     }
 
     /**
+     * Gets grouped access logs for the "All Activities" summary view.
+     * Groups by action_type + action_category with a frequency counter.
+     *
+     * @param int $user_id
+     * @param int $limit
+     * @return array
+     */
+    public function get_grouped_access_logs(int $user_id, int $limit = 50): array
+    {
+        try {
+            return $this->db->table($this->table)
+                ->select("action_type, action_category, COUNT(*) as frequency, MAX(created_at) as last_occurrence")
+                ->where('user_id', $user_id)
+                ->groupBy('action_type, action_category')
+                ->orderBy('frequency', 'DESC')
+                ->limit($limit)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_grouped_access_logs error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Gets failed login attempts.
      *
      * @param int $user_id

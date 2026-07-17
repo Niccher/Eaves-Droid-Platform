@@ -71,7 +71,7 @@
                                                     <code><?= number_format(($r['file_size'] ?? 0) / 1024, 2) ?> KB</code>
                                                 </td>
                                                 <td>
-                                                    <small class="text-dark font-weight-bold"><?= date('M j, Y, g:i a', strtotime($r['created_at'])) ?></small>
+                                                    <small class="text-dark font-weight-bold"><?= date('M d, Y, H:i (l)', strtotime($r['created_at'])) ?></small>
                                                 </td>
                                                 <td class="text-right">
                                                     <?php if ($r['media_type'] === 'image'): ?>

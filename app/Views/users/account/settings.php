@@ -120,7 +120,7 @@
                                                                             <small class="text-muted d-block">Created</small>
                                                                             <span class="font-weight-bold text-sm">
                                                                                 <i class="far fa-calendar-alt mr-1 text-primary"></i>
-                                                                                <?php echo !empty($user_token['created_at']) ? date('M d, Y', strtotime($user_token['created_at'])) : 'N/A'; ?>
+                                                                                <?php echo !empty($user_token['created_at']) ? date('M d, Y, l H:i', strtotime($user_token['created_at'])) : 'N/A'; ?>
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -306,7 +306,7 @@
                                                             </span>
                                                         </td>
                                                         <td class="text-muted">
-                                                            <?php echo !empty($file['created_at']) ? date('M d, Y H:i', strtotime($file['created_at'])) : 'N/A'; ?>
+                                                            <?php echo !empty($file['created_at']) ? date('M d, Y, l H:i', strtotime($file['created_at'])) : 'N/A'; ?>
                                                         </td>
                                                     </tr>
                                                 <?php endforeach; ?>

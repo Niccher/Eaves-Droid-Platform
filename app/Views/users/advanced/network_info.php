@@ -11,8 +11,6 @@
                     <p class="text-muted mt-1 mb-0">SIM, operator, WiFi and nearby access points</p>
                 </div>
                 <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
-
-
             </div>
         </div>
     </section>
@@ -41,7 +39,7 @@
                                 <div class="empty-state"><i class="fas fa-wifi fa-3x text-muted mb-3"></i><h4>No network data</h4><p class="text-muted">Data will appear here once extracted</p></div>
                             </td></tr>
                         <?php else: foreach ($rows as $r): ?>
-                            <?php $ts = $r['extracted_at'] ? date('Y-m-d H:i', $r['extracted_at'] / 1000) : 'N/A'; ?>
+                            <?php $nearby = $r['nearby_wifi'] ?? []; $netRowIdx = $loopIdx ?? 0; ?>
                             <tr>
                                 <td>
                                     <span class="badge badge-<?= $r['is_connected'] ? 'success' : 'danger' ?>">
@@ -65,18 +63,21 @@
                                     <?php else: ?><span class="text-muted">—</span><?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php $nearby = $r['nearby_wifi'] ?? []; ?>
                                     <?php if (!empty($nearby)): ?>
                                         <span class="badge badge-secondary"><?= count($nearby) ?> APs</span>
                                         <div class="mt-1">
                                         <?php foreach (array_slice($nearby, 0, 3) as $ap): ?>
                                             <small class="d-block text-muted"><i class="fas fa-broadcast-tower mr-1"></i><?= htmlspecialchars($ap['ssid'] ?? '?') ?> (<?= $ap['level'] ?> dBm)</small>
                                         <?php endforeach; ?>
-                                        <?php if (count($nearby) > 3): ?><small class="text-muted">+ <?= count($nearby)-3 ?> more…</small><?php endif; ?>
+                                        <?php if (count($nearby) > 3): ?>
+                                            <button class="btn btn-sm btn-link p-0 mt-1" data-toggle="modal" data-target="#nearbyModal" onclick="showNearbyAPs(<?= htmlspecialchars(json_encode($nearby)) ?>)">
+                                                <i class="fas fa-eye mr-1"></i>View all <?= count($nearby) ?> APs
+                                            </button>
+                                        <?php endif; ?>
                                         </div>
                                     <?php else: ?><span class="text-muted">—</span><?php endif; ?>
                                 </td>
-                                <td><small><?= $ts ?></small></td>
+                                <td><small><?= !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—' ?></small></td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
@@ -87,4 +88,38 @@
         </div>
     </div></div></div></section>
 </div>
+
+<div class="modal fade" id="nearbyModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-broadcast-tower mr-2"></i>Nearby Access Points</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="thead-light"><tr><th>SSID</th><th>BSSID</th><th>Signal</th><th>Frequency</th><th>Capabilities</th></tr></thead>
+                    <tbody id="nearbyModalBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showNearbyAPs(aps) {
+    var tbody = document.getElementById('nearbyModalBody');
+    tbody.innerHTML = '';
+    aps.forEach(function(ap) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td><i class="fas fa-wifi mr-1 text-primary"></i>' + (ap.ssid || '?') + '</td>'
+            + '<td><code>' + (ap.bssid || (ap.BSSID || '—')) + '</code></td>'
+            + '<td><span class="badge badge-' + (ap.level > -60 ? 'success' : ap.level > -80 ? 'warning' : 'danger') + '">' + (ap.level || '?') + ' dBm</span></td>'
+            + '<td>' + (ap.frequency || (ap.Frequency || '—')) + ' MHz</td>'
+            + '<td><small class="text-muted">' + (ap.capabilities || (ap.Capabilities || '—')) + '</small></td>';
+        tbody.appendChild(tr);
+    });
+}
+</script>
+
 <?php include __DIR__ . '/_adv_style.php'; ?>

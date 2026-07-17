@@ -22,6 +22,8 @@
     <script src="<?php echo base_url('assets/plugins/datatables/datatables.min.js?v=1.4'); ?>"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Toastr -->
     <script src="<?php echo base_url('assets/plugins/toastr/toastr.min.js?v=1.4'); ?>"></script>
 

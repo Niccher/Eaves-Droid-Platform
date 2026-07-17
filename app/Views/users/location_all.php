@@ -5,7 +5,6 @@
  * @var array $location_dump
  * @var int $totalLocations
  * @var object $pager
- * @var string $nav_urls
  */
 ?>
 
@@ -28,9 +27,6 @@
                     </div>
                     <p class="text-muted mt-2 mb-0">GPS and Network location tracking history</p>
                 </div>
-                <div class="col-lg-4 col-md-6">
-                </div>
-
             </div>
         </div>
     </section>
@@ -57,13 +53,13 @@
                                 <table class="table table-hover table-striped mb-0 tabledump">
                                     <thead class="thead-light">
                                     <tr>
-                                        <th>Coordinates</th>
+                                        <th>Position</th>
                                         <th>Accuracy</th>
-                                        <th>Speed/Bearing</th>
-                                        <th>Provider</th>
+                                        <th>Movement</th>
+                                        <th>Source</th>
                                         <th>Timestamp</th>
                                         <th>Status</th>
-                                        <th>Actions</th>
+                                        <th></th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -80,35 +76,79 @@
                                     <?php else: ?>
                                         <?php foreach ($location_dump as $loc): ?>
                                             <?php
-                                            $time = isset($loc['location_time']) ? date('Y-m-d H:i:s', $loc['location_time'] / 1000) : 'N/A';
+                                            $lat = $loc['latitude'] ?? null;
+                                            $lng = $loc['longitude'] ?? null;
+                                            $hasCoords = $lat !== null && $lng !== null;
+                                            $hasLocationTime = !empty($loc['location_time']);
+                                            $locationTime = $hasLocationTime ? format_timestamp_display((int)$loc['location_time']) : (!empty($loc['extracted_at']) ? format_timestamp_display((int)$loc['extracted_at']) : '—');
+                                            $extractedAt = !empty($loc['extracted_at']) ? format_timestamp_display((int)$loc['extracted_at']) : '—';
                                             $statusClass = ($loc['status'] === 'success') ? 'badge-success' : 'badge-warning';
+                                            $accuracy = isset($loc['accuracy']) ? (int)$loc['accuracy'] : null;
+                                            $speed = isset($loc['speed']) ? round((float)$loc['speed'], 1) : null;
+                                            $bearing = isset($loc['bearing']) ? round((float)$loc['bearing'], 0) : null;
+                                            $provider = $loc['provider'] ?? null;
+
+                                            $accClass = 'badge-success';
+                                            if ($accuracy !== null) {
+                                                if ($accuracy > 100) $accClass = 'badge-danger';
+                                                elseif ($accuracy > 50) $accClass = 'badge-warning';
+                                            }
+
+                                            $provIcon = 'fa-satellite';
+                                            if ($provider === 'network') $provIcon = 'fa-wifi';
+                                            elseif ($provider === 'gps') $provIcon = 'fa-globe';
                                             ?>
                                             <tr>
                                                 <td>
-                                                    <div class="font-weight-bold"><?php echo $loc['latitude']; ?>, <?php echo $loc['longitude']; ?></div>
-                                                    <small class="text-muted">Lat, Long</small>
+                                                    <?php if ($hasCoords): ?>
+                                                        <div class="font-weight-bold text-monospace">
+                                                            <span class="text-info"><?php echo $lat; ?></span>,
+                                                            <span class="text-info"><?php echo $lng; ?></span>
+                                                        </div>
+                                                        <small class="text-muted"><?php echo number_format($lat, 2); ?>, <?php echo number_format($lng, 2); ?></small>
+                                                    <?php else: ?>
+                                                        <span class="text-muted"><i class="fas fa-minus-circle mr-1"></i>No coordinates</span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge badge-info"><?php echo $loc['accuracy']; ?>m</span>
+                                                    <?php if ($accuracy !== null): ?>
+                                                        <span class="badge <?php echo $accClass; ?>"><?php echo $accuracy; ?>m</span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <div><i class="fas fa-tachometer-alt mr-1"></i> <?php echo $loc['speed']; ?> m/s</div>
-                                                    <small class="text-muted"><i class="fas fa-compass mr-1"></i> <?php echo $loc['bearing']; ?>°</small>
+                                                    <?php if ($speed !== null): ?>
+                                                        <div><i class="fas fa-tachometer-alt mr-1"></i> <?php echo $speed; ?> m/s</div>
+                                                    <?php else: ?>
+                                                        <div class="text-muted"><i class="fas fa-tachometer-alt mr-1"></i> —</div>
+                                                    <?php endif; ?>
+                                                    <?php if ($bearing !== null): ?>
+                                                        <small class="text-muted"><i class="fas fa-compass mr-1"></i> <?php echo $bearing; ?>°</small>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge badge-secondary"><?php echo strtoupper($loc['provider']); ?></span>
+                                                    <?php if ($provider): ?>
+                                                        <span class="badge badge-secondary"><i class="fas <?php echo $provIcon; ?> mr-1"></i><?php echo strtoupper($provider); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <div><?php echo $time; ?></div>
-                                                    <small class="text-muted">Extracted: <?php echo date('Y-m-d H:i:s', $loc['extracted_at'] / 1000); ?></small>
+                                                    <div><?php echo $locationTime; ?></div>
+                                                    <?php if ($hasLocationTime && !empty($loc['extracted_at'])): ?><small class="text-muted">Extracted: <?php echo $extractedAt; ?></small><?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <span class="badge <?php echo $statusClass; ?>"><?php echo strtoupper($loc['status']); ?></span>
                                                 </td>
                                                 <td>
-                                                    <a href="https://www.google.com/maps?q=<?php echo $loc['latitude']; ?>,<?php echo $loc['longitude']; ?>" target="_blank" class="btn btn-sm btn-primary">
-                                                        <i class="fas fa-external-link-alt"></i> Maps
-                                                    </a>
+                                                    <?php if ($hasCoords): ?>
+                                                        <a href="https://www.google.com/maps?q=<?php echo $lat; ?>,<?php echo $lng; ?>" target="_blank" class="btn btn-sm btn-outline-primary" title="Open in Google Maps">
+                                                            <i class="fas fa-external-link-alt"></i>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

@@ -1,24 +1,44 @@
 <?php
 /** @var array $rows @var int $total @var int $total_notifications @var object $pager @var string $nav_urls */
-/** @var bool $detail_mode @var string|null $group_key @var array|null $summary @var string|null $back_url */
+/** @var bool $detail_mode @var string|null $group_key @var array|null $summary @var array|null $app_detail @var string|null $back_url */
 if (!empty($detail_mode)) {
     $appName = $summary['display_name'] ?? $summary['app_name'] ?? $group_key;
+    $pkg = $summary['package_name'] ?? $group_key;
 ?>
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row mb-3 align-items-center">
-                <div class="col-lg-8 d-flex align-items-center">
-                    <a href="<?= esc($back_url) ?>" class="btn btn-primary mr-3" style="border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-arrow-left mr-1"></i> Back</a>
-                    <div>
-                        <h1 class="h2 mb-0"><i class="fas fa-bell text-warning mr-2"></i><?= htmlspecialchars($appName) ?></h1>
-                        <?php if (!empty($summary['package_name']) && $summary['package_name'] !== $group_key): ?>
-                            <p class="text-muted mt-1 mb-0"><code><?= htmlspecialchars($summary['package_name']) ?></code></p>
-                        <?php endif; ?>
-                    </div>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <a href="<?= esc($back_url) ?>" class="btn btn-primary" style="border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-arrow-left mr-1"></i> Back to Alerts</a>
                 </div>
-                <div class="col-lg-4 text-right">
-                    <?= $nav_urls ?>
+            </div>
+            <div class="row mb-3">
+                <div class="col-lg-8">
+                    <h1 class="h2 mb-0"><i class="fas fa-bell text-warning mr-2"></i><?= htmlspecialchars($appName) ?></h1>
+                    <p class="text-muted mt-1 mb-0"><code><?= htmlspecialchars($pkg) ?></code></p>
+                </div>
+                <div class="col-lg-4">
+                    <?php if (!empty($app_detail)): ?>
+                    <div class="card card-warning card-outline shadow-sm mb-0">
+                        <div class="card-body py-2 px-3">
+                            <div class="row text-center">
+                                <div class="col-4 border-right">
+                                    <small class="text-muted d-block">Permissions</small>
+                                    <strong><?= (int)($app_detail['permission_count'] ?? 0) ?></strong>
+                                </div>
+                                <div class="col-4 border-right">
+                                    <small class="text-muted d-block">Size</small>
+                                    <strong><?= $app_detail['app_size_display'] ?? '—' ?></strong>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Version</small>
+                                    <strong><?= htmlspecialchars($app_detail['version_name'] ?? '—') ?></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

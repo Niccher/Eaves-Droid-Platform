@@ -144,7 +144,7 @@ class Account extends BaseClientController
                 'securityEvents' => $this->modUser->get_security_events_count($this->userId),
                 'total_tokens' => $usageMetrics['total_tokens'] ?? 0,
                 'connected_devices' => $usageMetrics['connected_devices'] ?? 0,
-                'tokenExpiry' => isset($userToken['expires_at']) ? date('M d, Y H:i', strtotime($userToken['expires_at'])) : 'Never',
+                'tokenExpiry' => isset($userToken['expires_at']) ? date('M d, Y, l H:i', strtotime($userToken['expires_at'])) : 'Never',
                 'currentTokenDisplay' => $userToken['token'] ?? 'No token found',
                 'qrCodeData' => $this->generateQRCodeData($userToken['token'] ?? ''),
                 'csrf_token' => csrf_hash(),
@@ -204,6 +204,7 @@ class Account extends BaseClientController
                 'user_info' => $this->userData,
                 'access_head' => 'Access Logs',
                 'user_logs' => [],
+                'grouped_logs' => [],
                 'webLogs' => [],
                 'androidLogs' => [],
                 'webLogsCount' => 0,
@@ -218,6 +219,48 @@ class Account extends BaseClientController
                 'by_device' => [],
                 'csrf_token' => csrf_hash(),
             ]);
+        }
+    }
+
+    /**
+     * POST /account/clear_logs
+     * Clears all access logs for the current user.
+     */
+    public function clearLogs(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        try {
+            $this->modAccessLogs->where('user_id', $this->userId)->delete();
+            return $this->response->setJSON(['success' => true, 'message' => 'Logs cleared']);
+        } catch (\Exception $e) {
+            log_message('error', 'clearLogs: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * POST /account/add_log_note
+     * Adds an administrative note as a log entry.
+     */
+    public function addLogNote(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        try {
+            $note = $this->request->getPost('note');
+            $category = $this->request->getPost('category') ?? 'general';
+            if (empty($note)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Note text is required']);
+            }
+            $this->modAccessLogs->logAction([
+                'user_id' => $this->userId,
+                'action_category' => 'admin_note',
+                'action_type' => 'admin_note_' . $category,
+                'action_severity' => 'low',
+                'success' => 1,
+                'new_values' => json_encode(['note' => $note]),
+            ]);
+            return $this->response->setJSON(['success' => true, 'message' => 'Note added']);
+        } catch (\Exception $e) {
+            log_message('error', 'addLogNote: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
@@ -498,9 +541,9 @@ class Account extends BaseClientController
                     'device_name' => ($device['device_brand'] ?? 'Unknown') . ' ' . ($device['device_model'] ?? 'Device'),
                     'os' => 'Android ' . ($device['android_version'] ?? 'Unknown'),
                     'browser' => 'FGM Extractor',
-                    'ip_address' => $device['device_ip_address'] ?? 'N/A',
+                    'ip_address' => $device['device_ip_address'] ?? 'Unknown',
                     'last_seen' => $lastSeenTime ? date('Y-m-d H:i:s', $lastSeenTime) : 'N/A',
-                    'last_seen_formatted' => $lastSeenTime ? date('M d, Y H:i', $lastSeenTime) : 'Never'
+                    'last_seen_formatted' => $lastSeenTime ? date('M d, Y, l H:i', $lastSeenTime) : 'Never'
                 ];
             }
 
@@ -792,11 +835,34 @@ class Account extends BaseClientController
                 break;
         }
 
+        // Get grouped logs for summary view (All Activities tab)
+        $groupedLogs = $this->modAccessLogs->get_grouped_access_logs($this->userId, 50);
+
+        // Enrich file upload logs with formatted file size
+        foreach ($fileLogs as &$fl) {
+            $rawSize = null;
+            if (!empty($fl['new_values'])) {
+                $nv = json_decode($fl['new_values'], true);
+                if (is_array($nv)) {
+                    $rawSize = $nv['file_size'] ?? $nv['size'] ?? $nv['fileSize'] ?? null;
+                }
+            }
+            if (!$rawSize && !empty($fl['old_values'])) {
+                $ov = json_decode($fl['old_values'], true);
+                if (is_array($ov)) {
+                    $rawSize = $ov['file_size'] ?? $ov['size'] ?? null;
+                }
+            }
+            $fl['file_size_formatted'] = formatFileSize($rawSize);
+        }
+        unset($fl);
+
         // Get last updated timestamp
         $lastUpdated = $this->getLastUpdated($displayLogs);
 
         return [
             'user_logs' => $displayLogs,
+            'grouped_logs' => $groupedLogs,
             'webLogs' => $webLogs,
             'androidLogs' => $androidLogs,
             'fileLogs' => $fileLogs,
@@ -993,7 +1059,7 @@ class Account extends BaseClientController
         }
 
         $latest = max($timestamps);
-        return date('Y-m-d H:i:s', $latest);
+        return date('M d, Y, l H:i:s', $latest);
     }
 
     /**

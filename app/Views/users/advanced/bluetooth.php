@@ -11,8 +11,6 @@
                     <p class="text-muted mt-1 mb-0">Bluetooth adapter snapshots and paired device profiles</p>
                 </div>
                 <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
-
-
             </div>
         </div>
     </section>
@@ -26,7 +24,10 @@
             </div>
         </div></div>
     <?php else: foreach ($rows as $r): ?>
-        <?php $ts = $r['extracted_at'] ? date('Y-m-d H:i', $r['extracted_at'] / 1000) : 'N/A'; ?>
+        <?php
+            $pairedDevices = $r['paired_devices'] ?? [];
+            $pairedCount = $r['paired_count'] ?? count($pairedDevices);
+        ?>
         <div class="row mb-3">
             <div class="col-lg-4 col-md-6">
                 <div class="info-box shadow-sm">
@@ -46,7 +47,7 @@
                     <div class="info-box-content">
                         <span class="info-box-text">Status</span>
                         <span class="info-box-number"><?= $r['is_enabled'] ? 'Enabled' : 'Disabled' ?></span>
-                        <small class="text-muted">Snapped: <?= $ts ?></small>
+                        <small class="text-muted">Snapped: <?= !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—' ?></small>
                     </div>
                 </div>
             </div>
@@ -55,18 +56,19 @@
                     <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-link"></i></span>
                     <div class="info-box-content">
                         <span class="info-box-text">Paired Devices</span>
-                        <span class="info-box-number"><?= $r['paired_count'] ?? count($r['paired_devices'] ?? []) ?></span>
-                        <small class="text-muted">Bonded</small>
+                        <span class="info-box-number"><?= $pairedCount ?></span>
+                        <small class="text-muted"><?= $pairedCount === 0 ? 'No paired devices found' : ($pairedCount === 1 ? '1 device bonded' : $pairedCount . ' devices bonded') ?></small>
                     </div>
                 </div>
             </div>
         </div>
-        <?php if (!empty($r['paired_devices'])): ?>
+        <?php if (!empty($pairedDevices)): ?>
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card card-primary card-outline shadow-sm">
                     <div class="card-header">
                         <h3 class="card-title"><i class="fas fa-list-ul mr-2"></i>Paired Devices for <em><?= htmlspecialchars($r['adapter_name'] ?? 'adapter') ?></em></h3>
+                        <span class="badge badge-primary float-right"><?= $pairedCount ?> device<?= $pairedCount !== 1 ? 's' : '' ?></span>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -81,7 +83,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <?php foreach ($r['paired_devices'] as $dev): ?>
+                                <?php foreach ($pairedDevices as $dev): ?>
                                 <tr>
                                     <td><i class="fab fa-bluetooth mr-1 text-primary"></i><strong><?= htmlspecialchars($dev['bt_name'] ?? '—') ?></strong></td>
                                     <td><code><?= htmlspecialchars($dev['bt_address'] ?? '—') ?></code></td>
@@ -94,6 +96,14 @@
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-info text-center mb-0">
+                    <i class="fas fa-info-circle mr-2"></i>No paired devices found for this snapshot.
                 </div>
             </div>
         </div>

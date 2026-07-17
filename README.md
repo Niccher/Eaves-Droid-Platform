@@ -1,178 +1,232 @@
-# 🚀 Eaves Droid
+# Eaves Droid — Web Application
 
-> A professional, highly-scalable CodeIgniter 4 web application built for modern workflows.
-
-The analytical brain of a Device Intelligence & Insights System that ingests data sent by an Android collector app (SMS, call logs, contacts, apps, GPS) and processes them into rich dashboards surfacing behavioral patterns.
+> The analytical brain of a full-stack Device Intelligence & Insights System. Ingesting data from Android collector apps (SMS, call logs, contacts, apps, GPS, notifications, app usage, network info, Bluetooth, and more) and processing them into rich dashboards with **machine-learning-powered anomaly detection**.
 
 [![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?style=for-the-badge&logo=php&logoColor=white)](#)
 [![CodeIgniter 4](https://img.shields.io/badge/CodeIgniter-4.x-EF4223?style=for-the-badge&logo=codeigniter&logoColor=white)](#)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](#)
+[![phpMyAdmin](https://img.shields.io/badge/phpMyAdmin-Latest-F3971D?style=for-the-badge&logo=phpmyadmin&logoColor=white)](#)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+[![PHP-ML](https://img.shields.io/badge/PHP--ML-2.x-4B8BBE?style=for-the-badge&logo=php&logoColor=white)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](#)
 
 ---
 
-## 📖 1. About the Project
+## Table of Contents
 
-**Eaves Droid** is a robust and flexible web application designed to solve complex developer workflows with ease. Built on the lightning-fast CodeIgniter 4 framework, this project acts as a complete, out-of-the-box solution for providing developers deep insights, multi-source analytics, and cross-data correlation for Android ecosystems. 
-
-Our target users are developers, power users, and teams looking for an open-source solution that emphasizes performance, security, and developer experience (DX). 
-
-**What makes this project unique?**
-Every component of this application is fully containerized. From the zero-configuration automated database migrations on boot, to the host-mapped persistent storage volumes—this project guarantees a frictionless setup experience whether you are running it on a local machine or deploying it to a cloud server.
-
----
-
-## ✨ 2. Features
-
-- 🐳 **Instant Setup**: 100% Dockerized architecture. Go from zero to running in under 60 seconds.
-- 🔄 **Automated Migrations**: Database tables and schemas are built automatically when the container boots.
-- 💾 **Smart Persistence**: Database records and uploaded media safely persist on your local filesystem, completely isolated from container lifecycle events.
-- 🛡️ **Hardened Security**: Features built-in CSRF protection, strictly configured session handling, and environment-driven configurations.
-- 📊 **Integrated Database Management**: Comes bundled with a dedicated `phpMyAdmin` container for real-time database visualization.
+1. [About the Project](#about-the-project)
+2. [Machine Learning & Anomaly Detection](#machine-learning--anomaly-detection)
+3. [Features](#features)
+4. [Tech Stack](#tech-stack)
+5. [Prerequisites](#prerequisites)
+6. [Installation & Setup](#installation--setup)
+7. [Project Structure](#project-structure)
+8. [Contributing](#contributing)
+9. [License](#license)
 
 ---
 
-## 🛠️ 3. Tech Stack
+## About the Project
+
+**Eaves Droid** is a professional, containerized CodeIgniter 4 web application that serves as the backend analytics platform for Android device data. It receives encrypted payloads from the companion Android app, stores them in MySQL, and provides a rich browser-based interface for:
+
+- **Visual dashboards** for every data category (SMS, calls, contacts, apps, locations, device activity, network, Bluetooth, calendar, files, security audit, and more)
+- **Cross-data correlation** and timeline reconstruction
+- **Machine-learning anomaly detection** that automatically surfaces suspicious behavioural patterns
+- **PDF export** with html2pdf.js for portable reporting
+
+Every component is fully Dockerized — database migrations run automatically on boot, and persistent storage volumes keep your data safe across container lifecycles.
+
+---
+
+## Machine Learning & Anomaly Detection
+
+The platform includes a **built-in anomaly detection pipeline** that analyses device datasets using both **statistical heuristics** and **PHP-ML library algorithms**. Results are surfaced through a three-step wizard at `/analysis/anomalies`, with interactive drill-downs, severity colouring, and algorithm explainers.
+
+### Detection Engines
+
+| Engine | Runtime | Status |
+|--------|---------|--------|
+| **PHP Engine** | In-process PHP-ML | Fully operational — all statistical and clustering algorithms run live |
+| **Python Engine** | Separate Docker container (scikit-learn, PyOD) | Planned — architecture ready, algorithms listed in catalogue |
+
+### Algorithms & How They Work
+
+#### SMS Analysis
+| Algorithm | Method | How It Works |
+|-----------|--------|--------------|
+| **Frequency Spike Detector** | Z-Score / Std Dev | Buckets SMS into 15-minute windows; computes mean + 2.5σ threshold; flags windows exceeding it. Escalates to High severity if count > 1.5× threshold |
+| **Time-Pattern Analyser** | Rule-based | Flags messages sent during night hours (23:00–05:00) |
+| **Sender K-Means** | PHP-ML KMeans clustering | Feature-engineers each sender into a 3D vector `[message_count, night_activity_ratio, avg_body_length]`; normalises to [0,1]; runs K-Means with k=3; flags singleton clusters or clusters with <15% of senders |
+
+#### Contacts Analysis
+| Algorithm | Method | How It Works |
+|-----------|--------|--------------|
+| **New-Contact Frequency Monitor** | Statistical threshold | Flags days where new contacts exceed 3× the daily mean count |
+| **Duplicate Detector** | Hash-map comparison | Strips non-digits from phone numbers; detects collisions where the same number has different saved names |
+
+#### Call Log Analysis
+| Algorithm | Method | How It Works |
+|-----------|--------|--------------|
+| **Short-Call Burst Detector** | Sliding window | Flags 30-minute windows with ≥3 calls under 10 seconds. High severity if ≥6 calls |
+| **Night-Activity Monitor** | Rule-based | Flags calls placed during night hours (23:00–05:00) |
+
+#### Location Analysis
+| Algorithm | Method | How It Works |
+|-----------|--------|--------------|
+| **Geo-Fence Violation Detector** | Haversine + Std Dev | Computes centroid of all location points; home zone radius = mean distance + 1σ; flags points > 1.5× radius |
+| **Travel Speed Anomaly** | Haversine distance / Δt | Flags point-to-point speeds exceeding 900 km/h (commercial aircraft threshold) |
+| **DBSCAN Trajectory Clustering** | PHP-ML DBSCAN | Passes `[lat, lng]` pairs to DBSCAN with ε=0.01 (≈1 km) and minSamples=2; flags noise points not belonging to any cluster |
+
+#### Installed Apps Analysis
+| Algorithm | Method | How It Works |
+|-----------|--------|--------------|
+| **Package Reputation Scanner** | Keyword pattern matching | Checks package names against 11 suspicious keywords (spy, track, stealth, ghost, hidden, etc.) |
+| **Permission Anomaly Detector** | Z-Score / Std Dev | Counts sensitive permissions per app from 13 dangerous permissions; flags apps with counts exceeding mean + 2σ |
+
+#### Files Analysis
+| Algorithm | Method | How It Works |
+|-----------|--------|--------------|
+| **File Creation Spike Detector** | Statistical threshold | Flags days where file creation count exceeds 3× the daily mean |
+
+#### Device Activity Analysis
+| Algorithm | Method | How It Works |
+|-----------|--------|--------------|
+| **Screen-Time Anomaly Detector** | Z-Score / Std Dev | Flags days where screen-on minutes have |Z-score| > 2; High severity if Z > 3 |
+| **App-Switch Rate Monitor** | Sliding window | Buckets app-usage events by hour; flags hours with >60 app transitions; High severity if >100 |
+
+#### Device Info Analysis
+| Algorithm | Method | How It Works |
+|-----------|--------|--------------|
+| **Hardware Change Detector** | Identifier comparison | Compares IMEI, serial, fingerprint, Android ID, MAC address across device profile snapshots |
+| **Network Profile Monitor** | SSID comparison | Flags unrecognised Wi-Fi SSIDs and VPN connections against a known-safe list |
+
+### Wizard Flow
+
+```
+Step 1  →  Step 2  →  Step 3
+ Info /    Algorithm    Results with
+ Engine    Selection    severity-sorted
+ Pick      (multi-      findings,
+           select)      explainers,
+                        PDF export
+```
+
+The system auto-configures with sensible defaults, so one click takes you straight to results. The algorithm selection page lets you hand-pick which detectors to run per data category.
+
+### Results View
+
+Each detection finding includes: category icon, human-readable anomaly description, severity badge (High/Medium/Low with colouring), algorithm name, technical engine notes (threshold values, Z-scores), and timestamp. Findings are grouped by algorithm with collapsible explanation cards describing "How It Works" and "What the Results Mean". Results can be exported to PDF.
+
+### Data Sources
+
+All detection runs against live database tables populated by the Android collector app: `tbl_sms`, `tbl_contacts`, `tbl_logs`, `tbl_location`, `tbl_apps`, `tbl_device_files`, `tbl_app_usage`, `tbl_device_profile`, `tbl_network_info`. When a table is empty, the system falls back to pre-written demo data so the interface is never blank.
+
+---
+
+## Features
+
+- **ML-Powered Anomaly Detection** — 16+ algorithms across 8 data categories using PHP-ML and statistical methods
+- **Dual-Engine Architecture** — PHP engine (live, in-process) and Python engine (Docker-based, coming soon)
+- **Rich Interactive Dashboards** — Per-category views with DataTables search/filter, colour-coded badges, and responsive layouts
+- **Cross-Data Correlation** — Unified intelligence dashboard linking SMS, calls, locations, and timeline
+- **PDF Export** — One-click PDF generation via html2pdf.js with SweetAlert2 progress feedback
+- **Full Containerization** — Docker Compose with auto-migrations, persistent volumes, and phpMyAdmin
+- **Standardised Timestamps** — All dates rendered in consistent format with calendar/clock icons via a shared helper
+- **Responsive UI** — Bootstrap 4 + AdminLTE 3 with dark sidebar, card-based layouts, and mobile-friendly tables
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| **Backend Framework** | [CodeIgniter 4](https://codeigniter.com/) |
+| **Backend Framework** | CodeIgniter 4 |
 | **Language** | PHP 8.3 |
+| **Machine Learning** | PHP-ML 2.x (KMeans, DBSCAN), custom statistical engine (Z-Score, Haversine, sliding windows) |
 | **Database** | MySQL 8.4 |
 | **Database Manager** | phpMyAdmin |
 | **Containerization** | Docker & Docker Compose |
+| **PDF Generation** | html2pdf.js (browser-side) |
+| **UI Framework** | AdminLTE 3 (Bootstrap 4), FontAwesome 5, DataTables |
 | **Dependency Manager** | Composer |
 
 ---
 
-## 📋 4. Prerequisites
+## Prerequisites
 
-Before you begin, ensure you have the following installed on your machine:
 - [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
 - [Git](https://git-scm.com/)
 
-*(If you choose to run without Docker, you will need PHP 8.3+, Composer, and a local MySQL server).*
+*(Without Docker: PHP 8.3+, Composer, MySQL 8.4)*
 
 ---
 
-## 🚀 5. Installation & Setup (Detailed)
+## Installation & Setup
 
-### Option 1: Using Docker (Preferred & Easiest)
+### Option 1: Using Docker (Preferred)
 
-This repository includes a pre-configured `docker-compose.yml` file. It completely eliminates the need to manually install PHP, web servers, or databases on your local machine.
-
-#### 1. Clone the repository
 ```bash
 git clone https://github.com/yourusername/eaves-droid-webapp.git
 cd "Eaves Droid WebApp"
-```
-
-#### 2. Configure Environment Variables
-Copy the provided environment template:
-```bash
 cp .env.example .env
-```
-*(Note: The defaults in `.env.example` are specifically pre-configured to work perfectly with the Docker environment out of the box).*
-
-#### 3. Build and Run
-Spin up the application, MySQL database, and phpMyAdmin in detached mode:
-```bash
 docker compose up --build -d
 ```
 
-#### 4. Access the Application
-Once the containers finish booting, database migrations run automatically. You can access your services at:
-- **Application**: [http://localhost:9007](http://localhost:9007)
+Access:
+- **App**: [http://localhost:9007](http://localhost:9007)
 - **phpMyAdmin**: [http://localhost:9000](http://localhost:9000)
 
-**Useful Docker Commands:**
-- Stop the application: `docker compose down`
-- View live application logs: `docker compose logs -f eaves-droid`
-- Restart the application: `docker compose restart eaves-droid`
+Useful commands:
+```bash
+docker compose logs -f eaves-droid
+docker compose down
+docker compose restart eaves-droid
+```
 
-### Option 2: Local Development (Without Docker)
+### Option 2: Local Development
 
-If you prefer a traditional local setup (e.g., XAMPP, Laragon, or Laravel Valet):
-
-1. **Clone the repo** and run `composer install` in the root directory.
-2. **Copy `.env.example`** to `.env`.
-3. **Configure the Database**: Update the `database.default.*` variables inside your `.env` to match your local MySQL credentials.
-4. **Run Migrations**: Build the necessary database tables by executing:
-   ```bash
-   php spark migrate --all
-   ```
-5. **Serve the Application**:
-   ```bash
-   php spark serve
-   ```
-
----
-
-## 🗄️ 6. Database Configuration
-
-If you are using the Docker setup, the database configuration is completely automated.
-
-**Development Credentials:**
-- **Host:** `mysql`
-- **Database Name:** `db_eaves_droid`
-- **Username:** `root`
-- **Password:** `root_password`
-
-You can visually manage this database by navigating to [http://localhost:9000](http://localhost:9000) and logging into phpMyAdmin with the credentials above.
-
----
-
-## 📖 7. Usage
-
-1. **Sign Up / Login**: Navigate to the homepage to create your first administrative account.
-2. **Dashboard**: Access the main dashboard to view analytics and metrics.
-3. **File Management**: Any artifacts or files you upload within the application will be securely persisted inside the `/writable/uploads` directory on your local machine.
-
----
-
-## 📁 8. Project Structure
-
-```text
-.
-├── app/            # Core application logic (Controllers, Models, Views)
-├── public/         # Document root (accessible to the web)
-├── writable/       # Cache, logs, sessions, and persisted uploads
-├── system/         # CodeIgniter 4 framework files
-├── docker-compose.yml # Standalone Docker orchestration
-├── entrypoint.sh   # Automated migration startup script
-└── Dockerfile      # PHP-Apache container build instructions
+```bash
+composer install
+cp .env.example .env
+# Configure database credentials in .env
+php spark migrate --all
+php spark serve
 ```
 
 ---
 
-## 🤝 9. Contributing
+## Project Structure
 
-We welcome contributions from the community! To contribute:
-
-1. **Fork** the repository.
-2. **Create a new branch**: `git checkout -b feature/your-feature-name`
-3. **Commit your changes**: `git commit -m 'Add some feature'`
-4. **Push to the branch**: `git push origin feature/your-feature-name`
-5. **Open a Pull Request**.
-
-Please ensure you run tests and verify your changes inside the Docker environment before submitting.
+```text
+.
+├── app/
+│   ├── Config/            # App configuration (routes, helpers, database)
+│   ├── Controllers/
+│   │   ├── api/v1/        # REST API endpoints for Android app
+│   │   └── clients/       # Web UI controllers (dashboards, analysis)
+│   ├── Helpers/           # Shared functions (time, logs, security)
+│   ├── Models/            # Data access and ML anomaly detection
+│   └── Views/             # PHP view templates (AdminLTE UI)
+├── public/                # Document root
+├── writable/              # Cache, logs, sessions, uploads
+├── docker-compose.yml
+├── Dockerfile
+└── entrypoint.sh          # Auto-migration startup script
+```
 
 ---
 
-## 📄 10. License
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes
+4. Push: `git push origin feature/your-feature`
+5. Open a Pull Request
+
+---
+
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-
----
-
-## 📸 11. Screenshots & Demo
-
-*(Screenshots coming soon)*
-
----
-
-## 💬 12. Support & Acknowledgments
-
-- Built with ❤️ using [CodeIgniter 4](https://codeigniter.com/).
-- UI components powered by modern web standards.

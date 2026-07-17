@@ -303,6 +303,7 @@ class Receive extends BaseController
             $sanitizedData[$field] = isset($input[$field]) ? htmlspecialchars($input[$field], ENT_QUOTES, 'UTF-8') : '';
         }
         $sanitizedData['extraction_timestamp'] = date('Y-m-d H:i:s');
+        $sanitizedData['device_ip_address'] = $this->request->getIPAddress();
 
         try {
             $modelReceive = new Mod_Receive();

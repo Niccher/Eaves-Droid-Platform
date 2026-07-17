@@ -43,8 +43,8 @@
                             </td></tr>
                         <?php else: foreach ($rows as $r): ?>
                             <?php
-                                $start = $r['start_time'] ? date('Y-m-d H:i', $r['start_time'] / 1000) : 'N/A';
-                                $end   = $r['end_time']   ? date('Y-m-d H:i', $r['end_time']   / 1000) : 'N/A';
+                                $start = !empty($r['start_time']) ? format_timestamp_display((int)$r['start_time']) : '—';
+                                $end   = !empty($r['end_time'])   ? format_timestamp_display((int)$r['end_time'])   : '—';
                             ?>
                             <tr>
                                 <td><div class="font-weight-bold"><?= htmlspecialchars($r['title'] ?? '—') ?></div></td>
@@ -56,8 +56,8 @@
                                         </a>
                                     <?php else: ?><span class="text-muted">—</span><?php endif; ?>
                                 </td>
-                                <td><small><?= $start ?></small></td>
-                                <td><small><?= $end ?></small></td>
+                                <td><?= $start ?></td>
+                                <td><?= $end ?></td>
                                 <td><small class="text-muted"><?= htmlspecialchars($r['organizer'] ?? '—') ?></small></td>
                                 <td>
                                     <span class="badge badge-<?= $r['all_day'] ? 'warning' : 'secondary' ?>">

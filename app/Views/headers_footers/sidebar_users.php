@@ -211,8 +211,8 @@
                         <!-- Intelligence Section (Collapsible) -->
                         <?php 
                             $intel_pages = ['analysis', 'timeline'];
-                            $is_intel_open = (isset($pag) && in_array($pag, $intel_pages)) 
-                                          || (isset($sub_pag) && in_array($sub_pag, ['wellbeing', 'anomalies']));
+            $is_intel_open = (isset($pag) && in_array($pag, $intel_pages)) 
+                          || (isset($sub_pag) && in_array($sub_pag, ['timeline', 'wellbeing', 'anomalies']));
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_intel_open ? 'menu-open' : ''; ?>">
                             <a href="#" class="nav-link <?php echo $is_intel_open ? 'active' : ''; ?>">
@@ -225,7 +225,7 @@
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag == 'analysis') ? 'active' : ''; ?>">
+                                       class="nav-link <?php echo (isset($pag) && $pag == 'analysis' && (!isset($sub_pag) || $sub_pag != 'timeline')) ? 'active' : ''; ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Analysis</p>
                                         <span class="badge badge-info float-right">AI</span>
@@ -234,7 +234,7 @@
 
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis/timeline'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag == 'timeline') ? 'active' : ''; ?>">
+                                       class="nav-link <?php echo (isset($pag) && $pag == 'timeline') || (isset($sub_pag) && $sub_pag == 'timeline') ? 'active' : ''; ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Timeline</p>
                                         <span class="badge badge-success float-right">New</span>

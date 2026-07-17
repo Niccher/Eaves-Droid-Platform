@@ -76,7 +76,8 @@ class BaseClientController extends BaseController
             'total_notifications' => $this->finderModel->get_count_Notifications($this->userId),
             'total_bluetooth'  => $this->finderModel->get_count_Bluetooth($this->userId),
             'total_sensors'    => $this->finderModel->get_count_Sensors($this->userId),
-            'total_media'      => $this->finderModel->get_count_CapturedMedia($this->userId),
+            'total_media'           => $this->finderModel->get_count_CapturedMedia($this->userId),
+            'total_security_audit'  => $this->finderModel->get_count_SecurityAudit($this->userId),
             'active_sms'       => $this->finderModel->get_sms_active($this->userId),
             'active_calls'     => $this->finderModel->get_calls_active($this->userId),
         ];
@@ -168,19 +169,26 @@ class BaseClientController extends BaseController
      */
     protected function getLocationNavigationUrls(string $activeView = 'location'): string
     {
-        $buttons = [
-            'location' => ($activeView === 'location') ? 'btn-primary' : 'btn-outline-primary',
-            'activity' => ($activeView === 'activity') ? 'btn-primary' : 'btn-outline-primary',
-            'advanced' => ($activeView === 'advanced') ? 'btn-primary' : 'btn-outline-primary',
+        $tabs = [
+            'location' => ['url' => 'location', 'label' => 'Locations', 'icon' => 'fas fa-map-marker-alt'],
+            'activity' => ['url' => 'activities', 'label' => 'Activities', 'icon' => 'fas fa-walking'],
+            'sms'      => ['url' => 'sms', 'label' => 'Messages', 'icon' => 'fas fa-sms'],
+            'advanced' => ['url' => 'advanced/device', 'label' => 'Advanced Data', 'icon' => 'fas fa-microchip'],
         ];
 
-        return '
-            <a class="btn ' . $buttons['location'] . '" href="' . base_url("location") . '">Locations</a>
-            &nbsp;&nbsp;
-            <a class="btn ' . $buttons['activity'] . '" href="' . base_url("activities") . '">Activities</a>
-            &nbsp;&nbsp;
-            <a class="btn ' . $buttons['advanced'] . '" href="' . base_url("advanced/device") . '">Advanced Data</a>
-            &nbsp;&nbsp;';
+        $html = '<div class="d-flex justify-content-end flex-wrap" style="gap: 5px;">';
+        foreach ($tabs as $key => $tab) {
+            $btnClass = ($key === $activeView) ? 'btn-primary' : 'btn-outline-primary';
+            $html .= sprintf(
+                '<a class="btn btn-sm %s" href="%s"><i class="%s mr-1"></i> %s</a>',
+                $btnClass,
+                base_url($tab['url']),
+                $tab['icon'],
+                $tab['label']
+            );
+        }
+        $html .= '</div>';
+        return $html;
     }
 
 

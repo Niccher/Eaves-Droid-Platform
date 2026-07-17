@@ -101,14 +101,42 @@
 
 <script>
 $(function () {
-    $('#smsAnalysisTable').DataTable({
-        "lengthChange": true,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": false,
-        "responsive": true,
-        "order": [[2, "desc"]]
+    try {
+        $('#smsAnalysisTable').DataTable({
+            "paging": false,
+            "info": false,
+            "searching": true,
+            "ordering": true,
+            "autoWidth": false,
+            "order": [[2, "desc"]],
+        "dom": '<"row mb-2"<"col-sm-6"f><"col-sm-6 text-right"B>>rt',
+        buttons: [{
+            text: '<i class="fas fa-file-pdf mr-1"></i> PDF',
+            className: 'btn btn-sm btn-danger',
+            action: function (e, dt, node, config) {
+                Swal.fire({
+                    title: 'Generating PDF...',
+                    text: 'Please wait while we prepare your document',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                var element = document.querySelector('#smsAnalysisTable');
+                html2pdf().set({
+                    margin:       10,
+                    filename:     'sms_analysis_' + Date.now() + '.pdf',
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, letterRendering: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                }).from(element).save().then(function() {
+                    Swal.close();
+                    Swal.fire({ icon: 'success', title: 'Export Complete', text: 'PDF has been downloaded', timer: 2000, showConfirmButton: false });
+                }).catch(function() {
+                    Swal.close();
+                    Swal.fire({ icon: 'error', title: 'Export Failed', text: 'Could not generate PDF', timer: 3000, showConfirmButton: false });
+                });
+            }
+        }]
     });
+    } catch (e) { console.warn('SMS analysis table init failed:', e); }
 });
 </script>

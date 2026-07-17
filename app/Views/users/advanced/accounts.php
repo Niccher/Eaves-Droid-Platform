@@ -44,7 +44,7 @@
                                 $icon = str_contains($type, 'google') ? 'fab fa-google text-danger' :
                                        (str_contains($type, 'whatsapp') ? 'fab fa-whatsapp text-success' :
                                        (str_contains($type, 'facebook') ? 'fab fa-facebook text-primary' : 'fas fa-user-tag text-secondary'));
-                                $ts = $r['extracted_at'] ? date('Y-m-d H:i', $r['extracted_at'] / 1000) : 'N/A';
+                                $ts = !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—';
                             ?>
                             <tr>
                                 <td><span class="text-muted"><?= $i + 1 ?></span></td>
@@ -55,7 +55,7 @@
                                     </div>
                                 </td>
                                 <td><span class="badge badge-secondary"><?= htmlspecialchars($type) ?></span></td>
-                                <td><small class="text-muted"><?= $ts ?></small></td>
+                                <td><?= $ts ?></td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
