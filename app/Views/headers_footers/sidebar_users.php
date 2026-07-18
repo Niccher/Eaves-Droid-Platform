@@ -107,8 +107,10 @@
 
                         <!-- Data Section (Collapsible) -->
                         <?php 
-                            $data_pages = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'advanced', 'remote_device', 'sim_configs'];
-                            $is_data_open = isset($pag) && in_array($pag, $data_pages);
+                            $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'advanced', 'remote_device', 'sim_configs'];
+                            $data_sub_pages = ['sim_configs'];
+                            $is_data_open   = (isset($pag) && in_array($pag, $data_pages))
+                                           || (isset($sub_pag) && in_array($sub_pag, $data_sub_pages));
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_data_open ? 'menu-open' : ''; ?>">
                             <a href="#" class="nav-link <?php echo $is_data_open ? 'active' : ''; ?>">
