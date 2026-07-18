@@ -130,6 +130,8 @@ All detection runs against live database tables populated by the Android collect
 - **Dual-Engine Architecture** — PHP engine (live, in-process) and Python engine (Docker-based, coming soon)
 - **Rich Interactive Dashboards** — Per-category views with DataTables search/filter, colour-coded badges, and responsive layouts
 - **Cross-Data Correlation** — Unified intelligence dashboard linking SMS, calls, locations, and timeline
+- **Live Location Tracking** — Configurable periodic real-time location batching and dashboard tracking
+- **SIM Configurations** — Real-time tracking of SIM states and auto-extraction on changes
 - **PDF Export** — One-click PDF generation via html2pdf.js with SweetAlert2 progress feedback
 - **Full Containerization** — Docker Compose with auto-migrations, persistent volumes, and phpMyAdmin
 - **Standardised Timestamps** — All dates rendered in consistent format with calendar/clock icons via a shared helper
