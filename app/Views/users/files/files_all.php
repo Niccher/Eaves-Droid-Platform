@@ -37,7 +37,7 @@
                     <p class="text-muted mt-2 mb-0">View and manage files on the device</p>
                 </div>
                 <div class="col-lg-4 col-md-6">
-                    <div class="float-right mt-2">
+                    <div class="float-right mt-2 mb-2">
                         <div class="btn-group btn-group-toggle" data-toggle="buttons">
                             <?php echo $files_urls; ?>
                         </div>
@@ -61,16 +61,24 @@
                                 <small class="text-muted ml-2">Showing <?php echo count($files_dump) ?>
                                     of <?php echo $totalFiles ?? 0 ?> files</small>
                             </h3>
-                            <div class="card-tools">
+                            <div class="card-tools my-2">
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
                                 </button>
                             </div>
                         </div>
                         <!-- /.card-header -->
+                        <div class="border-bottom px-3 py-2">
+                            <div class="input-group input-group-sm" style="max-width:350px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control table-search" placeholder="Search by name or path..." data-table="table-sortable">
+                            </div>
+                        </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0 tabledump">
+                                <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                     <thead class="thead-light">
                                     <tr>
                                         <th width="20%">Name</th>
@@ -266,6 +274,12 @@
                                                             onclick="showFileDetails(<?php echo htmlspecialchars(json_encode($fileinfo), ENT_QUOTES, 'UTF-8'); ?>)">
                                                         <i class="fas fa-info-circle"></i> Details
                                                     </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-file ml-1"
+                                                            data-id="<?php echo $fileinfo['ID'] ?? $fileinfo['counter'] ?? ''; ?>"
+                                                            data-name="<?php echo htmlspecialchars($fileinfo['name'] ?? ''); ?>"
+                                                            title="Delete file entry">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -278,7 +292,7 @@
                         <div class="card-footer">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="dataTables_info" role="status">
+                                    <div class="entry-info">
                                         Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
                                         to <?php echo min($currentPage * $perPage, $totalFiles ?? 0) ?>
                                         of <?php echo $totalFiles ?? 0 ?> entries
@@ -478,7 +492,7 @@
     }
 
     @media (max-width: 768px) {
-        .dataTables_info {
+        .entry-info {
             text-align: center;
             margin-bottom: 1rem;
         }
@@ -494,6 +508,9 @@
             font-size: 14px;
         }
     }
+    .table-sortable thead th { cursor: pointer; user-select: none; }
+    .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
+    .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
 </style>
 <script>
     /**
@@ -573,4 +590,66 @@
             document.getElementById('modal-is-directory-row').style.display = 'none';
         }
     }
+</script>
+
+<script>
+$(document).ready(function() {
+    // Real-time table search
+    $('.table-search').on('keyup', function() {
+        var keyword = $(this).val().toLowerCase();
+        var table = $(this).data('table');
+        $('.' + table + ' tbody tr').each(function() {
+            var text = $(this).text().toLowerCase();
+            $(this).toggle(text.indexOf(keyword) > -1);
+        });
+    });
+
+    // Column sorting
+    $('.table-sortable thead th').on('click', function() {
+        var table = $(this).closest('table');
+        var tbody = table.find('tbody');
+        var index = $(this).index();
+        var rows = tbody.find('tr').toArray();
+        var asc = !$(this).hasClass('sort-asc');
+        table.find('thead th').removeClass('sort-asc sort-desc');
+        $(this).toggleClass('sort-asc', asc).toggleClass('sort-desc', !asc);
+        rows.sort(function(a, b) {
+            var aVal = $(a).find('td').eq(index).text().trim();
+            var bVal = $(b).find('td').eq(index).text().trim();
+            var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+            if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+            return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        });
+        tbody.append(rows);
+    });
+
+    $(document).on('click', '.delete-file', function() {
+        var id = $(this).data('id');
+        var name = $(this).data('name');
+        Swal.fire({
+            title: 'Delete File Entry?',
+            text: 'Are you sure you want to delete "' + name + '"?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonText: 'Cancel',
+            confirmButtonText: '<i class="fas fa-trash"></i> Delete'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: base_url('files/delete/' + id),
+                    type: 'POST',
+                    success: function(response) {
+                        Swal.fire('Deleted!', 'File entry has been deleted.', 'success').then(function() {
+                            location.reload();
+                        });
+                    },
+                    error: function() {
+                        Swal.fire('Error!', 'Failed to delete file entry.', 'error');
+                    }
+                });
+            }
+        });
+    });
+});
 </script>

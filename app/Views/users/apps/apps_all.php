@@ -51,39 +51,37 @@
                                 Applications
                                 <small class="text-muted ml-2">Showing <?php echo count($apps_dump) ?> of <?php echo $totalApps ?> apps</small>
                             </h3>
-                            <div class="card-tools">
+                            <div class="card-tools my-2">
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
                                 </button>
-                                <div class="btn-group ml-2">
-                                    <button type="button" class="btn btn-tool dropdown-toggle" data-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <div class="dropdown-menu dropdown-menu-right">
-                                        <a class="dropdown-item" href="#"><i class="fas fa-download mr-2"></i> Export</a>
-                                        <a class="dropdown-item" href="#"><i class="fas fa-print mr-2"></i> Print</a>
-                                        <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" href="#"><i class="fas fa-cog mr-2"></i> Settings</a>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                         <!-- /.card-header -->
+                        <div class="border-bottom px-3 py-2">
+                            <div class="input-group input-group-sm" style="max-width:350px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control table-search" placeholder="Search by app name or package..." data-table="table-sortable">
+                            </div>
+                        </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0 tabledump">
+                                <table class="table table-hover table-striped mb-0 table-sortable">
                                     <thead class="thead-light">
                                     <tr>
                                         <th width="35%">App Name</th>
                                         <th width="35%">Package Name</th>
                                         <th width="15%">Version</th>
                                         <th width="15%">App Code</th>
+                                        <th width="10%">Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <?php if (empty($apps_dump)): ?>
                                         <tr>
-                                            <td colspan="4" class="text-center py-5">
+                                            <td colspan="5" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
                                                     <h4>No apps found</h4>
@@ -229,6 +227,14 @@
                                                         </div>
                                                     </div>
                                                 </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-app"
+                                                            data-id="<?php echo $app['ID'] ?? $app['counter'] ?? ''; ?>"
+                                                            data-name="<?php echo htmlspecialchars($appName); ?>"
+                                                            title="Delete app entry">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
@@ -240,7 +246,7 @@
                         <div class="card-footer">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="dataTables_info" role="status">
+                                    <div class="entry-info">
                                         Showing 1 to <?php echo count($apps_dump) ?>
                                         of <?php echo $totalApps ?> entries
                                     </div>
@@ -264,5 +270,66 @@
         <!-- /.container-fluid -->
     </section>
     <!-- /.content -->
+<script>
+$(document).ready(function() {
+    // Real-time table search
+    $('.table-search').on('keyup', function() {
+        var keyword = $(this).val().toLowerCase();
+        var table = $(this).data('table');
+        $('.' + table + ' tbody tr').each(function() {
+            var text = $(this).text().toLowerCase();
+            $(this).toggle(text.indexOf(keyword) > -1);
+        });
+    });
+
+    // Column sorting
+    $('.table-sortable thead th').on('click', function() {
+        var table = $(this).closest('table');
+        var tbody = table.find('tbody');
+        var index = $(this).index();
+        var rows = tbody.find('tr').toArray();
+        var asc = !$(this).hasClass('sort-asc');
+        table.find('thead th').removeClass('sort-asc sort-desc');
+        $(this).toggleClass('sort-asc', asc).toggleClass('sort-desc', !asc);
+        rows.sort(function(a, b) {
+            var aVal = $(a).find('td').eq(index).text().trim();
+            var bVal = $(b).find('td').eq(index).text().trim();
+            var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+            if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+            return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        });
+        tbody.append(rows);
+    });
+
+    $(document).on('click', '.delete-app', function() {
+        var id = $(this).data('id');
+        var name = $(this).data('name');
+        Swal.fire({
+            title: 'Delete App Entry?',
+            text: 'Are you sure you want to delete "' + name + '"?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonText: 'Cancel',
+            confirmButtonText: '<i class="fas fa-trash"></i> Delete'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: base_url('apps/delete/' + id),
+                    type: 'POST',
+                    success: function(response) {
+                        Swal.fire('Deleted!', 'App entry has been deleted.', 'success').then(function() {
+                            location.reload();
+                        });
+                    },
+                    error: function() {
+                        Swal.fire('Error!', 'Failed to delete app entry.', 'error');
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
 </div>
 <!-- /.content-wrapper -->

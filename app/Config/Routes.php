@@ -297,6 +297,7 @@ $routes->group('', [
          *
          * @return string
          */
+        $routes->post('delete/(:any)', 'Files::delete/$1');
         $routes->get('/', 'Files::index', ['as' => 'files-all']);
 
         /**
@@ -398,6 +399,7 @@ $routes->group('', [
          */
         $routes->get('blocked', 'Calls::call_blocked', ['as' => 'call-logs-blocked']);
         $routes->get('blocked/(:num)', 'Calls::call_blocked/$1');
+        $routes->post('delete/(:any)', 'Calls::delete/$1');
     });
 
     // =============================================================
@@ -407,12 +409,14 @@ $routes->group('', [
     $routes->group('location', static function ($routes) {
         $routes->get('/', 'Location::index', ['as' => 'location-all']);
         $routes->get('(:num)', 'Location::index/$1');
+        $routes->post('delete/(:any)', 'Location::delete/$1');
     });
 
     // Activity Routes
     $routes->group('activities', static function ($routes) {
         $routes->get('/', 'Location::activities', ['as' => 'activity-all']);
         $routes->get('(:num)', 'Location::activities/$1');
+        $routes->post('delete/(:any)', 'Location::deleteActivity/$1');
     });
 
     // Advanced Data Extractions
@@ -430,8 +434,13 @@ $routes->group('', [
         $routes->get('bluetooth', 'Advanced::bluetooth', ['as' => 'adv-bluetooth']);
         $routes->get('sensors', 'Advanced::sensors', ['as' => 'adv-sensors']);
         $routes->get('security_audit', 'Advanced::security_audit', ['as' => 'adv-security-audit']);
+        $routes->post('app-usage/delete/(:num)', 'Advanced::delete_app_usage/$1');
         $routes->post('notifications/delete/(:any)', 'Advanced::delete_notifications_by_app');
+        $routes->post('notifications/delete-row/(:num)', 'Advanced::delete_notification_row/$1');
     });
+
+    $routes->get('sim-configs', 'SimConfig::index', ['as' => 'sim-configs']);
+    $routes->post('sim-configs/delete/(:num)', 'SimConfig::delete/$1');
 
     $routes->get('advanced/media', 'Advanced::remote_media');
     $routes->get('advanced/media/serve/(:any)', 'Advanced::serve_media/$1');
@@ -469,6 +478,7 @@ $routes->group('', [
          */
         $routes->get('sent', 'Sms::sms_sent', ['as' => 'sms-sent']);
         $routes->get('sent/(:num)', 'Sms::sms_sent/$1');
+        $routes->post('delete/(:any)', 'Sms::delete/$1');
     });
 
     // =============================================================
@@ -509,6 +519,7 @@ $routes->group('', [
          * @param string $contactId Contact identifier
          * @return string
          */
+        $routes->post('delete/(:any)', 'Contacts::delete/$1');
         $routes->get('view/(:any)', 'Contacts::viewContact/$1', ['as' => 'contact-view']);
 
         /**
@@ -544,6 +555,8 @@ $routes->group('', [
          * @return string
          */
         $routes->get('analyze/calls/(:any)/(:num)', 'Analyze::calls/$1/$2');
+
+
     });
 
     // =============================================================

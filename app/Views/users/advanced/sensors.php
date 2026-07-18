@@ -6,7 +6,7 @@
                 <div class="col-lg-7">
                     <div class="d-flex align-items-center flex-wrap">
                         <h1 class="h2 mb-0 mr-3"><i class="fas fa-microchip text-secondary mr-2"></i>Sensor Profile</h1>
-                        <span class="badge badge-secondary border p-2"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
+                        <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
                     </div>
                     <p class="text-muted mt-1 mb-0">Hardware sensors enumerated on the device</p>
                 </div>

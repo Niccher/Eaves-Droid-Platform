@@ -145,4 +145,15 @@ class Calls extends BaseClientController
     {
         return $this->blocked();
     }
+
+    public function delete($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_call_log((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Call log entry deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete call log entry.']);
+    }
 }

@@ -174,4 +174,15 @@ class Sms extends BaseClientController
             . view($mainView, $data)
             . view('headers_footers/footer_data_datatables', $data);
     }
+
+    public function delete($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_sms((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'SMS deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete SMS.']);
+    }
 }

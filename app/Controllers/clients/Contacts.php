@@ -2,8 +2,11 @@
 
 namespace App\Controllers\clients;
 
+use CodeIgniter\API\ResponseTrait;
+
 class Contacts extends BaseClientController
 {
+    use ResponseTrait;
     public function index()
     {
         // Get current page from query string
@@ -36,5 +39,16 @@ class Contacts extends BaseClientController
         ];
 
         return $this->renderUserView('users/contacts', $data);
+    }
+
+    public function delete($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_contact((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Contact deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete contact.']);
     }
 }

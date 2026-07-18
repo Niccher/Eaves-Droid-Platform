@@ -50,21 +50,30 @@
                             </div>
                         </div>
                         <!-- /.card-header -->
+                        <div class="border-bottom px-3 py-2">
+                            <div class="input-group input-group-sm" style="max-width:350px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control table-search" placeholder="Search by contact, type or duration..." data-table="table-sortable">
+                            </div>
+                        </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0 tabledump">
+                                <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th width="30%">Contact</th>
-                                            <th width="15%">Type</th>
-                                            <th width="25%">Time</th>
-                                            <th width="30%">Duration</th>
+                                            <th width="25%">Contact</th>
+                                            <th width="13%">Type</th>
+                                            <th width="20%">Time</th>
+                                            <th width="25%">Duration</th>
+                                            <th width="17%" class="text-center">Actions</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <?php if (empty($call_logs_dump)): ?>
                                             <tr>
-                                                <td colspan="4" class="text-center py-5">
+                                                <td colspan="5" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-phone-slash fa-3x text-muted mb-3"></i>
                                                     <h4>No call logs found</h4>
@@ -324,6 +333,14 @@
                                                         </div>
                                                     </div>
                                                 </td>
+                                                <td class="text-center align-middle">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-call"
+                                                            data-id="<?= $call_log['counter'] ?? '' ?>"
+                                                            data-name="<?= htmlspecialchars($call_log['Saved'] ?: $call_log['Caller']) ?>"
+                                                            title="Delete call log entry">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
@@ -335,7 +352,7 @@
                         <div class="card-footer">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="dataTables_info" role="status">
+                                    <div class="entry-info">
                                         Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
                                         to <?php echo min($currentPage * $perPage, $totalCalls ?? 0) ?>
                                         of <?php echo $totalCalls ?? 0 ?> entries
@@ -389,6 +406,10 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
+
+    .table-sortable thead th { cursor: pointer; user-select: none; }
+    .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
+    .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
 
     .duration-display .badge {
         min-width: 40px;
@@ -471,7 +492,7 @@
     }
 
     @media (max-width: 768px) {
-        .dataTables_info {
+        .entry-info {
             text-align: center;
             margin-bottom: 1rem;
         }
@@ -498,3 +519,70 @@
         }
     }
 </style>
+<script>
+var base_url = function(path) { return '<?= base_url() ?>' + path; };
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('.table-search')?.addEventListener('keyup', function() {
+        var keyword = this.value.toLowerCase();
+        var target = this.getAttribute('data-table');
+        document.querySelectorAll('.' + target + ' tbody tr').forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().indexOf(keyword) > -1 ? '' : 'none';
+        });
+    });
+    document.querySelectorAll('.table-sortable thead th').forEach(function(th) {
+        th.addEventListener('click', function() {
+            var table = this.closest('table');
+            var tbody = table.querySelector('tbody');
+            var index = Array.prototype.indexOf.call(this.parentNode.children, this);
+            var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+            var asc = !this.classList.contains('sort-asc');
+            table.querySelectorAll('thead th').forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+            this.classList.toggle('sort-asc', asc);
+            this.classList.toggle('sort-desc', !asc);
+            rows.sort(function(a, b) {
+                var aVal = (a.querySelectorAll('td')[index]?.textContent || '').trim();
+                var bVal = (b.querySelectorAll('td')[index]?.textContent || '').trim();
+                var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+                if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+                return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            rows.forEach(function(row) { tbody.appendChild(row); });
+        });
+    });
+    document.querySelectorAll('.delete-call').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var id = this.getAttribute('data-id');
+            var name = this.getAttribute('data-name');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Delete Call Log Entry?',
+                    text: 'Are you sure you want to delete the entry for "' + name + '"?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-trash"></i> Delete'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        fetch(base_url('call_logs/delete/' + id), {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        }).then(function(r) { return r.json(); }).then(function(response) {
+                            if (response.success) {
+                                Swal.fire('Deleted!', 'Call log entry has been deleted.', 'success').then(function() {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to delete call log entry.', 'error');
+                            }
+                        }).catch(function() {
+                            Swal.fire('Error!', 'Failed to delete call log entry.', 'error');
+                        });
+                    }
+                });
+            }
+        });
+    });
+});
+</script>

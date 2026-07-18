@@ -44,16 +44,24 @@
                                     <small class="text-muted ml-2">Showing <?php echo count($sms_dump) ?>
                                         of <?php echo $totalSMS ?? 0 ?> messages</small>
                                 </h3>
-                                <div class="card-tools">
+                                <div class="card-tools my-2">
                                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                         <i class="fas fa-minus"></i>
                                     </button>
                                 </div>
                             </div>
                             <!-- /.card-header -->
+                            <div class="border-bottom px-3 py-2">
+                                <div class="input-group input-group-sm" style="max-width:350px;">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control table-search" placeholder="Search by sender or message..." data-table="table-sortable">
+                                </div>
+                            </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
-                                    <table class="table table-hover table-striped mb-0 tabledump">
+                                    <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                         <thead class="thead-light">
                                         <tr>
                                             <th width="20%">Contact</th>
@@ -341,6 +349,13 @@
                                                                                     <?php echo $typeInfo['label']; ?>
                                                                                 </span>
                                                                             </div>
+                                                                            <div class="mb-1 mt-3">
+                                                                                <button class="btn btn-sm btn-outline-danger delete-sms"
+                                                                                        data-id="<?php echo $smsinfo['id'] ?? ''; ?>"
+                                                                                        title="Delete this message">
+                                                                                    <i class="fas fa-trash mr-1"></i> Delete
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                     <div class="col-md-9">
@@ -371,7 +386,7 @@
                             <div class="card-footer">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="dataTables_info" role="status">
+                                        <div class="entry-info">
                                             Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
                                             to <?php echo min($currentPage * $perPage, $totalSMS ?? 0) ?>
                                             of <?php echo $totalSMS ?? 0 ?> entries
@@ -551,7 +566,7 @@
         }
 
         @media (max-width: 768px) {
-            .dataTables_info {
+            .entry-info {
                 text-align: center;
                 margin-bottom: 1rem;
             }
@@ -585,6 +600,9 @@
                 max-width: 200px;
             }
         }
+        .table-sortable thead th { cursor: pointer; user-select: none; }
+        .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
+        .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
     </style>
     <script>
         // Copy to clipboard function
@@ -694,6 +712,74 @@
                         }
                     });
                 }
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Real-time table search (handles expandable rows)
+            document.querySelector('.table-search')?.addEventListener('keyup', function() {
+                var keyword = this.value.toLowerCase().trim();
+                var target = this.getAttribute('data-table');
+                document.querySelectorAll('.' + target + ' tbody tr.expandable-row').forEach(function(row) {
+                    var text = row.textContent.toLowerCase();
+                    row.style.display = text.indexOf(keyword) > -1 ? '' : 'none';
+                });
+            });
+
+            // Column sorting (handles expandable rows)
+            document.querySelectorAll('.table-sortable thead th').forEach(function(th) {
+                th.addEventListener('click', function() {
+                    var table = this.closest('table');
+                    var tbody = table.querySelector('tbody');
+                    var index = Array.prototype.indexOf.call(this.parentNode.children, this);
+                    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr.expandable-row'));
+                    var asc = !this.classList.contains('sort-asc');
+                    table.querySelectorAll('thead th').forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+                    this.classList.toggle('sort-asc', asc);
+                    this.classList.toggle('sort-desc', !asc);
+                    rows.sort(function(a, b) {
+                        var aVal = (a.querySelectorAll('td')[index]?.textContent || '').trim();
+                        var bVal = (b.querySelectorAll('td')[index]?.textContent || '').trim();
+                        var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+                        if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+                        return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                    });
+                    rows.forEach(function(row) { tbody.appendChild(row); });
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                const deleteBtn = e.target.closest('.delete-sms');
+                if (!deleteBtn) return;
+                const id = deleteBtn.getAttribute('data-id');
+                if (!id) return;
+                Swal.fire({
+                    title: 'Delete SMS?',
+                    text: 'This action cannot be undone.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: '<i class="fas fa-trash mr-1"></i> Delete',
+                    cancelButtonText: 'Cancel'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        const csrfName = document.querySelector('meta[name="csrf-token"]');
+                        const csrfHash = document.querySelector('meta[name="csrf-hash"]');
+                        const formData = new FormData();
+                        if (csrfName && csrfHash) {
+                            formData.append(csrfName.getAttribute('content'), csrfHash.getAttribute('content'));
+                        }
+                        fetch(base_url('sms/delete/' + id), { method: 'POST', body: formData })
+                            .then(function (res) {
+                                if (res.ok) location.reload();
+                                else Swal.fire('Error', 'Failed to delete message.', 'error');
+                            })
+                            .catch(function () {
+                                Swal.fire('Error', 'Network error.', 'error');
+                            });
+                    }
+                });
             });
         });
     </script>

@@ -193,7 +193,7 @@ class Advanced extends BaseClientController
 
         $data['detail_mode'] = true;
 
-        return $this->renderAppView('users/advanced/app_usage', $data);
+        return $this->renderAppView('users/advanced/app_usage_detail', $data);
     }
 
     /** GET /advanced/notifications */
@@ -247,7 +247,7 @@ class Advanced extends BaseClientController
 
         $data['detail_mode'] = true;
 
-        return $this->renderAppView('users/advanced/notifications', $data);
+        return $this->renderAppView('users/advanced/notification_detail', $data);
     }
 
     /**
@@ -498,6 +498,24 @@ class Advanced extends BaseClientController
         }
 
         return $this->fail('Failed to delete media record');
+    }
+
+    /** POST /advanced/app-usage/delete/(:num) */
+    public function delete_app_usage($id)
+    {
+        if ($this->finderModel->delete_app_usage((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'App usage snapshot deleted.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete snapshot.']);
+    }
+
+    /** POST /advanced/notifications/delete-row/(:num) */
+    public function delete_notification_row($id)
+    {
+        if ($this->finderModel->delete_notification((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Notification deleted.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete notification.']);
     }
 
     /** POST /advanced/notifications/delete/(:any) */

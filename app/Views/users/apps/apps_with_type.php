@@ -71,9 +71,17 @@
                                 </button>
                             </div>
                         </div>
+                        <div class="border-bottom px-3 py-2">
+                            <div class="input-group input-group-sm" style="max-width:350px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control table-search" placeholder="Search by app name or package..." data-table="table-sortable">
+                            </div>
+                        </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped tabledump">
+                                <table class="table table-hover table-striped table-sortable">
                                     <thead>
                                     <tr>
                                         <th width="30%">App Name</th>
@@ -176,7 +184,7 @@
                         <div class="card-footer clearfix">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="dataTables_info" role="status">
+                                    <div class="entry-info">
                                         Showing <?php echo (($currentPage - 1) * 50) + 1 ?>
                                         to <?php echo min($currentPage * 50, $totalApps ?? 0) ?>
                                         of <?php echo $totalApps ?? 0 ?> entries
@@ -357,6 +365,9 @@
         flex: 1;
         padding-top: 4px;
     }
+    .table-sortable thead th { cursor: pointer; user-select: none; }
+    .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
+    .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
 </style>
 
 <script>
@@ -459,6 +470,37 @@
                 permissionsSection.style.display = 'none';
             }
         }
+
+        // Real-time table search
+        document.querySelector('.table-search')?.addEventListener('keyup', function() {
+            var keyword = this.value.toLowerCase();
+            var target = this.getAttribute('data-table');
+            document.querySelectorAll('.' + target + ' tbody tr').forEach(function(row) {
+                row.style.display = row.textContent.toLowerCase().indexOf(keyword) > -1 ? '' : 'none';
+            });
+        });
+
+        // Column sorting
+        document.querySelectorAll('.table-sortable thead th').forEach(function(th) {
+            th.addEventListener('click', function() {
+                var table = this.closest('table');
+                var tbody = table.querySelector('tbody');
+                var index = Array.prototype.indexOf.call(this.parentNode.children, this);
+                var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+                var asc = !this.classList.contains('sort-asc');
+                table.querySelectorAll('thead th').forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+                this.classList.toggle('sort-asc', asc);
+                this.classList.toggle('sort-desc', !asc);
+                rows.sort(function(a, b) {
+                    var aVal = (a.querySelectorAll('td')[index]?.textContent || '').trim();
+                    var bVal = (b.querySelectorAll('td')[index]?.textContent || '').trim();
+                    var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+                    if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+                    return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                });
+                rows.forEach(function(row) { tbody.appendChild(row); });
+            });
+        });
 
         function formatTimestamp(timestamp) {
             if (!timestamp) return 'N/A';

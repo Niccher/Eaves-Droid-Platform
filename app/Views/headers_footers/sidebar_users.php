@@ -107,7 +107,7 @@
 
                         <!-- Data Section (Collapsible) -->
                         <?php 
-                            $data_pages = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'advanced', 'remote_device'];
+                            $data_pages = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'advanced', 'remote_device', 'sim_configs'];
                             $is_data_open = isset($pag) && in_array($pag, $data_pages);
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_data_open ? 'menu-open' : ''; ?>">
@@ -183,7 +183,7 @@
                                 </li>
 
                                 <?php 
-                                    // Calculate total metrics sum
+                                    // Calculate total metrics sum (excludes sim_configs — it has its own nav item)
                                     $adv_total = ($total_device ?? 0) + ($total_network ?? 0) + ($total_accounts ?? 0) + 
                                                  ($total_calendar ?? 0) + ($total_app_usage ?? 0) + ($total_notifications ?? 0) + 
                                                  ($total_bluetooth ?? 0) + ($total_sensors ?? 0) + ($total_media ?? 0);
@@ -203,6 +203,16 @@
                                        class="nav-link <?php echo (isset($pag) && $pag == 'remote_device') ? 'active' : ''; ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Remote Device</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('sim-configs'); ?>"
+                                       class="nav-link <?php echo (isset($pag) && $pag == 'sim_configs') ? 'active' : ''; ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>
+                                            SIM Configs
+                                            <span class="badge badge-info float-right"><?php echo $total_sim_configs ?? 0; ?></span>
+                                        </p>
                                     </a>
                                 </li>
                             </ul>

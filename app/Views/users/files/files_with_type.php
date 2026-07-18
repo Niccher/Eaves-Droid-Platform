@@ -68,9 +68,17 @@
                             </div>
                         </div>
                         <!-- /.card-header -->
+                        <div class="border-bottom px-3 py-2">
+                            <div class="input-group input-group-sm" style="max-width:350px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control table-search" placeholder="Search by name or path..." data-table="table-sortable">
+                            </div>
+                        </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0 tabledump">
+                                <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                     <thead class="thead-light">
                                     <tr>
                                         <th width="20%">Name</th>
@@ -211,12 +219,20 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <button type="button" class="btn btn-sm btn-info" 
-                                                            data-toggle="modal" 
-                                                            data-target="#fileDetailsModal"
-                                                            onclick="showFileDetails(<?php echo htmlspecialchars(json_encode($fileinfo), ENT_QUOTES, 'UTF-8'); ?>)">
-                                                        <i class="fas fa-info-circle"></i> Details
-                                                    </button>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button type="button" class="btn btn-info" 
+                                                                data-toggle="modal" 
+                                                                data-target="#fileDetailsModal"
+                                                                onclick="showFileDetails(<?php echo htmlspecialchars(json_encode($fileinfo), ENT_QUOTES, 'UTF-8'); ?>)">
+                                                            <i class="fas fa-info-circle"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-danger delete-file"
+                                                                data-id="<?= $fileinfo['id'] ?? '' ?>"
+                                                                data-name="<?= htmlspecialchars($fileName) ?>"
+                                                                title="Delete file entry">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -229,7 +245,7 @@
                         <div class="card-footer">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="dataTables_info" role="status">
+                                    <div class="entry-info">
                                         Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
                                         to <?php echo min($currentPage * $perPage, $totalFiles ?? 0) ?>
                                         of <?php echo $totalFiles ?? 0 ?> entries
@@ -429,7 +445,7 @@
     }
 
     @media (max-width: 768px) {
-        .dataTables_info {
+        .entry-info {
             text-align: center;
             margin-bottom: 1rem;
         }
@@ -445,6 +461,9 @@
             font-size: 14px;
         }
     }
+    .table-sortable thead th { cursor: pointer; user-select: none; }
+    .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
+    .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
 </style>
 <script>
     /**
@@ -524,4 +543,70 @@
             document.getElementById('modal-is-directory-row').style.display = 'none';
         }
     }
+</script>
+<script>
+var base_url = function(path) { return '<?= base_url() ?>' + path; };
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('.table-search')?.addEventListener('keyup', function() {
+        var keyword = this.value.toLowerCase();
+        var target = this.getAttribute('data-table');
+        document.querySelectorAll('.' + target + ' tbody tr').forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().indexOf(keyword) > -1 ? '' : 'none';
+        });
+    });
+    document.querySelectorAll('.table-sortable thead th').forEach(function(th) {
+        th.addEventListener('click', function() {
+            var table = this.closest('table');
+            var tbody = table.querySelector('tbody');
+            var index = Array.prototype.indexOf.call(this.parentNode.children, this);
+            var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+            var asc = !this.classList.contains('sort-asc');
+            table.querySelectorAll('thead th').forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+            this.classList.toggle('sort-asc', asc);
+            this.classList.toggle('sort-desc', !asc);
+            rows.sort(function(a, b) {
+                var aVal = (a.querySelectorAll('td')[index]?.textContent || '').trim();
+                var bVal = (b.querySelectorAll('td')[index]?.textContent || '').trim();
+                var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+                if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+                return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            rows.forEach(function(row) { tbody.appendChild(row); });
+        });
+    });
+    document.querySelectorAll('.delete-file').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var id = this.getAttribute('data-id');
+            var name = this.getAttribute('data-name');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Delete File Entry?',
+                    text: 'Are you sure you want to delete "' + name + '"?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-trash"></i> Delete'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        fetch(base_url('files/delete/' + id), {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        }).then(function(r) { return r.json(); }).then(function(response) {
+                            if (response.success) {
+                                Swal.fire('Deleted!', 'File entry has been deleted.', 'success').then(function() {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to delete file entry.', 'error');
+                            }
+                        }).catch(function() {
+                            Swal.fire('Error!', 'Failed to delete file entry.', 'error');
+                        });
+                    }
+                });
+            }
+        });
+    });
+});
 </script>

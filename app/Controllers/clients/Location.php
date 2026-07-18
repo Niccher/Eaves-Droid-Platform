@@ -14,14 +14,16 @@ class Location extends BaseClientController
      */
     public function index()
     {
-        $locations = $this->finderModel->get_locations($this->userId, $this->perPage);
+        $hasCoords = $this->request->getGet('has_coords') === '1';
+        $locations = $this->finderModel->get_locations($this->userId, $this->perPage, $hasCoords);
         $commonData = $this->getLocationCommonData('location');
 
         $data = array_merge($commonData, [
             'location_dump' => $locations,
             'pager' => $this->finderModel->getPager(),
-            'totalLocations' => $this->finderModel->get_count_Location($this->userId),
+            'totalLocations' => $this->finderModel->get_count_Location($this->userId, $hasCoords),
             'current_type' => 'location',
+            'has_coords_filter' => $hasCoords,
         ]);
 
         return $this->renderAppView('users/location_all', $data);
@@ -57,4 +59,25 @@ class Location extends BaseClientController
         ]);
     }
 
+    public function delete($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_location((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Location entry deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete location entry.']);
+    }
+
+    public function deleteActivity($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_activity((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Activity entry deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete activity entry.']);
+    }
 }

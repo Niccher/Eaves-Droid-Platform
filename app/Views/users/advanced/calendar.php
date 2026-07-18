@@ -5,8 +5,8 @@
             <div class="row mb-3 align-items-center">
                 <div class="col-lg-7">
                     <div class="d-flex align-items-center flex-wrap">
-                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-calendar-alt text-danger mr-2"></i>Calendar Events</h1>
-                        <span class="badge badge-danger border p-2"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
+                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-calendar-alt text-secondary mr-2"></i>Calendar Events</h1>
+                        <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
                     </div>
                     <p class="text-muted mt-1 mb-0">All calendar events and appointments found on device</p>
                 </div>
@@ -17,7 +17,7 @@
         </div>
     </section>
     <section class="content"><div class="container-fluid"><div class="row"><div class="col-12">
-        <div class="card card-danger shadow-sm">
+        <div class="card card-secondary shadow-sm">
             <div class="card-header">
                 <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Events <small class="text-muted ml-2"><?= count($rows) ?> entries</small></h3>
                 <div class="card-tools"><button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button></div>

@@ -14,102 +14,106 @@
             </div>
         </div>
     </section>
-    <section class="content"><div class="container-fluid">
-    <?php if (empty($rows)): ?>
-        <div class="row"><div class="col-12">
-            <div class="card card-primary shadow-sm">
-                <div class="card-body text-center py-5">
+    <section class="content">
+        <div class="card card-secondary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fab fa-bluetooth-b mr-2"></i>Bluetooth Adapters</h3>
+            </div>
+            <div class="card-body p-0">
+                <?php if (empty($rows)): ?>
+                <div class="text-center py-5">
                     <div class="empty-state"><i class="fab fa-bluetooth fa-3x text-muted mb-3"></i><h4>No Bluetooth data</h4><p class="text-muted">Data will appear here once extracted</p></div>
                 </div>
-            </div>
-        </div></div>
-    <?php else: foreach ($rows as $r): ?>
-        <?php
-            $pairedDevices = $r['paired_devices'] ?? [];
-            $pairedCount = $r['paired_count'] ?? count($pairedDevices);
-        ?>
-        <div class="row mb-3">
-            <div class="col-lg-4 col-md-6">
-                <div class="info-box shadow-sm">
-                    <span class="info-box-icon bg-primary elevation-1"><i class="fab fa-bluetooth-b"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Adapter</span>
-                        <span class="info-box-number"><?= htmlspecialchars($r['adapter_name'] ?? 'Unknown') ?></span>
-                        <small class="text-muted"><?= htmlspecialchars($r['adapter_address'] ?? '') ?></small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="info-box shadow-sm">
-                    <span class="info-box-icon bg-<?= $r['is_enabled'] ? 'success' : 'danger' ?> elevation-1">
-                        <i class="fas fa-<?= $r['is_enabled'] ? 'check-circle' : 'times-circle' ?>"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Status</span>
-                        <span class="info-box-number"><?= $r['is_enabled'] ? 'Enabled' : 'Disabled' ?></span>
-                        <small class="text-muted">Snapped: <?= !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—' ?></small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="info-box shadow-sm">
-                    <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-link"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Paired Devices</span>
-                        <span class="info-box-number"><?= $pairedCount ?></span>
-                        <small class="text-muted"><?= $pairedCount === 0 ? 'No paired devices found' : ($pairedCount === 1 ? '1 device bonded' : $pairedCount . ' devices bonded') ?></small>
-                    </div>
-                </div>
+                <?php else: ?>
+                <table id="bluetooth-table" class="table table-hover table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Adapter Name</th>
+                            <th>Status</th>
+                            <th>Paired Devices</th>
+                            <th>Date Extracted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($rows as $r): ?>
+                        <?php
+                            $pairedDevices = $r['paired_devices'] ?? [];
+                            $pairedCount = $r['paired_count'] ?? count($pairedDevices);
+                        ?>
+                        <tr class="bluetooth-parent-row" data-devices="<?= base64_encode(json_encode($pairedDevices)) ?>">
+                            <td>
+                                <i class="fab fa-bluetooth mr-1 text-primary"></i>
+                                <strong><?= htmlspecialchars($r['adapter_name'] ?? '—') ?></strong>
+                                <?php if (!empty($r['adapter_address'])): ?>
+                                <br><small class="text-muted"><?= htmlspecialchars($r['adapter_address']) ?></small>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="badge badge-<?= !empty($r['is_enabled']) ? 'success' : 'danger' ?>">
+                                    <i class="fas fa-<?= !empty($r['is_enabled']) ? 'check-circle' : 'times-circle' ?> mr-1"></i>
+                                    <?= !empty($r['is_enabled']) ? 'Enabled' : 'Disabled' ?>
+                                </span>
+                            </td>
+                            <td><span class="badge badge-warning"><?= $pairedCount ?></span></td>
+                            <td><?= !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—' ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php endif; ?>
             </div>
         </div>
-        <?php if (!empty($pairedDevices)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card card-primary card-outline shadow-sm">
-                    <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-list-ul mr-2"></i>Paired Devices for <em><?= htmlspecialchars($r['adapter_name'] ?? 'adapter') ?></em></h3>
-                        <span class="badge badge-primary float-right"><?= $pairedCount ?> device<?= $pairedCount !== 1 ? 's' : '' ?></span>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover table-sm mb-0">
-                                <thead class="thead-light">
-                                <tr>
-                                    <th>Device Name</th>
-                                    <th>Address</th>
-                                    <th>Type</th>
-                                    <th>Bond State</th>
-                                    <th>Alias</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($pairedDevices as $dev): ?>
-                                <tr>
-                                    <td><i class="fab fa-bluetooth mr-1 text-primary"></i><strong><?= htmlspecialchars($dev['bt_name'] ?? '—') ?></strong></td>
-                                    <td><code><?= htmlspecialchars($dev['bt_address'] ?? '—') ?></code></td>
-                                    <td><span class="badge badge-secondary"><?= htmlspecialchars($dev['bt_type'] ?? '—') ?></span></td>
-                                    <td><span class="badge badge-<?= $dev['bond_state'] === 'BONDED' ? 'success' : 'warning' ?>"><?= htmlspecialchars($dev['bond_state'] ?? '—') ?></span></td>
-                                    <td class="text-muted"><?= htmlspecialchars($dev['alias'] ?? '—') ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php else: ?>
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="alert alert-info text-center mb-0">
-                    <i class="fas fa-info-circle mr-2"></i>No paired devices found for this snapshot.
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-    <?php endforeach; endif; ?>
-    <div class="row"><div class="col-12 text-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
-    </div></section>
+    </section>
 </div>
+
+<script>
+$(document).ready(function() {
+    var table = $('#bluetooth-table').DataTable({
+        paging: false,
+        searching: false,
+        info: false,
+        order: []
+    });
+
+    $('#bluetooth-table tbody').on('click', 'tr.bluetooth-parent-row', function() {
+        var tr = $(this);
+        var row = table.row(tr);
+
+        if (row.child.isShown()) {
+            row.child.hide();
+            tr.removeClass('shown');
+        } else {
+            var raw = tr.data('devices');
+            var devices = raw ? JSON.parse(atob(raw)) : [];
+            var html = '';
+
+            if (devices.length > 0) {
+                html += '<div class="table-responsive"><table class="table table-hover table-sm mb-0 child-table">';
+                html += '<thead class="thead-light"><tr>';
+                html += '<th>Device Name</th><th>Address</th><th>Type</th><th>Bond State</th><th>Alias</th>';
+                html += '</tr></thead><tbody>';
+
+                $.each(devices, function(i, dev) {
+                    var bondBadge = dev.bond_state === 'BONDED' ? 'success' : 'warning';
+                    html += '<tr>';
+                    html += '<td><i class="fab fa-bluetooth mr-1 text-primary"></i><strong>' + $('<div>').text(dev.bt_name || '—').html() + '</strong></td>';
+                    html += '<td><code>' + $('<div>').text(dev.bt_address || '—').html() + '</code></td>';
+                    html += '<td><span class="badge badge-secondary">' + $('<div>').text(dev.bt_type || '—').html() + '</span></td>';
+                    html += '<td><span class="badge badge-' + bondBadge + '">' + $('<div>').text(dev.bond_state || '—').html() + '</span></td>';
+                    html += '<td class="text-muted">' + $('<div>').text(dev.alias || '—').html() + '</td>';
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+            } else {
+                html += '<div class="alert alert-info text-center mb-0"><i class="fas fa-info-circle mr-2"></i>No paired devices found for this snapshot.</div>';
+            }
+
+            row.child(html).show();
+            tr.addClass('shown');
+        }
+    });
+});
+</script>
+
 <?php include __DIR__ . '/_adv_style.php'; ?>

@@ -20,7 +20,7 @@
                     <p class="text-muted mt-2 mb-0">Manage your saved contacts and their communication history</p>
                 </div>
                 <div class="col-lg-4 col-md-6">
-                    <div class="float-right mt-2">
+                    <div class="float-right mt-2 mb-2">
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb bg-transparent p-0 mb-0">
                                 <li class="breadcrumb-item">
@@ -50,16 +50,24 @@
                                 Contact List
                                 <small class="text-muted ml-2">Showing <?php echo count($contacts_dump) ?> of <?php echo $totalContacts ?? 0 ?> contacts</small>
                             </h3>
-                            <div class="card-tools">
+                            <div class="card-tools my-2">
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
                                 </button>
                             </div>
                         </div>
                         <!-- /.card-header -->
+                        <div class="border-bottom px-3 py-2">
+                            <div class="input-group input-group-sm" style="max-width:350px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control table-search" placeholder="Search by name or phone..." data-table="table-sortable">
+                            </div>
+                        </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0 tabledump">
+                                <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                     <thead class="thead-light">
                                     <tr>
                                         <th width="30%">Contact</th>
@@ -155,21 +163,28 @@
                                                             <i class="fas fa-phone mr-1"></i> Calls
                                                         </a>
                                                         <button type="button"
-                                                                class="btn btn-outline-info view-contact-details"
-                                                                data-contact='<?= htmlspecialchars(json_encode([
-                                                                    'ID' => $contact['ID'] ?? $contact['counter'] ?? '',
-                                                                    'Name' => $contact['Name'] ?? 'Unknown',
-                                                                    'contact_id' => $contact['contact_id'] ?? ($contact['ID'] ?? $contact['counter'] ?? ''),
-                                                                    'phone_numbers' => [$contact['Number'] ?? 'N/A'],
-                                                                    'phone_count' => $contact['phone_count'] ?? 0,
-                                                                    'last_contacted' => $contact['last_contacted'] ?? null,
-                                                                    'is_favorite' => $contact['is_favorite'] ?? 0,
-                                                                    'contact_frequency' => $contact['contact_frequency'] ?? 0,
-                                                                    'device_id' => $contact['device_id'] ?? null
-                                                                ]), ENT_QUOTES, 'UTF-8') ?>'>
-                                                            <i class="fas fa-info-circle"></i> Details
-                                                        </button>
-                                                    </div>
+                                                                 class="btn btn-outline-info view-contact-details"
+                                                                 data-contact='<?= htmlspecialchars(json_encode([
+                                                                     'ID' => $contact['ID'] ?? $contact['counter'] ?? '',
+                                                                     'Name' => $contact['Name'] ?? 'Unknown',
+                                                                     'contact_id' => $contact['contact_id'] ?? ($contact['ID'] ?? $contact['counter'] ?? ''),
+                                                                     'phone_numbers' => [$contact['Number'] ?? 'N/A'],
+                                                                     'phone_count' => $contact['phone_count'] ?? 0,
+                                                                     'last_contacted' => $contact['last_contacted'] ?? null,
+                                                                     'is_favorite' => $contact['is_favorite'] ?? 0,
+                                                                     'contact_frequency' => $contact['contact_frequency'] ?? 0,
+                                                                     'device_id' => $contact['device_id'] ?? null
+                                                                 ]), ENT_QUOTES, 'UTF-8') ?>'>
+                                                             <i class="fas fa-info-circle"></i> Details
+                                                         </button>
+                                                         <button type="button"
+                                                                 class="btn btn-outline-danger delete-contact"
+                                                                 data-id="<?php echo $contact['ID'] ?? $contact['counter'] ?? ''; ?>"
+                                                                 data-name="<?php echo htmlspecialchars($contact['Name'] ?? 'Unknown'); ?>"
+                                                                 title="Delete contact">
+                                                             <i class="fas fa-trash"></i>
+                                                         </button>
+                                                     </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -182,7 +197,7 @@
                         <div class="card-footer">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="dataTables_info" role="status">
+                                    <div class="entry-info">
                                         Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
                                         to <?php echo min($currentPage * $perPage, $totalContacts ?? 0) ?>
                                         of <?php echo $totalContacts ?? 0 ?> entries
@@ -312,6 +327,9 @@
     .phone-numbers-list .phone-item:last-child {
         border-bottom: none;
     }
+    .table-sortable thead th { cursor: pointer; user-select: none; }
+    .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
+    .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
 </style>
 
 <script>
@@ -399,5 +417,76 @@
                 phoneNumbersContainer.innerHTML = '<p class="text-muted text-center">No phone numbers available</p>';
             }
         }
+
+        // Real-time table search
+        document.querySelector('.table-search')?.addEventListener('keyup', function() {
+            var keyword = this.value.toLowerCase();
+            var target = this.getAttribute('data-table');
+            document.querySelectorAll('.' + target + ' tbody tr').forEach(function(row) {
+                row.style.display = row.textContent.toLowerCase().indexOf(keyword) > -1 ? '' : 'none';
+            });
+        });
+
+        // Column sorting
+        document.querySelectorAll('.table-sortable thead th').forEach(function(th) {
+            th.addEventListener('click', function() {
+                var table = this.closest('table');
+                var tbody = table.querySelector('tbody');
+                var index = Array.prototype.indexOf.call(this.parentNode.children, this);
+                var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+                var asc = !this.classList.contains('sort-asc');
+                table.querySelectorAll('thead th').forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+                this.classList.toggle('sort-asc', asc);
+                this.classList.toggle('sort-desc', !asc);
+                rows.sort(function(a, b) {
+                    var aVal = (a.querySelectorAll('td')[index]?.textContent || '').trim();
+                    var bVal = (b.querySelectorAll('td')[index]?.textContent || '').trim();
+                    var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+                    if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+                    return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                });
+                rows.forEach(function(row) { tbody.appendChild(row); });
+            });
+        });
+
+        // Delete contact buttons
+        document.querySelectorAll('.delete-contact').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                Swal.fire({
+                    title: 'Delete Contact?',
+                    html: `Are you sure you want to delete <strong>${name}</strong>?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '<?= base_url('contacts/delete/') ?>' + id,
+                            type: 'POST',
+                            data: {
+                                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                            },
+                            dataType: 'json',
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire('Deleted!', response.message, 'success').then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error', response.message || 'Could not delete contact', 'error');
+                                }
+                            },
+                            error: function() {
+                                Swal.fire('Error', 'An error occurred while processing your request', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+        });
     });
 </script>

@@ -85,6 +85,13 @@ if (!function_exists('renderLogsTable')) {
             $timestamp = $log['Timestamps'] ?? time();
             $formattedTime = date('M d, Y, l H:i:s', $timestamp);
 
+            $fileCategoryHtml = '';
+            if (!empty($log['file_category'])) {
+                $catIcon = getFileCategoryIcon($log['file_category']);
+                $catLabel = ucfirst($log['file_category']);
+                $fileCategoryHtml = ' <i class="' . $catIcon . '" title="' . $catLabel . '"></i> ';
+            }
+
             $fileSizeHtml = '';
             if (!empty($log['file_size_formatted'])) {
                 $fileSizeHtml = ' <span class="badge badge-info">' . $log['file_size_formatted'] . '</span>';
@@ -95,7 +102,7 @@ if (!function_exists('renderLogsTable')) {
                     <td>' . ($log['counter'] ?? $log['id'] ?? 'N/A') . '</td>
                     <td>
                         <i class="' . $categoryIcon . ' mr-2"></i>
-                        ' . htmlspecialchars($log['Action'] ?? 'Unknown Action') . $fileSizeHtml . '
+                        ' . htmlspecialchars($log['Action'] ?? 'Unknown Action') . $fileCategoryHtml . $fileSizeHtml . '
                     </td>
                     <td>' . ucfirst($category) . '</td>
                     <td>' . $severityBadge . '</td>
@@ -213,6 +220,42 @@ if (!function_exists('getCategoryIcon')) {
         ];
 
         return $icons[$category] ?? 'fas fa-question-circle text-muted';
+    }
+}
+
+if (!function_exists('getFileCategoryIcon')) {
+    /**
+     * Gets icon for a file sub-category (SMS, Contacts, Calls, Files, Location, etc.)
+     *
+     * @param string $category
+     * @return string
+     */
+    function getFileCategoryIcon(string $category): string
+    {
+        $icons = [
+            'sms' => 'fas fa-comments text-danger',
+            'contacts' => 'fas fa-address-book text-warning',
+            'files' => 'fas fa-file text-info',
+            'calls' => 'fas fa-phone text-success',
+            'call_logs' => 'fas fa-phone text-success',
+            'location' => 'fas fa-map-marker-alt text-primary',
+            'apps' => 'fas fa-mobile-alt text-secondary',
+            'device' => 'fas fa-cogs text-secondary',
+            'device_context' => 'fas fa-info-circle text-secondary',
+            'context' => 'fas fa-info-circle text-secondary',
+            'network' => 'fas fa-wifi text-secondary',
+            'network_info' => 'fas fa-wifi text-secondary',
+            'accounts' => 'fas fa-user-circle text-secondary',
+            'calendar' => 'fas fa-calendar-alt text-secondary',
+            'app_usage' => 'fas fa-chart-bar text-secondary',
+            'usage' => 'fas fa-chart-bar text-secondary',
+            'notifications' => 'fas fa-bell text-secondary',
+            'bluetooth' => 'fab fa-bluetooth text-secondary',
+            'sensors' => 'fas fa-microchip text-secondary',
+            'sensor' => 'fas fa-microchip text-secondary',
+            'logs' => 'fas fa-clipboard-list text-secondary',
+        ];
+        return $icons[$category] ?? 'fas fa-file text-info';
     }
 }
 

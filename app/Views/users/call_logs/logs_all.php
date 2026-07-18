@@ -20,7 +20,7 @@
                         <p class="text-muted mt-2 mb-0">View and manage your call history</p>
                     </div>
                     <div class="col-lg-4 col-md-6">
-                        <div class="float-right mt-2">
+                                <div class="float-right mt-2 mb-2">
                             <div class="btn-group btn-group-toggle" data-toggle="buttons">
                                 <?php echo $call_urls; ?>
                             </div>
@@ -43,28 +43,37 @@
                                     Call History
                                     <small class="text-muted ml-2">Showing <?php echo count($call_logs_dump) ?> of <?php echo $totalCalls ?? 0 ?> calls</small>
                                 </h3>
-                                <div class="card-tools">
+                                <div class="card-tools my-2">
                                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                         <i class="fas fa-minus"></i>
                                     </button>
                                 </div>
                             </div>
                             <!-- /.card-header -->
+                            <div class="border-bottom px-3 py-2">
+                                <div class="input-group input-group-sm" style="max-width:350px;">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control table-search" placeholder="Search by contact, type or duration..." data-table="table-sortable">
+                                </div>
+                            </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
-                                    <table class="table table-hover table-striped mb-0 tabledump">
+                                    <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                         <thead class="thead-light">
                                         <tr>
                                             <th width="30%">Contact</th>
                                             <th width="15%">Type</th>
                                             <th width="25%">Time</th>
                                             <th width="30%">Duration</th>
+                                            <th width="10%">Actions</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <?php if (empty($call_logs_dump)): ?>
                                             <tr>
-                                                <td colspan="4" class="text-center py-5">
+                                                <td colspan="5" class="text-center py-5">
                                                     <div class="empty-state">
                                                         <i class="fas fa-phone-slash fa-3x text-muted mb-3"></i>
                                                         <h4>No call logs found</h4>
@@ -323,9 +332,17 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-call"
+                                                            data-id="<?php echo $call_log['ID'] ?? $call_log['counter'] ?? ''; ?>"
+                                                            data-name="<?php echo htmlspecialchars(strip_tags($name)); ?>"
+                                                            title="Delete call log entry">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
                                         <?php endif; ?>
                                         </tbody>
                                     </table>
@@ -335,11 +352,11 @@
                             <div class="card-footer">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="dataTables_info" role="status">
-                                            Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
-                                            to <?php echo min($currentPage * $perPage, $totalCalls ?? 0) ?>
-                                            of <?php echo $totalCalls ?? 0 ?> entries
-                                        </div>
+                                    <div class="entry-info">
+                                        Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
+                                        to <?php echo min($currentPage * $perPage, $totalCalls ?? 0) ?>
+                                        of <?php echo $totalCalls ?? 0 ?> entries
+                                    </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="float-right">
@@ -360,6 +377,67 @@
             <!-- /.container-fluid -->
         </section>
         <!-- /.content -->
+<script>
+$(document).ready(function() {
+    // Real-time table search
+    $('.table-search').on('keyup', function() {
+        var keyword = $(this).val().toLowerCase();
+        var table = $(this).data('table');
+        $('.' + table + ' tbody tr').each(function() {
+            var text = $(this).text().toLowerCase();
+            $(this).toggle(text.indexOf(keyword) > -1);
+        });
+    });
+
+    // Column sorting
+    $('.table-sortable thead th').on('click', function() {
+        var table = $(this).closest('table');
+        var tbody = table.find('tbody');
+        var index = $(this).index();
+        var rows = tbody.find('tr').toArray();
+        var asc = !$(this).hasClass('sort-asc');
+        table.find('thead th').removeClass('sort-asc sort-desc');
+        $(this).toggleClass('sort-asc', asc).toggleClass('sort-desc', !asc);
+        rows.sort(function(a, b) {
+            var aVal = $(a).find('td').eq(index).text().trim();
+            var bVal = $(b).find('td').eq(index).text().trim();
+            var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+            if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+            return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        });
+        tbody.append(rows);
+    });
+
+    $(document).on('click', '.delete-call', function() {
+        var id = $(this).data('id');
+        var name = $(this).data('name');
+        Swal.fire({
+            title: 'Delete Call Log Entry?',
+            text: 'Are you sure you want to delete the entry for "' + name + '"?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonText: 'Cancel',
+            confirmButtonText: '<i class="fas fa-trash"></i> Delete'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: base_url('call_logs/delete/' + id),
+                    type: 'POST',
+                    success: function(response) {
+                        Swal.fire('Deleted!', 'Call log entry has been deleted.', 'success').then(function() {
+                            location.reload();
+                        });
+                    },
+                    error: function() {
+                        Swal.fire('Error!', 'Failed to delete call log entry.', 'error');
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
     </div>
     <!-- /.content-wrapper -->
 
@@ -470,13 +548,13 @@
             transition: transform 0.2s ease;
         }
 
-        @media (max-width: 768px) {
-            .dataTables_info {
-                text-align: center;
-                margin-bottom: 1rem;
-            }
+    @media (max-width: 768px) {
+        .entry-info {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
 
-            .float-right {
+        .float-right {
                 float: none !important;
                 text-align: center;
             }
@@ -497,4 +575,7 @@
                 font-size: 14px;
             }
         }
+        .table-sortable thead th { cursor: pointer; user-select: none; }
+        .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
+        .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
     </style>

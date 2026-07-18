@@ -350,10 +350,25 @@ class Mod_Finder extends Model
      * Gets count of locations for user.
      *
      * @param int $user_id
+     * @param bool $hasCoordsOnly Only count entries with non-null coordinates
      * @return int
      */
-    public function get_count_Location(int $user_id): int
+    public function get_count_Location(int $user_id, bool $hasCoordsOnly = false): int
     {
+        if ($hasCoordsOnly) {
+            try {
+                return $this->db->table('tbl_location')
+                    ->where('owner_id', $user_id)
+                    ->where('latitude IS NOT NULL')
+                    ->where('longitude IS NOT NULL')
+                    ->where('latitude !=', '')
+                    ->where('longitude !=', '')
+                    ->countAllResults();
+            } catch (\Exception $e) {
+                log_message('error', 'get_count_Location (hasCoords) error: ' . $e->getMessage());
+                return 0;
+            }
+        }
         return $this->getCount('tbl_location', $user_id);
     }
 
@@ -931,18 +946,27 @@ class Mod_Finder extends Model
      *
      * @param int $user_id
      * @param int $perPage
+     * @param bool $hasCoordsOnly Only return entries with non-null coordinates
      * @return array
      */
-    public function get_locations(int $user_id, int $perPage = 25): array
+    public function get_locations(int $user_id, int $perPage = 25, bool $hasCoordsOnly = false): array
     {
         try {
             $builder = $this->db->table('tbl_location');
-            $total = $this->get_count_Location($user_id);
+            $total = $this->get_count_Location($user_id, $hasCoordsOnly);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $results = $builder->where('owner_id', $user_id)
-                ->orderBy('extracted_at', 'DESC')
+            $builder->where('owner_id', $user_id);
+
+            if ($hasCoordsOnly) {
+                $builder->where('latitude IS NOT NULL')
+                        ->where('longitude IS NOT NULL')
+                        ->where('latitude !=', '')
+                        ->where('longitude !=', '');
+            }
+
+            $results = $builder->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
@@ -3373,6 +3397,11 @@ class Mod_Finder extends Model
         return $this->db->table('tbl_captured_media')->where('owner_id', $userId)->countAllResults();
     }
 
+    public function get_count_SimConfig(int $userId): int
+    {
+        return $this->db->table('tbl_sim_configs')->where('owner_id', $userId)->countAllResults();
+    }
+
     public function get_captured_media_by_id(int $id, int $userId): ?array
     {
         return $this->db->table('tbl_captured_media')
@@ -3556,6 +3585,110 @@ class Mod_Finder extends Model
         } catch (\Exception $e) {
             log_message('error', 'get_top_time_sink_apps error: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    public function delete_call_log(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_logs')
+                ->where('counter', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_call_log error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_sms(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_sms')
+                ->where('counter', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_sms error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_contact(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_contacts')
+                ->where('counter', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_contact error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_file(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_device_files')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_file error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_location(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_location')
+                ->where('counter', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_location error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_activity(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_activity')
+                ->where('counter', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_activity error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_app_usage(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_app_usage')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_app_usage error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_notification(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_notifications')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_notification error: ' . $e->getMessage());
+            return false;
         }
     }
 }

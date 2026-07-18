@@ -772,6 +772,24 @@ class Account extends BaseClientController
             $log['SeverityIcon'] = $this->getSeverityIcon($log['action_severity'] ?? 'low');
             $log['DeviceIcon'] = $this->getDeviceIcon($log['device_type'] ?? 'unknown');
 
+            // Extract file upload metadata (file_category, file_size) from JSON values
+            $log['file_category'] = '';
+            $log['file_size_formatted'] = '';
+            if (in_array($log['action_category'] ?? '', ['file', 'upload']) || ($log['action_type'] ?? '') === 'file_upload') {
+                $meta = null;
+                if (!empty($log['new_values'])) {
+                    $meta = json_decode($log['new_values'], true);
+                }
+                if (!$meta && !empty($log['old_values'])) {
+                    $meta = json_decode($log['old_values'], true);
+                }
+                if (is_array($meta)) {
+                    $rawSize = $meta['file_size'] ?? $meta['size'] ?? $meta['fileSize'] ?? null;
+                    $log['file_size_formatted'] = formatFileSize($rawSize);
+                    $log['file_category'] = $meta['file_category'] ?? $meta['category'] ?? '';
+                }
+            }
+
             // Categorize by platform
             if ($platform === 'web') {
                 $log['Browser'] = $log['browser'] ?? ($log['user_agent'] ?? 'Unknown Browser');
@@ -837,25 +855,6 @@ class Account extends BaseClientController
 
         // Get grouped logs for summary view (All Activities tab)
         $groupedLogs = $this->modAccessLogs->get_grouped_access_logs($this->userId, 50);
-
-        // Enrich file upload logs with formatted file size
-        foreach ($fileLogs as &$fl) {
-            $rawSize = null;
-            if (!empty($fl['new_values'])) {
-                $nv = json_decode($fl['new_values'], true);
-                if (is_array($nv)) {
-                    $rawSize = $nv['file_size'] ?? $nv['size'] ?? $nv['fileSize'] ?? null;
-                }
-            }
-            if (!$rawSize && !empty($fl['old_values'])) {
-                $ov = json_decode($fl['old_values'], true);
-                if (is_array($ov)) {
-                    $rawSize = $ov['file_size'] ?? $ov['size'] ?? null;
-                }
-            }
-            $fl['file_size_formatted'] = formatFileSize($rawSize);
-        }
-        unset($fl);
 
         // Get last updated timestamp
         $lastUpdated = $this->getLastUpdated($displayLogs);

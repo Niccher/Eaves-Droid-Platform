@@ -217,4 +217,15 @@ class Files extends BaseClientController
             return ['data' => [], 'pager' => null, 'total' => 0];
         }
     }
+
+    public function delete($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_file((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'File deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete file.']);
+    }
 }

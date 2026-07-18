@@ -17,12 +17,12 @@ if (!empty($detail_mode)) {
             </div>
             <div class="row mb-3">
                 <div class="col-lg-8">
-                    <h1 class="h2 mb-0"><i class="fas fa-chart-pie text-info mr-2"></i><?= htmlspecialchars($appName) ?></h1>
+                    <h1 class="h2 mb-0"><i class="fas fa-chart-pie text-secondary mr-2"></i><?= htmlspecialchars($appName) ?></h1>
                     <p class="text-muted mt-1 mb-0"><code><?= htmlspecialchars($package_name) ?></code></p>
                 </div>
                 <div class="col-lg-4">
                     <?php if (!empty($app_detail)): ?>
-                    <div class="card card-info card-outline shadow-sm mb-0">
+                    <div class="card card-secondary card-outline shadow-sm mb-0">
                         <div class="card-body py-2 px-3">
                             <div class="row text-center">
                                 <div class="col-4 border-right">
@@ -88,7 +88,7 @@ if (!empty($detail_mode)) {
 
             <div class="row">
                 <div class="col-12">
-                    <div class="card card-info shadow-sm">
+                    <div class="card card-secondary shadow-sm">
                         <div class="card-header">
                             <h3 class="card-title"><i class="fas fa-list mr-2"></i>App Usage Intervals <small class="text-muted ml-2"><?= count($rows) ?> records</small></h3>
                         </div>
@@ -155,7 +155,7 @@ if (!empty($detail_mode)) {
             <?php if (!empty($sessions)): ?>
             <div class="row">
                 <div class="col-12">
-                    <div class="card card-outline card-info shadow-sm">
+                    <div class="card card-outline card-secondary shadow-sm">
                         <div class="card-header">
                             <h3 class="card-title"><i class="fas fa-stream mr-2"></i>Session Events <small class="text-muted ml-2">latest <?= count($sessions) ?></small></h3>
                         </div>
@@ -195,8 +195,8 @@ if (!empty($detail_mode)) {
             <div class="row mb-3 align-items-center">
                 <div class="col-lg-7">
                     <div class="d-flex align-items-center flex-wrap">
-                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-chart-pie text-info mr-2"></i>App Usage</h1>
-                        <span class="badge badge-info border p-2"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
+                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-chart-pie text-secondary mr-2"></i>App Usage</h1>
+                        <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
                     </div>
                     <p class="text-muted mt-1 mb-0">Foreground screen time per application</p>
                 </div>
@@ -207,7 +207,7 @@ if (!empty($detail_mode)) {
         </div>
     </section>
     <section class="content"><div class="container-fluid"><div class="row"><div class="col-12">
-        <div class="card card-info shadow-sm">
+        <div class="card card-secondary shadow-sm">
             <div class="card-header">
                 <h3 class="card-title"><i class="fas fa-mobile-alt mr-2"></i>App Usage Stats <small class="text-muted ml-2"><?= count($rows) ?> apps</small></h3>
                 <div class="card-tools"><button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button></div>

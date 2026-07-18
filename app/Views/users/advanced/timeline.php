@@ -426,7 +426,13 @@ $typeCounts = [
                             $title = 'Voice Call Logs ' . $badge;
                             $num = esc($ev['subtitle'] ?? '');
                             $durationSec = (int)($ev['meta2'] ?? 0);
-                            $durationFormatted = $durationSec ? gmdate('H:i:s', $durationSec) : '0s';
+                            if ($durationSec < 60) {
+                                $durationFormatted = $durationSec . 's';
+                            } elseif ($durationSec < 3600) {
+                                $durationFormatted = floor($durationSec / 60) . 'm ' . ($durationSec % 60) . 's';
+                            } else {
+                                $durationFormatted = floor($durationSec / 3600) . 'h ' . floor(($durationSec % 3600) / 60) . 'm';
+                            }
                             
                             $sub = 'Contact: <b>' . esc($ev['title'] ?? 'Unknown Caller') . '</b> (' . $num . ') <br><span class="badge badge-light border mt-1"><i class="fas fa-hourglass-half mr-1 text-muted"></i>Duration: ' . $durationFormatted . '</span>';
                             break;
@@ -467,7 +473,16 @@ $typeCounts = [
                             $appName = esc($ev['title'] ?? '');
                             $pkg = esc($ev['subtitle'] ?? '');
                             $ms = (int)($ev['meta2'] ?? 0);
-                            $durFormatted = $ms > 0 ? gmdate('H:i:s', (int)($ms/1000)) : 'Foreground Interval';
+                            $sec = (int)($ms / 1000);
+                            if ($ms <= 0) {
+                                $durFormatted = 'Foreground Interval';
+                            } elseif ($sec < 3600) {
+                                $durFormatted = floor($sec / 60) . 'm ' . ($sec % 60) . 's';
+                            } elseif ($sec < 86400) {
+                                $durFormatted = floor($sec / 3600) . 'h ' . floor(($sec % 3600) / 60) . 'm';
+                            } else {
+                                $durFormatted = floor($sec / 86400) . 'd ' . floor(($sec % 86400) / 3600) . 'h';
+                            }
                             
                             $sub = 'App: <b>' . $appName . '</b> <small class="text-muted">(' . $pkg . ')</small><br>' .
                                    '<span class="badge bg-purple mt-2"><i class="fas fa-stopwatch mr-1"></i>Active Duration: ' . $durFormatted . '</span>';
@@ -549,9 +564,9 @@ $typeCounts = [
                             $power = $sizeBytes > 0 ? floor(log($sizeBytes, 1024)) : 0;
                             $formattedSize = number_format($sizeBytes / pow(1024, $power), 2) . ' ' . $units[$power];
                             
-                            $sub = 'Payload Vector: <b>' . $catLabel . '</b><br>' .
-                                   '<span class="badge badge-success mt-2 mr-2"><i class="fas fa-file mr-1"></i>File: ' . $filename . '</span>' .
-                                   '<span class="badge badge-light border mt-2"><i class="fas fa-hdd mr-1 text-muted"></i>Size: ' . $formattedSize . '</span>';
+                            $sub = '<span class="badge badge-light border mr-2 mb-2"><i class="' . $icon . ' mr-1"></i>File category: ' . $catLabel . '</span><br>' .
+                                   '<span class="badge badge-success mt-1 mr-2"><i class="fas fa-file mr-1"></i>File: ' . $filename . '</span>' .
+                                   '<span class="badge badge-light border mt-1"><i class="fas fa-hdd mr-1 text-muted"></i>Size: ' . $formattedSize . '</span>';
                             break;
                             
                         default:

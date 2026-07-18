@@ -42,15 +42,23 @@
                                 Events
                                 <small class="text-muted ml-2">Showing <?php echo count($activity_dump) ?> entries</small>
                             </h3>
-                            <div class="card-tools">
+                            <div class="card-tools my-2">
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
                                 </button>
                             </div>
                         </div>
+                        <div class="border-bottom px-3 py-2">
+                            <div class="input-group input-group-sm" style="max-width:350px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control table-search" placeholder="Search by activity or network..." data-table="table-sortable">
+                            </div>
+                        </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0 tabledump">
+                                <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                     <thead class="thead-light">
                                     <tr>
                                         <th>Activity</th>
@@ -58,12 +66,13 @@
                                         <th>Screen</th>
                                         <th>Network</th>
                                         <th>Timestamp</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <?php if (empty($activity_dump)): ?>
                                         <tr>
-                                            <td colspan="5" class="text-center py-5">
+                                            <td colspan="6" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-running fa-3x text-muted mb-3"></i>
                                                     <h4>No activity logs</h4>
@@ -152,6 +161,13 @@
                                                     <div><?php echo $activityTime; ?></div>
                                                     <?php if (!empty($act['extracted_at'])): ?><small class="text-muted">Extracted: <?php echo $extractedAt; ?></small><?php endif; ?>
                                                 </td>
+                                                <td class="text-center align-middle">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-activity"
+                                                            data-id="<?= $act['counter'] ?? '' ?>"
+                                                            title="Delete activity entry">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
@@ -160,7 +176,7 @@
                             </div>
                         </div>
                         <div class="card-footer">
-                            <div class="float-right">
+                            <div class="float-right my-2">
                                 <?php if (isset($pager)): ?>
                                     <?= $pager->links('default', 'bootstrap5_full') ?>
                                 <?php endif; ?>
@@ -178,4 +194,72 @@
     .empty-state { padding: 3rem 1rem; text-align: center; }
     .empty-state i { opacity: 0.5; }
     .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-sortable thead th { cursor: pointer; user-select: none; }
+    .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
+    .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
 </style>
+<script>
+var base_url = function(path) { return '<?= base_url() ?>' + path; };
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('.table-search')?.addEventListener('keyup', function() {
+        var keyword = this.value.toLowerCase();
+        var target = this.getAttribute('data-table');
+        document.querySelectorAll('.' + target + ' tbody tr').forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().indexOf(keyword) > -1 ? '' : 'none';
+        });
+    });
+    document.querySelectorAll('.table-sortable thead th').forEach(function(th) {
+        th.addEventListener('click', function() {
+            var table = this.closest('table');
+            var tbody = table.querySelector('tbody');
+            var index = Array.prototype.indexOf.call(this.parentNode.children, this);
+            var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+            var asc = !this.classList.contains('sort-asc');
+            table.querySelectorAll('thead th').forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+            this.classList.toggle('sort-asc', asc);
+            this.classList.toggle('sort-desc', !asc);
+            rows.sort(function(a, b) {
+                var aVal = (a.querySelectorAll('td')[index]?.textContent || '').trim();
+                var bVal = (b.querySelectorAll('td')[index]?.textContent || '').trim();
+                var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+                if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+                return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            rows.forEach(function(row) { tbody.appendChild(row); });
+        });
+    });
+    document.querySelectorAll('.delete-activity').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var id = this.getAttribute('data-id');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Delete Activity Entry?',
+                    text: 'Are you sure you want to delete this activity entry?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-trash"></i> Delete'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        fetch(base_url('activities/delete/' + id), {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        }).then(function(r) { return r.json(); }).then(function(response) {
+                            if (response.success) {
+                                Swal.fire('Deleted!', 'Activity entry has been deleted.', 'success').then(function() {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to delete activity entry.', 'error');
+                            }
+                        }).catch(function() {
+                            Swal.fire('Error!', 'Failed to delete activity entry.', 'error');
+                        });
+                    }
+                });
+            }
+        });
+    });
+});
+</script>

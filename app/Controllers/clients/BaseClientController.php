@@ -78,6 +78,7 @@ class BaseClientController extends BaseController
             'total_sensors'    => $this->finderModel->get_count_Sensors($this->userId),
             'total_media'           => $this->finderModel->get_count_CapturedMedia($this->userId),
             'total_security_audit'  => $this->finderModel->get_count_SecurityAudit($this->userId),
+            'total_sim_configs'     => $this->finderModel->get_count_SimConfig($this->userId),
             'active_sms'       => $this->finderModel->get_sms_active($this->userId),
             'active_calls'     => $this->finderModel->get_calls_active($this->userId),
         ];
