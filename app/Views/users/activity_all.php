@@ -65,14 +65,16 @@
                                         <th>Battery</th>
                                         <th>Screen</th>
                                         <th>Network</th>
-                                        <th>Timestamp</th>
+                                        <th>Activity Time</th>
+                                        <th>Recorded At</th>
+                                        <th>Uploaded At</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <?php if (empty($activity_dump)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center py-5">
+                                            <td colspan="8" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-running fa-3x text-muted mb-3"></i>
                                                     <h4>No activity logs</h4>
@@ -84,7 +86,8 @@
                                         <?php foreach ($activity_dump as $act): ?>
                                             <?php
                                             $activityTime = !empty($act['activity_time']) ? format_timestamp_display((int)$act['activity_time']) : '—';
-                                            $extractedAt = !empty($act['extracted_at']) ? format_timestamp_display((int)$act['extracted_at']) : '—';
+                                            $recordedAt = !empty($act['extracted_at']) ? format_timestamp_display((int)$act['extracted_at']) : '—';
+                                            $uploadedAt = !empty($act['created_at']) ? date('M d, Y H:i', strtotime($act['created_at'])) : '—';
                                             $isInteractive = ($act['is_interactive'] ?? 0) == 1;
                                             $screenOn = ($act['screen_on'] ?? 0) == 1;
                                             $battery = $act['battery_level'] ?? null;
@@ -159,7 +162,23 @@
                                                 </td>
                                                 <td class="align-middle">
                                                     <div><?php echo $activityTime; ?></div>
-                                                    <?php if (!empty($act['extracted_at'])): ?><small class="text-muted">Extracted: <?php echo $extractedAt; ?></small><?php endif; ?>
+                                                    <small class="text-muted"><i class="fas fa-mobile-alt mr-1"></i>Device time</small>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <?php if (!empty($act['extracted_at'])): ?>
+                                                        <div><?php echo $recordedAt; ?></div>
+                                                        <small class="text-muted"><i class="fas fa-clock mr-1"></i>Background record</small>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <?php if (!empty($act['created_at'])): ?>
+                                                        <div><?php echo $uploadedAt; ?></div>
+                                                        <small class="text-muted"><i class="fas fa-cloud-upload-alt mr-1"></i>Server received</small>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td class="text-center align-middle">
                                                     <button type="button" class="btn btn-sm btn-outline-danger delete-activity"

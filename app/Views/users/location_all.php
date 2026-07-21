@@ -76,7 +76,8 @@
                                         <th>Movement</th>
                                         <th>Source</th>
                                         <th>Location Time</th>
-                                        <th>Extracted</th>
+                                        <th>Recorded At</th>
+                                        <th>Uploaded At</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -84,7 +85,7 @@
                                     <tbody>
                                     <?php if (empty($location_dump)): ?>
                                         <tr>
-                                            <td colspan="8" class="text-center py-5">
+                                            <td colspan="9" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
                                                     <h4>No locations recorded</h4>
@@ -100,7 +101,8 @@
                                             $hasCoords = $lat !== null && $lng !== null;
                                             $hasLocationTime = !empty($loc['location_time']);
                                             $locationTime = $hasLocationTime ? format_timestamp_display((int)$loc['location_time']) : (!empty($loc['extracted_at']) ? format_timestamp_display((int)$loc['extracted_at']) : '—');
-                                            $extractedAt = !empty($loc['extracted_at']) ? format_timestamp_display((int)$loc['extracted_at']) : '—';
+                                            $recordedAt = !empty($loc['extracted_at']) ? format_timestamp_display((int)$loc['extracted_at']) : '—';
+                                            $uploadedAt = !empty($loc['created_at']) ? date('M d, Y H:i', strtotime($loc['created_at'])) : '—';
                                             $statusClass = ($loc['status'] === 'success') ? 'badge-success' : 'badge-warning';
                                             $accuracy = isset($loc['accuracy']) ? (int)$loc['accuracy'] : null;
                                             $speed = isset($loc['speed']) ? round((float)$loc['speed'], 1) : null;
@@ -156,15 +158,23 @@
                                                 <td>
                                                     <?php if ($hasLocationTime): ?>
                                                         <div><?php echo format_timestamp_display((int)$loc['location_time']); ?></div>
-                                                        <small class="text-muted"><i class="fas fa-mobile-alt mr-1"></i>Device time</small>
+                                                        <small class="text-muted"><i class="fas fa-mobile-alt mr-1"></i>Device GPS fix</small>
                                                     <?php else: ?>
                                                         <span class="text-muted">—</span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <?php if (!empty($loc['extracted_at'])): ?>
-                                                        <div><?php echo $extractedAt; ?></div>
-                                                        <small class="text-muted"><i class="fas fa-cloud-upload-alt mr-1"></i>Uploaded</small>
+                                                        <div><?php echo $recordedAt; ?></div>
+                                                        <small class="text-muted"><i class="fas fa-clock mr-1"></i>Background record</small>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($loc['created_at'])): ?>
+                                                        <div><?php echo $uploadedAt; ?></div>
+                                                        <small class="text-muted"><i class="fas fa-cloud-upload-alt mr-1"></i>Server received</small>
                                                     <?php else: ?>
                                                         <span class="text-muted">—</span>
                                                     <?php endif; ?>
