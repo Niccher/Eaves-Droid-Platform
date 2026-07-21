@@ -5,16 +5,44 @@
                 <div class="col-sm-6">
                     <h1><i class="fas fa-smile text-warning mr-2"></i> Sentiment & Relationship Health</h1>
                 </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="<?= base_url('home') ?>">Home</a></li>
-                        <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>">Analysis</a></li>
-                        <li class="breadcrumb-item active">Sentiment</li>
-                    </ol>
+                <div class="col-sm-6 text-right">
+                    <a class="btn btn-outline-info btn-sm" href="<?= base_url('analysis') ?>"><i class="fas fa-arrow-left mr-1"></i> Back to Analysis</a>
                 </div>
             </div>
         </div>
     </section>
+
+<?php if (isset($ml_insight) && !empty($ml_insight['insights'])): ?>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-outline card-info shadow-sm">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-brain mr-2"></i> PHP-ML Intelligence</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <span class="badge badge-info p-2"><?= $ml_insight['algorithm'] ?></span>
+                                <p class="text-muted mt-2 mb-0"><small><?= $ml_insight['data_source'] ?></small></p>
+                            </div>
+                            <div class="col-md-8">
+                                <p><?= $ml_insight['description'] ?></p>
+                                <ul class="mb-0">
+                                    <?php foreach ($ml_insight['insights'] as $insight): ?>
+                                    <li><?= $insight ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
 
     <section class="content">
         <div class="container-fluid">
@@ -23,11 +51,14 @@
                 <div class="col-md-12">
                     <div class="card card-outline card-warning shadow-sm">
                         <div class="card-header border-0">
-                            <h3 class="card-title">Top Contact Sentiment Profile</h3>
+                            <h3 class="card-title">
+                                Top Contact Sentiment Profile
+                                <small class="text-muted ml-2">Showing <?= count($sentiment) ?> of <?= $total ?></small>
+                            </h3>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-striped table-valign-middle">
+                                <table class="table table-hover table-bordered table-striped table-valign-middle">
                                     <thead>
                                         <tr>
                                             <th>Contact Address</th>
@@ -78,9 +109,26 @@
                                 </table>
                             </div>
                         </div>
+                        <?php if (isset($pager_links)): ?>
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="entry-info">
+                                        Showing <?= (($currentPage-1)*$perPage+1) ?> to <?= min($currentPage*$perPage, $total) ?> of <?= $total ?> entries
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="float-right">
+                                        <?= $pager_links ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 </div>
+

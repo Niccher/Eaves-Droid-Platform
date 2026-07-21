@@ -5,16 +5,44 @@
                 <div class="col-sm-6">
                     <h1><i class="fas fa-hdd text-info mr-2"></i> Media & Storage Forensics</h1>
                 </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="<?= base_url('home') ?>">Home</a></li>
-                        <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>">Analysis</a></li>
-                        <li class="breadcrumb-item active">Storage</li>
-                    </ol>
+                <div class="col-sm-6 text-right">
+                    <a class="btn btn-outline-info btn-sm" href="<?= base_url('analysis') ?>"><i class="fas fa-arrow-left mr-1"></i> Back to Analysis</a>
                 </div>
             </div>
         </div>
     </section>
+
+<?php if (isset($ml_insight) && !empty($ml_insight['insights'])): ?>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-outline card-info shadow-sm">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-brain mr-2"></i> PHP-ML Intelligence</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <span class="badge badge-info p-2"><?= $ml_insight['algorithm'] ?></span>
+                                <p class="text-muted mt-2 mb-0"><small><?= $ml_insight['data_source'] ?></small></p>
+                            </div>
+                            <div class="col-md-8">
+                                <p><?= $ml_insight['description'] ?></p>
+                                <ul class="mb-0">
+                                    <?php foreach ($ml_insight['insights'] as $insight): ?>
+                                    <li><?= $insight ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
 
     <section class="content">
         <div class="container-fluid">
@@ -97,39 +125,84 @@
                 <div class="col-md-12">
                     <div class="card shadow-sm">
                         <div class="card-header border-0 bg-light">
-                            <h3 class="card-title text-danger"><i class="fas fa-weight-hanging mr-2"></i> Largest Space Hogs</h3>
+                            <h3 class="card-title text-danger"><i class="fas fa-weight-hanging mr-2"></i> Largest Space Hogs
+                                <small class="text-muted ml-2">Showing <?= count($displayFiles) ?> of <?= $total ?></small>
+                            </h3>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-valign-middle">
+                                <table class="table table-hover table-bordered table-valign-middle">
                                     <thead class="bg-light">
                                         <tr>
-                                            <th>File Name</th>
-                                            <th>File Path</th>
-                                            <th class="text-right">Size (MB)</th>
+                                            <th>File</th>
+                                            <th>Type</th>
+                                            <th class="text-right">Size</th>
+                                            <th>Last Modified</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php 
-                                        $displayFiles = !empty($storage['large_hogs']) ? $storage['large_hogs'] : $storage['top_files'];
-                                        foreach (array_slice($displayFiles, 0, 10) as $file): ?>
+                                        $displayFiles = $storage['display_files'] ?? [];
+                                        $typeLabels = [
+                                            'jpg' => 'Image', 'jpeg' => 'Image', 'png' => 'Image', 'gif' => 'Image',
+                                            'bmp' => 'Image', 'webp' => 'Image', 'svg' => 'Image',
+                                            'mp4' => 'Video', 'avi' => 'Video', 'mkv' => 'Video', 'mov' => 'Video',
+                                            'wmv' => 'Video', 'flv' => 'Video', '3gp' => 'Video',
+                                            'mp3' => 'Audio', 'wav' => 'Audio', 'aac' => 'Audio', 'flac' => 'Audio',
+                                            'ogg' => 'Audio', 'wma' => 'Audio', 'm4a' => 'Audio',
+                                            'pdf' => 'PDF', 'doc' => 'Word', 'docx' => 'Word', 'xls' => 'Excel',
+                                            'xlsx' => 'Excel', 'ppt' => 'PowerPoint', 'pptx' => 'PowerPoint',
+                                            'txt' => 'Text', 'csv' => 'CSV',
+                                            'apk' => 'App', 'zip' => 'Archive', 'rar' => 'Archive', '7z' => 'Archive',
+                                            'tar' => 'Archive', 'gz' => 'Archive', 'bz2' => 'Archive',
+                                            'html' => 'Code', 'php' => 'Code', 'js' => 'Code', 'css' => 'Code',
+                                            'xml' => 'Code', 'json' => 'Code', 'sql' => 'Code',
+                                        ];
+                                        $typeColors = [
+                                            'Image' => 'info', 'Video' => 'danger', 'Audio' => 'success',
+                                            'PDF' => 'secondary', 'Word' => 'primary', 'Excel' => 'success',
+                                            'PowerPoint' => 'warning', 'Text' => 'light', 'CSV' => 'info',
+                                            'App' => 'dark', 'Archive' => 'warning', 'Code' => 'secondary',
+                                        ];
+                                        foreach ($displayFiles as $file):
+                                            $ext = strtolower($file['extension'] ?? '');
+                                            $label = $typeLabels[$ext] ?? strtoupper($ext) ?: 'Other';
+                                            $color = $typeColors[$label] ?? 'secondary';
+                                        ?>
                                         <tr>
                                             <td>
-                                                <i class="fas fa-file-alt text-muted mr-2"></i>
-                                                <b><?= esc($file['name']) ?></b>
+                                                <b><?= esc($file['name']) ?></b><br>
+                                                <i><small class="text-muted"><?= esc($file['path']) ?></small></i>
                                             </td>
-                                            <td><small class="text-muted"><?= esc($file['path']) ?></small></td>
+                                            <td><span class="badge badge-<?= $color ?>"><?= $label ?></span></td>
                                             <td class="text-right">
                                                 <span class="badge badge-warning p-2" style="font-size: 0.9em;">
-                                                    <?= number_format($file['size'] / (1024 * 1024), 2) ?> MB
+                                                    <?= $file['formatted_size'] ?: number_format($file['size'] / (1024 * 1024), 2) . ' MB' ?>
                                                 </span>
                                             </td>
+                                            <td><small class="text-muted"><?= $file['formatted_date'] ?: 'N/A' ?></small></td>
                                         </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
+                        <?php if (isset($pager_links)): ?>
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="entry-info">
+                                        Showing <?= (($currentPage-1)*$perPage+1) ?> to <?= min($currentPage*$perPage, $total) ?> of <?= $total ?> entries
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="float-right">
+                                        <?= $pager_links ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

@@ -81,7 +81,7 @@ $lastUsed = $summary['last_used_display'] ?? '—';
                                         <th>#</th>
                                         <th><i class="fas fa-stopwatch mr-1"></i>Screen Time</th>
                                         <th><i class="fas fa-history mr-1"></i>Last Used</th>
-                                        <th><i class="fas fa-door-open mr-1"></i>Times Opened</th>
+                                        <th><i class="fas fa-moon mr-1"></i>Background Time</th>
                                         <th><i class="fas fa-mobile-alt mr-1"></i>Device</th>
                                         <th><i class="fas fa-clock mr-1"></i>Extracted</th>
                                         <th class="text-center">Actions</th>
@@ -103,7 +103,16 @@ $lastUsed = $summary['last_used_display'] ?? '—';
                                                 <small class="text-muted d-block"><?= number_format($ms) ?> ms</small>
                                             </td>
                                             <td><small><?= esc($r['last_used_display'] ?? '—') ?></small></td>
-                                            <td><?= (int) ($r['times_opened'] ?? 0) ?></td>
+                                            <td><?php
+                                                $bgMs = (int) ($r['background_time_ms'] ?? 0);
+                                                if ($bgMs >= 3600000):
+                                                    echo round($bgMs / 3600000, 1) . ' <small>h</small>';
+                                                elseif ($bgMs >= 60000):
+                                                    echo round($bgMs / 60000, 1) . ' <small>min</small>';
+                                                else:
+                                                    echo round($bgMs / 1000, 1) . ' <small>s</small>';
+                                                endif;
+                                            ?></td>
                                             <td><small class="text-muted"><?= htmlspecialchars($r['device_id'] ?? '—') ?></small></td>
                                             <td><i class="fas fa-clock text-muted mr-1"></i><small><?= esc($r['extracted_display'] ?? '—') ?></small></td>
                                             <td class="text-center">

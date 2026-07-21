@@ -172,13 +172,17 @@ class Advanced extends BaseClientController
             )
         );
 
+        // Build background_time map from session events per app_usage_id
+        $bgTimeMap = $this->computeBackgroundTimeFromSessions($sessions);
+
         $summary['last_used_display'] = $this->formatMsDatetime($summary['last_time_used'] ?? null, 'M d, Y, l H:i');
 
         $appDetail = $this->finderModel->get_app_detail_by_package($this->userId, $packageName);
 
         $data = array_merge($this->commonData('app_usage', 'App Usage — ' . ($summary['app_name'] ?? $packageName)), [
             'rows' => $this->enrichAppUsageDetailRows(
-                $this->finderModel->get_app_usage_for_package($this->userId, $packageName, self::DETAIL_PER_PAGE)
+                $this->finderModel->get_app_usage_for_package($this->userId, $packageName, self::DETAIL_PER_PAGE),
+                $bgTimeMap
             ),
             'total' => $this->finderModel->get_count_app_usage_for_package($this->userId, $packageName),
             'pager' => $this->finderModel->getPager(),
@@ -333,24 +337,82 @@ class Advanced extends BaseClientController
         return $rows;
     }
 
-    private function enrichAppUsageDetailRows(array $rows): array
+    /**
+     * Compute total background time per app_usage_id from session events.
+     *
+     * Pairs consecutive session events: background time is accumulated
+     * between a 'paused'/'closed' event and the next 'opened' event.
+     *
+     * @param array $sessions Enriched session rows (must contain app_usage_id, event_type, timestamp)
+     * @return array<int, int> Map of app_usage_id → total background time in ms
+     */
+    private function computeBackgroundTimeFromSessions(array $sessions): array
+    {
+        // Group sessions by app_usage_id
+        $grouped = [];
+        foreach ($sessions as $s) {
+            $id = (int) ($s['app_usage_id'] ?? 0);
+            if ($id <= 0) continue;
+            $grouped[$id][] = $s;
+        }
+
+        $bgMap = [];
+        foreach ($grouped as $id => $events) {
+            // Sort by timestamp ascending
+            usort($events, fn($a, $b) => ((int)($a['timestamp'] ?? 0)) <=> ((int)($b['timestamp'] ?? 0)));
+
+            $bgMs = 0;
+            $lastBgEventTs = null; // Timestamp of last 'paused' or 'closed'
+            foreach ($events as $ev) {
+                $type = strtolower($ev['event_type'] ?? '');
+                $ts   = (int) ($ev['timestamp'] ?? 0);
+                if ($ts <= 0) continue;
+
+                if (in_array($type, ['paused', 'closed'])) {
+                    $lastBgEventTs = $ts;
+                } elseif ($type === 'opened' && $lastBgEventTs !== null) {
+                    $bgMs += ($ts - $lastBgEventTs);
+                    $lastBgEventTs = null;
+                }
+            }
+            if ($bgMs > 0) {
+                $bgMap[$id] = $bgMs;
+            }
+        }
+
+        return $bgMap;
+    }
+
+    private function enrichAppUsageDetailRows(array $rows, array $bgTimeMap = []): array
     {
         $count = count($rows);
         for ($i = 0; $i < $count; $i++) {
             $rows[$i]['last_used_display'] = $this->formatMsDatetime($rows[$i]['last_time_used'] ?? null, 'M d, Y, l H:i');
             $rows[$i]['extracted_display'] = $this->formatMsDatetime($rows[$i]['extracted_at'] ?? null, 'M d, Y, l H:i');
 
-            if ($i < $count - 1) {
-                $currentMs = (int) ($rows[$i]['foreground_time_ms'] ?? 0);
-                $prevMs = (int) ($rows[$i + 1]['foreground_time_ms'] ?? 0);
+            $bgFromSessions = $bgTimeMap[(int)($rows[$i]['id'] ?? 0)] ?? 0;
 
-                $diffMs = $currentMs - $prevMs;
-                if ($diffMs < 0) {
-                    $diffMs = $currentMs;
+            if ($i < $count - 1) {
+                $currentFg = (int) ($rows[$i]['foreground_time_ms'] ?? 0);
+                $prevFg    = (int) ($rows[$i + 1]['foreground_time_ms'] ?? 0);
+                $fgDelta   = $currentFg - $prevFg;
+                if ($fgDelta < 0) $fgDelta = $currentFg;
+
+                $rows[$i]['time_taken_ms'] = $fgDelta;
+
+                $currentExt = (int) ($rows[$i]['extracted_at'] ?? 0);
+                $prevExt    = (int) ($rows[$i + 1]['extracted_at'] ?? 0);
+
+                // Use absolute wall-clock delta regardless of row order
+                if ($currentExt > 0 && $prevExt > 0) {
+                    $wallDelta = abs($currentExt - $prevExt);
+                    $rows[$i]['background_time_ms'] = max(0, $wallDelta - $fgDelta);
+                } else {
+                    $rows[$i]['background_time_ms'] = $bgFromSessions;
                 }
-                $rows[$i]['time_taken_ms'] = $diffMs;
             } else {
                 $rows[$i]['time_taken_ms'] = null;
+                $rows[$i]['background_time_ms'] = $bgFromSessions;
             }
         }
 

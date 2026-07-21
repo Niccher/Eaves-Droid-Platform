@@ -588,6 +588,7 @@ $routes->group('', [
          */
         $routes->get('/', 'Correlation::advanced', ['as' => 'analysis-dashboard']);
         $routes->get('(:num)', 'Correlation::index/$1');
+        $routes->get('refresh-ml', 'Correlation::refresh_ml', ['as' => 'analysis-refresh-ml']);
 
         /**
          * Detailed SMS Analysis.

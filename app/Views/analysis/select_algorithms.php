@@ -89,7 +89,7 @@
                         <div class="card-header" id="heading-<?= $catKey ?>" style="cursor:pointer;"
                              data-toggle="collapse"
                              data-target="#collapse-<?= $catKey ?>"
-                             aria-expanded="false"
+                             aria-expanded="true"
                              aria-controls="collapse-<?= $catKey ?>">
                             <h3 class="card-title mb-0 d-flex align-items-center w-100">
                                 <i class="<?= $cat['icon'] ?> text-<?= $cat['color'] ?> mr-2"></i>
@@ -103,7 +103,7 @@
                             </h3>
                         </div>
 
-                        <div id="collapse-<?= $catKey ?>" class="collapse"
+                        <div id="collapse-<?= $catKey ?>" class="collapse show"
                              aria-labelledby="heading-<?= $catKey ?>">
                             <div class="card-body p-0">
                                 <div class="table-responsive">

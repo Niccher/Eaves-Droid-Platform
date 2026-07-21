@@ -76,7 +76,6 @@
                                         <th>Movement</th>
                                         <th>Source</th>
                                         <th>Location Time</th>
-                                        <th>Recorded At</th>
                                         <th>Uploaded At</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -85,7 +84,7 @@
                                     <tbody>
                                     <?php if (empty($location_dump)): ?>
                                         <tr>
-                                            <td colspan="9" class="text-center py-5">
+                                            <td colspan="8" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
                                                     <h4>No locations recorded</h4>
@@ -159,14 +158,6 @@
                                                     <?php if ($hasLocationTime): ?>
                                                         <div><?php echo format_timestamp_display((int)$loc['location_time']); ?></div>
                                                         <small class="text-muted"><i class="fas fa-mobile-alt mr-1"></i>Device GPS fix</small>
-                                                    <?php else: ?>
-                                                        <span class="text-muted">—</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <?php if (!empty($loc['extracted_at'])): ?>
-                                                        <div><?php echo $recordedAt; ?></div>
-                                                        <small class="text-muted"><i class="fas fa-clock mr-1"></i>Background record</small>
                                                     <?php else: ?>
                                                         <span class="text-muted">—</span>
                                                     <?php endif; ?>

@@ -1675,33 +1675,24 @@ class Mod_Finder extends Model
     {
         $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
 
-        // Basic keywords for SQL LIKE - simple ones that don't depend on decoding if possible
-        // But since many might be encoded, we still might need to fetch some.
-        // Let's try to count by sender ID first in SQL as it\'s 100% reliable and fast.
-
-        $builder = $this->db->table('tbl_sms');
-        $total = $builder->where('owner_id', $userId)->countAllResults();
-
-        // Optimized counting: Fetch everything but avoid heavy processing if we can
-        // For truly high performance, we'd need a categorized column in the DB.
-        // For now, let's optimize the loop and base64 check.
+        $total = $this->db->table('tbl_sms')->where('owner_id', $userId)->countAllResults();
 
         $all_sms = $this->db->table('tbl_sms')
             ->select('address, body')
             ->where('owner_id', $userId)
+            ->orderBy('sms_date', 'DESC')
             ->get()
             ->getResultArray();
 
         $counts = [
-            'financial' => 0,
-            'otp' => 0,
-            'promo' => 0,
-            'utility' => 0,
-            'service' => 0,
-            'malicious' => 0,
-            'personal' => 0,
-            'total' => $total
+            'financial' => 0, 'otp' => 0, 'promo' => 0,
+            'utility' => 0, 'service' => 0, 'malicious' => 0,
+            'personal' => 0, 'total' => $total
         ];
+
+        if ($total === 0) {
+            return $counts;
+        }
 
         $fin_keys = ['bank', 'mpesa', 'equity', 'kcb', 'transaction', 'kes', 'paid', 'received', 'balance', 'credited', 'debited', 'reversal'];
         $otp_keys = ['code', 'otp', 'verification', 'login', 'password reset'];
@@ -1710,101 +1701,67 @@ class Mod_Finder extends Model
         $serv_keys = ['uber', 'bolt', 'jumia', 'dhl', 'courier', 'delivery', 'ride', 'food'];
         $mal_keys = ['won lottery', 'congratulations you have won', 'prize', 'kshs 50,000'];
 
+        $keywordMap = [
+            'malicious' => $mal_keys,
+            'otp' => $otp_keys,
+            'financial' => array_merge($fin_senders, $fin_keys),
+            'utility' => $util_keys,
+            'service' => $serv_keys,
+            'promo' => $promo_keys,
+        ];
+
+        $rawBodies = [];
         foreach ($all_sms as $sms) {
-            $addr = strtolower($sms['address']);
+            $body = $this->decode_sms_body($sms['body']);
+            $rawBodies[] = [
+                'address' => strtolower($sms['address']),
+                'body' => strtolower($body),
+            ];
+        }
 
-            // Fast Path: Financial Sender ID
-            if (in_array($addr, $fin_senders)) {
-                $counts['financial']++;
-                continue;
+        $autoLabels = Mod_ML_Analyzer::autoLabelSms($rawBodies, $keywordMap);
+
+        if ($total < 20) {
+            foreach ($autoLabels as $label) {
+                if (isset($counts[$label])) $counts[$label]++;
+            }
+            return $counts;
+        }
+
+        $mlLimit = 500;
+        $useMl = $total <= $mlLimit;
+        $mlIndices = $useMl ? range(0, $total - 1) : array_rand($rawBodies, $mlLimit);
+
+        try {
+            $mlTexts = array_map(fn($i) => $rawBodies[$i]['body'], $mlIndices);
+            [$vectors, $vectorizer] = Mod_ML_Analyzer::vectorize($mlTexts, 200);
+
+            $trainSamples = [];
+            $trainLabels = [];
+            foreach ($mlIndices as $pos => $origIdx) {
+                $trainSamples[] = $vectors[$pos];
+                $trainLabels[] = $autoLabels[$origIdx];
             }
 
-            $raw_body = $sms['body'];
-            $body_text = $raw_body;
+            $classifier = Mod_ML_Analyzer::trainNaiveBayes($trainSamples, $trainLabels);
+            $predictions = $classifier->predict($vectors);
 
-            // Only decode if it looks like base64 or if it's long enough to be an encoded msg
-            if (strlen($raw_body) > 4 && preg_match('/^[a-zA-Z0-9\/\+=]+$/', $raw_body)) {
-                $decoded = base64_decode($raw_body, true);
-                if ($decoded !== false && mb_check_encoding($decoded, 'UTF-8')) {
-                    $body_text = $decoded;
-                }
+            foreach ($mlIndices as $pos => $origIdx) {
+                $label = $predictions[$pos];
+                if (isset($counts[$label])) $counts[$label]++;
             }
 
-            $body = strtolower($body_text);
-            $addr_len = strlen($addr);
-            $categorized = false;
-
-            // Malicious
-            foreach ($mal_keys as $key) {
-                if (strpos($body, $key) !== false) {
-                    $counts['malicious']++;
-                    $categorized = true;
-                    break;
-                }
-            }
-            if ($categorized)
-                continue;
-
-            // OTP
-            foreach ($otp_keys as $key) {
-                if (strpos($body, $key) !== false) {
-                    $counts['otp']++;
-                    $categorized = true;
-                    break;
-                }
-            }
-            if ($categorized)
-                continue;
-
-            // Financial Keywords
-            if ($addr_len < 10) {
-                foreach ($fin_keys as $key) {
-                    if (strpos($body, $key) !== false) {
-                        $counts['financial']++;
-                        $categorized = true;
-                        break;
+            if (!$useMl) {
+                foreach ($autoLabels as $i => $label) {
+                    if (!in_array($i, $mlIndices, true)) {
+                        if (isset($counts[$label])) $counts[$label]++;
                     }
                 }
             }
-            if ($categorized)
-                continue;
-
-            // Utility
-            foreach ($util_keys as $key) {
-                if (strpos($body, $key) !== false) {
-                    $counts['utility']++;
-                    $categorized = true;
-                    break;
-                }
-            }
-            if ($categorized)
-                continue;
-
-            // Service
-            foreach ($serv_keys as $key) {
-                if (strpos($body, $key) !== false) {
-                    $counts['service']++;
-                    $categorized = true;
-                    break;
-                }
-            }
-            if ($categorized)
-                continue;
-
-            // Promo
-            if ($addr_len < 10) {
-                $counts['promo']++;
-            } else {
-                foreach ($promo_keys as $key) {
-                    if (strpos($body, $key) !== false) {
-                        $counts['promo']++;
-                        $categorized = true;
-                        break;
-                    }
-                }
-                if (!$categorized) {
-                    $counts['personal']++;
-                }
+        } catch (\Exception $e) {
+            log_message('error', 'NaiveBayes SMS categorization failed: ' . $e->getMessage());
+            foreach ($autoLabels as $label) {
+                if (isset($counts[$label])) $counts[$label]++;
             }
         }
 
@@ -3097,7 +3054,12 @@ class Mod_Finder extends Model
                 $stats['large_hogs'][] = [
                     'name' => $f['name'],
                     'size' => $size,
-                    'path' => $path
+                    'path' => $path,
+                    'extension' => $f['extension'] ?? null,
+                    'formatted_size' => $f['formatted_size'] ?? null,
+                    'formatted_date' => $f['formatted_date'] ?? null,
+                    'last_modified' => $f['last_modified'] ?? null,
+                    'category' => $f['category'] ?? null,
                 ];
             }
 
@@ -3105,12 +3067,17 @@ class Mod_Finder extends Model
             $stats['top_files'][] = [
                 'name' => $f['name'],
                 'size' => $size,
-                'path' => $path
+                'path' => $path,
+                'extension' => $f['extension'] ?? null,
+                'formatted_size' => $f['formatted_size'] ?? null,
+                'formatted_date' => $f['formatted_date'] ?? null,
+                'last_modified' => $f['last_modified'] ?? null,
+                'category' => $f['category'] ?? null,
             ];
         }
 
         usort($stats['top_files'], fn($a, $b) => $b['size'] <=> $a['size']);
-        $stats['top_files'] = array_slice($stats['top_files'], 0, 10);
+        $stats['top_files'] = array_slice($stats['top_files'], 0, 50);
 
         usort($stats['large_hogs'], fn($a, $b) => $b['size'] <=> $a['size']);
 
@@ -3124,39 +3091,61 @@ class Mod_Finder extends Model
         $sms = $this->db->table('tbl_sms')
             ->select('address, body, sms_type')
             ->where('owner_id', $userId)
-            ->where('type_code !=', 1) // Exclude financial
+            ->where('type_code !=', 1)
             ->orderBy('sms_date', 'DESC')
             ->limit(1000)
             ->get()
             ->getResultArray();
 
-        $sentiment = [];
+        $totalMessages = count($sms);
+        if ($totalMessages < 5) {
+            return [];
+        }
+
         $posWords = ['love', 'good', 'great', 'happy', 'thanks', 'thank', 'awesome', 'best', 'well', 'congrats', 'nice'];
         $negWords = ['hate', 'bad', 'sorry', 'sad', 'angry', 'worst', 'fail', 'stop', 'late', 'wrong', 'issue', 'problem'];
 
-        foreach ($sms as $s) {
-            $addr = $s['address'];
-            $body = strtolower($this->decode_sms_body($s['body']));
+        [$vectors, $vectorizer] = Mod_ML_Analyzer::vectorizeSms($sms, 300);
+        $vocab = $vectorizer->getVocabulary();
 
+        $k = $totalMessages < 30 ? 2 : 3;
+        $clusters = Mod_ML_Analyzer::kmeans($vectors, $k);
+
+        $clusterLabels = Mod_ML_Analyzer::labelClustersByKeywords($clusters, $sms, $posWords, $negWords);
+        if (count(array_unique($clusterLabels)) < 2) {
+            $clusterLabels = Mod_ML_Analyzer::labelClustersByCentroid(
+                $clusters, $vectors, $posWords, $negWords, $vocab
+            );
+        }
+
+        $msgSentiment = [];
+        foreach ($clusters as $ci => $points) {
+            $label = $clusterLabels[$ci] ?? 'neutral';
+            foreach (array_keys($points) as $idx) {
+                $msgSentiment[$idx] = $label;
+            }
+        }
+
+        $sentiment = [];
+        foreach ($sms as $i => $s) {
+            $addr = $s['address'];
             if (!isset($sentiment[$addr])) {
                 $sentiment[$addr] = [
                     'positive' => 0,
                     'negative' => 0,
                     'total' => 0,
-                    'name' => $addr // Default to address
+                    'name' => $addr,
                 ];
             }
-
-            foreach ($posWords as $w)
-                if (strpos($body, $w) !== false)
-                    $sentiment[$addr]['positive']++;
-            foreach ($negWords as $w)
-                if (strpos($body, $w) !== false)
-                    $sentiment[$addr]['negative']++;
+            $label = $msgSentiment[$i] ?? 'neutral';
+            if ($label === 'positive') {
+                $sentiment[$addr]['positive']++;
+            } elseif ($label === 'negative') {
+                $sentiment[$addr]['negative']++;
+            }
             $sentiment[$addr]['total']++;
         }
 
-        // Resolve names for the addresses found
         $contacts = $this->db->table('tbl_contacts')
             ->select('phone_numbers, display_name')
             ->where('owner_id', $userId)
@@ -3174,7 +3163,6 @@ class Mod_Finder extends Model
             }
         }
 
-        // Filter and sort for top relationships
         $sentiment = array_filter($sentiment, fn($v) => $v['total'] > 3);
         uasort($sentiment, fn($a, $b) => $b['total'] <=> $a['total']);
 
@@ -3317,37 +3305,59 @@ class Mod_Finder extends Model
         $locations = $this->db->table('tbl_location')
             ->select('latitude, longitude, location_time')
             ->where('owner_id', $userId)
+            ->where('latitude !=', 0)
+            ->where('longitude !=', 0)
             ->orderBy('location_time', 'DESC')
             ->limit(1000)
             ->get()
             ->getResultArray();
 
-        $clusters = [];
-        foreach ($locations as $l) {
-            $found = false;
-            foreach ($clusters as &$c) {
-                if (abs($c['lat'] - $l['latitude']) < 0.001 && abs($c['lng'] - $l['longitude']) < 0.001) {
-                    $c['pings']++;
-                    $found = true;
-                    break;
-                }
-            }
-            if (!$found) {
-                $clusters[] = [
-                    'lat' => (float) $l['latitude'],
-                    'lng' => (float) $l['longitude'],
-                    'pings' => 1,
-                    'last_seen' => $l['location_time'],
-                    'label' => 'Unknown'
-                ];
-            }
+        $count = count($locations);
+        if ($count < 5) {
+            return [];
         }
 
-        usort($clusters, fn($a, $b) => $b['pings'] <=> $a['pings']);
-        $topClusters = array_slice($clusters, 0, 5);
+        $vectors = [];
+        $lookup = [];
+        foreach ($locations as $i => $l) {
+            $vectors[] = [(float) $l['latitude'], (float) $l['longitude']];
+            $lookup[$i] = $l;
+        }
 
-        // Label clusters
-        foreach ($topClusters as $index => &$cluster) {
+        $epsilon = 0.002;
+        $clusters = Mod_ML_Analyzer::dbscan($vectors, $epsilon, 3);
+
+        $results = [];
+        foreach ($clusters as $points) {
+            if (count($points) < 2) {
+                continue;
+            }
+            $latSum = 0;
+            $lngSum = 0;
+            $pings = 0;
+            $lastSeen = 0;
+            foreach ($points as $idx => $coords) {
+                $latSum += $coords[0];
+                $lngSum += $coords[1];
+                $pings++;
+                $locTime = $lookup[$idx]['location_time'] ?? 0;
+                if ($locTime > $lastSeen) {
+                    $lastSeen = $locTime;
+                }
+            }
+            $results[] = [
+                'lat' => round($latSum / $pings, 6),
+                'lng' => round($lngSum / $pings, 6),
+                'pings' => $pings,
+                'last_seen' => $lastSeen,
+                'label' => 'Unknown',
+            ];
+        }
+
+        usort($results, fn($a, $b) => $b['pings'] <=> $a['pings']);
+        $results = array_slice($results, 0, 5);
+
+        foreach ($results as $index => &$cluster) {
             if ($index === 0) {
                 $cluster['label'] = 'Home / Primary Base';
             } elseif ($index === 1) {
@@ -3357,7 +3367,7 @@ class Mod_Finder extends Model
             }
         }
 
-        return $topClusters;
+        return $results;
     }
 
     /**

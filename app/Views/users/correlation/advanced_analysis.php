@@ -1,5 +1,12 @@
-    <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper">
+<div class="content-wrapper">
+    <?php if (session()->getFlashdata('success')): ?>
+    <div class="container-fluid mt-3">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle mr-2"></i> <?= session()->getFlashdata('success') ?>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    </div>
+    <?php endif; ?>
         <!-- Content Header -->
         <section class="content-header">
             <div class="container-fluid">
@@ -18,14 +25,8 @@
                         </div>
                         <p class="text-muted mt-2 mb-0">Deep vertical insights and predictive modeling across mobile data streams</p>
                     </div>
-                    <div class="col-lg-4 col-md-6">
-                        <nav aria-label="breadcrumb" class="float-right mt-2">
-                            <ol class="breadcrumb bg-transparent p-0 mb-0">
-                                <li class="breadcrumb-item"><a href="<?= base_url('home') ?>"><i class="fas fa-home mr-1"></i>Home</a></li>
-                                <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>">Intelligence</a></li>
-                                <li class="breadcrumb-item active">Advanced</li>
-                            </ol>
-                        </nav>
+                    <div class="col-lg-4 col-md-6 text-right">
+                        <a class="btn btn-outline-info btn-sm" href="<?= base_url('analysis/refresh-ml') ?>"><i class="fas fa-sync-alt mr-1"></i> Refresh ML Analysis</a>
                     </div>
                 </div>
             </div>
@@ -33,6 +34,35 @@
 
         <!-- Main content -->
         <section class="content">
+            <?php if (isset($ml_insight_finance) && !empty($ml_insight_finance['insights'])): ?>
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card card-outline card-info shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-brain mr-2"></i> PHP-ML Intelligence</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <span class="badge badge-info p-2"><?= $ml_insight_finance['algorithm'] ?></span>
+                                        <p class="text-muted mt-2 mb-0"><small><?= $ml_insight_finance['data_source'] ?></small></p>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <p><?= $ml_insight_finance['description'] ?></p>
+                                        <ul class="mb-0">
+                                            <?php foreach ($ml_insight_finance['insights'] as $insight): ?>
+                                            <li><?= $insight ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="container-fluid">
                 
                 <!-- Advanced Features Grid -->

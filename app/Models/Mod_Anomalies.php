@@ -590,7 +590,7 @@ class Mod_Anomalies extends Model
         // Run K-Means Clustering using PHP-ML
         $k = min(3, $countSenders);
         try {
-            $kmeans = new \PhpMl\Clustering\KMeans($k);
+            $kmeans = new \Phpml\Clustering\KMeans($k);
             $clusters = $kmeans->cluster($scaledSamples);
         } catch (\Throwable $e) {
             log_message('error', 'KMeans failed: ' . $e->getMessage());
@@ -930,7 +930,7 @@ class Mod_Anomalies extends Model
 
         // Run DBSCAN: epsilon = 0.01 (approx 1 km), minSamples = 2
         try {
-            $dbscan = new \PhpMl\Clustering\DBSCAN(0.01, 2);
+            $dbscan = new \Phpml\Clustering\DBSCAN(0.01, 2);
             $clusters = $dbscan->cluster($samples);
         } catch (\Throwable $e) {
             log_message('error', 'DBSCAN failed: ' . $e->getMessage());

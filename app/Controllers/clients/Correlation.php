@@ -11,6 +11,7 @@ use App\Models\Mod_Parse_Loot;
 use App\Models\Mod_Receive;
 use App\Models\Mod_Android;
 use App\Models\Mod_User;
+use App\Models\Mod_ML_Analyzer;
 
 class Correlation extends BaseClientController{
 
@@ -260,12 +261,12 @@ class Correlation extends BaseClientController{
         }
         
         $data['financial_summary'] = [
-            'transactions' => array_slice($transactions, 0, 10), // Recent 10
+            'transactions' => array_slice($transactions, 0, 10),
             'spendingByMonth' => $spendingByMonth,
             'totalSpending' => $totalSpending
         ];
+        $data['ml_insight_finance'] = Mod_ML_Analyzer::analyzeFinance($transactions);
 
-        // Analysis Stats for the dashboard
         $data['sms_analysis'] = $this->finderModel->get_categorized_sms_counts($this->userId);
         $data['call_analysis'] = $this->finderModel->get_categorized_call_counts($this->userId);
 
@@ -273,6 +274,33 @@ class Correlation extends BaseClientController{
             . view('headers_footers/sidebar_users', $data)
             . view('users/correlation/advanced_analysis', $data)
             . view('headers_footers/footer_users');
+    }
+
+    public function refresh_ml()
+    {
+        $transactions = $this->finderModel->get_financial_transactions($this->userId);
+        $contacts = $this->finderModel->get_social_graph($this->userId);
+        $mobility = $this->finderModel->get_mobility_aggregates($this->userId);
+        $audit = $this->finderModel->get_app_privacy_audit($this->userId);
+        $forecast = $this->finderModel->get_subscription_forecast($this->userId);
+        $sentiment = $this->finderModel->get_sentiment_profile($this->userId);
+        $clusters = $this->finderModel->get_geospatial_clusters($this->userId);
+        $storage = $this->finderModel->get_storage_forensics($this->userId);
+        $categories = $this->finderModel->get_app_category_dist($this->userId);
+
+        Mod_ML_Analyzer::analyzeFinance($transactions);
+        Mod_ML_Analyzer::analyzeSocial($contacts);
+        Mod_ML_Analyzer::analyzeMobility($mobility);
+        Mod_ML_Analyzer::analyzePrivacy($audit);
+        Mod_ML_Analyzer::analyzeSubscriptions($forecast);
+        Mod_ML_Analyzer::analyzeSentimentML($sentiment);
+        Mod_ML_Analyzer::analyzeHotspots($clusters);
+        Mod_ML_Analyzer::analyzeStorage($storage);
+        Mod_ML_Analyzer::analyzeApps($categories);
+
+        session()->setFlashdata('success', 'PHP-ML analysis refreshed successfully!');
+
+        return redirect()->to(base_url('analysis'));
     }
 
     public function finance_analysis()
@@ -339,10 +367,11 @@ class Correlation extends BaseClientController{
             'incomeByMonth' => $incomeByMonth,
             'totalSpending' => $totalSpending
         ];
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzeFinance($data['financial_data']['transactions']);
 
         // Pagination
         $page = $this->request->getGet('page') ?? 1;
-        $perPage = 20;
+        $perPage = 15;
         $total = count($transactions);
         $offset = ($page - 1) * $perPage;
         
@@ -351,6 +380,9 @@ class Correlation extends BaseClientController{
         
         $pager = \Config\Services::pager();
         $data['pager_links'] = $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+        $data['currentPage'] = $page;
+        $data['perPage'] = $perPage;
+        $data['total'] = $total;
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -409,7 +441,18 @@ class Correlation extends BaseClientController{
         $counts = $this->getUserDataCounts();
         $data = array_merge($data, $counts);
 
-        $data['social_graph'] = $this->finderModel->get_social_graph($this->userId);
+        $allSocial = $this->finderModel->get_social_graph($this->userId);
+        $page = (int) ($this->request->getGet('page') ?? 1);
+        $perPage = 15;
+        $total = count($allSocial);
+        
+        $pager = \Config\Services::pager();
+        $data['social_graph'] = array_slice($allSocial, ($page - 1) * $perPage, $perPage);
+        $data['pager_links'] = $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+        $data['currentPage'] = $page;
+        $data['perPage'] = $perPage;
+        $data['total'] = $total;
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzeSocial($data['social_graph']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -445,7 +488,8 @@ class Correlation extends BaseClientController{
         ];
 
         // Social & Contacts
-        $data['social_graph'] = $this->finderModel->get_social_graph($this->userId, 10);
+        $socialGraph = $this->finderModel->get_social_graph($this->userId, 20);
+        $data['social_graph'] = array_slice($socialGraph, 0, 10);
         $data['device'] = $this->finderModel->get_device_health($this->userId);
 
         // Apps Intelligence (New)
@@ -460,6 +504,32 @@ class Correlation extends BaseClientController{
 
         // Location History (New)
         $data['recent_locations'] = $this->finderModel->get_locations($this->userId, 5);
+
+        // === PHP-ML Intelligence Data ===
+        $mobilityData = $this->finderModel->get_mobility_aggregates($this->userId);
+        $auditData = $this->finderModel->get_app_privacy_audit($this->userId);
+        $forecastData = $this->finderModel->get_subscription_forecast($this->userId);
+        $sentimentData = $this->finderModel->get_sentiment_profile($this->userId);
+        $clusterData = $this->finderModel->get_geospatial_clusters($this->userId);
+        $categoriesData = $this->finderModel->get_app_category_dist($this->userId);
+        $storageData = $this->finderModel->get_storage_forensics($this->userId);
+
+        $data['ml_social']    = Mod_ML_Analyzer::analyzeSocial($socialGraph);
+        $data['ml_finance']   = Mod_ML_Analyzer::analyzeFinance($transactions);
+        $data['ml_mobility']  = Mod_ML_Analyzer::analyzeMobility($mobilityData);
+        $data['ml_privacy']   = Mod_ML_Analyzer::analyzePrivacy($auditData);
+        $data['ml_subscript'] = Mod_ML_Analyzer::analyzeSubscriptions($forecastData);
+        $data['ml_sentiment'] = Mod_ML_Analyzer::analyzeSentimentML($sentimentData);
+        $data['ml_hotspots']  = Mod_ML_Analyzer::analyzeHotspots($clusterData);
+        $data['ml_apps']      = Mod_ML_Analyzer::analyzeApps($categoriesData);
+        $data['ml_storage']   = Mod_ML_Analyzer::analyzeStorage($storageData);
+
+        // Pass raw data for tables in report
+        $data['subscription_data'] = $forecastData;
+        $data['cluster_data'] = $clusterData;
+        $data['categories_data'] = $categoriesData;
+        $data['storage_data'] = $storageData;
+        $data['sentiment_profile'] = $sentimentData;
 
         $data['date'] = date('F j, Y');
 
@@ -496,6 +566,7 @@ class Correlation extends BaseClientController{
         $data = array_merge($data, $counts);
 
         $data['mobility'] = $this->finderModel->get_mobility_aggregates($this->userId);
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzeMobility($data['mobility']);
         
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -536,16 +607,30 @@ class Correlation extends BaseClientController{
         $data["user_info"] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts());
 
-        $data['audit'] = $this->finderModel->get_app_privacy_audit($this->userId);
-        
-        $allScams = $this->finderModel->get_scam_sms_audit($this->userId);
+        $allAudit = $this->finderModel->get_app_privacy_audit($this->userId);
         $page = (int) ($this->request->getGet('page') ?? 1);
-        $perPage = 10;
-        $total = count($allScams);
+        $perPage = 15;
+        $total = count($allAudit);
         
         $pager = \Config\Services::pager();
-        $data['scams'] = array_slice($allScams, ($page - 1) * $perPage, $perPage);
-        $data['pager'] = $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+        $data['audit'] = array_slice($allAudit, ($page - 1) * $perPage, $perPage);
+        $data['audit_pager'] = $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+        $data['audit_currentPage'] = $page;
+        $data['audit_perPage'] = $perPage;
+        $data['audit_total'] = $total;
+        
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzePrivacy($data['audit']);
+        
+        $allScams = $this->finderModel->get_scam_sms_audit($this->userId);
+        $scamPage = (int) ($this->request->getGet('scam_page') ?? 1);
+        $scamPerPage = 15;
+        $scamTotal = count($allScams);
+        
+        $data['scams'] = array_slice($allScams, ($scamPage - 1) * $scamPerPage, $scamPerPage);
+        $data['scam_pager'] = $pager->makeLinks($scamPage, $scamPerPage, $scamTotal, 'bootstrap5_full');
+        $data['scam_currentPage'] = $scamPage;
+        $data['scam_perPage'] = $scamPerPage;
+        $data['scam_total'] = $scamTotal;
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -563,6 +648,7 @@ class Correlation extends BaseClientController{
         $data = array_merge($data, $this->getUserDataCounts());
 
         $data['forecast'] = $this->finderModel->get_subscription_forecast($this->userId);
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzeSubscriptions($data['forecast']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -580,6 +666,7 @@ class Correlation extends BaseClientController{
         $data = array_merge($data, $this->getUserDataCounts());
 
         $data['categories'] = $this->finderModel->get_app_category_dist($this->userId);
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzeApps($data['categories']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -596,7 +683,20 @@ class Correlation extends BaseClientController{
         $data["user_info"] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts());
 
-        $data['storage'] = $this->finderModel->get_storage_forensics($this->userId);
+        $storage = $this->finderModel->get_storage_forensics($this->userId);
+        $page = (int) ($this->request->getGet('page') ?? 1);
+        $perPage = 15;
+        $allFiles = !empty($storage['large_hogs']) ? $storage['large_hogs'] : $storage['top_files'];
+        $total = count($allFiles);
+        
+        $pager = \Config\Services::pager();
+        $storage['display_files'] = array_slice($allFiles, ($page - 1) * $perPage, $perPage);
+        $data['storage'] = $storage;
+        $data['pager_links'] = $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+        $data['currentPage'] = $page;
+        $data['perPage'] = $perPage;
+        $data['total'] = $total;
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzeStorage($data['storage']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -613,7 +713,18 @@ class Correlation extends BaseClientController{
         $data["user_info"] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts());
 
-        $data['sentiment'] = $this->finderModel->get_sentiment_profile($this->userId);
+        $allSentiment = $this->finderModel->get_sentiment_profile($this->userId);
+        $page = (int) ($this->request->getGet('page') ?? 1);
+        $perPage = 15;
+        $total = count($allSentiment);
+        
+        $pager = \Config\Services::pager();
+        $data['sentiment'] = array_slice($allSentiment, ($page - 1) * $perPage, $perPage);
+        $data['pager_links'] = $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+        $data['currentPage'] = $page;
+        $data['perPage'] = $perPage;
+        $data['total'] = $total;
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzeSentimentML($data['sentiment']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -632,6 +743,7 @@ class Correlation extends BaseClientController{
         $data = array_merge($data, $this->getUserDataCounts());
 
         $data['clusters'] = $this->finderModel->get_geospatial_clusters($this->userId);
+        $data['ml_insight'] = Mod_ML_Analyzer::analyzeHotspots($data['clusters']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
