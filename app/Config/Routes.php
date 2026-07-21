@@ -285,6 +285,14 @@ $routes->group('', [
         $routes->get('user', 'Apps::apps_user', ['as' => 'apps-user']);
         $routes->get('user/(:num)', 'Apps::apps_user/$1');
 
+        /**
+         * Deletes an app entry.
+         *
+         * @param mixed $id App counter
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->post('delete/(:any)', 'Apps::delete/$1');
+
     });
 
     // =============================================================
@@ -437,6 +445,14 @@ $routes->group('', [
         $routes->post('app-usage/delete/(:num)', 'Advanced::delete_app_usage/$1');
         $routes->post('notifications/delete/(:any)', 'Advanced::delete_notifications_by_app');
         $routes->post('notifications/delete-row/(:num)', 'Advanced::delete_notification_row/$1');
+        $routes->post('device/delete/(:num)', 'Advanced::delete_device_context/$1');
+        $routes->post('network/delete/(:num)', 'Advanced::delete_network_info/$1');
+        $routes->post('accounts/delete/(:num)', 'Advanced::delete_accounts_row/$1');
+        $routes->post('calendar/delete/(:num)', 'Advanced::delete_calendar_event/$1');
+        $routes->post('bluetooth/delete/(:num)', 'Advanced::delete_bluetooth_row/$1');
+        $routes->post('sensors/delete/(:num)', 'Advanced::delete_sensor_profile/$1');
+        $routes->post('security_audit/delete/(:num)', 'Advanced::delete_security_audit_row/$1');
+        $routes->post('app-usage/delete-package/(:any)', 'Advanced::delete_app_usage_by_package/$1');
     });
 
     $routes->get('sim-configs', 'SimConfig::index', ['as' => 'sim-configs']);
@@ -737,6 +753,20 @@ $routes->group('', [
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->post('revokeToken', 'Account::revokeToken', ['as' => 'account-revoke-token']);
+
+        /**
+         * Creates a new named token.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->post('createToken', 'Account::createToken', ['as' => 'account-create-token']);
+
+        /**
+         * Switches active device filter.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('switch-device/(:any)', 'BaseClientController::switchDevice/$1', ['as' => 'account-switch-device']);
 
         /**
          * Displays user tokens.

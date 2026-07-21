@@ -32,6 +32,7 @@
                             <th>Status</th>
                             <th>Paired Devices</th>
                             <th>Date Extracted</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -56,6 +57,14 @@
                             </td>
                             <td><span class="badge badge-warning"><?= $pairedCount ?></span></td>
                             <td><?= !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—' ?></td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-danger delete-row"
+                                        data-id="<?= $r['id'] ?? '' ?>"
+                                        data-url="<?= base_url('advanced/bluetooth/delete') ?>"
+                                        title="Delete this row">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -117,3 +126,4 @@ $(document).ready(function() {
 </script>
 
 <?php include __DIR__ . '/_adv_style.php'; ?>
+<?php include __DIR__ . '/_adv_delete_script.php'; ?>

@@ -172,6 +172,13 @@
                                                             data-app='<?= htmlspecialchars(json_encode($app), ENT_QUOTES, 'UTF-8') ?>'>
                                                         <i class="fas fa-eye"></i> Details
                                                     </button>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-danger delete-app"
+                                                            data-id="<?= $app['counter'] ?? '' ?>"
+                                                            data-name="<?= esc($app['Name'] ?? '') ?>"
+                                                            title="Delete this app entry">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -523,5 +530,42 @@
                 return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
             }
         }
+
+        // Delete App
+        document.querySelectorAll('.delete-app').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var id = this.getAttribute('data-id');
+                var name = this.getAttribute('data-name');
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Delete App Entry?',
+                        text: 'Are you sure you want to delete "' + name + '"? This cannot be undone.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fas fa-trash"></i> Delete'
+                    }).then(function(result) {
+                        if (result.isConfirmed) {
+                            fetch(base_url('apps/delete/' + id), {
+                                method: 'POST',
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            }).then(function(r) { return r.json(); }).then(function(response) {
+                                if (response.success) {
+                                    Swal.fire('Deleted!', 'App entry has been deleted.', 'success').then(function() {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error!', response.message || 'Failed to delete.', 'error');
+                                }
+                            }).catch(function() {
+                                Swal.fire('Error!', 'Failed to delete app entry.', 'error');
+                            });
+                        }
+                    });
+                }
+            });
+        });
     });
 </script>

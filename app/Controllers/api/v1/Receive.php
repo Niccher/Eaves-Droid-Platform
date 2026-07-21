@@ -225,12 +225,12 @@ class Receive extends BaseController
         $userName = $this->decryptUserData($cryptModel, $userData['Name'] ?? '');
         $userEmail = $this->decryptUserData($cryptModel, $userData['Email'] ?? '');
 
-        // Mark token as used
-//        $markResult = $userModel->token_mark(
-//            $tokenData['Token_Owner'],
-//            $token,
-//            $tokenData['Token_ID']
-//        );
+        // Mark token as used (single-use tokens)
+        $userModel->token_mark(
+            $tokenData['owner_id'],
+            $token,
+            $tokenData['counter']
+        );
 
         $logModel->logAction([
             'user_id'         => $tokenData['owner_id'],
@@ -308,6 +308,11 @@ class Receive extends BaseController
         }
         $sanitizedData['extraction_timestamp'] = date('Y-m-d H:i:s');
         $sanitizedData['device_ip_address'] = $this->request->getIPAddress();
+
+        // Save owner_id for direct user-to-device linking (must be before make_device_print)
+        if (!empty($input['token_owner_id'])) {
+            $sanitizedData['owner_id'] = (int) $input['token_owner_id'];
+        }
 
         try {
             $modelReceive = new Mod_Receive();

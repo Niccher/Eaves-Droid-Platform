@@ -34,11 +34,12 @@
                             <th><i class="fas fa-sliders-h mr-1"></i>Resolution</th>
                             <th><i class="fas fa-bolt mr-1"></i>Power</th>
                             <th><i class="fas fa-code-branch mr-1"></i>Version</th>
+                            <th class="text-center"><i class="fas fa-cogs mr-1"></i>Actions</th>
                         </tr>
                         </thead>
                         <tbody>
                         <?php if (empty($rows)): ?>
-                            <tr><td colspan="7" class="text-center py-5">
+                            <tr><td colspan="8" class="text-center py-5">
                                 <div class="empty-state"><i class="fas fa-microchip fa-3x text-muted mb-3"></i><h4>No sensor data</h4><p class="text-muted">Sensor profiles will appear here once extracted</p></div>
                             </td></tr>
                         <?php else: foreach ($rows as $r): ?>
@@ -75,6 +76,14 @@
                                     </span>
                                 </td>
                                 <td><small class="text-muted">v<?= $r['version'] ?? '1' ?></small></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-danger delete-row"
+                                            data-id="<?= $r['id'] ?? '' ?>"
+                                            data-url="<?= base_url('advanced/sensors/delete') ?>"
+                                            title="Delete this row">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
@@ -86,3 +95,4 @@
     </div></div></div></section>
 </div>
 <?php include __DIR__ . '/_adv_style.php'; ?>
+<?php include __DIR__ . '/_adv_delete_script.php'; ?>

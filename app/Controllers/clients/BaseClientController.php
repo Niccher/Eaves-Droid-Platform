@@ -13,6 +13,8 @@ class BaseClientController extends BaseController
     protected $userId;
     protected $perPage = 50;
     protected $session;
+    protected $activeDeviceId = null;
+    protected $userDevices = [];
 
     /**
      * Initialize controller.
@@ -33,7 +35,6 @@ class BaseClientController extends BaseController
         // Check authentication
         if (!auth()->loggedIn()) {
             session()->setFlashdata('error', 'Please login to continue');
-            // Don't return the redirect, just throw an exception or use helper
             throw new \RuntimeException('Authentication required');
         }
 
@@ -51,6 +52,50 @@ class BaseClientController extends BaseController
         }
 
         $this->userId = (int) $this->userData['id'];
+
+        // Initialize active device filter
+        $this->initActiveDevice();
+    }
+
+    /**
+     * Initialize or validate the active device filter from session.
+     */
+    protected function initActiveDevice(): void
+    {
+        $modUser = new \App\Models\Mod_User();
+        $this->userDevices = $modUser->get_user_devices_from_profile($this->userId);
+
+        $sessionDeviceId = $this->session->get('active_device_id');
+        if (!empty($sessionDeviceId) && $sessionDeviceId !== 'all') {
+            // Validate device belongs to this user
+            $valid = false;
+            foreach ($this->userDevices as $d) {
+                if (($d['device_id'] ?? '') === $sessionDeviceId) {
+                    $valid = true;
+                    break;
+                }
+            }
+            if ($valid) {
+                $this->activeDeviceId = $sessionDeviceId;
+            }
+        }
+
+        // Apply device filter to finder model
+        $this->finderModel->setDeviceId($this->activeDeviceId);
+    }
+
+    /**
+     * GET /account/switch-device/{deviceId}
+     * Switches the active device filter.
+     */
+    public function switchDevice(string $deviceId = 'all'): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if ($deviceId === 'all') {
+            $this->session->remove('active_device_id');
+        } else {
+            $this->session->set('active_device_id', $deviceId);
+        }
+        return $this->response->redirect(previous_url() ?: base_url('home'));
     }
 
     /**
@@ -328,11 +373,19 @@ class BaseClientController extends BaseController
      * @param array $extraData
      * @return string
      */
+    protected function getDeviceViewData(): array
+    {
+        return [
+            'active_device_id' => $this->activeDeviceId,
+            'sidebar_user_devices' => $this->userDevices,
+        ];
+    }
+
     protected function renderUserView(string $mainView, array $extraData = []): string
     {
         $data = array_merge([
             'user_info' => $this->userData,
-        ], $this->getUserDataCounts(), $extraData);
+        ], $this->getDeviceViewData(), $this->getUserDataCounts(), $extraData);
 
         return view('headers_footers/head_users', $data)
             . view('headers_footers/sidebar_users', $data)
@@ -351,7 +404,7 @@ class BaseClientController extends BaseController
     {
         $data = array_merge([
             'user_info' => $this->userData,
-        ], $this->getUserDataCounts(), $extraData);
+        ], $this->getDeviceViewData(), $this->getUserDataCounts(), $extraData);
 
         return view('headers_footers/head_users', $data)
             . view('headers_footers/sidebar_users', $data)
@@ -370,7 +423,7 @@ class BaseClientController extends BaseController
     {
         $data = array_merge([
             'user_info' => $this->userData,
-        ], $this->getUserDataCounts(), $extraData);
+        ], $this->getDeviceViewData(), $this->getUserDataCounts(), $extraData);
 
         return view('headers_footers/head_users', $data)
             . view('headers_footers/sidebar_users', $data)
@@ -389,7 +442,7 @@ class BaseClientController extends BaseController
     {
         $data = array_merge([
             'user_info' => $this->userData,
-        ], $this->getUserDataCounts(), $extraData);
+        ], $this->getDeviceViewData(), $this->getUserDataCounts(), $extraData);
 
         return view('headers_footers/head_users', $data)
             . view('headers_footers/sidebar_users', $data)

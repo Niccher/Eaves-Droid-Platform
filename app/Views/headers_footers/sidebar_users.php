@@ -19,6 +19,46 @@
                         <i class="fas fa-chart-bar mr-1"></i> Analysis
                     </a>
                 </li>
+
+                <!-- Device Selector -->
+                <?php if (!empty($sidebar_user_devices)): ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-mobile-alt mr-1"></i>
+                        <?php
+                        $deviceLabel = 'All Devices';
+                        if (!empty($active_device_id)) {
+                            foreach ($sidebar_user_devices as $d) {
+                                if (($d['device_id'] ?? '') === $active_device_id) {
+                                    $parts = array_filter([$d['device_manufacturer'] ?? '', $d['device_model'] ?? '']);
+                                    $deviceLabel = !empty($parts) ? implode(' ', $parts) : substr($d['device_id'], 0, 16);
+                                    break;
+                                }
+                            }
+                        }
+                        ?>
+                        <span class="d-none d-md-inline ml-1"><?= htmlspecialchars($deviceLabel) ?></span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-lg">
+                        <span class="dropdown-item-text"><strong>Select Device</strong></span>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item <?= empty($active_device_id) ? 'active' : '' ?>" href="<?= base_url('switch-device/all') ?>">
+                            <i class="fas fa-layer-group mr-2"></i> All Devices
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <?php foreach ($sidebar_user_devices as $d):
+                            $did = $d['device_id'] ?? '';
+                            $parts = array_filter([$d['device_manufacturer'] ?? '', $d['device_model'] ?? '']);
+                            $name = !empty($parts) ? implode(' ', $parts) : substr($did, 0, 20);
+                            $isActive = ($did === $active_device_id);
+                        ?>
+                        <a class="dropdown-item <?= $isActive ? 'active' : '' ?>" href="<?= base_url('switch-device/' . urlencode($did)) ?>">
+                            <i class="fas fa-mobile-alt mr-2"></i> <?= htmlspecialchars($name) ?>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
+                </li>
+                <?php endif; ?>
             </ul>
 
             <!-- SEARCH FORM -->
@@ -274,7 +314,7 @@
 
                         <!-- Account Section (Collapsible) -->
                         <?php 
-                            $account_pages = ['account_profile', 'account_setting', 'account_logs'];
+                            $account_pages = ['account_profile', 'account_setting', 'account_devices', 'account_logs'];
                             $is_account_open = (isset($pag) && in_array($pag, $account_pages)) || (isset($sub_pag) && $sub_pag == 'blocklist');
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_account_open ? 'menu-open' : ''; ?>">
@@ -299,6 +339,14 @@
                                        class="nav-link <?php echo (isset($pag) && $pag == 'account_setting') ? 'active' : ''; ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Settings</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('account/devices'); ?>"
+                                       class="nav-link <?php echo (isset($pag) && $pag == 'account_devices') ? 'active' : ''; ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Device</p>
                                     </a>
                                 </li>
                                 

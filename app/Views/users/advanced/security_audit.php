@@ -30,11 +30,12 @@
                             <th><i class="fas fa-certificate text-warning mr-1"></i>CA Certs</th>
                             <th><i class="fas fa-door-open mr-1"></i>Open Ports</th>
                             <th><i class="fas fa-clock mr-1"></i>Extracted</th>
+                            <th class="text-center"><i class="fas fa-cogs mr-1"></i>Actions</th>
                         </tr>
                         </thead>
                         <tbody>
                         <?php if (empty($rows)): ?>
-                            <tr><td colspan="5" class="text-center py-5">
+                            <tr><td colspan="6" class="text-center py-5">
                                 <div class="empty-state"><i class="fas fa-shield-alt fa-3x text-muted mb-3"></i><h4>No security audit data</h4><p class="text-muted">Audit snapshots will appear here once extracted</p></div>
                             </td></tr>
                         <?php else: foreach ($rows as $r): ?>
@@ -76,6 +77,14 @@
                                     <?php endif; ?>
                                 </td>
                                 <td><?= $r['ts_display'] ?? '<span class="text-muted">—</span>' ?></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-danger delete-row"
+                                            data-id="<?= $r['id'] ?? '' ?>"
+                                            data-url="<?= base_url('advanced/security_audit/delete') ?>"
+                                            title="Delete this row">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
@@ -87,3 +96,4 @@
     </div></div></div></section>
 </div>
 <?php include __DIR__ . '/_adv_style.php'; ?>
+<?php include __DIR__ . '/_adv_delete_script.php'; ?>

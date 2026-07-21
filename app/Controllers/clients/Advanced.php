@@ -539,4 +539,101 @@ class Advanced extends BaseClientController
         $this->session->setFlashdata('error', 'Failed to delete notifications for the app');
         return redirect()->to(base_url('advanced/notifications'));
     }
+
+    /** POST /advanced/device/delete/(:num) */
+    public function delete_device_context($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_device_context_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/network/delete/(:num) */
+    public function delete_network_info($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_network_info_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/accounts/delete/(:num) */
+    public function delete_accounts_row($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_accounts_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/calendar/delete/(:num) */
+    public function delete_calendar_event($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_calendar_event((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Event deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete event.']);
+    }
+
+    /** POST /advanced/bluetooth/delete/(:num) */
+    public function delete_bluetooth_row($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_bluetooth_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/sensors/delete/(:num) */
+    public function delete_sensor_profile($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_sensor_profile((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Sensor deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete sensor.']);
+    }
+
+    /** POST /advanced/security_audit/delete/(:num) */
+    public function delete_security_audit_row($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_security_audit_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/app-usage/delete-package/(:any) */
+    public function delete_app_usage_by_package($encodedPkg)
+    {
+        $packageName = $this->decodePackageSegment($encodedPkg);
+        if ($packageName === null) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid package name.']);
+        }
+        if ($this->finderModel->delete_app_usage_by_package($this->userId, $packageName)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'All usage data for this app has been deleted.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete usage data.']);
+    }
 }

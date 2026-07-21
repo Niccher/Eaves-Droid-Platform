@@ -64,17 +64,16 @@
                                     <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                         <thead class="thead-light">
                                         <tr>
-                                            <th width="18%">Contact</th>
-                                            <th width="13%">Type</th>
-                                            <th width="20%">Time</th>
-                                            <th width="36%">Message</th>
-                                            <th width="13%" class="text-center">Actions</th>
+                                            <th width="20%">Contact</th>
+                                            <th width="15%">Type</th>
+                                            <th width="22%">Time</th>
+                                            <th width="43%">Message</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <?php if (empty($sms_dump)): ?>
                                             <tr>
-                                                <td colspan="5" class="text-center py-5">
+                                                <td colspan="4" class="text-center py-5">
                                                     <div class="empty-state">
                                                         <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
                                                         <h4>No SMS messages found</h4>
@@ -317,18 +316,9 @@
                                                     </td>
                                                 </tr>
 
-                                                <td class="text-center align-middle">
-                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-sms"
-                                                            data-id="<?= $smsinfo['id'] ?? '' ?>"
-                                                            title="Delete this message">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </td>
-                                                </tr>
-
                                                 <!-- Expandable Details Row -->
                                                 <tr class="expandable-content" style="display: none;">
-                                                    <td colspan="5" class="p-0 border-0">
+                                                    <td colspan="4" class="p-0 border-0">
                                                         <div id="sms-details-<?php echo $index; ?>" style="display: none;">
                                                             <div class="card card-body bg-light border-0 m-0 p-3">
                                                                 <div class="row">
@@ -358,6 +348,13 @@
                                                                                 <span class="badge <?php echo $typeInfo['bg']; ?> text-white">
                                                                                         <?php echo $typeInfo['label']; ?>
                                                                                     </span>
+                                                                            </div>
+                                                                            <div class="mb-1 mt-3">
+                                                                                <button class="btn btn-sm btn-outline-danger delete-sms"
+                                                                                        data-id="<?php echo $smsinfo['id'] ?? ''; ?>"
+                                                                                        title="Delete this message">
+                                                                                    <i class="fas fa-trash mr-1"></i> Delete
+                                                                                </button>
                                                                             </div>
                                                                         </div>
                                                                     </div>

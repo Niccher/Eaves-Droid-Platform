@@ -76,148 +76,131 @@
                                 <div class="tab-pane fade show active" id="api-tokens" role="tabpanel">
                                     <div class="alert alert-info mb-4 shadow-sm">
                                         <i class="fas fa-info-circle mr-2"></i>
-                                        <strong>API Token Management:</strong> Use this token to authorize the extractor client on your Android terminal. Registered tokens automatically expire after 30 days.
+                                        <strong>Single-Use Tokens:</strong> Each token can be used exactly once by one device for authentication. Create a new token, use it on your Android terminal via the app's token scanner, and it will be marked as used after verification.
                                     </div>
 
-                                    <div class="row">
-                                        <!-- Current Token Display & Action -->
-                                        <div class="col-lg-6 mb-4">
-                                            <div class="card card-primary shadow-sm h-100 mb-0">
-                                                <div class="card-header bg-primary text-white">
-                                                    <h5 class="card-title mb-0">
-                                                        <i class="fab fa-android mr-2"></i>
-                                                        Current API Token
-                                                    </h5>
+                                    <!-- Create New Token -->
+                                    <div class="card card-success shadow-sm mb-4">
+                                        <div class="card-header bg-success text-white">
+                                            <h5 class="card-title mb-0">
+                                                <i class="fas fa-plus-circle mr-2"></i>
+                                                Create New Token
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="createTokenForm" method="post">
+                                                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                                <div class="form-row align-items-end">
+                                                    <div class="col-md-6 mb-3 mb-md-0">
+                                                        <label for="tokenName" class="font-weight-bold">
+                                                            <i class="fas fa-tag mr-1 text-success"></i>
+                                                            Token Name (optional)
+                                                        </label>
+                                                        <input type="text"
+                                                               class="form-control form-control-lg"
+                                                               id="tokenName"
+                                                               name="token_name"
+                                                               placeholder="e.g. My Pixel 7">
+                                                    </div>
+                                                    <div class="col-md-4 mb-3 mb-md-0">
+                                                        <label class="font-weight-bold d-block">
+                                                            <i class="fas fa-qrcode mr-1 text-success"></i>
+                                                            QR Code
+                                                        </label>
+                                                        <canvas id="new-token-qr" style="width:100px;height:100px;display:none;"></canvas>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <button type="submit" class="btn btn-success btn-block btn-lg font-weight-bold shadow-sm" id="createTokenBtn">
+                                                            <i class="fas fa-plus mr-2"></i> Create
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div class="card-body d-flex flex-column justify-content-between">
-                                                    <div>
-                                                        <div class="form-group">
-                                                            <label for="currentToken" class="font-weight-bold">
-                                                                <i class="fas fa-key mr-2 text-primary"></i>
-                                                                Token Value
-                                                            </label>
-                                                            <div class="input-group input-group-lg mb-3">
-                                                                <input type="text"
-                                                                       class="form-control font-monospace"
-                                                                       id="currentToken"
-                                                                       value="<?php echo htmlspecialchars($currentTokenDisplay); ?>"
-                                                                       readonly>
-                                                                <div class="input-group-append">
-                                                                    <button class="btn btn-outline-primary" type="button" id="copyTokenBtn" data-toggle="tooltip" title="Copy to clipboard">
-                                                                        <i class="fas fa-copy"></i>
-                                                                    </button>
-                                                                    <button class="btn btn-outline-secondary" type="button" id="toggleTokenBtn" data-toggle="tooltip" title="Show/Hide token">
-                                                                        <i class="fas fa-eye"></i>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
+                                            </form>
 
-                                                            <!-- Token Metadata -->
-                                                            <div class="row">
-                                                                <div class="col-md-6">
-                                                                    <div class="card mb-3">
-                                                                        <div class="card-body p-2 text-center">
-                                                                            <small class="text-muted d-block">Created</small>
-                                                                            <span class="font-weight-bold text-sm">
-                                                                                <i class="far fa-calendar-alt mr-1 text-primary"></i>
-                                                                                <?php echo !empty($user_token['created_at']) ? date('M d, Y, l H:i', strtotime($user_token['created_at'])) : 'N/A'; ?>
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <div class="card mb-3">
-                                                                        <div class="card-body p-2 text-center">
-                                                                            <small class="text-muted d-block">Expires</small>
-                                                                            <span class="font-weight-bold text-sm">
-                                                                                <i class="far fa-calendar-times mr-1 text-danger"></i>
-                                                                                <?php echo $tokenExpiry ?? 'Never'; ?>
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <!-- Token Status Badge -->
-                                                            <div class="mt-2 mb-3">
-                                                                <label class="text-muted text-sm d-block">Status</label>
-                                                                <div>
-                                                                    <?php if (!empty($user_token['status']) && $user_token['status'] == '00'): ?>
-                                                                        <span class="badge badge-success badge-lg p-2">
-                                                                            <i class="fas fa-check-circle mr-1"></i> ACTIVE
-                                                                        </span>
-                                                                        <small class="text-success ml-2">
-                                                                            <i class="fas fa-circle mr-1"></i> Ready for use
-                                                                        </small>
-                                                                    <?php else: ?>
-                                                                        <span class="badge badge-danger badge-lg p-2">
-                                                                            <i class="fas fa-times-circle mr-1"></i> INACTIVE
-                                                                        </span>
-                                                                        <small class="text-danger ml-2">
-                                                                            <i class="fas fa-circle mr-1"></i> Revoked/Expired
-                                                                        </small>
-                                                                    <?php endif; ?>
-                                                                </div>
+                                            <!-- Token result (shown after creation, disappears on refresh) -->
+                                            <div id="tokenResult" style="display:none;" class="mt-3 border rounded p-4 bg-light">
+                                                <div class="alert alert-success mb-3">
+                                                    <i class="fas fa-check-circle mr-2"></i>
+                                                    <strong>Token created!</strong> Copy it now &mdash; it will disappear when you leave this page.
+                                                </div>
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-8">
+                                                        <label class="font-weight-bold"><i class="fas fa-key mr-1"></i>Token Value</label>
+                                                        <div class="input-group input-group-lg">
+                                                            <input type="text" class="form-control font-monospace" id="generatedToken" readonly>
+                                                            <div class="input-group-append">
+                                                                <button class="btn btn-outline-primary" type="button" id="copyGeneratedToken">
+                                                                    <i class="fas fa-copy"></i>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    <!-- Prominent Regenerate Button inside the card itself (Highly Visible!) -->
-                                                    <div class="border-top pt-3 mt-2">
-                                                        <div class="alert alert-warning py-2 px-3 mb-3 text-xs">
-                                                            <i class="fas fa-exclamation-triangle mr-1"></i> Regenerating invalidates current Android configurations.
-                                                        </div>
-                                                        <form action="<?php echo base_url('account/regenerateToken'); ?>" method="post" id="regenerateTokenForm">
-                                                            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                                                            <button type="submit" class="btn btn-warning btn-block btn-lg font-weight-bold shadow-sm" id="regenerateTokenBtn">
-                                                                <i class="fas fa-sync-alt mr-2"></i> Regenerate Token
-                                                            </button>
-                                                        </form>
+                                                    <div class="col-md-4 text-center">
+                                                        <canvas id="result-qr" style="width:120px;height:120px;"></canvas>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <!-- QR Code Section -->
-                                        <div class="col-lg-6 mb-4">
-                                            <div class="card card-info shadow-sm h-100 mb-0">
-                                                <div class="card-header bg-info text-white">
-                                                    <h5 class="card-title mb-0">
-                                                        <i class="fas fa-qrcode mr-2"></i>
-                                                        QR Code Scanner
-                                                    </h5>
+                                    <!-- Used / Expired Tokens -->
+                                    <div class="card card-secondary shadow-sm">
+                                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                                            <h5 class="card-title mb-0">
+                                                <i class="fas fa-history mr-2"></i>
+                                                Used &amp; Expired Tokens
+                                            </h5>
+                                            <span class="badge badge-light"><?php echo count($used_tokens); ?> total</span>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <?php if (!empty($used_tokens)): ?>
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover align-middle mb-0">
+                                                        <thead class="bg-light">
+                                                            <tr>
+                                                                <th>Token</th>
+                                                                <th>Name</th>
+                                                                <th>Status</th>
+                                                                <th>Used At</th>
+                                                                <th>Created</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach ($used_tokens as $t): ?>
+                                                                <tr>
+                                                                    <td>
+                                                                        <code class="font-monospace" style="font-size:0.85rem;">
+                                                                            <?php echo htmlspecialchars($t['token'] ?? 'N/A'); ?>
+                                                                        </code>
+                                                                    </td>
+                                                                    <td>
+                                                                        <?php echo htmlspecialchars($t['device_name'] ?? '—'); ?>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge badge-secondary">
+                                                                            <i class="fas fa-check-circle mr-1"></i> Used
+                                                                        </span>
+                                                                    </td>
+                                                                    <td class="text-muted small">
+                                                                        <?php echo !empty($t['last_used_at']) ? date('M d, Y H:i', strtotime($t['last_used_at'])) : '—'; ?>
+                                                                    </td>
+                                                                    <td class="text-muted small">
+                                                                        <?php echo !empty($t['created_at']) ? date('M d, Y H:i', strtotime($t['created_at'])) : '—'; ?>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
                                                 </div>
-                                                <div class="card-body text-center d-flex flex-column justify-content-between">
-                                                    <div>
-                                                        <p class="text-muted mb-3">
-                                                            Scan this QR code with the extractor app scanner to quickly configure the API endpoint and active token:
-                                                        </p>
-
-                                                        <!-- QR Code Container -->
-                                                        <div class="mb-4" id="qrcode-container">
-                                                            <canvas id="qr-canvas" style="width:200px; height:200px; margin: 0 auto;"></canvas>
-                                                        </div>
+                                            <?php else: ?>
+                                                <div class="text-center py-5">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-ticket-alt fa-4x text-muted opacity-50"></i>
                                                     </div>
-
-                                                    <div>
-                                                        <!-- QR Code Actions -->
-                                                        <div class="btn-group mt-2 mb-3" role="group">
-                                                            <button type="button" class="btn btn-outline-info" id="downloadQRBtn">
-                                                                <i class="fas fa-download mr-1"></i> Download QR
-                                                            </button>
-                                                            <button type="button" class="btn btn-outline-info" id="printQRBtn">
-                                                                <i class="fas fa-print mr-1"></i> Print
-                                                            </button>
-                                                            <button type="button" class="btn btn-outline-info" id="refreshQRBtn">
-                                                                <i class="fas fa-redo mr-1"></i> Refresh
-                                                            </button>
-                                                        </div>
-                                                        <div class="alert alert-light border text-xs py-2 mb-0">
-                                                            <i class="fas fa-lightbulb mr-1 text-warning"></i> Scan from within the app settings pane.
-                                                        </div>
-                                                    </div>
+                                                    <h5 class="text-muted">No used tokens yet</h5>
+                                                    <p class="text-muted small">Used tokens will appear here after devices authenticate.</p>
                                                 </div>
-                                            </div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -352,9 +335,6 @@
     </section>
 </div>
 
-<!-- Include QR Code Library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
-
 <style>
     .nav-tabs.nav-justified .nav-link {
         border-radius: 8px 8px 0 0;
@@ -385,30 +365,6 @@
         transform: translateY(-5px);
     }
 
-    .badge-lg {
-        font-size: 0.9rem;
-        padding: 8px 12px;
-        border-radius: 20px;
-    }
-
-    .font-monospace {
-        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        font-size: 14px;
-        letter-spacing: 0.5px;
-    }
-
-    .input-group-lg .form-control {
-        border-radius: 8px;
-    }
-
-    #qrcode-container {
-        background: white;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #dee2e6;
-        display: inline-block;
-    }
-
     .tab-pane {
         animation: fadeIn 0.5s ease;
     }
@@ -417,291 +373,70 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
-
-    .btn-group .btn {
-        border-radius: 5px;
-        margin: 0 2px;
-    }
 </style>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Ensure jQuery is loaded
-        if (typeof jQuery === 'undefined') {
-            console.error('jQuery is not loaded!');
-            return;
-        }
-        var $ = jQuery;
+document.addEventListener("DOMContentLoaded", function() {
+    if (typeof jQuery === 'undefined') { console.error('jQuery not loaded'); return; }
+    var $ = jQuery;
+    $(document).ready(function() {
 
-        $(document).ready(function() {
-        // Initialize QR Code
-        function generateQRCode(token) {
-            const canvas = document.getElementById('qr-canvas');
-            const context = canvas.getContext('2d');
-            context.clearRect(0, 0, canvas.width, canvas.height); // Clear previous
+    function showToast(message, type) {
+        type = type || 'info';
+        var toast = $('<div class="toast fade show" role="alert" style="position:fixed;top:20px;right:20px;z-index:9999;min-width:250px;">'
+            + '<div class="toast-header bg-' + type + ' text-white">'
+            + '<strong class="mr-auto"><i class="fas fa-' + (type === 'success' ? 'check-circle' : 'info-circle') + ' mr-2"></i>'
+            + type.charAt(0).toUpperCase() + type.slice(1) + '</strong>'
+            + '<button type="button" class="ml-2 mb-1 close text-white" data-dismiss="toast"><span>&times;</span></button>'
+            + '</div><div class="toast-body">' + message + '</div></div>');
+        $('body').append(toast);
+        setTimeout(function() { toast.remove(); }, 3000);
+    }
 
-            if (token && token !== 'No token found') {
-                QRCode.toCanvas(canvas, token, {
-                    width: 200,
-                    margin: 2,
-                    color: {
-                        dark: "#000000",
-                        light: "#ffffff"
-                    },
-                    errorCorrectionLevel: 'M'
-                }, function(error) {
-                    if (error) console.error(error);
-                });
-            } else {
-                // Handle no token - maybe simple text on canvas or keep empty
+    // Create new token
+    $('#createTokenForm').on('submit', function(e) {
+        e.preventDefault();
+        var btn = $('#createTokenBtn');
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Creating...');
+
+        $.ajax({
+            url: '<?php echo base_url('account/createToken'); ?>',
+            method: 'POST',
+            data: new URLSearchParams(new FormData(this)).toString(),
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            success: function(res) {
+                if (res.success) {
+                    $('#createTokenForm').hide();
+                    $('#generatedToken').val(res.token);
+                    QRCode.toCanvas(document.getElementById('result-qr'), res.token, { width: 120, margin: 1 });
+                    $('#tokenResult').show();
+                    showToast('Token created! Scan the QR code from the app.', 'success');
+                } else {
+                    showToast(res.message || 'Failed to create token', 'danger');
+                }
+            },
+            error: function() {
+                showToast('Request failed', 'danger');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fas fa-plus mr-2"></i> Create');
             }
-        }
-
-        // Generate initial QR code
-        generateQRCode('<?php echo $currentTokenDisplay; ?>');
-
-        // Token display toggle
-        let tokenVisible = true;
-        $('#toggleTokenBtn').click(function() {
-            const input = $('#currentToken');
-            tokenVisible = !tokenVisible;
-
-            if (tokenVisible) {
-                input.attr('type', 'text');
-                $(this).html('<i class="fas fa-eye-slash"></i>');
-                $(this).attr('title', 'Hide token');
-            } else {
-                input.attr('type', 'password');
-                $(this).html('<i class="fas fa-eye"></i>');
-                $(this).attr('title', 'Show token');
-            }
-            $(this).tooltip('dispose').tooltip();
-        });
-
-        // Copy token functionality
-        $('#copyTokenBtn').click(function() {
-            const token = $('#currentToken').val();
-            navigator.clipboard.writeText(token).then(() => {
-                const original = $(this).html();
-                $(this).html('<i class="fas fa-check text-success"></i>');
-                $(this).tooltip('dispose').tooltip({title: 'Copied!'});
-
-                // Show toast notification
-                showToast('Token copied to clipboard!', 'success');
-
-                setTimeout(() => {
-                    $(this).html(original);
-                    $(this).tooltip('dispose').tooltip({title: 'Copy to clipboard'});
-                }, 2000);
-            });
-        });
-
-        // QR Code actions
-        $('#downloadQRBtn').click(function() {
-            const canvas = document.getElementById('qr-canvas');
-            if (canvas) {
-                const link = document.createElement('a');
-                link.download = 'api-token-qrcode.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showToast('QR code downloaded!', 'success');
-            }
-        });
-
-        $('#printQRBtn').click(function() {
-            window.print();
-        });
-
-        $('#refreshQRBtn').click(function() {
-            generateQRCode('<?php echo $currentTokenDisplay; ?>');
-            showToast('QR code refreshed!', 'info');
-        });
-
-        // Regenerate token form submission
-        $('#regenerateTokenForm').on('submit', function(e) {
-            e.preventDefault();
-
-            Swal.fire({
-                title: 'Regenerate Token?',
-                html: `
-                    <div class="text-left">
-                        <div class="alert alert-warning">
-                            <strong>Warning:</strong> This action will:
-                            <ul class="text-left pl-3">
-                                <li>Invalidate current Android connections</li>
-                                <li>Require re-authentication on all devices</li>
-                                <li>Disconnect all active sessions</li>
-                                <li>Require updating your Android app</li>
-                            </ul>
-                        </div>
-                        <p><strong>Are you sure you want to proceed?</strong></p>
-                    </div>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ffc107',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, regenerate',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true,
-                showLoaderOnConfirm: true,
-                preConfirm: () => {
-                    return fetch(this.action, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: new URLSearchParams(new FormData(this))
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (!data.success) {
-                                throw new Error(data.message);
-                            }
-                            return data;
-                        })
-                        .catch(error => {
-                            Swal.showValidationMessage(`Request failed: ${error}`);
-                        });
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const data = result.value;
-
-                    // Update token display
-                    $('#currentToken').val(data.token);
-                    generateQRCode(data.token);
-
-                    Swal.fire({
-                        title: 'Success!',
-                        html: `
-                            <div class="text-left">
-                                <p>Token regenerated successfully!</p>
-                                <div class="alert alert-success">
-                                    <strong>New Token:</strong><br>
-                                    <code class="d-block mt-2 p-2 bg-light">${data.token}</code>
-                                </div>
-                                <p class="text-muted small">Expires: ${data.expiry}</p>
-                                <p><strong>Update your Android app with this new token.</strong></p>
-                            </div>
-                        `,
-                        icon: 'success',
-                        confirmButtonText: 'Got it!'
-                    });
-                }
-            });
-        });
-
-        // Toast notification function
-        function showToast(message, type = 'info') {
-            const toast = $(`
-                <div class="toast fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 250px;">
-                    <div class="toast-header bg-${type} text-white">
-                        <strong class="mr-auto">
-                            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} mr-2"></i>
-                            ${type.charAt(0).toUpperCase() + type.slice(1)}
-                        </strong>
-                        <button type="button" class="ml-2 mb-1 close text-white" data-dismiss="toast">
-                            <span>&times;</span>
-                        </button>
-                    </div>
-                    <div class="toast-body">
-                        ${message}
-                    </div>
-                </div>
-            `);
-
-            $('body').append(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        // Regenerate token form submission
-        $('#regenerateTokenForm').on('submit', function(e) {
-            e.preventDefault();
-
-            Swal.fire({
-                title: 'Regenerate Token?',
-                html: `
-            <div class="text-left">
-                <div class="alert alert-warning">
-                    <strong>Warning:</strong> This action will:
-                    <ul class="text-left pl-3">
-                        <li>Invalidate current Android connections</li>
-                        <li>Require re-authentication on all devices</li>
-                        <li>Disconnect all active sessions</li>
-                        <li>Require updating your Android app</li>
-                    </ul>
-                </div>
-                <p><strong>Are you sure you want to proceed?</strong></p>
-            </div>
-        `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ffc107',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, regenerate',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true,
-                showLoaderOnConfirm: true,
-                preConfirm: () => {
-                    return fetch(this.action, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: new URLSearchParams(new FormData(this))
-                    })
-                        .then(response => {
-                            // Check content type to handle both JSON and HTML redirects
-                            const contentType = response.headers.get("content-type");
-                            if (contentType && contentType.indexOf("application/json") !== -1) {
-                                return response.json();
-                            } else {
-                                // If it's not JSON, it's likely a redirect
-                                window.location.href = response.url;
-                                return { success: true };
-                            }
-                        })
-                        .catch(error => {
-                            Swal.showValidationMessage(`Request failed: ${error}`);
-                        });
-                }
-            }).then((result) => {
-                if (result.isConfirmed && result.value && result.value.success) {
-                    const data = result.value;
-
-                    // Update token display
-                    $('#currentToken').val(data.token);
-                    generateQRCode(data.token);
-
-                    Swal.fire({
-                        title: 'Success!',
-                        html: `
-                    <div class="text-left">
-                        <p>Token regenerated successfully!</p>
-                        <div class="alert alert-success">
-                            <strong>New Token:</strong><br>
-                            <code class="d-block mt-2 p-2 bg-light">${data.token}</code>
-                        </div>
-                        <p class="text-muted small">Expires: ${data.expiry}</p>
-                        <p><strong>Update your Android app with this new token.</strong></p>
-                    </div>
-                `,
-                        icon: 'success',
-                        confirmButtonText: 'Got it!'
-                    });
-                }
-            });
-        });
-
-        // Initialize tooltips
-        $('[data-toggle="tooltip"]').tooltip();
-
-        // Tab switching animation
-        $('.nav-tabs a').on('click', function(e) {
-            e.preventDefault();
-            $(this).tab('show');
         });
     });
+
+    // Copy generated token
+    $('#copyGeneratedToken').click(function() {
+        navigator.clipboard.writeText($('#generatedToken').val());
+        showToast('Token copied!', 'success');
     });
+
+    // Tab switching
+    $('.nav-tabs a').on('click', function(e) {
+        e.preventDefault();
+        $(this).tab('show');
+    });
+
+    });
+});
 </script>

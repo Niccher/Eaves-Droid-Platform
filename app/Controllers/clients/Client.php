@@ -19,7 +19,7 @@ class Client extends BaseClientController
 
         // Get counts using BaseClientController method
         $counts = $this->getUserDataCounts();
-        $data = array_merge($data, $counts);
+        $data = array_merge($data, $counts, $this->getDeviceViewData());
 
 		return view('headers_footers/head_users')
 			. view('headers_footers/sidebar_users', $data)
@@ -35,7 +35,7 @@ class Client extends BaseClientController
 
         // Get counts using BaseClientController method
         $counts = $this->getUserDataCounts();
-        $data = array_merge($data, $counts);
+        $data = array_merge($data, $counts, $this->getDeviceViewData());
 
 		$data['call_urls'] = '
                         <a class="btn btn-primary" href="'.base_url("call_logs").'">All</a>

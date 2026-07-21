@@ -127,6 +127,9 @@ class Account extends BaseClientController
             // Get user devices (limit to last 10)
             $userDevices = array_slice($this->getUserDevices(), 0, 10);
 
+            // Get used tokens
+            $usedTokens = $this->modUser->get_used_tokens($this->userId);
+
             // Get usage metrics
             $usageMetrics = $this->getUsageMetrics();
             
@@ -139,6 +142,7 @@ class Account extends BaseClientController
                 'user_vars' => $userVars,
                 'user_token' => $userToken,
                 'user_devices' => $userDevices,
+                'used_tokens' => $usedTokens,
                 'recent_files' => $this->getRecentFiles(),
                 'activeSessions' => $this->modUser->get_active_sessions_count($this->userId),
                 'securityEvents' => $this->modUser->get_security_events_count($this->userId),
@@ -675,6 +679,50 @@ class Account extends BaseClientController
             }
         }
     }
+    /**
+     * POST /account/createToken
+     * Creates a new named token.
+     */
+    public function createToken()
+    {
+        if ($this->request->getMethod() !== 'post') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Method not allowed. Use POST.'
+            ]);
+        }
+
+        $tokenName = trim($this->request->getPost('token_name') ?? '');
+
+        try {
+            $newToken = bin2hex(random_bytes(4));
+
+            $this->modUser->create_token(
+                $this->userId,
+                $newToken,
+                $this->request->getIPAddress(),
+                $tokenName ?: null
+            );
+
+            $this->logUserAction('token_create', 'security', 'medium', 1);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Token created successfully!',
+                'token' => $newToken,
+                'token_name' => $tokenName,
+                'qrCodeData' => $this->generateQRCodeData($newToken),
+                'expiry' => date('M d, Y H:i', strtotime('+30 days'))
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Token creation failed: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Token creation failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
     // =================================================================
     // ACCESS LOGS METHODS
     // =================================================================
@@ -1560,6 +1608,9 @@ class Account extends BaseClientController
             // Load helper
             helper('logs');
 
+            // Merge device view data for sidebar
+            $data = array_merge($data, $this->getDeviceViewData());
+
             // Set the view path
             $viewPath = 'users/account/' . $page;
 
@@ -1627,11 +1678,13 @@ class Account extends BaseClientController
         try {
             $userData = $this->getEnhancedUserData();
             $userDevices = $this->getUserDevices();
+            $deviceProfiles = $this->modUser->get_user_devices_from_profile($this->userId);
 
             $viewData = [
                 'pag' => 'account_devices',
                 'user_info' => $userData,
                 'user_devices' => $userDevices,
+                'device_profiles' => $deviceProfiles,
                 'csrf_token' => csrf_hash(),
             ];
 

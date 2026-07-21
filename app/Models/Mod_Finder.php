@@ -17,6 +17,32 @@ class Mod_Finder extends Model
     protected $skipValidation = false;
     public $pager; // Changed from protected to public
 
+    protected ?string $deviceId = null;
+
+    public function setDeviceId(?string $deviceId): void
+    {
+        $this->deviceId = $deviceId;
+    }
+
+    protected function applyOwnerDeviceFilter($builder, int $user_id)
+    {
+        $builder->where('owner_id', $user_id);
+        if (!empty($this->deviceId) && $this->deviceId !== 'all') {
+            $builder->where('device_id', $this->deviceId);
+        }
+        return $builder;
+    }
+
+    protected function fq(string $table, int $userId)
+    {
+        $builder = $this->db->table($table);
+        $builder->where('owner_id', $userId);
+        if (!empty($this->deviceId) && $this->deviceId !== 'all') {
+            $builder->where('device_id', $this->deviceId);
+        }
+        return $builder;
+    }
+
     /**
      * Gets basic user data if logged in.
      *
@@ -72,9 +98,7 @@ class Mod_Finder extends Model
         try {
             $builder = $this->db->table($table);
 
-            // Handle different owner column names
-            $ownerColumn = 'owner_id';
-            $builder->where($ownerColumn, $user_id);
+            $this->applyOwnerDeviceFilter($builder, $user_id);
 
             if (!empty($extraWhere)) {
                 $builder->where($extraWhere);
@@ -99,7 +123,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_apps');
-            return $builder->where('owner_id', $user_id)->delete();
+            return $this->applyOwnerDeviceFilter($builder, $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteAppsByUser error: ' . $e->getMessage());
             return false;
@@ -116,7 +140,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_logs');
-            return $builder->where('owner_id', $user_id)->delete();
+            return $this->applyOwnerDeviceFilter($builder, $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteCallsByUser error: ' . $e->getMessage());
             return false;
@@ -133,7 +157,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_contacts');
-            return $builder->where('owner_id', $user_id)->delete();
+            return $this->applyOwnerDeviceFilter($builder, $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteContactsByUser error: ' . $e->getMessage());
             return false;
@@ -150,7 +174,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_sms');
-            return $builder->where('owner_id', $user_id)->delete();
+            return $this->applyOwnerDeviceFilter($builder, $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteSmsByUser error: ' . $e->getMessage());
             return false;
@@ -160,7 +184,7 @@ class Mod_Finder extends Model
     public function deleteLocationByUser(int $user_id): bool
     {
         try {
-            return $this->db->table('tbl_location')->where('owner_id', $user_id)->delete();
+            return $this->fq('tbl_location', $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteLocationByUser error: ' . $e->getMessage());
             return false;
@@ -170,7 +194,7 @@ class Mod_Finder extends Model
     public function deleteActivityByUser(int $user_id): bool
     {
         try {
-            return $this->db->table('tbl_activity')->where('owner_id', $user_id)->delete();
+            return $this->fq('tbl_activity', $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteActivityByUser error: ' . $e->getMessage());
             return false;
@@ -180,7 +204,7 @@ class Mod_Finder extends Model
     public function deleteDeviceFilesByUser(int $user_id): bool
     {
         try {
-            return $this->db->table('tbl_device_files')->where('owner_id', $user_id)->delete();
+            return $this->fq('tbl_device_files', $user_id)->delete();
         } catch (\Exception $e) {
             log_message('error', 'deleteDeviceFilesByUser error: ' . $e->getMessage());
             return false;
@@ -189,27 +213,27 @@ class Mod_Finder extends Model
 
     public function deleteDeviceContextByUser(int $user_id): bool
     {
-        return $this->db->table('tbl_device_context')->where('owner_id', $user_id)->delete();
+        return $this->fq('tbl_device_context', $user_id)->delete();
     }
     public function deleteNetworkInfoByUser(int $user_id): bool
     {
-        return $this->db->table('tbl_network_info')->where('owner_id', $user_id)->delete();
+        return $this->fq('tbl_network_info', $user_id)->delete();
     }
     public function deleteAccountsByUser(int $user_id): bool
     {
-        return $this->db->table('tbl_accounts')->where('owner_id', $user_id)->delete();
+        return $this->fq('tbl_accounts', $user_id)->delete();
     }
     public function deleteCalendarByUser(int $user_id): bool
     {
-        return $this->db->table('tbl_calendar_events')->where('owner_id', $user_id)->delete();
+        return $this->fq('tbl_calendar_events', $user_id)->delete();
     }
     public function deleteAppUsageByUser(int $user_id): bool
     {
-        return $this->db->table('tbl_app_usage')->where('owner_id', $user_id)->delete();
+        return $this->fq('tbl_app_usage', $user_id)->delete();
     }
     public function deleteNotificationsByUser(int $user_id): bool
     {
-        return $this->db->table('tbl_notifications')->where('owner_id', $user_id)->delete();
+        return $this->fq('tbl_notifications', $user_id)->delete();
     }
 
     /**
@@ -223,7 +247,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_notifications');
-            return $builder->where('owner_id', $user_id)
+            return $this->applyOwnerDeviceFilter($builder, $user_id)
                            ->where('package_name', $packageName)
                            ->delete();
         } catch (\Exception $e) {
@@ -233,11 +257,11 @@ class Mod_Finder extends Model
     }
     public function deleteBluetoothByUser(int $user_id): bool
     {
-        return $this->db->table('tbl_bluetooth')->where('owner_id', $user_id)->delete();
+        return $this->fq('tbl_bluetooth', $user_id)->delete();
     }
     public function deleteSensorsByUser(int $user_id): bool
     {
-        return $this->db->table('tbl_sensor_profile')->where('owner_id', $user_id)->delete();
+        return $this->fq('tbl_sensor_profile', $user_id)->delete();
     }
 
     /**
@@ -289,7 +313,7 @@ class Mod_Finder extends Model
     {
         try {
             $blocked = $this->getBlockedIdentifiers($user_id, 'app_usage');
-            $builder = $this->db->table('tbl_apps')->where('owner_id', $user_id);
+            $builder = $this->fq('tbl_apps', $user_id);
             if (!empty($blocked)) {
                 $builder->whereNotIn('package_name', $blocked);
             }
@@ -357,8 +381,7 @@ class Mod_Finder extends Model
     {
         if ($hasCoordsOnly) {
             try {
-                return $this->db->table('tbl_location')
-                    ->where('owner_id', $user_id)
+                return $this->fq('tbl_location', $user_id)
                     ->where('latitude IS NOT NULL')
                     ->where('longitude IS NOT NULL')
                     ->where('latitude !=', '')
@@ -395,7 +418,6 @@ class Mod_Finder extends Model
             $user_id = auth()->user()->id;
             return $this->db->table('tbl_contacts')
                 ->select('display_name as Name')
-                ->where('owner_id', $user_id)
                 ->like('phone_numbers', $nom)
                 ->get()
                 ->getRowArray();
@@ -417,7 +439,6 @@ class Mod_Finder extends Model
             $user_id = auth()->user()->id;
             $builder = $this->db->table('tbl_contacts');
             $query_sent = $builder->select('*')
-                ->where('owner_id', $user_id)
                 ->like('phone_numbers', $contactNumber1)
                 ->limit(1)
                 ->get();
@@ -566,7 +587,6 @@ class Mod_Finder extends Model
                 sms_date as sms_time,
                 sms_type
             ')
-                ->where('owner_id', $user_id)
                 ->where('sms_type', $sms_type);
 
             $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
@@ -618,8 +638,7 @@ class Mod_Finder extends Model
                 body as sms_body,
                 sms_date as sms_time,
                 sms_type
-            ')
-                ->where('owner_id', $user_id);
+            ');
 
             $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
             if (!empty($blocked)) {
@@ -654,8 +673,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_sms')
-                ->select('address as sms_number, thread_id as sms_thread_id, count(*) AS Totals')
-                ->where('owner_id', $user_id);
+                ->select('address as sms_number, thread_id as sms_thread_id, count(*) AS Totals');
                 
             $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
             if (!empty($blocked)) {
@@ -700,8 +718,7 @@ class Mod_Finder extends Model
                 call_date as Timestamp,
                 duration_seconds as Durations,
                 call_type as Type
-            ')
-                ->where('owner_id', $user_id);
+            ');
                 
             $blocked = $this->getBlockedIdentifiers($user_id, 'call');
             if (!empty($blocked)) {
@@ -739,7 +756,7 @@ class Mod_Finder extends Model
             $builder = $this->db->table('tbl_logs');
 
             // Get total count for this category
-            $total = $builder->where('owner_id', $user_id)
+            $total = $this->applyOwnerDeviceFilter($builder, $user_id)
                 ->where('call_type', $category)
                 ->countAllResults();
 
@@ -755,7 +772,6 @@ class Mod_Finder extends Model
                 duration_seconds as Durations,
                 call_type as Type
             ')
-                ->where('owner_id', $user_id)
                 ->where('call_type', $category);
                 
             $blocked = $this->getBlockedIdentifiers($user_id, 'call');
@@ -791,8 +807,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_logs')
-                ->select('phone_number as Caller, contact_name as Saved, count(*) AS Totals')
-                ->where('owner_id', $user_id);
+                ->select('phone_number as Caller, contact_name as Saved, count(*) AS Totals');
                 
             $blocked = $this->getBlockedIdentifiers($user_id, 'call');
             if (!empty($blocked)) {
@@ -844,8 +859,7 @@ class Mod_Finder extends Model
                 last_update_time,
                 target_sdk,
                 min_sdk
-            ')
-                ->where('owner_id', $user_id);
+            ');
                 
             $blocked = $this->getBlockedIdentifiers($user_id, 'app_usage');
             if (!empty($blocked)) {
@@ -883,11 +897,11 @@ class Mod_Finder extends Model
 
             // Get total count for pagination
             if (is_array($sender)) {
-                $total = $builder->where('owner_id', $user_id)
+                $total = $this->applyOwnerDeviceFilter($builder, $user_id)
                     ->whereIn('address', $sender)
                     ->countAllResults();
             } else {
-                $total = $builder->where('owner_id', $user_id)
+                $total = $this->applyOwnerDeviceFilter($builder, $user_id)
                     ->where('address', $sender)
                     ->countAllResults();
             }
@@ -905,7 +919,6 @@ class Mod_Finder extends Model
                 sms_date as sms_time,
                 sms_type
             ')
-                ->where('owner_id', $user_id)
                 ->orderBy('sms_date', 'DESC');
 
             if (is_array($sender)) {
@@ -957,7 +970,7 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $builder->where('owner_id', $user_id);
+            $this->applyOwnerDeviceFilter($builder, $user_id);
 
             if ($hasCoordsOnly) {
                 $builder->where('latitude IS NOT NULL')
@@ -996,7 +1009,7 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $results = $builder->where('owner_id', $user_id)
+            $results = $this->applyOwnerDeviceFilter($builder, $user_id)
                 ->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
@@ -1056,43 +1069,43 @@ class Mod_Finder extends Model
     // ── Export Fetch Methods ─────────────────────────────────────────────
     public function export_device_context(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_device_context')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_device_context', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_network_info(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_network_info')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_network_info', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_accounts(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_accounts')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_accounts', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_calendar_events(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_calendar_events')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_calendar_events', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_app_usage(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_app_usage')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_app_usage', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_notifications(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_notifications')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_notifications', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_bluetooth(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_bluetooth')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_bluetooth', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_sensors(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_sensor_profile')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_sensor_profile', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_security_audit(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_security_audit')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_security_audit', $user_id)->limit($limit)->get()->getResultArray();
     }
     public function export_device_files(int $user_id, int $limit = 1000): array
     {
-        return $this->db->table('tbl_device_files')->where('owner_id', $user_id)->limit($limit)->get()->getResultArray();
+        return $this->fq('tbl_device_files', $user_id)->limit($limit)->get()->getResultArray();
     }
 
     // ── Advanced Extractor Paginated Queries ──────────────────────────────────
@@ -1103,8 +1116,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_DeviceContext($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_device_context')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_device_context', $user_id)
                 ->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             $this->pager = \Config\Services::pager();
@@ -1122,8 +1134,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_NetworkInfo($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_network_info')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_network_info', $user_id)
                 ->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             $this->pager = \Config\Services::pager();
@@ -1153,8 +1164,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_Accounts($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_accounts')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_accounts', $user_id)
                 ->orderBy('account_type', 'ASC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             $this->pager = \Config\Services::pager();
@@ -1172,8 +1182,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_Calendar($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_calendar_events')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_calendar_events', $user_id)
                 ->orderBy('start_time', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             $this->pager = \Config\Services::pager();
@@ -1191,8 +1200,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_AppUsage($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_app_usage')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_app_usage', $user_id)
                 ->orderBy('foreground_time_ms', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             $this->pager = \Config\Services::pager();
@@ -1207,9 +1215,9 @@ class Mod_Finder extends Model
     public function get_count_app_usage_packages(int $user_id): int
     {
         try {
-            $row = $this->db->table('tbl_app_usage')
-                ->select('COUNT(DISTINCT package_name) AS cnt', false)
-                ->where('owner_id', $user_id)
+            $builder = $this->db->table('tbl_app_usage');
+            $this->applyOwnerDeviceFilter($builder, $user_id);
+            $row = $builder->select('COUNT(DISTINCT package_name) AS cnt', false)
                 ->get()
                 ->getRowArray();
 
@@ -1228,7 +1236,9 @@ class Mod_Finder extends Model
             $page = (int) (service('request')->getGet('page') ?? 1);
             $offset = ($page - 1) * $perPage;
 
-            $results = $this->db->table('tbl_app_usage')
+            $builder = $this->db->table('tbl_app_usage');
+            $this->applyOwnerDeviceFilter($builder, $user_id);
+            $results = $builder
                 ->select('package_name', false)
                 ->select('MAX(app_name) AS app_name', false)
                 ->select('SUM(foreground_time_ms) AS foreground_time_ms', false)
@@ -1236,7 +1246,6 @@ class Mod_Finder extends Model
                 ->select('COUNT(*) AS snapshot_count', false)
                 ->select('MAX(extracted_at) AS last_extracted_at', false)
                 ->select('MAX(is_system_app) AS is_system_app', false)
-                ->where('owner_id', $user_id)
                 ->groupBy('package_name')
                 ->orderBy('SUM(foreground_time_ms)', 'DESC')
                 ->limit($perPage, $offset)
@@ -1257,8 +1266,7 @@ class Mod_Finder extends Model
     public function get_count_app_usage_for_package(int $user_id, string $package_name): int
     {
         try {
-            return $this->db->table('tbl_app_usage')
-                ->where('owner_id', $user_id)
+            return $this->fq('tbl_app_usage', $user_id)
                 ->where('package_name', $package_name)
                 ->countAllResults();
         } catch (\Exception $e) {
@@ -1275,8 +1283,7 @@ class Mod_Finder extends Model
             $page = (int) (service('request')->getGet('page') ?? 1);
             $offset = ($page - 1) * $perPage;
 
-            $results = $this->db->table('tbl_app_usage')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_app_usage', $user_id)
                 ->where('package_name', $package_name)
                 ->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)
@@ -1300,9 +1307,9 @@ class Mod_Finder extends Model
     public function get_app_detail_by_package(int $user_id, string $package_name): array
     {
         try {
-            $row = $this->db->table('tbl_apps')
+            $builder = $this->fq('tbl_apps', $user_id);
+            $row = $builder
                 ->select('app_name, package_name, version_name, version_code, app_size, permission_count, target_sdk, min_sdk, first_install_time, last_update_time, is_system_app')
-                ->where('owner_id', $user_id)
                 ->where('package_name', $package_name)
                 ->get()
                 ->getRowArray();
@@ -1344,13 +1351,13 @@ class Mod_Finder extends Model
     public function get_app_usage_package_summary(int $user_id, string $package_name): array
     {
         try {
-            $row = $this->db->table('tbl_app_usage')
+            $builder = $this->fq('tbl_app_usage', $user_id);
+            $row = $builder
                 ->select('MAX(app_name) AS app_name', false)
                 ->select('SUM(foreground_time_ms) AS foreground_time_ms', false)
                 ->select('MAX(last_time_used) AS last_time_used', false)
                 ->select('COUNT(*) AS snapshot_count', false)
                 ->select('MAX(is_system_app) AS is_system_app', false)
-                ->where('owner_id', $user_id)
                 ->where('package_name', $package_name)
                 ->get()
                 ->getRowArray();
@@ -1366,9 +1373,9 @@ class Mod_Finder extends Model
     public function get_app_usage_sessions_for_package(int $user_id, string $package_name, int $perPage = 50): array
     {
         try {
-            $usageIds = $this->db->table('tbl_app_usage')
+            $builder = $this->fq('tbl_app_usage', $user_id);
+            $usageIds = $builder
                 ->select('id')
-                ->where('owner_id', $user_id)
                 ->where('package_name', $package_name)
                 ->get()
                 ->getResultArray();
@@ -1379,8 +1386,7 @@ class Mod_Finder extends Model
 
             $ids = array_column($usageIds, 'id');
 
-            return $this->db->table('tbl_app_usage_sessions')
-                ->where('owner_id', $user_id)
+            return $this->fq('tbl_app_usage_sessions', $user_id)
                 ->whereIn('app_usage_id', $ids)
                 ->orderBy('timestamp', 'DESC')
                 ->limit($perPage)
@@ -1399,8 +1405,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_Notifications($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_notifications')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_notifications', $user_id)
                 ->orderBy('notification_timestamp', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             $this->pager = \Config\Services::pager();
@@ -1443,9 +1448,9 @@ class Mod_Finder extends Model
     {
         try {
             $groupSql = $this->notificationGroupKeySql();
-            $row = $this->db->table('tbl_notifications')
+            $builder = $this->fq('tbl_notifications', $user_id);
+            $row = $builder
                 ->select("COUNT(DISTINCT {$groupSql}) AS cnt", false)
-                ->where('owner_id', $user_id)
                 ->get()
                 ->getRowArray();
 
@@ -1483,7 +1488,6 @@ class Mod_Finder extends Model
                     "SUBSTRING_INDEX(GROUP_CONCAT(title ORDER BY notification_timestamp DESC SEPARATOR '||'), '||', 1) AS latest_title",
                     false
                 )
-                ->where('owner_id', $user_id)
                 ->groupBy($groupSql, false)
                 ->orderBy('MAX(notification_timestamp)', 'DESC', false)
                 ->limit($perPage, $offset)
@@ -1504,7 +1508,7 @@ class Mod_Finder extends Model
     public function get_count_notifications_for_group(int $user_id, string $group_key): int
     {
         try {
-            $builder = $this->db->table('tbl_notifications')->where('owner_id', $user_id);
+            $builder = $this->fq('tbl_notifications', $user_id);
             $this->applyNotificationGroupFilter($builder, $group_key);
 
             return $builder->countAllResults();
@@ -1528,8 +1532,7 @@ class Mod_Finder extends Model
             $page = (int) (service('request')->getGet('page') ?? 1);
             $offset = ($page - 1) * $perPage;
 
-            $builder = $this->db->table('tbl_notifications')
-                ->where('owner_id', $user_id);
+            $builder = $this->fq('tbl_notifications', $user_id);
             $this->applyNotificationGroupFilter($builder, $group_key);
 
             $results = $builder
@@ -1567,8 +1570,7 @@ class Mod_Finder extends Model
                 ->select('MAX(sender) AS sender', false)
                 ->select('COUNT(*) AS notification_count', false)
                 ->select($this->notificationScreenCountSelect(), false)
-                ->select('MAX(notification_timestamp) AS latest_timestamp', false)
-                ->where('owner_id', $user_id);
+                ->select('MAX(notification_timestamp) AS latest_timestamp', false);
             $this->applyNotificationGroupFilter($builder, $group_key);
 
             $row = $builder->get()->getRowArray();
@@ -1596,8 +1598,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_Bluetooth($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_bluetooth')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_bluetooth', $user_id)
                 ->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             // For each snapshot, fetch paired devices
@@ -1620,8 +1621,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_Sensors($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_sensor_profile')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_sensor_profile', $user_id)
                 ->orderBy('type_id', 'ASC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             $this->pager = \Config\Services::pager();
@@ -1639,8 +1639,7 @@ class Mod_Finder extends Model
             $total = $this->get_count_SecurityAudit($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->db->table('tbl_security_audit')
-                ->where('owner_id', $user_id)
+            $results = $this->fq('tbl_security_audit', $user_id)
                 ->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
             if (!empty($results)) {
@@ -3688,6 +3687,123 @@ class Mod_Finder extends Model
                 ->delete();
         } catch (\Exception $e) {
             log_message('error', 'delete_notification error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_app(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_apps')
+                ->where('counter', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_app error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_device_context_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_device_context')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_device_context_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_network_info_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_network_info')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_network_info_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_accounts_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_accounts')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_accounts_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_calendar_event(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_calendar_events')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_calendar_event error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_sensor_profile(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_sensor_profile')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_sensor_profile error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_bluetooth_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_bluetooth')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_bluetooth_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_security_audit_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_security_audit')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_security_audit_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_app_usage_by_package(int $userId, string $packageName): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_app_usage')
+                ->where('owner_id', $userId)
+                ->where('package_name', $packageName)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_app_usage_by_package error: ' . $e->getMessage());
             return false;
         }
     }

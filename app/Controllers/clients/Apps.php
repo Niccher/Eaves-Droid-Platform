@@ -276,4 +276,18 @@ class Apps extends BaseClientController
         return $this->user();
     }
 
+    /**
+     * POST /apps/delete/{id}
+     * Deletes a single app entry.
+     */
+    public function delete($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_app((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'App deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete app.']);
+    }
 }

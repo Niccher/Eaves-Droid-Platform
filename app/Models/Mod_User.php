@@ -153,7 +153,7 @@ class Mod_User extends Model
      * @param string $ip_add
      * @return bool
      */
-    public function create_token(int $user_id, string $token, string $ip_add): bool
+    public function create_token(int $user_id, string $token, string $ip_add, ?string $token_name = null): bool
     {
         try {
             $dated = date('Y-m-d H:i:s');
@@ -171,7 +171,7 @@ class Mod_User extends Model
                 'status' => "00",
                 'initiator' => $ip_add,
                 'expires_at' => $future_date,
-                'device_name' => 'Android_' . date('Ymd_His'),
+                'device_name' => $token_name ?? ('Android_' . date('Ymd_His')),
                 'last_used_at' => $dated,
                 'ip_address' => $ip_add,
                 'user_agent' => service('request')->getUserAgent()->getAgentString(),
@@ -457,7 +457,7 @@ class Mod_User extends Model
     {
         try {
             // Step 1: Get device hardware IDs linked to this user
-            // We check both tbl_tokens and uploaded_files for maximum reliability
+            // We check tbl_tokens, uploaded_files, and direct owner_id on device_profile
             
             // From tokens
             $tokenChecksums = $this->db->table('tbl_tokens')
@@ -469,7 +469,7 @@ class Mod_User extends Model
                 ->get()
                 ->getResultArray();
 
-            // From uploaded files (very reliable as it's saved during actual data upload)
+            // From uploaded files
             $uploadChecksums = $this->db->table('uploaded_files')
                 ->select('device_checksum')
                 ->where('token_owner_id', $user_id)
@@ -484,15 +484,17 @@ class Mod_User extends Model
                 array_column($uploadChecksums, 'device_checksum')
             ));
 
-            if (empty($allChecksums)) {
-                log_message('info', 'No tokens/uploads/devices found for user ' . $user_id);
-                return [];
+            // Step 2: Fetch device profiles using checksums OR direct owner_id
+            $builder = $this->db->table('tbl_device_profile');
+
+            if (!empty($allChecksums)) {
+                $builder->whereIn('device_id', $allChecksums);
+                $builder->orWhere('owner_id', $user_id);
+            } else {
+                $builder->where('owner_id', $user_id);
             }
 
-            // Step 2: Fetch device profiles using these checksums
-            // Profiles use the real hardware ID in the 'device_id' column
-            $devices = $this->db->table('tbl_device_profile')
-                ->whereIn('device_id', $allChecksums) 
+            $devices = $builder
                 ->orderBy('extraction_timestamp', 'DESC')
                 ->get()
                 ->getResultArray();
@@ -501,6 +503,22 @@ class Mod_User extends Model
 
         } catch (\Exception $e) {
             log_message('error', 'get_user_devices_from_profile error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_used_tokens(int $user_id): array
+    {
+        try {
+            return $this->db->table('tbl_tokens')
+                ->where('owner_id', $user_id)
+                ->where('status', '11')
+                ->orderBy('counter', 'DESC')
+                ->limit(50)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_used_tokens error: ' . $e->getMessage());
             return [];
         }
     }

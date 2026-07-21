@@ -260,6 +260,12 @@ if (!empty($detail_mode)) {
                                 <td><span class="badge badge-<?= $r['is_system_app'] ? 'secondary' : 'primary' ?>"><?= $r['is_system_app'] ? 'System' : 'User' ?></span></td>
                                 <td class="text-center">
                                     <a href="<?= base_url('advanced/app-usage/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-info" title="View details"><i class="fas fa-eye"></i></a>
+                                    <button class="btn btn-sm btn-outline-danger delete-app-usage-pkg"
+                                            data-pkg="<?= $pkgEnc ?? '' ?>"
+                                            data-name="<?= esc($r['app_name'] ?? '') ?>"
+                                            title="Delete all usage data for this app">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                         <?php endforeach; endif; ?>
@@ -274,4 +280,43 @@ if (!empty($detail_mode)) {
 <?php
 }
 ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.delete-app-usage-pkg').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var pkg = this.getAttribute('data-pkg');
+            var name = this.getAttribute('data-name');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Delete all usage data?',
+                    text: 'This will delete ALL usage snapshots for "' + name + '". This cannot be undone.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-trash"></i> Delete All'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        fetch('<?= base_url('advanced/app-usage/delete-package') ?>/' + pkg, {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        }).then(function(r) { return r.json(); }).then(function(response) {
+                            if (response.success) {
+                                Swal.fire('Deleted!', 'All usage data has been deleted.', 'success').then(function() {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to delete.', 'error');
+                            }
+                        }).catch(function() {
+                            Swal.fire('Error!', 'Failed to delete usage data.', 'error');
+                        });
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
 <?php include __DIR__ . '/_adv_style.php'; ?>

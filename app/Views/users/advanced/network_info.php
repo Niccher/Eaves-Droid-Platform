@@ -31,11 +31,12 @@
                             <th><i class="fas fa-wifi mr-1"></i>Connected WiFi</th>
                             <th><i class="fas fa-broadcast-tower mr-1"></i>Nearby APs</th>
                             <th><i class="fas fa-clock mr-1"></i>Extracted</th>
+                            <th class="text-center"><i class="fas fa-cogs mr-1"></i>Actions</th>
                         </tr>
                         </thead>
                         <tbody>
                         <?php if (empty($rows)): ?>
-                            <tr><td colspan="6" class="text-center py-5">
+                            <tr><td colspan="7" class="text-center py-5">
                                 <div class="empty-state"><i class="fas fa-wifi fa-3x text-muted mb-3"></i><h4>No network data</h4><p class="text-muted">Data will appear here once extracted</p></div>
                             </td></tr>
                         <?php else: foreach ($rows as $r): ?>
@@ -78,6 +79,14 @@
                                     <?php else: ?><span class="text-muted">—</span><?php endif; ?>
                                 </td>
                                 <td><small><?= !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—' ?></small></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-danger delete-row"
+                                            data-id="<?= $r['id'] ?? '' ?>"
+                                            data-url="<?= base_url('advanced/network/delete') ?>"
+                                            title="Delete this row">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
@@ -123,3 +132,4 @@ function showNearbyAPs(aps) {
 </script>
 
 <?php include __DIR__ . '/_adv_style.php'; ?>
+<?php include __DIR__ . '/_adv_delete_script.php'; ?>
