@@ -10,8 +10,8 @@ class ContactController extends BaseController
     public function index()
     {
         $data['pag']         = 'contact';
-        $data['page_title']  = 'Contact Us | Prj Images';
-        $data['page_desc']   = 'Get in touch with the Prj Images team. Send us a message for support, partnership inquiries, or feedback about our mobile data intelligence platform.';
+        $data['page_title']  = 'Contact Us | Eaves Droid';
+        $data['page_desc']   = 'Get in touch with the Eaves Droid team. Send us a message for support, partnership inquiries, or feedback about our mobile data intelligence platform.';
         $data['page_keys']   = 'contact prj images, mobile analytics support, get in touch, data intelligence help';
         $data['info'] = '';
 

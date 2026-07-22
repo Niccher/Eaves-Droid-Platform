@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Prj Images | Advanced Mobile Forensic & Data Intelligence Platform</title>
+    <title>Eaves Droid | Advanced Mobile Forensic & Data Intelligence Platform</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="A powerful, free mobile data intelligence platform designed for deep analysis of Android device data, including call logs, SMS correlation, and file structure visualization."/>
     <meta name="keywords" content="mobile forensics, android data analysis, SMS correlation tool, call log analyzer, mobile data intelligence, digital forensics platform"/>
     <meta content="domino" name="author"/>
     <meta content="support@chegecache.co.ke" name="support"/>
     <meta content="https://chegecache.co.ke/" name="Website"/>
-    <meta content="Prj Images" name="application-name"/>
+    <meta content="Eaves Droid" name="application-name"/>
 
     <link rel="shortcut icon" href="<?= base_url('assets/img/favicon.png') ?>" type="image/x-icon">
     <!-- Google Font: Source Sans Pro -->

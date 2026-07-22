@@ -76,14 +76,14 @@
 <body>
 <div class="email-container">
     <div class="header">
-        <img src="<?= base_url('assets/img/logo.png') ?>" alt="Prj Images Logo" class="logo">
+        <img src="<?= base_url('assets/img/logo.png') ?>" alt="Eaves Droid Logo" class="logo">
         <h2>Password Reset</h2>
     </div>
 
     <div class="content">
         <p>Hello <strong><?= esc($username) ?></strong>,</p>
 
-        <p>We received a request to reset the password for your <strong>Prj Images</strong> account. Click the button below to set a new password:</p>
+        <p>We received a request to reset the password for your <strong>Eaves Droid</strong> account. Click the button below to set a new password:</p>
 
         <div class="button-container">
             <a href="<?= esc($reset_link) ?>" class="button">Reset Password</a>
@@ -101,7 +101,7 @@
     </div>
 
     <div class="footer">
-        <p>Sent with &hearts; from the <strong>Prj Images Team</strong>.<br>
+        <p>Sent with &hearts; from the <strong>Eaves Droid Team</strong>.<br>
             This is an automated message, please do not reply.</p>
     </div>
 </div>

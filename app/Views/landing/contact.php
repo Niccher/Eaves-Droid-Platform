@@ -2,7 +2,7 @@
     <div class="bg-primary py-5 shadow-sm" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
         <div class="container text-center text-white">
             <h1 class="display-4 font-weight-bold">Contact Us</h1>
-            <p class="lead">Get in touch with our technical support team</p>
+            <p class="lead">We're here to help — reach out to the Eaves Droid team</p>
         </div>
     </div>
 
@@ -11,35 +11,46 @@
         <div class="container">
             <!-- Contact Methods -->
             <div class="row mb-5">
-                <div class="col-md-4 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="info-box shadow-sm h-100">
                         <span class="info-box-icon bg-primary"><i class="fas fa-envelope"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text text-bold">Email Support</span>
-                            <span class="info-box-number small text-muted font-weight-light">support@prjimages.com</span>
+                            <span class="info-box-number small text-muted font-weight-light">support@eavesdroid.com</span>
                             <span class="progress-description small">Response: 24 hours</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-4 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="info-box shadow-sm h-100">
                         <span class="info-box-icon bg-success"><i class="fas fa-headset"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text text-bold">Technical Support</span>
-                            <span class="info-box-number small text-muted font-weight-light">tech@prjimages.com</span>
+                            <span class="info-box-number small text-muted font-weight-light">tech@eavesdroid.com</span>
                             <span class="progress-description small">Response: 12 hours</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-4 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="info-box shadow-sm h-100">
                         <span class="info-box-icon bg-warning"><i class="fas fa-briefcase"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text text-bold text-white">Business Inquiries</span>
-                            <span class="info-box-number small text-muted font-weight-light">business@prjimages.com</span>
+                            <span class="info-box-number small text-muted font-weight-light">business@eavesdroid.com</span>
                             <span class="progress-description small">Response: 48 hours</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="info-box shadow-sm h-100">
+                        <span class="info-box-icon bg-danger"><i class="fab fa-github"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text text-bold">GitHub Issues</span>
+                            <span class="info-box-number small text-muted font-weight-light">Report bugs & feature requests</span>
+                            <span class="progress-description small"><a href="https://github.com/niccher/eaves-droid/issues" target="_blank" class="text-danger">Open an Issue →</a></span>
                         </div>
                     </div>
                 </div>

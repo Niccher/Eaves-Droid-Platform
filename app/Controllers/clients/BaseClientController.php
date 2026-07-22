@@ -65,6 +65,9 @@ class BaseClientController extends BaseController
         $modUser = new \App\Models\Mod_User();
         $this->userDevices = $modUser->get_user_devices_from_profile($this->userId);
 
+        $tokenData = $modUser->get_token($this->userId);
+        $this->userToken = is_array($tokenData) ? $tokenData : [];
+
         $sessionDeviceId = $this->session->get('active_device_id');
         if (!empty($sessionDeviceId) && $sessionDeviceId !== 'all') {
             // Validate device belongs to this user
@@ -378,6 +381,7 @@ class BaseClientController extends BaseController
         return [
             'active_device_id' => $this->activeDeviceId,
             'sidebar_user_devices' => $this->userDevices,
+            'user_token' => $this->userToken ?? [],
         ];
     }
 

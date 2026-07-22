@@ -1,8 +1,8 @@
     <!-- Hero Section -->
     <div class="bg-primary py-5 shadow-sm" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
         <div class="container text-center text-white">
-            <h1 class="display-4 font-weight-bold">How It Works</h1>
-            <p class="lead">Simple process to get started with Prj Images Intelligence</p>
+            <h1 class="display-4 font-weight-bold">How Eaves Droid Works</h1>
+            <p class="lead">From sign-up to AI-powered insights — your complete mobile data intelligence pipeline</p>
         </div>
     </div>
 
@@ -22,7 +22,7 @@
                         <span class="info-box-icon bg-primary">1</span>
                         <div class="info-box-content">
                             <span class="info-box-text text-bold">Create Account</span>
-                            <span class="info-box-number small font-weight-normal">Sign up in 30 seconds with your email.</span>
+                            <span class="info-box-number small font-weight-normal">Sign up and receive your unique verification token.</span>
                         </div>
                     </div>
                 </div>
@@ -31,8 +31,8 @@
                     <div class="info-box shadow-sm h-100">
                         <span class="info-box-icon bg-success">2</span>
                         <div class="info-box-content">
-                            <span class="info-box-text text-bold text-success">Download App</span>
-                            <span class="info-box-number small font-weight-normal">Install the Android client on your device.</span>
+                            <span class="info-box-text text-bold text-success">Install Android Client</span>
+                            <span class="info-box-number small font-weight-normal">Download APK, authenticate, and grant permissions.</span>
                         </div>
                     </div>
                 </div>
@@ -41,8 +41,8 @@
                     <div class="info-box shadow-sm h-100">
                         <span class="info-box-icon bg-info">3</span>
                         <div class="info-box-content">
-                            <span class="info-box-text text-bold text-info">Collect Data</span>
-                            <span class="info-box-number small font-weight-normal">App intelligently collects and syncs data.</span>
+                            <span class="info-box-text text-bold text-info">Data Collection & Sync</span>
+                            <span class="info-box-number small font-weight-normal">Background collection with encrypted Wi-Fi uploads.</span>
                         </div>
                     </div>
                 </div>
@@ -51,8 +51,8 @@
                     <div class="info-box shadow-sm h-100">
                         <span class="info-box-icon bg-warning">4</span>
                         <div class="info-box-content">
-                            <span class="info-box-text text-bold text-white">Get Insights</span>
-                            <span class="info-box-number small font-weight-normal text-white">View comprehensive analytics on dashboard.</span>
+                            <span class="info-box-text text-bold text-white">AI Analysis & Insights</span>
+                            <span class="info-box-number small font-weight-normal text-white">PHP-ML algorithms generate reports and dashboards.</span>
                         </div>
                     </div>
                 </div>
@@ -63,13 +63,14 @@
                 <div class="col-lg-6 mb-4">
                     <div class="card card-outline card-primary shadow-sm h-100">
                         <div class="card-header">
-                            <h3 class="card-title text-bold"><i class="fas fa-user-plus mr-2 text-primary"></i>1. Creating an Account</h3>
+                            <h3 class="card-title text-bold"><i class="fas fa-user-plus mr-2 text-primary"></i>1. Create Account</h3>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small">This is the first step and once an account has been created, a unique verification code is generated that you use to authenticate the Android client.</p>
+                            <p class="text-muted small">Sign up for an Eaves Droid account using your email address. Upon registration, a unique verification token is generated and linked to your account — this token is used to authenticate your Android client and authorize data submissions.</p>
                             <div class="mt-2">
                                 <span class="badge badge-primary">Instant Setup</span>
                                 <span class="badge badge-success">Free Account</span>
+                                <span class="badge badge-info">Verification Token</span>
                             </div>
                         </div>
                     </div>
@@ -78,13 +79,14 @@
                 <div class="col-lg-6 mb-4">
                     <div class="card card-outline card-success shadow-sm h-100">
                         <div class="card-header">
-                            <h3 class="card-title text-bold"><i class="fab fa-android mr-2 text-success"></i>2. Installing Android Client</h3>
+                            <h3 class="card-title text-bold"><i class="fab fa-android mr-2 text-success"></i>2. Install Android Client</h3>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small">The user installs the Android client, authenticates with the generated code, grants necessary permissions, and launches the extraction feature.</p>
+                            <p class="text-muted small">Download the Eaves Droid APK and install it on your Android device (Android 8+). Launch the app, enter your verification token to authenticate, and grant the required permissions (calls, SMS, contacts, location, files, and usage access) to enable full data collection.</p>
                             <div class="mt-2">
                                 <span class="badge badge-info">15MB APK</span>
                                 <span class="badge badge-warning">Android 8+</span>
+                                <span class="badge badge-danger">Token Auth</span>
                             </div>
                         </div>
                     </div>
@@ -93,13 +95,14 @@
                 <div class="col-lg-6 mb-4">
                     <div class="card card-outline card-info shadow-sm h-100">
                         <div class="card-header">
-                            <h3 class="card-title text-bold"><i class="fas fa-database mr-2 text-info"></i>3. Data Extraction</h3>
+                            <h3 class="card-title text-bold"><i class="fas fa-database mr-2 text-info"></i>3. Data Collection & Sync</h3>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small">The application intelligently collects data and securely sends it to our encrypted cloud storage for processing and ML analysis.</p>
+                            <p class="text-muted small">The Android client runs in the background collecting calls, SMS, contacts, locations, files, and activity data. All data is encrypted and uploaded over Wi-Fi to our backend, where Docker containers process and store it for analysis.</p>
                             <div class="mt-2">
-                                <span class="badge badge-success">Encrypted</span>
-                                <span class="badge badge-primary">Auto-sync</span>
+                                <span class="badge badge-success">Encrypted Uploads</span>
+                                <span class="badge badge-primary">Wi-Fi Only</span>
+                                <span class="badge badge-dark">Docker Backend</span>
                             </div>
                         </div>
                     </div>
@@ -108,16 +111,26 @@
                 <div class="col-lg-6 mb-4">
                     <div class="card card-outline card-warning shadow-sm h-100">
                         <div class="card-header">
-                            <h3 class="card-title text-bold"><i class="fas fa-cloud mr-2 text-warning"></i>4. Cloud Data Processing</h3>
+                            <h3 class="card-title text-bold"><i class="fas fa-brain mr-2 text-warning"></i>4. AI Analysis & Insights</h3>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small">Received data is analyzed by our advanced algorithms and generates well-labelled insights for users to understand their mobile data patterns.</p>
+                            <p class="text-muted small">PHP-ML algorithms analyze your data — KMeans and DBSCAN for clustering, NaiveBayes for classification, TF-IDF for text analysis, and Z-Score for anomaly detection. Results are compiled into a 15-section PDF report and displayed on an interactive dashboard with charts and tables.</p>
                             <div class="mt-2">
-                                <span class="badge badge-danger">AI Analysis</span>
-                                <span class="badge badge-info">Real-time</span>
+                                <span class="badge badge-danger">KMeans & DBSCAN</span>
+                                <span class="badge badge-info">NaiveBayes & TF-IDF</span>
+                                <span class="badge badge-success">15-Section PDF</span>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Docker Note -->
+            <div class="card bg-dark shadow-sm mt-4">
+                <div class="card-body text-center text-white py-4">
+                    <i class="fab fa-docker fa-2x mb-2"></i>
+                    <p class="lead mb-1">Prefer to run your own instance? Deploy with Docker:</p>
+                    <code class="bg-secondary text-white px-3 py-2 rounded d-inline-block">docker-compose up -d</code>
                 </div>
             </div>
 

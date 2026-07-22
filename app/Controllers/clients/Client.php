@@ -21,6 +21,10 @@ class Client extends BaseClientController
         $counts = $this->getUserDataCounts();
         $data = array_merge($data, $counts, $this->getDeviceViewData());
 
+        // Additional dashboard data
+        $data['device_health'] = $this->finderModel->get_device_health($this->userId);
+        $data['recent_locations'] = $this->finderModel->get_locations($this->userId, 3);
+
 		return view('headers_footers/head_users')
 			. view('headers_footers/sidebar_users', $data)
 			. view('users/dash', $data)

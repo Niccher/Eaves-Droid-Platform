@@ -56,7 +56,7 @@
                                         <h5 class="text-bold"><i class="fas fa-exclamation-triangle mr-2 text-warning"></i> Important Notice</h5>
                                         <p class="mb-0 small">These Terms of Use describe the legally binding terms and conditions that oversee your use of the Site.</p>
                                     </div>
-                                    <p>The Prj Images website located at <strong><?= base_url() ?></strong> is a copyrighted work belonging to Prj Images.</p>
+                                    <p>The Eaves Droid website located at <strong><?= base_url() ?></strong> is a copyrighted work belonging to Eaves Droid.</p>
                                     <p>BY LOGGING INTO THE SITE, YOU ARE COMPLIANT THAT THESE TERMS and you represent that you have the authority and capacity to enter into these Terms.</p>
                                     
                                     <div class="callout callout-danger shadow-sm mt-4">
@@ -128,7 +128,7 @@
                                     <h3 class="card-title text-bold">Privacy & Cookies</h3>
                                 </div>
                                 <div class="card-body">
-                                    <p class="text-muted">Like any other website, Prj Images uses 'cookies' to store information including visitors' preferences and accessed pages.</p>
+                                    <p class="text-muted">Like any other website, Eaves Droid uses 'cookies' to store information including visitors' preferences and accessed pages.</p>
 
                                     <div class="row mt-4">
                                         <div class="col-md-4 mb-3">

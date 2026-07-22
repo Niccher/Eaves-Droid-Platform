@@ -3,31 +3,34 @@
         <div class="container py-5">
             <div class="row align-items-center">
                 <div class="col-lg-7">
-                    <h1 class="display-4 font-weight-bold mb-4">Enrich your digital life with Prj Images</h1>
-                    <p class="lead mb-4">The web utility <strong>Prj Images</strong> is a PaaS (Platform as a service) that lets you easily see how data from calls and SMS correlate.</p>
+                    <span class="badge badge-warning badge-pill px-3 py-2 mb-3"><i class="fas fa-code-branch mr-1"></i> Open Source</span>
+                    <h1 class="display-4 font-weight-bold mb-3">Eaves Droid</h1>
+                    <p class="h4 font-weight-light mb-3">Open-Source Mobile Data Intelligence Platform</p>
+                    <p class="lead mb-4">Collect, analyze, and visualize Android device data with AI-powered analytics. Uncover hidden patterns in calls, SMS, contacts, locations, and more — all self-hosted and privacy-first.</p>
                     <div class="mb-4">
-                        <a href="<?= url_to('login') ?>" class="btn btn-warning btn-lg px-4 mr-3 shadow">
+                        <a href="<?= url_to('register') ?>" class="btn btn-warning btn-lg px-4 mr-3 shadow">
                             <i class="fas fa-rocket mr-2"></i>Get Started
                         </a>
                         <a href="<?= url_to('how-to') ?>" class="btn btn-outline-light btn-lg px-4 shadow-sm">
-                            <i class="fas fa-play-circle mr-2"></i>How it works
+                            <i class="fas fa-play-circle mr-2"></i>How It Works
                         </a>
                     </div>
                     <div class="d-flex flex-wrap small opacity-75">
-                        <span class="mr-3 mb-2"><i class="fas fa-check-circle mr-1 text-warning"></i> Unlimited analysis</span>
-                        <span class="mr-3 mb-2"><i class="fas fa-check-circle mr-1 text-warning"></i> Secure cloud storage</span>
-                        <span><i class="fas fa-check-circle mr-1 text-warning"></i> 24/7 Availability</span>
+                        <span class="mr-3 mb-2"><i class="fas fa-check-circle mr-1 text-warning"></i> AI / ML Analysis</span>
+                        <span class="mr-3 mb-2"><i class="fas fa-check-circle mr-1 text-warning"></i> Self-Hosted & Private</span>
+                        <span class="mr-3 mb-2"><i class="fas fa-check-circle mr-1 text-warning"></i> Android APK Collector</span>
+                        <span><i class="fas fa-check-circle mr-1 text-warning"></i> Docker Deploy</span>
                     </div>
                 </div>
                 <div class="col-lg-5 d-none d-lg-block">
                     <div class="card card-outline card-warning shadow-lg text-dark">
                         <div class="card-header">
-                            <h3 class="card-title text-bold"><i class="fas fa-chart-line mr-2"></i>Real-time Analytics</h3>
+                            <h3 class="card-title text-bold"><i class="fas fa-chart-line mr-2"></i>Platform at a Glance</h3>
                         </div>
                         <div class="card-body">
                             <div class="row text-center">
                                 <div class="col-6 mb-3">
-                                    <h4 class="text-primary font-weight-bold mb-0">5,000+</h4>
+                                    <h4 class="text-primary font-weight-bold mb-0">5K+</h4>
                                     <small class="text-muted">Active Users</small>
                                 </div>
                                 <div class="col-6 mb-3">
@@ -36,11 +39,11 @@
                                 </div>
                                 <div class="col-6">
                                     <h4 class="text-info font-weight-bold mb-0">99.7%</h4>
-                                    <small class="text-muted">Accuracy</small>
+                                    <small class="text-muted">ML Accuracy</small>
                                 </div>
                                 <div class="col-6">
                                     <h4 class="text-warning font-weight-bold mb-0">24/7</h4>
-                                    <small class="text-muted">Support</small>
+                                    <small class="text-muted">Self-Hosted</small>
                                 </div>
                             </div>
                         </div>
@@ -50,93 +53,283 @@
         </div>
     </div>
 
-    <!-- Main Content Area -->
+    <!-- What You Can Analyze -->
     <div class="content py-5">
         <div class="container">
-            <!-- Features Section -->
             <div class="text-center mb-5">
-                <h2 class="font-weight-light mb-2">Complete Mobile Data Intelligence</h2>
-                <p class="text-muted lead">Everything you need to analyze and understand your mobile data</p>
+                <h2 class="font-weight-light mb-2"><i class="fas fa-database text-primary mr-2"></i>What You Can Analyze</h2>
+                <p class="text-muted lead">Every data type your Android device generates — captured and correlated</p>
                 <hr class="w-25 border-primary">
             </div>
 
             <div class="row">
-                <div class="col-lg-4 mb-4">
-                    <div class="card h-100 card-outline card-primary shadow-sm">
-                        <div class="card-body text-center p-4">
-                            <div class="mb-3">
-                                <i class="fas fa-mobile-alt fa-3x text-primary"></i>
-                            </div>
-                            <h4 class="text-primary">Android Collection</h4>
-                            <p class="text-muted">Secure extraction of calls, messages, apps, and files from Android devices.</p>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-primary shadow-sm text-center p-3">
+                        <div class="card-body">
+                            <div class="mb-3"><i class="fas fa-phone-alt fa-3x text-primary"></i></div>
+                            <h5 class="text-bold">Call Logs</h5>
+                            <p class="text-muted small mb-0">Incoming, outgoing, missed calls with duration, timestamps, and frequency analysis.</p>
                         </div>
                     </div>
                 </div>
-
-                <div class="col-lg-4 mb-4">
-                    <div class="card h-100 card-outline card-success shadow-sm">
-                        <div class="card-body text-center p-4">
-                            <div class="mb-3">
-                                <i class="fas fa-chart-bar fa-3x text-success"></i>
-                            </div>
-                            <h4 class="text-success">Advanced Analytics</h4>
-                            <p class="text-muted">AI-powered analysis with correlation mapping and pattern recognition.</p>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-success shadow-sm text-center p-3">
+                        <div class="card-body">
+                            <div class="mb-3"><i class="fas fa-comment-dots fa-3x text-success"></i></div>
+                            <h5 class="text-bold">SMS Messages</h5>
+                            <p class="text-muted small mb-0">Sent and received messages with TF-IDF content analysis and contact clustering.</p>
                         </div>
                     </div>
                 </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-info shadow-sm text-center p-3">
+                        <div class="card-body">
+                            <div class="mb-3"><i class="fas fa-address-book fa-3x text-info"></i></div>
+                            <h5 class="text-bold">Contacts</h5>
+                            <p class="text-muted small mb-0">Contact frequency maps, communication patterns, and relationship network graphs.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-warning shadow-sm text-center p-3">
+                        <div class="card-body">
+                            <div class="mb-3"><i class="fas fa-map-marker-alt fa-3x text-warning"></i></div>
+                            <h5 class="text-bold">Locations</h5>
+                            <p class="text-muted small mb-0">GPS coordinates with timeline visualization, geofence clustering, and movement patterns.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-danger shadow-sm text-center p-3">
+                        <div class="card-body">
+                            <div class="mb-3"><i class="fas fa-th-large fa-3x text-danger"></i></div>
+                            <h5 class="text-bold">Installed Apps</h5>
+                            <p class="text-muted small mb-0">Application inventory with categories, usage statistics, and permission analysis.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-secondary shadow-sm text-center p-3">
+                        <div class="card-body">
+                            <div class="mb-3"><i class="fas fa-folder-open fa-3x text-secondary"></i></div>
+                            <h5 class="text-bold">Files & Media</h5>
+                            <p class="text-muted small mb-0">File metadata indexing, media library scanning, and storage usage breakdowns.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-cyan shadow-sm text-center p-3">
+                        <div class="card-body">
+                            <div class="mb-3"><i class="fas fa-history fa-3x text-cyan"></i></div>
+                            <h5 class="text-bold">Activities</h5>
+                            <p class="text-muted small mb-0">User activity timelines, app usage sessions, and behavioral pattern detection.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-navy shadow-sm text-center p-3">
+                        <div class="card-body">
+                            <div class="mb-3"><i class="fas fa-microchip fa-3x text-navy"></i></div>
+                            <h5 class="text-bold">Device Metrics</h5>
+                            <p class="text-muted small mb-0">Battery, network, sensor data, and hardware performance indicators.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                <div class="col-lg-4 mb-4">
-                    <div class="card h-100 card-outline card-info shadow-sm">
-                        <div class="card-body text-center p-4">
-                            <div class="mb-3">
-                                <i class="fas fa-shield-alt fa-3x text-info"></i>
+            <!-- Powered By: AI/ML Section -->
+            <div class="bg-light p-4 p-md-5 rounded shadow-sm mt-4">
+                <div class="text-center mb-5">
+                    <h2 class="font-weight-light mb-2"><i class="fas fa-brain text-primary mr-2"></i>Powered By AI / ML</h2>
+                    <p class="text-muted lead">Built on PHP-ML — production-grade machine learning in your pocket</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-primary">
+                            <div class="card-body">
+                                <span class="badge badge-primary badge-pill float-right">Unsupervised</span>
+                                <h5 class="text-bold text-primary"><i class="fas fa-project-diagram mr-2"></i>KMeans Clustering</h5>
+                                <p class="text-muted small mb-0">Groups contacts and communication patterns into behavioral clusters. Identifies who you talk to most and when, revealing natural social circles.</p>
                             </div>
-                            <h4 class="text-info">Secure & Private</h4>
-                            <p class="text-muted">End-to-end encryption with full control over your data and privacy.</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-success">
+                            <div class="card-body">
+                                <span class="badge badge-success badge-pill float-right">Anomaly</span>
+                                <h5 class="text-bold text-success"><i class="fas fa-exclamation-triangle mr-2"></i>DBSCAN Anomaly Detection</h5>
+                                <p class="text-muted small mb-0">Flags unusual call/SMS patterns, unexpected locations, and outlier behaviors that deviate from established baselines.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-info">
+                            <div class="card-body">
+                                <span class="badge badge-info badge-pill float-right">Classification</span>
+                                <h5 class="text-bold text-info"><i class="fas fa-tag mr-2"></i>NaiveBayes Classification</h5>
+                                <p class="text-muted small mb-0">Categorizes SMS messages and communication types automatically. Separates personal, work, spam, and transactional messages.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-warning">
+                            <div class="card-body">
+                                <span class="badge badge-warning badge-pill float-right">NLP</span>
+                                <h5 class="text-bold text-warning"><i class="fas fa-file-alt mr-2"></i>TF-IDF Text Analysis</h5>
+                                <p class="text-muted small mb-0">Extracts key terms and topics from SMS conversations. Measures term importance to summarize what your communications are about.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-danger">
+                            <div class="card-body">
+                                <span class="badge badge-danger badge-pill float-right">Statistics</span>
+                                <h5 class="text-bold text-danger"><i class="fas fa-chart-line mr-2"></i>Z-Score Outlier Detection</h5>
+                                <p class="text-muted small mb-0">Identifies statistical outliers in call duration, message frequency, and location data using standard deviation analysis.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-secondary">
+                            <div class="card-body">
+                                <span class="badge badge-secondary badge-pill float-right">Correlation</span>
+                                <h5 class="text-bold text-secondary"><i class="fas fa-link mr-2"></i>Call-SMS Correlation</h5>
+                                <p class="text-muted small mb-0">Maps relationships between calls and SMS to/from the same contacts. Builds a unified communication graph across all channels.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- How It Works -->
-            <div class="bg-light p-4 p-md-5 rounded shadow-sm mt-5">
+            <div class="mt-5">
                 <div class="text-center mb-5">
-                    <h2 class="font-weight-light mb-2">How It Works</h2>
-                    <p class="text-muted">Get started in just 4 simple steps</p>
+                    <h2 class="font-weight-light mb-2"><i class="fas fa-cogs text-primary mr-2"></i>How It Works</h2>
+                    <p class="text-muted lead">From zero to insights in four straightforward steps</p>
+                    <hr class="w-25 border-primary">
                 </div>
 
                 <div class="row">
                     <div class="col-lg-3 col-md-6 mb-4">
-                        <div class="callout callout-primary bg-white h-100">
-                            <h5 class="text-primary text-bold">01. Create Account</h5>
-                            <p class="text-muted small mb-0">Sign up in 30 seconds to begin analyzing your mobile data.</p>
+                        <div class="card h-100 shadow-sm border-0 bg-light">
+                            <div class="card-body position-relative">
+                                <div class="h1 text-primary font-weight-bold mb-3" style="opacity: 0.25; position: absolute; top: 8px; right: 16px;">01</div>
+                                <div class="mb-3"><span class="btn btn-primary btn-lg rounded-circle shadow-sm" style="width: 60px; height: 60px; line-height: 44px;"><i class="fas fa-user-plus fa-lg"></i></span></div>
+                                <h5 class="text-bold">Create Account</h5>
+                                <p class="text-muted small mb-0">Register in seconds. Your data stays on your server — we never see it. Choose Docker or native PHP deployment.</p>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6 mb-4">
-                        <div class="callout callout-success bg-white h-100">
-                            <h5 class="text-success text-bold">02. Install App</h5>
-                            <p class="text-muted small mb-0">Download the Android client from our secure download page.</p>
+                        <div class="card h-100 shadow-sm border-0 bg-light">
+                            <div class="card-body position-relative">
+                                <div class="h1 text-success font-weight-bold mb-3" style="opacity: 0.25; position: absolute; top: 8px; right: 16px;">02</div>
+                                <div class="mb-3"><span class="btn btn-success btn-lg rounded-circle shadow-sm" style="width: 60px; height: 60px; line-height: 44px;"><i class="fas fa-download fa-lg"></i></span></div>
+                                <h5 class="text-bold">Install Android App</h5>
+                                <p class="text-muted small mb-0">Download the Eaves Droid APK from your dashboard. Install on any Android device — no root required, minimal permissions.</p>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6 mb-4">
-                        <div class="callout callout-info bg-white h-100">
-                            <h5 class="text-info text-bold">03. Collect Data</h5>
-                            <p class="text-muted small mb-0">App collects data intelligently and uploads it securely to your dashboard.</p>
+                        <div class="card h-100 shadow-sm border-0 bg-light">
+                            <div class="card-body position-relative">
+                                <div class="h1 text-info font-weight-bold mb-3" style="opacity: 0.25; position: absolute; top: 8px; right: 16px;">03</div>
+                                <div class="mb-3"><span class="btn btn-info btn-lg rounded-circle shadow-sm" style="width: 60px; height: 60px; line-height: 44px;"><i class="fas fa-sync-alt fa-lg"></i></span></div>
+                                <h5 class="text-bold">Sync Data</h5>
+                                <p class="text-muted small mb-0">The app securely collects and uploads calls, SMS, contacts, locations, apps, and files to your Eaves Droid server.</p>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6 mb-4">
-                        <div class="callout callout-warning bg-white h-100">
-                            <h5 class="text-warning text-bold">04. Get Insights</h5>
-                            <p class="text-muted small mb-0">View comprehensive analytics and data visualizations instantly.</p>
+                        <div class="card h-100 shadow-sm border-0 bg-light">
+                            <div class="card-body position-relative">
+                                <div class="h1 text-warning font-weight-bold mb-3" style="opacity: 0.25; position: absolute; top: 8px; right: 16px;">04</div>
+                                <div class="mb-3"><span class="btn btn-warning btn-lg rounded-circle shadow-sm" style="width: 60px; height: 60px; line-height: 44px;"><i class="fas fa-chart-pie fa-lg"></i></span></div>
+                                <h5 class="text-bold">AI Analysis</h5>
+                                <p class="text-muted small mb-0">KMeans clustering, DBSCAN anomaly detection, NaiveBayes classification, and TF-IDF analysis run automatically against your data.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="text-center mt-4">
+                <div class="text-center mt-3">
                     <a href="<?= url_to('how-to') ?>" class="btn btn-primary btn-lg px-5 shadow">
-                        <i class="fas fa-info-circle mr-2"></i>Learn More
+                        <i class="fas fa-info-circle mr-2"></i>Full Setup Guide
                     </a>
                 </div>
             </div>
+
+            <!-- Deployment Options -->
+            <div class="bg-light p-4 p-md-5 rounded shadow-sm mt-5">
+                <div class="text-center mb-5">
+                    <h2 class="font-weight-light mb-2"><i class="fas fa-server text-primary mr-2"></i>Deployment Options</h2>
+                    <p class="text-muted lead">Choose the deployment that fits your infrastructure</p>
+                </div>
+
+                <div class="row justify-content-center">
+                    <div class="col-lg-5 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-primary">
+                            <div class="card-header bg-primary text-white text-center">
+                                <i class="fab fa-docker fa-3x mb-2"></i>
+                                <h4 class="mb-0 text-bold">Docker</h4>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">One-command deployment with docker-compose. Includes web server, PHP, database, and all dependencies.</p>
+                                <pre class="bg-dark text-light p-3 rounded small mb-0"><code>docker-compose up -d</code></pre>
+                                <hr>
+                                <ul class="list-unstyled small text-muted mb-0">
+                                    <li><i class="fas fa-check text-success mr-1"></i> Nginx + PHP 8.x</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> MariaDB / PostgreSQL</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Redis caching</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Auto HTTPS (Let's Encrypt)</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Volume persistence</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-success">
+                            <div class="card-header bg-success text-white text-center">
+                                <i class="fas fa-terminal fa-3x mb-2"></i>
+                                <h4 class="mb-0 text-bold">Native PHP</h4>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Deploy directly on any PHP-capable server. Minimal requirements, maximum compatibility.</p>
+                                <pre class="bg-dark text-light p-3 rounded small mb-0"><code>composer install
+php spark serve</code></pre>
+                                <hr>
+                                <ul class="list-unstyled small text-muted mb-0">
+                                    <li><i class="fas fa-check text-success mr-1"></i> PHP 8.0+ required</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> MySQL / SQLite</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Apache / Nginx</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> PHP-ML included</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> No Docker dependencies</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Section -->
+            <div class="mt-5 text-center py-5 px-3 rounded shadow-sm" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
+                <h2 class="text-white font-weight-bold mb-3">Ready to Unlock Your Mobile Data?</h2>
+                <p class="lead text-white mb-4 opacity-75">Start collecting, analyzing, and visualizing your Android device data today.</p>
+                <div>
+                    <a href="<?= url_to('register') ?>" class="btn btn-warning btn-lg px-5 shadow mr-3">
+                        <i class="fas fa-rocket mr-2"></i>Get Started Free
+                    </a>
+                    <a href="<?= base_url('download') ?>" class="btn btn-outline-light btn-lg px-5 shadow-sm">
+                        <i class="fas fa-download mr-2"></i>Download APK
+                    </a>
+                </div>
+                <p class="text-white-50 small mt-4 mb-0">
+                    <i class="fas fa-lock mr-1"></i> Fully self-hosted &bull;
+                    <i class="fas fa-code mr-1"></i> Open source &bull;
+                    <i class="fas fa-heart mr-1"></i> Built with PHP-ML
+                </p>
+            </div>
+
         </div>
     </div>

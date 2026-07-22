@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title><?= isset($page_title) ? esc($page_title) : 'Prj Images | Advanced Mobile Forensic & Data Intelligence Platform' ?></title>
+    <title><?= isset($page_title) ? esc($page_title) : 'Eaves Droid | Advanced Mobile Forensic & Data Intelligence Platform' ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= isset($page_desc) ? esc($page_desc) : 'A powerful, free mobile data intelligence platform designed for deep analysis of Android device data, including call logs, SMS correlation, and file structure visualization.' ?>"/>
     <meta name="keywords" content="<?= isset($page_keys) ? esc($page_keys) : 'mobile forensics, android data analysis, SMS correlation tool, call log analyzer, mobile data intelligence, digital forensics platform' ?>"/>
-    <meta name="author" content="Prj Images"/>
+    <meta name="author" content="Eaves Droid"/>
     <meta name="robots" content="index, follow"/>
-    <meta property="og:title" content="<?= isset($page_title) ? esc($page_title) : 'Prj Images | Mobile Data Intelligence' ?>"/>
+    <meta property="og:title" content="<?= isset($page_title) ? esc($page_title) : 'Eaves Droid | Mobile Data Intelligence' ?>"/>
     <meta property="og:description" content="<?= isset($page_desc) ? esc($page_desc) : 'Free mobile data intelligence platform — analyze and visualize your Android device data with ease.' ?>"/>
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="<?= current_url() ?>"/>
@@ -41,8 +41,8 @@
     <nav class="main-header navbar navbar-expand-md navbar-light navbar-white shadow-sm border-bottom-0">
         <div class="container">
             <a href="<?php echo base_url('landing'); ?>" class="navbar-brand">
-                <img src="<?= base_url('assets/img/logo.png') ?>" alt="Prj Images Logo" class="brand-image-custom img-circle elevation-2">
-                <span class="brand-text font-weight-light text-dark">Prj Images</span>
+                <img src="<?= base_url('assets/img/logo.png') ?>" alt="Eaves Droid Logo" class="brand-image-custom img-circle elevation-2">
+                <span class="brand-text font-weight-light text-dark">Eaves Droid</span>
             </a>
 
             <button class="navbar-toggler order-1" type="button" data-toggle="collapse" data-target="#navbarCollapse"

@@ -67,23 +67,23 @@ class Account extends BaseClientController
     public function home(): string
     {
         try {
-            // Get enhanced user data
             $userData = $this->getEnhancedUserData();
-
-            // Get user variables
             $userVars = $this->getUserVars();
-
-            // Ensure user has a token
             $userToken = $this->ensureUserToken();
-
-            // Check Android connection status
             $androidConnected = $this->isAndroidConnected();
-
-            // Get user data counts from BaseClientController
             $dataCounts = $this->getUserDataCounts();
-
-            // Get usage metrics
             $usageMetrics = $this->getUsageMetrics();
+
+            // Profile stats from user_profiles table
+            $db = \Config\Database::connect();
+            $profileStats = $db->table('user_profiles')
+                ->select('export_count, last_exported_at, last_deleted_data_at')
+                ->where('user_id', $this->userId)
+                ->get()
+                ->getRowArray();
+
+            // Estimate storage per record count (rough bytes per type)
+            $estimatedStorage = $this->estimateStorage($dataCounts);
 
             $viewData = [
                 'pag' => 'account_profile',
@@ -91,17 +91,15 @@ class Account extends BaseClientController
                 'user_vars' => $userVars,
                 'user_token' => $userToken,
                 'android_connected' => $androidConnected,
-                // Map BaseClientController keys (total_*) if Account expects them, or just merge
-                // BaseClientController returns ['total_apps' => ..., 'total_files' => ...]
-                // Account::home used $dataCounts['apps']. I will update to use the merged array directly or map it.
-                // Best to simple merge and use the keys in view if view expects total_*.
-                // BUT Account view 'card' might expect 'total_apps'.
-                // Let's just merge $dataCounts.
                 'total_tokens' => $usageMetrics['total_tokens'] ?? 0,
                 'connected_devices' => $usageMetrics['connected_devices'] ?? 0,
                 'csrf_token' => csrf_hash(),
+                'export_count' => $profileStats['export_count'] ?? 0,
+                'last_exported_at' => $profileStats['last_exported_at'] ?? null,
+                'last_deleted_data_at' => $profileStats['last_deleted_data_at'] ?? null,
+                'estimated_storage' => $estimatedStorage,
             ];
-            
+
             $viewData = array_merge($viewData, $dataCounts);
 
             return $this->renderView('profile', $viewData);
@@ -110,6 +108,48 @@ class Account extends BaseClientController
             log_message('error', 'Account home error: ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to load account information');
             return redirect()->back();
+        }
+    }
+
+    /**
+     * Estimates storage usage in KB based on record counts.
+     */
+    private function estimateStorage(array $dataCounts): string
+    {
+        // Rough bytes per record for each type
+        $weights = [
+            'total_apps'     => 512,
+            'total_contacts' => 256,
+            'total_sms'      => 1024,
+            'total_files'    => 1024,
+            'total_calls'    => 512,
+            'total_locations'=> 256,
+            'total_activities'=> 512,
+            'total_device'   => 1024,
+            'total_network'  => 512,
+            'total_accounts' => 512,
+            'total_calendar' => 1024,
+            'total_app_usage'=> 512,
+            'total_notifications' => 256,
+            'total_bluetooth'=> 256,
+            'total_sensors'  => 1024,
+            'total_media'    => 2048,
+            'total_security_audit' => 512,
+            'total_sim_configs'    => 256,
+        ];
+
+        $totalBytes = 0;
+        foreach ($weights as $key => $bytes) {
+            $count = $dataCounts[$key] ?? 0;
+            $totalBytes += $count * $bytes;
+        }
+
+        if ($totalBytes < 1024) {
+            return '~' . $totalBytes . ' B';
+        } elseif ($totalBytes < 1048576) {
+            return '~' . round($totalBytes / 1024, 1) . ' KB';
+        } else {
+            return '~' . round($totalBytes / 1048576, 2) . ' MB';
         }
     }
 
@@ -1146,34 +1186,45 @@ class Account extends BaseClientController
             return redirect()->to('login');
         }
 
+        $format = $this->request->getGet('format') ?? 'json';
+        $dateFrom = $this->request->getGet('date_from');
+        $dateTo = $this->request->getGet('date_to');
+
+        if (!in_array($format, ['json', 'csv'])) {
+            $format = 'json';
+        }
+
         try {
+            $data = [];
+            $filename = '';
+
             switch ($type) {
                 case 'apps':
-                    $data = $this->finderModel->get_apps($this->userId, 1000);
-                    $filename = 'apps_export_' . date('Y-m-d_H-i-s') . '.json';
+                    $data = $this->finderModel->get_apps($this->userId, 10000);
+                    $filename = 'apps_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'calls':
-                    $data = $this->finderModel->get_call_logs($this->userId, 1000);
-                    $filename = 'calls_export_' . date('Y-m-d_H-i-s') . '.json';
+                    $data = $this->finderModel->get_call_logs($this->userId, 10000);
+                    $filename = 'calls_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'contacts':
-                    $data = $this->finderModel->get_contacts($this->userId, 1000);
-                    $filename = 'contacts_export_' . date('Y-m-d_H-i-s') . '.json';
+                    $data = $this->finderModel->get_contacts($this->userId, 10000);
+                    $filename = 'contacts_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'sms':
-                    $data = $this->finderModel->get_sms($this->userId, 1000);
-                    $filename = 'sms_export_' . date('Y-m-d_H-i-s') . '.json';
+                    $data = $this->finderModel->get_sms($this->userId, 10000);
+                    $filename = 'sms_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'files':
-                    $data = $this->finderModel->export_device_files($this->userId, 1000);
-                    $filename = 'files_metadata_export_' . date('Y-m-d_H-i-s') . '.json';
+                    $data = $this->finderModel->export_device_files($this->userId, 10000);
+                    $filename = 'files_metadata_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'locations':
                     $data = [
-                        'locations' => $this->finderModel->get_locations($this->userId, 1000),
-                        'activities' => $this->finderModel->get_activities($this->userId, 1000)
+                        'locations' => $this->finderModel->get_locations($this->userId, 10000),
+                        'activities' => $this->finderModel->get_activities($this->userId, 10000)
                     ];
-                    $filename = 'location_history_export_' . date('Y-m-d_H-i-s') . '.json';
+                    $filename = 'location_history_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'advanced':
                     $data = [
@@ -1186,18 +1237,18 @@ class Account extends BaseClientController
                         'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
                         'sensors' => $this->finderModel->export_sensors($this->userId),
                     ];
-                    $filename = 'advanced_data_export_' . date('Y-m-d_H-i-s') . '.json';
+                    $filename = 'advanced_data_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'all':
                     $data = [
-                        'apps' => $this->finderModel->get_apps($this->userId, 1000),
-                        'calls' => $this->finderModel->get_call_logs($this->userId, 1000),
-                        'contacts' => $this->finderModel->get_contacts($this->userId, 1000),
-                        'sms' => $this->finderModel->get_sms($this->userId, 1000),
-                        'files' => $this->finderModel->export_device_files($this->userId, 1000),
+                        'apps' => $this->finderModel->get_apps($this->userId, 10000),
+                        'calls' => $this->finderModel->get_call_logs($this->userId, 10000),
+                        'contacts' => $this->finderModel->get_contacts($this->userId, 10000),
+                        'sms' => $this->finderModel->get_sms($this->userId, 10000),
+                        'files' => $this->finderModel->export_device_files($this->userId, 10000),
                         'location' => [
-                            'locations' => $this->finderModel->get_locations($this->userId, 1000),
-                            'activities' => $this->finderModel->get_activities($this->userId, 1000)
+                            'locations' => $this->finderModel->get_locations($this->userId, 10000),
+                            'activities' => $this->finderModel->get_activities($this->userId, 10000)
                         ],
                         'advanced' => [
                             'device_context' => $this->finderModel->export_device_context($this->userId),
@@ -1215,7 +1266,7 @@ class Account extends BaseClientController
                             'user_email' => auth()->user()->getEmail(),
                         ],
                     ];
-                    $filename = 'complete_export_' . date('Y-m-d_H-i-s') . '.json';
+                    $filename = 'complete_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 default:
                     session()->setFlashdata('error', 'Invalid export type');
@@ -1227,13 +1278,13 @@ class Account extends BaseClientController
                  return redirect()->to('account/home');
             }
 
-            // Log export action
             $this->logUserAction('data_export_' . $type, 'system', 'low', 1);
-
-            // Update export count
             $this->updateExportCount();
-            
-            // Encode JSON with error checking
+
+            if ($format === 'csv') {
+                return $this->exportAsCsv($data, $type, $filename);
+            }
+
             $jsonData = json_encode($data, JSON_PRETTY_PRINT);
             if ($jsonData === false) {
                 throw new \Exception('JSON encoding failed: ' . json_last_error_msg());
@@ -1252,6 +1303,80 @@ class Account extends BaseClientController
     }
 
     /**
+     * Converts data to CSV and returns as download response.
+     */
+    private function exportAsCsv($data, string $type, string $filename): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $csv = fopen('php://temp', 'w+');
+
+        // For simple array-of-objects types
+        if (is_array($data) && isset($data[0]) && is_array($data[0])) {
+            fputcsv($csv, array_keys($data[0]));
+            foreach ($data as $row) {
+                fputcsv($csv, $row);
+            }
+        } elseif ($type === 'all') {
+            // Multi-sheet approach: prefix each section with a comment row
+            foreach ($data as $section => $sectionData) {
+                if ($section === 'export_info') continue;
+                fputcsv($csv, ["=== $section ==="]);
+                if (is_array($sectionData) && isset($sectionData[0]) && is_array($sectionData[0])) {
+                    if (empty($sectionData)) continue;
+                    fputcsv($csv, array_keys($sectionData[0]));
+                    foreach ($sectionData as $row) {
+                        fputcsv($csv, $row);
+                    }
+                } elseif ($section === 'location') {
+                    foreach ($sectionData as $sub => $subData) {
+                        fputcsv($csv, ["--- $sub ---"]);
+                        if (empty($subData)) continue;
+                        fputcsv($csv, array_keys($subData[0]));
+                        foreach ($subData as $row) {
+                            fputcsv($csv, $row);
+                        }
+                    }
+                } elseif ($section === 'advanced') {
+                    foreach ($sectionData as $sub => $subData) {
+                        fputcsv($csv, ["--- $sub ---"]);
+                        if (empty($subData)) continue;
+                        fputcsv($csv, array_keys($subData[0]));
+                        foreach ($subData as $row) {
+                            fputcsv($csv, $row);
+                        }
+                    }
+                }
+            }
+        } elseif ($type === 'locations') {
+            foreach ($data as $section => $sectionData) {
+                fputcsv($csv, ["=== $section ==="]);
+                if (empty($sectionData)) continue;
+                fputcsv($csv, array_keys($sectionData[0]));
+                foreach ($sectionData as $row) {
+                    fputcsv($csv, $row);
+                }
+            }
+        } elseif ($type === 'advanced') {
+            foreach ($data as $section => $sectionData) {
+                fputcsv($csv, ["=== $section ==="]);
+                if (empty($sectionData)) continue;
+                fputcsv($csv, array_keys($sectionData[0]));
+                foreach ($sectionData as $row) {
+                    fputcsv($csv, $row);
+                }
+            }
+        }
+
+        rewind($csv);
+        $content = stream_get_contents($csv);
+        fclose($csv);
+
+        return $this->response
+            ->setContentType('text/csv; charset=utf-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($content);
+    }
+
+    /**
      * Deletes user data by type.
      *
      * @param string $type
@@ -1260,32 +1385,40 @@ class Account extends BaseClientController
     public function deleteData($type)
     {
         if (!auth()->loggedIn()) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Not authenticated']);
+            }
             return redirect()->to('login');
         }
 
-        // Show confirmation view for GET requests
+        // Show confirmation view for GET requests (non-AJAX)
         if ($this->request->getMethod() !== 'post') {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'POST required']);
+            }
             $viewData = [
                 'pag' => 'account_profile',
                 'user_info' => $this->userData,
                 'delete_type' => $type,
                 'csrf_token' => csrf_hash(),
             ];
-            
-            // Add data counts for more detailed confirmation
             $viewData = array_merge($viewData, $this->getUserDataCounts());
-            
             return $this->renderView('confirm_delete', $viewData);
         }
 
-        // Validate CSRF token
-        if (!csrf_hash($this->request->getPost('csrf_token'))) {
-            session()->setFlashdata('error', 'Invalid security token');
-            return redirect()->to('account/home');
+        // For AJAX requests, validate via JSON payload
+        if ($this->request->isAJAX()) {
+            $csrf = $this->request->getPost('csrf_token') ?? $this->request->getHeaderLine('X-CSRF-TOKEN');
+            $confirmation = $this->request->getPost('confirmation');
+        } else {
+            $csrf = $this->request->getPost('csrf_token');
+            $confirmation = $this->request->getPost('confirmation');
         }
 
-        // Validate confirmation text
-        if ($this->request->getPost('confirmation') !== 'DELETE') {
+        if ($confirmation !== 'DELETE') {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'You must type "DELETE" to confirm']);
+            }
             session()->setFlashdata('error', 'You must type "DELETE" to confirm');
             return redirect()->to('account/deleteData/' . $type);
         }
@@ -1347,11 +1480,14 @@ class Account extends BaseClientController
                                 $this->finderModel->deleteNotificationsByUser($this->userId) &&
                                 $this->finderModel->deleteBluetoothByUser($this->userId) &&
                                 $this->finderModel->deleteSensorsByUser($this->userId);
-                                
+
                     $success = ($apps && $calls && $contacts && $sms && $files && $locations && $activities && $advanced);
                     $message = 'All your data has been completely wiped successfully';
                     break;
                 default:
+                    if ($this->request->isAJAX()) {
+                        return $this->response->setJSON(['success' => false, 'message' => 'Invalid delete type']);
+                    }
                     session()->setFlashdata('error', 'Invalid delete type');
                     return redirect()->to('account/home');
             }
@@ -1359,8 +1495,15 @@ class Account extends BaseClientController
             if ($success) {
                 $this->logUserAction('data_delete_' . $type, 'system', 'medium', 1);
                 $this->updateLastDeletedTimestamp();
+
+                if ($this->request->isAJAX()) {
+                    return $this->response->setJSON(['success' => true, 'message' => $message]);
+                }
                 session()->setFlashdata('success', $message);
             } else {
+                if ($this->request->isAJAX()) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete data']);
+                }
                 session()->setFlashdata('error', 'Failed to delete data');
             }
 
@@ -1368,6 +1511,9 @@ class Account extends BaseClientController
 
         } catch (\Exception $e) {
             log_message('error', 'Delete data error: ' . $e->getMessage());
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete data: ' . $e->getMessage()]);
+            }
             session()->setFlashdata('error', 'Failed to delete data: ' . $e->getMessage());
             return redirect()->to('account/home');
         }

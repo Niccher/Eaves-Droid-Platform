@@ -8,9 +8,9 @@
                 <div class="col-md-5 mb-4">
                     <h5 class="text-white text-bold mb-4">
                         <i class="fas fa-chart-bar mr-2 text-primary"></i>
-                        <span class="font-weight-light">Prj Images</span>
+                        <span class="font-weight-light">Eaves Droid</span>
                     </h5>
-                    <p class="text-light" style="font-size: 1.1rem; line-height: 1.7; opacity: 0.9;">Prj Images is a cutting-edge mobile data intelligence platform that helps users analyze and visualize their digital footprint with precision and security.</p>
+                    <p class="text-light" style="font-size: 1.1rem; line-height: 1.7; opacity: 0.9;">Eaves Droid is a cutting-edge mobile data intelligence platform that helps users collect, analyze, and visualize Android device data with AI-powered insights and enterprise-grade security.</p>
                     <div class="mt-4">
                         <a href="#" class="text-light mr-4"><i class="fab fa-facebook fa-xl"></i></a>
                         <a href="#" class="text-light mr-4"><i class="fab fa-twitter fa-xl"></i></a>
@@ -32,14 +32,14 @@
                     <ul class="list-unstyled" style="font-size: 1.05rem;">
                         <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">FAQ</a></li>
                         <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">Terms of Service</a></li>
-                        <li class="mb-3"><a href="<?= base_url('howto') ?>" class="text-light hover-primary">How It Works</a></li>
+                        <li class="mb-3"><a href="<?= base_url('how_to') ?>" class="text-light hover-primary">How It Works</a></li>
                     </ul>
                 </div>
             </div>
             <hr class="border-secondary my-5">
             <div class="row" style="font-size: 1rem;">
                 <div class="col-md-12 text-center text-light" style="opacity: 0.8;">
-                    <strong>Copyright &copy; 2020-<?php echo date('Y') ?> <a href="<?= base_url('landing') ?>" class="text-primary">Prj Images</a>.</strong> All rights reserved.
+                    <strong>Copyright &copy; 2020-<?php echo date('Y') ?> <a href="<?= base_url('landing') ?>" class="text-primary">Eaves Droid</a>.</strong> All rights reserved.
                 </div>
             </div>
         </div>

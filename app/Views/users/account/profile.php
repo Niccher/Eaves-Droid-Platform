@@ -1,6 +1,4 @@
-<!-- Content Wrapper. Contains page content -->
 <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-4 align-items-center">
@@ -29,16 +27,13 @@
                 </div>
             </div>
         </div>
-        <!-- /.container-fluid -->
     </section>
 
-    <!-- Main content -->
     <section class="content">
         <div class="container-fluid">
             <div class="row">
-                <!-- Left Column - Profile Info -->
+                <!-- Left Column -->
                 <div class="col-lg-4">
-                    <!-- Profile Card -->
                     <div class="card card-primary">
                         <div class="card-header">
                             <h3 class="card-title">
@@ -47,7 +42,6 @@
                             </h3>
                         </div>
                         <div class="card-body text-center">
-                            <!-- Profile Image -->
                             <div class="mb-4">
                                 <?php if (!empty($user_info['profile_image'])): ?>
                                     <img src="<?php echo base_url('uploads/profiles/' . htmlspecialchars($user_info['profile_image'])); ?>"
@@ -120,9 +114,41 @@
                             </ul>
                         </div>
                     </div>
+
+                    <!-- Data Summary -->
+                    <div class="card bg-gradient-navy mt-4">
+                        <div class="card-header border-bottom-0">
+                            <h3 class="card-title">
+                                <i class="fas fa-database mr-2"></i>
+                                Data Summary
+                            </h3>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span><i class="fas fa-box mr-1"></i> Estimated Storage</span>
+                                <span class="badge badge-light"><?php echo $estimated_storage ?? '~0 B'; ?></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span><i class="fas fa-download mr-1"></i> Total Exports</span>
+                                <span class="badge badge-light"><?php echo $export_count ?? 0; ?></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span><i class="fas fa-clock mr-1"></i> Last Export</span>
+                                <span class="badge badge-light">
+                                    <?php echo !empty($last_exported_at) ? date('M d, Y', strtotime($last_exported_at)) : 'Never'; ?>
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span><i class="fas fa-trash mr-1"></i> Last Deletion</span>
+                                <span class="badge badge-light">
+                                    <?php echo !empty($last_deleted_data_at) ? date('M d, Y', strtotime($last_deleted_data_at)) : 'Never'; ?>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Right Column - Profile Tabs -->
+                <!-- Right Column - Tabs -->
                 <div class="col-lg-8">
                     <div class="card">
                         <div class="card-header p-0 border-bottom-0">
@@ -153,7 +179,9 @@
                         <div class="card-body">
                             <div class="tab-content" id="profileTabsContent">
 
-                                <!-- Edit Profile Tab -->
+                                <!-- ============================== -->
+                                <!-- EDIT PROFILE TAB -->
+                                <!-- ============================== -->
                                 <div class="tab-pane fade show active" id="profile" role="tabpanel">
                                     <form id="profileForm" enctype="multipart/form-data">
                                         <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
@@ -213,118 +241,69 @@
                                     <div id="profileMessage" class="mt-3"></div>
                                 </div>
 
-                                <!-- Export Data Tab -->
+                                <!-- ============================== -->
+                                <!-- EXPORT DATA TAB -->
+                                <!-- ============================== -->
                                 <div class="tab-pane fade" id="export" role="tabpanel">
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle mr-2"></i>
-                                        <strong>Export Your Data:</strong> Download your data in JSON format. This may take a few moments depending on data size.
+                                        <strong>Export Your Data:</strong> Choose a format and date range, then download your data.
+                                    </div>
+
+                                    <!-- Format & Date Filters -->
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <label class="text-muted small"><i class="fas fa-file-export mr-1"></i> Export Format</label>
+                                            <div class="btn-group btn-group-toggle d-block" data-toggle="buttons">
+                                                <label class="btn btn-outline-info active" id="format-json">
+                                                    <input type="radio" name="export-format" value="json" checked>
+                                                    <i class="fas fa-code mr-1"></i> JSON
+                                                </label>
+                                                <label class="btn btn-outline-info" id="format-csv">
+                                                    <input type="radio" name="export-format" value="csv">
+                                                    <i class="fas fa-table mr-1"></i> CSV
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="text-muted small"><i class="fas fa-calendar-alt mr-1"></i> From</label>
+                                            <input type="date" class="form-control form-control-sm" id="export-date-from">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="text-muted small"><i class="fas fa-calendar-alt mr-1"></i> To</label>
+                                            <input type="date" class="form-control form-control-sm" id="export-date-to">
+                                        </div>
                                     </div>
 
                                     <div class="row">
+                                        <?php
+                                        $exportTypes = [
+                                            'apps'      => ['icon' => 'fa-mobile-alt', 'color' => 'primary', 'label' => 'Applications', 'count' => $total_apps],
+                                            'contacts'  => ['icon' => 'fa-address-book', 'color' => 'success', 'label' => 'Contacts', 'count' => $total_contacts],
+                                            'sms'       => ['icon' => 'fa-sms', 'color' => 'info', 'label' => 'SMS Messages', 'count' => $total_sms],
+                                            'calls'     => ['icon' => 'fa-phone', 'color' => 'warning', 'label' => 'Call Logs', 'count' => $total_calls],
+                                            'files'     => ['icon' => 'fa-file-alt', 'color' => 'secondary', 'label' => 'Files Metadata', 'count' => $total_files],
+                                            'locations' => ['icon' => 'fa-map-marked-alt', 'color' => 'danger', 'label' => 'Location History', 'count' => $total_locations],
+                                            'advanced'  => ['icon' => 'fa-microchip', 'color' => 'primary', 'label' => 'Advanced Data', 'count' => ($total_device + $total_network + $total_accounts + $total_calendar + $total_app_usage + $total_notifications + $total_bluetooth + $total_sensors + $total_media + $total_security_audit + $total_sim_configs)],
+                                        ];
+                                        foreach ($exportTypes as $key => $et):
+                                        ?>
                                         <div class="col-md-6 mb-3">
                                             <div class="card h-100 border">
                                                 <div class="card-body text-center">
                                                     <div class="mb-3">
-                                                        <i class="fas fa-mobile-alt fa-3x text-primary"></i>
+                                                        <i class="fas <?php echo $et['icon']; ?> fa-3x text-<?php echo $et['color']; ?>"></i>
                                                     </div>
-                                                    <h5 class="card-title">Applications</h5>
-                                                    <p class="card-text"><?php echo $total_apps; ?> installed apps</p>
-                                                    <a href="<?php echo base_url('account/exportData/apps'); ?>" class="btn btn-outline-primary btn-block export-link" data-type="Applications">
-                                                        <i class="fas fa-download mr-1"></i> Export Apps
-                                                    </a>
+                                                    <h5 class="card-title"><?php echo $et['label']; ?></h5>
+                                                    <p class="card-text"><?php echo $et['count']; ?> records</p>
+                                                    <button class="btn btn-outline-<?php echo $et['color']; ?> btn-block export-btn"
+                                                            data-type="<?php echo $key; ?>">
+                                                        <i class="fas fa-download mr-1"></i> Export
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-address-book fa-3x text-success"></i>
-                                                    </div>
-                                                    <h5 class="card-title">Contacts</h5>
-                                                    <p class="card-text"><?php echo $total_contacts; ?> saved contacts</p>
-                                                    <a href="<?php echo base_url('account/exportData/contacts'); ?>" class="btn btn-outline-success btn-block export-link" data-type="Contacts">
-                                                        <i class="fas fa-download mr-1"></i> Export Contacts
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-sms fa-3x text-info"></i>
-                                                    </div>
-                                                    <h5 class="card-title">SMS Messages</h5>
-                                                    <p class="card-text"><?php echo $total_sms; ?> SMS messages</p>
-                                                    <a href="<?php echo base_url('account/exportData/sms'); ?>" class="btn btn-outline-info btn-block export-link" data-type="SMS">
-                                                        <i class="fas fa-download mr-1"></i> Export SMS
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-phone fa-3x text-warning"></i>
-                                                    </div>
-                                                    <h5 class="card-title">Call Logs</h5>
-                                                    <p class="card-text"><?php echo $total_calls; ?> call records</p>
-                                                    <a href="<?php echo base_url('account/exportData/calls'); ?>" class="btn btn-outline-warning btn-block export-link" data-type="Calls">
-                                                        <i class="fas fa-download mr-1"></i> Export Calls
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-file-alt fa-3x text-secondary"></i>
-                                                    </div>
-                                                    <h5 class="card-title">Files Metadata</h5>
-                                                    <p class="card-text"><?php echo $total_files; ?> file records</p>
-                                                    <a href="<?php echo base_url('account/exportData/files'); ?>" class="btn btn-outline-secondary btn-block export-link" data-type="Files">
-                                                        <i class="fas fa-download mr-1"></i> Export Files
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-map-marked-alt fa-3x text-danger"></i>
-                                                    </div>
-                                                    <h5 class="card-title">Location History</h5>
-                                                    <p class="card-text"><?php echo $total_locations; ?> location points</p>
-                                                    <a href="<?php echo base_url('account/exportData/locations'); ?>" class="btn btn-outline-danger btn-block export-link" data-type="Locations">
-                                                        <i class="fas fa-download mr-1"></i> Export Locations
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border border-primary">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-microchip fa-3x text-primary"></i>
-                                                    </div>
-                                                    <h5 class="card-title">Advanced Data</h5>
-                                                    <p class="card-text">Sensors, Bluetooth, Accounts, etc.</p>
-                                                    <a href="<?php echo base_url('account/exportData/advanced'); ?>" class="btn btn-outline-primary btn-block export-link" data-type="Advanced Data">
-                                                        <i class="fas fa-download mr-1"></i> Export Advanced
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <?php endforeach; ?>
                                     </div>
 
                                     <div class="mt-4">
@@ -336,134 +315,62 @@
                                                 </h5>
                                             </div>
                                             <div class="card-body">
-                                                <p class="card-text">Export all your data in a single JSON file containing:</p>
+                                                <p class="card-text">Export all your data in a single file:</p>
                                                 <ul>
                                                     <li>All installed applications</li>
                                                     <li>All saved contacts</li>
                                                     <li>All SMS messages</li>
                                                     <li>All call logs</li>
-                                                    <li>Export metadata and timestamps</li>
+                                                    <li>Location history and activities</li>
+                                                    <li>All advanced extracted data (device, network, accounts, calendar, app usage, notifications, bluetooth, sensors)</li>
                                                 </ul>
-                                                <a href="<?php echo base_url('account/exportData/all'); ?>" class="btn btn-primary btn-lg btn-block export-link" data-type="All Data">
+                                                <button class="btn btn-primary btn-lg btn-block export-btn" data-type="all">
                                                     <i class="fas fa-file-archive mr-2"></i> Export All Data
-                                                </a>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Delete Data Tab -->
+                                <!-- ============================== -->
+                                <!-- DELETE DATA TAB -->
+                                <!-- ============================== -->
                                 <div class="tab-pane fade" id="delete" role="tabpanel">
                                     <div class="alert alert-danger">
-                                        <h5><i class="fas fa-exclamation-triangle mr-2"></i>Warning: Permanent Deletion</h5>
+                                        <h5><i class="fas fa-exclamation-triangle mr-2"></i> Warning: Permanent Deletion</h5>
                                         <p class="mb-0">Deleting data is permanent and cannot be undone. Please proceed with caution.</p>
                                     </div>
 
                                     <div class="row">
+                                        <?php
+                                        $deleteTypes = [
+                                            'apps'      => ['icon' => 'fa-mobile-alt', 'label' => 'Applications', 'count' => $total_apps],
+                                            'contacts'  => ['icon' => 'fa-address-book', 'label' => 'Contacts', 'count' => $total_contacts],
+                                            'sms'       => ['icon' => 'fa-sms', 'label' => 'SMS Messages', 'count' => $total_sms],
+                                            'calls'     => ['icon' => 'fa-phone', 'label' => 'Call Logs', 'count' => $total_calls],
+                                            'files'     => ['icon' => 'fa-file-excel', 'label' => 'Files Metadata', 'count' => $total_files],
+                                            'locations' => ['icon' => 'fa-map-marker-alt', 'label' => 'Locations & Activities', 'count' => $total_locations + $total_activities],
+                                            'advanced'  => ['icon' => 'fa-database', 'label' => 'Advanced Data', 'count' => ($total_device + $total_network + $total_accounts + $total_calendar + $total_app_usage + $total_notifications + $total_bluetooth + $total_sensors + $total_media + $total_security_audit + $total_sim_configs)],
+                                        ];
+                                        foreach ($deleteTypes as $key => $dt):
+                                        ?>
                                         <div class="col-md-6 mb-3">
                                             <div class="card h-100 border border-danger">
                                                 <div class="card-body text-center">
                                                     <div class="mb-3">
-                                                        <i class="fas fa-mobile-alt fa-3x text-danger"></i>
+                                                        <i class="fas <?php echo $dt['icon']; ?> fa-3x text-danger"></i>
                                                     </div>
-                                                    <h5 class="card-title text-danger">Delete Applications</h5>
-                                                    <p class="card-text"><?php echo $total_apps; ?> apps will be removed</p>
-                                                    <a href="<?php echo base_url('account/deleteData/apps'); ?>" class="btn btn-outline-danger btn-block">
-                                                        <i class="fas fa-trash mr-1"></i> Delete Apps
-                                                    </a>
+                                                    <h5 class="card-title text-danger">Delete <?php echo $dt['label']; ?></h5>
+                                                    <p class="card-text"><?php echo $dt['count']; ?> records will be removed</p>
+                                                    <button class="btn btn-outline-danger btn-block delete-btn"
+                                                            data-type="<?php echo $key; ?>"
+                                                            data-label="<?php echo $dt['label']; ?>">
+                                                        <i class="fas fa-trash mr-1"></i> Delete
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border border-danger">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-address-book fa-3x text-danger"></i>
-                                                    </div>
-                                                    <h5 class="card-title text-danger">Delete Contacts</h5>
-                                                    <p class="card-text"><?php echo $total_contacts; ?> contacts will be removed</p>
-                                                    <a href="<?php echo base_url('account/deleteData/contacts'); ?>" class="btn btn-outline-danger btn-block">
-                                                        <i class="fas fa-trash mr-1"></i> Delete Contacts
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border border-danger">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-sms fa-3x text-danger"></i>
-                                                    </div>
-                                                    <h5 class="card-title text-danger">Delete SMS</h5>
-                                                    <p class="card-text"><?php echo $total_sms; ?> messages will be removed</p>
-                                                    <a href="<?php echo base_url('account/deleteData/sms'); ?>" class="btn btn-outline-danger btn-block">
-                                                        <i class="fas fa-trash mr-1"></i> Delete SMS
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border border-danger">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-phone fa-3x text-danger"></i>
-                                                    </div>
-                                                    <h5 class="card-title text-danger">Delete Call Logs</h5>
-                                                    <p class="card-text"><?php echo $total_calls; ?> call records will be removed</p>
-                                                    <a href="<?php echo base_url('account/deleteData/call_logs'); ?>" class="btn btn-outline-danger btn-block">
-                                                        <i class="fas fa-trash mr-1"></i> Delete Calls
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border border-danger">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-file-excel fa-3x text-danger"></i>
-                                                    </div>
-                                                    <h5 class="card-title text-danger">Delete Files</h5>
-                                                    <p class="card-text"><?php echo $total_files; ?> file records will be removed</p>
-                                                    <a href="<?php echo base_url('account/deleteData/files'); ?>" class="btn btn-outline-danger btn-block">
-                                                        <i class="fas fa-trash mr-1"></i> Delete Files
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border border-danger">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-map-marker-alt fa-3x text-danger"></i>
-                                                    </div>
-                                                    <h5 class="card-title text-danger">Delete Locations</h5>
-                                                    <p class="card-text"><?php echo $total_locations; ?> records will be removed</p>
-                                                    <a href="<?php echo base_url('account/deleteData/locations'); ?>" class="btn btn-outline-danger btn-block">
-                                                        <i class="fas fa-trash mr-1"></i> Delete Locations
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border border-danger">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-database fa-3x text-danger"></i>
-                                                    </div>
-                                                    <h5 class="card-title text-danger">Delete Advanced</h5>
-                                                    <p class="card-text">All sensor and system data removed</p>
-                                                    <a href="<?php echo base_url('account/deleteData/advanced'); ?>" class="btn btn-outline-danger btn-block">
-                                                        <i class="fas fa-trash mr-1"></i> Delete Advanced
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <?php endforeach; ?>
                                     </div>
 
                                     <div class="mt-4">
@@ -485,15 +392,17 @@
                                                     <li>All advanced extracted data</li>
                                                 </ul>
                                                 <p><strong>This action cannot be undone!</strong></p>
-                                                <a href="<?php echo base_url('account/deleteData/all'); ?>" class="btn btn-danger btn-lg btn-block">
+                                                <button class="btn btn-danger btn-lg btn-block delete-btn" data-type="all" data-label="ALL">
                                                     <i class="fas fa-bomb mr-2"></i> Delete All My Data
-                                                </a>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Security Tab -->
+                                <!-- ============================== -->
+                                <!-- SECURITY TAB -->
+                                <!-- ============================== -->
                                 <div class="tab-pane fade" id="security" role="tabpanel">
                                     <div class="row">
                                         <div class="col-md-6">
@@ -580,42 +489,40 @@
         padding: 15px 20px;
         font-weight: 500;
     }
-
     .nav-tabs .nav-link.active {
         background-color: #fff;
         border-bottom-color: #fff;
     }
-
     .card.h-100 {
         transition: transform 0.3s ease;
     }
-
     .card.h-100:hover {
         transform: translateY(-5px);
     }
-
     .img-circle {
         border-radius: 50% !important;
         border: 3px solid #dee2e6;
     }
-
     .list-group-item {
         border-left: 0;
         border-right: 0;
     }
-
     .list-group-item:first-child {
         border-top: 0;
     }
-
     .list-group-item:last-child {
         border-bottom: 0;
+    }
+    .bg-gradient-navy {
+        background: linear-gradient(135deg, #001a33 0%, #003366 100%);
     }
 </style>
 
 <script>
     $(document).ready(function() {
-        // Profile form submission
+        // ========================
+        // EDIT PROFILE
+        // ========================
         $('#profileForm').on('submit', function(e) {
             e.preventDefault();
 
@@ -623,11 +530,8 @@
             const submitBtn = $('#saveProfileBtn');
             const originalText = submitBtn.html();
 
-            // Show loading state
             submitBtn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Saving...');
             submitBtn.prop('disabled', true);
-
-            // Clear previous messages
             $('#profileMessage').html('').removeClass('alert alert-success alert-danger');
 
             $.ajax({
@@ -645,8 +549,6 @@
                             response.message +
                             '</div>'
                         );
-
-                        // Reload page after 2 seconds
                         setTimeout(function() {
                             window.location.reload();
                         }, 2000);
@@ -661,7 +563,7 @@
                         submitBtn.prop('disabled', false);
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function() {
                     $('#profileMessage').html(
                         '<div class="alert alert-danger">' +
                         '<i class="fas fa-exclamation-circle mr-2"></i>' +
@@ -674,47 +576,140 @@
             });
         });
 
-        // Cancel changes button
         $('#cancelChanges').on('click', function() {
             window.location.reload();
         });
 
-        // Update file input label
         $('#profile_image').on('change', function(e) {
             const fileName = e.target.files[0]?.name || 'Choose file';
             const label = $(this).next('.custom-file-label');
             label.text(fileName);
         });
 
-        // Delete data confirmation
-        $('a[href*="deleteData"]').on('click', function(e) {
-            e.preventDefault();
-            const url = $(this).attr('href');
+        // ========================
+        // EXPORT DATA
+        // ========================
+        $('.export-btn').on('click', function() {
+            const type = $(this).data('type');
+            const format = $('input[name="export-format"]:checked').val() || 'json';
+            const dateFrom = $('#export-date-from').val();
+            const dateTo = $('#export-date-to').val();
+            const btn = $(this);
+            const originalText = btn.html();
 
-            // Show confirmation dialog
+            btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Exporting...');
+            btn.prop('disabled', true);
+
+            let url = '<?php echo base_url("account/exportData"); ?>/' + type + '?format=' + format;
+            if (dateFrom) url += '&date_from=' + dateFrom;
+            if (dateTo) url += '&date_to=' + dateTo;
+
+            window.location.href = url;
+
+            setTimeout(function() {
+                btn.html(originalText);
+                btn.prop('disabled', false);
+            }, 3000);
+        });
+
+        // ========================
+        // DELETE DATA (Inline SweetAlert2)
+        // ========================
+        $('.delete-btn').on('click', function() {
+            const type = $(this).data('type');
+            const label = $(this).data('label');
+            const btn = $(this);
+            const csrf = '<?php echo $csrf_token; ?>';
+
             Swal.fire({
-                title: 'Confirm Deletion',
-                text: 'You will be redirected to a confirmation page. Are you sure you want to proceed?',
+                title: 'Delete ' + label + '?',
+                text: 'This action is permanent and cannot be undone. Type "DELETE" in the box below to confirm.',
                 icon: 'warning',
+                input: 'text',
+                inputPlaceholder: 'Type DELETE here',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    autocorrect: 'off'
+                },
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, continue',
-                cancelButtonText: 'Cancel'
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                preConfirm: (input) => {
+                    if (input !== 'DELETE') {
+                        Swal.showValidationMessage('You must type "DELETE" exactly to confirm');
+                    }
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = url;
+                    btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Deleting...');
+                    btn.prop('disabled', true);
+
+                    $.ajax({
+                        url: '<?php echo base_url("account/deleteData"); ?>/' + type,
+                        type: 'POST',
+                        data: {
+                            csrf_token: csrf,
+                            confirmation: 'DELETE'
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Deleted!',
+                                    text: response.message,
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(function() {
+                                    window.location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message || 'Failed to delete data'
+                                });
+                                btn.html('<i class="fas fa-trash mr-1"></i> Delete');
+                                btn.prop('disabled', false);
+                            }
+                        },
+                        error: function(xhr) {
+                            let msg = 'An error occurred';
+                            try {
+                                const resp = JSON.parse(xhr.responseText);
+                                msg = resp.message || msg;
+                            } catch(e) {}
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: msg
+                            });
+                            btn.html('<i class="fas fa-trash mr-1"></i> Delete');
+                            btn.prop('disabled', false);
+                        }
+                    });
                 }
             });
         });
 
-        // Tab switching
+        // ========================
+        // TAB SWITCHING
+        // ========================
         $('.nav-tabs a').on('click', function(e) {
             e.preventDefault();
             $(this).tab('show');
         });
 
-        // Initialize tooltips
+        // ========================
+        // FORMAT TOGGLE UI
+        // ========================
+        $('#format-json, #format-csv').on('click', function() {
+            $('#format-json, #format-csv').removeClass('active');
+            $(this).addClass('active');
+        });
+
         $('[data-toggle="tooltip"]').tooltip();
     });
 </script>
