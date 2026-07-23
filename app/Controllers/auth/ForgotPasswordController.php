@@ -197,6 +197,80 @@ class ForgotPasswordController extends Controller
 
 
     /**
+     * Display offline password reset view (no email required)
+     */
+    public function offlineResetView()
+    {
+        if (auth()->loggedIn()) {
+            return redirect()->to('/dashboard');
+        }
+
+        return view('auth/forgot_offline');
+    }
+
+    /**
+     * Handle offline password reset (no email required)
+     */
+    public function offlineResetAction(): RedirectResponse
+    {
+        $rules = [
+            'email' => [
+                'label' => 'Email',
+                'rules' => 'required|valid_email',
+            ],
+            'password' => [
+                'label' => 'New Password',
+                'rules' => 'required|min_length[8]|max_length[255]',
+            ],
+            'password_confirm' => [
+                'label' => 'Confirm Password',
+                'rules' => 'required|matches[password]',
+            ],
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
+        }
+
+        $email = $this->request->getPost('email');
+        $password = $this->request->getPost('password');
+
+        $users = model(UserModel::class);
+        $user = $users->findByCredentials(['email' => $email]);
+
+        if (!$user) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'No account found with that email address.');
+        }
+
+        $identities = model(UserIdentityModel::class);
+
+        $emailIdentity = $identities->where('user_id', $user->id)
+            ->where('type', 'email_password')
+            ->first();
+
+        if (!$emailIdentity) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'User identity not found.');
+        }
+
+        $newHash = service('passwords')->hash($password);
+        $identities->update($emailIdentity->id, ['secret2' => $newHash]);
+
+        // Delete all session tokens for this user (force logout everywhere)
+        $identities->where('user_id', $user->id)
+            ->where('type', 'session')
+            ->delete();
+
+        return redirect()->route('forgot-offline')
+            ->with('message', 'Password reset successfully!');
+    }
+
+    /**
      * Send password reset email
      */
     protected function sendResetEmail(string $email, string $token, string $username): bool

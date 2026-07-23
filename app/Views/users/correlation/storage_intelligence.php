@@ -126,7 +126,7 @@
                     <div class="card shadow-sm">
                         <div class="card-header border-0 bg-light">
                             <h3 class="card-title text-danger"><i class="fas fa-weight-hanging mr-2"></i> Largest Space Hogs
-                                <small class="text-muted ml-2">Showing <?= count($displayFiles) ?> of <?= $total ?></small>
+                                <small class="text-muted ml-2">Showing <?= count($storage['display_files'] ?? []) ?> of <?= $total ?></small>
                             </h3>
                         </div>
                         <div class="card-body p-0">

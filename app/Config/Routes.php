@@ -185,6 +185,12 @@ $routes->group('', ['namespace' => 'App\Controllers\auth'], static function ($ro
      * @return \CodeIgniter\HTTP\RedirectResponse
      */
     $routes->post('reset-password', 'ForgotPasswordController::resetAction');
+
+    /**
+     * Offline password reset (no email required).
+     */
+    $routes->get('forgot/offline', 'ForgotPasswordController::offlineResetView', ['as' => 'forgot-offline']);
+    $routes->post('forgot/offline', 'ForgotPasswordController::offlineResetAction');
 });
 
 // Load Shield routes after custom routes so custom routes take precedence (for password reset, email verification, etc.)
@@ -1078,7 +1084,7 @@ $routes->group('api/v1', [
 
 $routes->group('admin', [
     'namespace' => 'App\Controllers\admin',
-    'filter' => 'session'  // Auth + Admin role
+    'filter' => 'group:admin,superadmin'  // Requires auth + admin/superadmin group
 ], static function ($routes) {
 
     // -------------------------------------------------------------
@@ -1111,7 +1117,6 @@ $routes->group('admin', [
          * @return string
          */
         $routes->get('/', 'Users::index', ['as' => 'admin-users']);
-        $routes->get('(:num)', 'Users::index/$1');
 
         /**
          * Displays user creation form.
@@ -1182,6 +1187,15 @@ $routes->group('admin', [
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->post('clearData/(:num)', 'Users::clear_user_data/$1', ['as' => 'admin-user-clear-data']);
+
+        /**
+         * Deletes a specific data type for a user.
+         *
+         * @param int    $userId User ID
+         * @param string $type   Data type key
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('deleteDataType/(:num)/(:any)', 'Users::delete_data_type/$1/$2', ['as' => 'admin-user-delete-data-type']);
     });
 
     // -------------------------------------------------------------
@@ -1196,34 +1210,27 @@ $routes->group('admin', [
          * @return string
          */
         $routes->get('/', 'Logs::index', ['as' => 'admin-logs']);
-        $routes->get('(:num)', 'Logs::index/$1');
 
         /**
          * Displays access logs.
          *
-         * @param int|null $page Page number
          * @return string
          */
         $routes->get('access', 'Logs::access_logs', ['as' => 'admin-access-logs']);
-        $routes->get('access/(:num)', 'Logs::access_logs/$1');
 
         /**
          * Displays error logs.
          *
-         * @param int|null $page Page number
          * @return string
          */
         $routes->get('errors', 'Logs::error_logs', ['as' => 'admin-error-logs']);
-        $routes->get('errors/(:num)', 'Logs::error_logs/$1');
 
         /**
          * Displays API logs.
          *
-         * @param int|null $page Page number
          * @return string
          */
         $routes->get('api', 'Logs::api_logs', ['as' => 'admin-api-logs']);
-        $routes->get('api/(:num)', 'Logs::api_logs/$1');
 
         /**
          * Clears system logs.
@@ -1238,6 +1245,21 @@ $routes->group('admin', [
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->post('export', 'Logs::export_logs', ['as' => 'admin-logs-export']);
+
+        /**
+         * Views a PHP error log file.
+         *
+         * @param string $filename Log file name
+         * @return string
+         */
+        $routes->get('view-error-file/(:any)', 'Logs::view_error_file/$1', ['as' => 'admin-logs-view-error']);
+
+        /**
+         * Clears PHP error log files.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->post('clear-error-files', 'Logs::clear_error_files', ['as' => 'admin-logs-clear-files']);
     });
 
     // -------------------------------------------------------------
@@ -1314,6 +1336,22 @@ $routes->group('admin', [
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->post('backup/restore', 'Settings::restore_backup', ['as' => 'admin-restore-backup']);
+
+        /**
+         * Downloads a backup file.
+         *
+         * @param string $filename Backup file name
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('backup/download/(:any)', 'Settings::download_backup/$1', ['as' => 'admin-download-backup']);
+
+        /**
+         * Deletes a backup file.
+         *
+         * @param string $filename Backup file name
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('backup/delete/(:any)', 'Settings::delete_backup/$1', ['as' => 'admin-delete-backup']);
     });
 
     // -------------------------------------------------------------
@@ -1378,7 +1416,6 @@ $routes->group('admin', [
          * @return string
          */
         $routes->get('/', 'Tokens::index', ['as' => 'admin-tokens']);
-        $routes->get('(:num)', 'Tokens::index/$1');
 
         /**
          * Revokes a token.

@@ -1,0 +1,138 @@
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>User Management</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="<?= base_url('home') ?>">Home</a></li>
+                        <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Admin</a></li>
+                        <li class="breadcrumb-item active">Users</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <?php if (session()->getFlashdata('message')): ?>
+            <div class="alert alert-success alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <?= session()->getFlashdata('message') ?>
+            </div>
+            <?php endif; ?>
+            <?php if (session()->getFlashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <?= session()->getFlashdata('error') ?>
+            </div>
+            <?php endif; ?>
+            <?php if (session()->getFlashdata('errors')): ?>
+            <div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <ul class="mb-0">
+                    <?php foreach (session()->getFlashdata('errors') as $e): ?>
+                    <li><?= esc($e) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endif; ?>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">All Users</h3>
+                    <div class="card-tools">
+                        <a href="<?= base_url('admin/users/create') ?>" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Create User
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped table-hover" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Last Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($users as $u): ?>
+                            <?php
+                                $groups = $user_groups[$u['id']] ?? ['user'];
+                                $role = implode(', ', $groups);
+                                $isActive = $u['active'] ?? 1;
+                            ?>
+                            <tr>
+                                <td><?= $u['id'] ?></td>
+                                <td><?= htmlspecialchars($u['username']) ?></td>
+                                <td><?= htmlspecialchars($u['email'] ?? '-') ?></td>
+                                <td>
+                                    <?php foreach ($groups as $g): ?>
+                                    <span class="badge badge-<?= $g === 'superadmin' ? 'danger' : ($g === 'admin' ? 'warning' : ($g === 'developer' ? 'info' : ($g === 'beta' ? 'secondary' : 'primary'))) ?>">
+                                        <?= htmlspecialchars($g) ?>
+                                    </span>
+                                    <?php endforeach; ?>
+                                </td>
+                                <td>
+                                    <?php if ($u['deleted_at']): ?>
+                                    <span class="badge badge-danger">Deleted</span>
+                                    <?php elseif (!$isActive): ?>
+                                    <span class="badge badge-secondary">Suspended</span>
+                                    <?php else: ?>
+                                    <span class="badge badge-success">Active</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= htmlspecialchars($u['created_at'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($u['last_active'] ?? '-') ?></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="<?= base_url('admin/users/edit/' . $u['id']) ?>" class="btn btn-info" title="Edit"><i class="fas fa-edit"></i></a>
+                                        <a href="<?= base_url('admin/users/data/' . $u['id']) ?>" class="btn btn-primary" title="View Data"><i class="fas fa-database"></i></a>
+                                        <?php if ($isActive): ?>
+                                        <form method="post" action="<?= base_url('admin/users/suspend/' . $u['id']) ?>" style="display:inline">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="btn btn-warning btn-sm" title="Suspend" onclick="return confirm('Suspend this user?')"><i class="fas fa-pause"></i></button>
+                                        </form>
+                                        <?php else: ?>
+                                        <form method="post" action="<?= base_url('admin/users/activate/' . $u['id']) ?>" style="display:inline">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="btn btn-success btn-sm" title="Activate" onclick="return confirm('Activate this user?')"><i class="fas fa-play"></i></button>
+                                        </form>
+                                        <?php endif; ?>
+                                        <?php if ($u['id'] !== $user_info['id']): ?>
+                                        <form method="post" action="<?= base_url('admin/users/delete/' . $u['id']) ?>" style="display:inline">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="btn btn-danger btn-sm" title="Delete" onclick="return confirm('Delete this user permanently?')"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#usersTable').DataTable({
+        order: [[0, 'desc']],
+        searching: false,
+        paging: false,
+        responsive: true,
+    });
+});
+</script>

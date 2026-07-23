@@ -141,7 +141,7 @@ class Receive extends BaseController
 //                'file_record_id' => $fileRecordId > 0 ? $fileRecordId : null,
                 'file_record_id' => null,
                 'category' => $fileInfo['category'],
-                'timestamp' => date('Y-m-d H:i:s')
+                'timestamp' => (string) (time() * 1000)
             ]);
         } else {
             // Update file record status via model

@@ -145,6 +145,16 @@
                             </a>
                         </li>
 
+                        <?php if (auth()->user()->can('admin.access')): ?>
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/dashboard'); ?>"
+                               class="nav-link <?php echo (isset($pag) && strpos($pag, 'admin-') === 0) ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-shield-alt"></i>
+                                <p>Admin Panel</p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+
                         <!-- Data Section (Collapsible) -->
                         <?php 
                             $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'advanced', 'remote_device', 'sim_configs'];
