@@ -78,7 +78,7 @@
                                         <input type="hidden" name="maintenance_mode" value="0">
                                         <input type="checkbox" class="custom-control-input" id="maintenance_mode" name="maintenance_mode" value="1" <?= ($settings['maintenance_mode'] ?? '0') === '1' ? 'checked' : '' ?>>
                                         <label class="custom-control-label" for="maintenance_mode">Maintenance Mode</label>
-                                        <small class="form-text text-muted">When enabled, only admins can access the site.</small>
+                                        <small class="form-text text-muted">When enabled, only admins can access the site. Configure <a href="<?= base_url('admin/settings/maintenance') ?>">scheduling and advanced options here</a>.</small>
                                     </div>
                                 </div>
                             </div>

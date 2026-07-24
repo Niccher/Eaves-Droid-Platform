@@ -15,10 +15,15 @@ $actionLabels = [
     'password_reset'      => ['label' => 'Password Reset',      'icon' => 'fa-key',         'color' => 'danger'],
     'password_reset_offline' => ['label' => 'Offline Password Reset','icon' => 'fa-key',  'color' => 'danger'],
     'logout'              => ['label' => 'Logout',              'icon' => 'fa-sign-out-alt','color' => 'secondary'],
+    'maintenance_blocked' => ['label' => 'Maintenance Block',   'icon' => 'fa-shield-alt',  'color' => 'warning'],
 ];
 
 function fmtAction(string $type): array {
     global $actionLabels;
+    if (str_starts_with($type, 'remote_cmd_')) {
+        $cmd = substr($type, 11);
+        return ['label' => 'FCM: ' . ucfirst(str_replace('_', ' ', $cmd)), 'icon' => 'fa-fire', 'color' => 'info'];
+    }
     if (str_starts_with($type, 'upload_')) {
         $cat = substr($type, 7);
         return ['label' => 'Upload: ' . ucfirst(str_replace('_', ' ', $cat)), 'icon' => 'fa-upload', 'color' => 'info'];
@@ -59,6 +64,8 @@ function fmtAction(string $type): array {
                         <a href="<?= base_url('admin/logs/access') ?>" class="btn btn-sm btn-outline-primary">Access</a>
                         <a href="<?= base_url('admin/logs/errors') ?>" class="btn btn-sm btn-outline-danger">Errors</a>
                         <a href="<?= base_url('admin/logs/api') ?>" class="btn btn-sm btn-outline-info">API</a>
+                        <a href="<?= base_url('admin/logs/fcm') ?>" class="btn btn-sm btn-outline-info">FCM</a>
+                        <a href="<?= base_url('admin/logs/maintenance') ?>" class="btn btn-sm btn-outline-warning">Maintenance</a>
                     </div>
                     <div class="card-tools">
                         <form method="post" action="<?= base_url('admin/logs/clear') ?>" style="display:inline">
@@ -82,14 +89,18 @@ function fmtAction(string $type): array {
                                 <th>Severity</th>
                                 <th>IP</th>
                                 <th>Status</th>
+                                <th>Details</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($logs)): ?>
-                            <tr><td colspan="7" class="text-center text-muted py-4">No logs found.</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-4">No logs found.</td></tr>
                             <?php else: ?>
                             <?php foreach ($logs as $log): ?>
-                            <?php $ai = fmtAction($log['action_type'] ?? ''); ?>
+                            <?php $ai = fmtAction($log['action_type'] ?? '');
+                                  $nv = !empty($log['new_values']) ? json_decode($log['new_values'], true) : [];
+                                  $isFcm = str_starts_with($log['action_type'] ?? '', 'remote_cmd_');
+                            ?>
                             <tr>
                                 <td class="text-nowrap"><small><?= htmlspecialchars($log['date'] ?? '-') ?></small></td>
                                 <td>
@@ -114,6 +125,20 @@ function fmtAction(string $type): array {
                                     <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Success</span>
                                     <?php else: ?>
                                     <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Failed</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($isFcm && !empty($nv['command'])): ?>
+                                    <small class="text-muted">
+                                        <i class="fas fa-terminal mr-1"></i><?= htmlspecialchars(str_replace('cmd_', '', $nv['command'])) ?>
+                                        <?php if (!empty($nv['payload']) && $nv['payload'] !== 'all'): ?>/ <code><?= htmlspecialchars($nv['payload']) ?></code><?php endif; ?>
+                                    </small>
+                                    <?php elseif (!empty($log['error_message'])): ?>
+                                    <small class="text-danger" title="<?= htmlspecialchars($log['error_message']) ?>">
+                                        <i class="fas fa-exclamation-circle mr-1"></i><?= htmlspecialchars(mb_substr($log['error_message'], 0, 40)) ?>
+                                    </small>
+                                    <?php else: ?>
+                                    <span class="text-muted small">—</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>

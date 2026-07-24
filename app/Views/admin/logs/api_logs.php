@@ -25,6 +25,8 @@
                         <a href="<?= base_url('admin/logs/access') ?>" class="btn btn-sm btn-outline-primary">Access</a>
                         <a href="<?= base_url('admin/logs/errors') ?>" class="btn btn-sm btn-outline-danger">Errors</a>
                         <a href="<?= base_url('admin/logs/api') ?>" class="btn btn-sm btn-info">API</a>
+                        <a href="<?= base_url('admin/logs/fcm') ?>" class="btn btn-sm btn-outline-info">FCM</a>
+                        <a href="<?= base_url('admin/logs/maintenance') ?>" class="btn btn-sm btn-outline-warning">Maintenance</a>
                     </div>
                     <div class="card-tools">
                         <span class="badge badge-info"><?= $total ?> API requests</span>

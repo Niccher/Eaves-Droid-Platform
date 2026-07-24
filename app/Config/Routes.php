@@ -730,6 +730,13 @@ $routes->group('', [
         $routes->post('updateProfile', 'Account::updateProfile', ['as' => 'account-update-profile']);
 
         /**
+         * Sends reset command to Android device.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->post('reset-device', 'Account::sendDeviceReset', ['as' => 'account-reset-device']);
+
+        /**
          * Uploads profile image.
          *
          * @return \CodeIgniter\HTTP\ResponseInterface
@@ -982,6 +989,16 @@ $routes->group('api/v1', [
      */
     $routes->get('device/status', 'Receive::device_status', ['as' => 'api-device-status']);
 
+    /**
+     * Sync device config + permissions from Android device.
+     */
+    $routes->post('device/config/sync', 'DeviceConfigController::sync', ['as' => 'api-device-config-sync']);
+
+    /**
+     * Fetch last known device config.
+     */
+    $routes->get('device/config/(:any)', 'DeviceConfigController::fetch/$1', ['as' => 'api-device-config-fetch']);
+
     // -------------------------------------------------------------
     // 6.3 DATA UPLOAD ENDPOINTS
     // -------------------------------------------------------------
@@ -1051,6 +1068,11 @@ $routes->group('api/v1', [
     $routes->match(['get', 'post'], "fcm/send/(:any)/(:any)", "FCMCommandController::send/$1/$2", ["as" => "api-fcm-send-short"]);
     $routes->match(['get', 'post'], "fcm/trigger/(:any)/(:any)", "FCMCommandController::trigger/$1/$2", ["as" => "api-fcm-trigger"]);
     $routes->match(['get', 'post'], "fcm/trigger/(:any)", "FCMCommandController::trigger/$1", ["as" => "api-fcm-trigger-short"]);
+
+    /**
+     * Acknowledgment callback from Android device after processing a command.
+     */
+    $routes->post("fcm/ack/(:num)", "FCMCommandController::ack/$1", ["as" => "api-fcm-ack"]);
 
     // 6.5 UTILITY & HEALTH CHECK ENDPOINTS
     // -------------------------------------------------------------
@@ -1231,6 +1253,20 @@ $routes->group('admin', [
          * @return string
          */
         $routes->get('api', 'Logs::api_logs', ['as' => 'admin-api-logs']);
+
+        /**
+         * Displays maintenance block logs.
+         *
+         * @return string
+         */
+        $routes->get('maintenance', 'Logs::maintenance_logs', ['as' => 'admin-maintenance-logs']);
+
+        /**
+         * Displays FCM command logs.
+         *
+         * @return string
+         */
+        $routes->get('fcm', 'Logs::fcm_logs', ['as' => 'admin-fcm-logs']);
 
         /**
          * Clears system logs.

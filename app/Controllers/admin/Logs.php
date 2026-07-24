@@ -14,6 +14,7 @@ class Logs extends BaseAdminController
                       tbl_user_actions.action_severity as severity, tbl_user_actions.ip_address,
                       tbl_user_actions.user_agent, tbl_user_actions.created_at as date,
                       tbl_user_actions.success, tbl_user_actions.error_message,
+                      tbl_user_actions.new_values,
                       NULL as identifier, NULL as response_code, NULL as execution_time_ms")
             ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
             ->orderBy('tbl_user_actions.created_at', 'DESC')
@@ -93,6 +94,30 @@ class Logs extends BaseAdminController
         ]);
     }
 
+    public function maintenance_logs()
+    {
+        $db = $this->getDb();
+
+        $total = $db->table('tbl_user_actions')
+            ->where('action_type', 'maintenance_blocked')
+            ->countAllResults();
+
+        $logs = $db->table('tbl_user_actions')
+            ->select('tbl_user_actions.*, users.username')
+            ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
+            ->where('tbl_user_actions.action_type', 'maintenance_blocked')
+            ->orderBy('tbl_user_actions.created_at', 'DESC')
+            ->limit(100)
+            ->get()
+            ->getResultArray();
+
+        return $this->renderView('admin/logs/maintenance_logs', [
+            'pag' => 'admin-maintenance-logs',
+            'logs' => $logs,
+            'total' => $total,
+        ]);
+    }
+
     public function api_logs()
     {
         $db = $this->getDb();
@@ -111,6 +136,30 @@ class Logs extends BaseAdminController
             'pag' => 'admin-api-logs',
             'logs' => $logs,
             'total' => count($logs),
+        ]);
+    }
+
+    public function fcm_logs()
+    {
+        $db = $this->getDb();
+
+        $total = $db->table('tbl_user_actions')
+            ->like('action_type', 'remote_cmd_')
+            ->countAllResults();
+
+        $logs = $db->table('tbl_user_actions')
+            ->select('tbl_user_actions.*, users.username')
+            ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
+            ->like('tbl_user_actions.action_type', 'remote_cmd_')
+            ->orderBy('tbl_user_actions.created_at', 'DESC')
+            ->limit(50)
+            ->get()
+            ->getResultArray();
+
+        return $this->renderView('admin/logs/fcm_logs', [
+            'pag' => 'admin-fcm-logs',
+            'logs' => $logs,
+            'total' => $total,
         ]);
     }
 

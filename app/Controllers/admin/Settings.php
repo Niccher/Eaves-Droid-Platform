@@ -29,10 +29,11 @@ class Settings extends BaseAdminController
         unset($post['section'], $post[csrf_token()]);
 
         $allowedMap = [
-            'app' => ['app_name', 'app_description', 'maintenance_mode', 'timezone', 'language'],
+            'app' => ['app_name', 'app_description', 'maintenance_mode', 'maintenance_type', 'maintenance_start', 'maintenance_end', 'timezone', 'language'],
             'api' => ['rate_limit', 'allowed_origins', 'max_upload_size', 'token_expiry_days'],
             'security' => ['min_password_length', 'session_ttl', 'max_login_attempts', 'lockout_duration'],
             'notification' => ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from_email', 'smtp_from_name'],
+            'ml' => ['ml_enabled', 'ml_anomaly_enabled', 'ml_schedule_interval', 'ml_phpml_kmeans_k', 'ml_phpml_dbscan_epsilon', 'ml_phpml_dbscan_minpoints', 'ml_phpml_isolationforest_trees', 'ml_phpml_isolationforest_samples', 'ml_python_enabled', 'ml_python_host', 'ml_python_port', 'ml_python_endpoint', 'ml_python_autoencoder_latent', 'ml_python_autoencoder_epochs', 'ml_python_autoencoder_threshold', 'ml_python_lstm_sequence', 'ml_python_lstm_units', 'ml_python_oneclass_nu', 'ml_python_oneclass_gamma', 'ml_python_iforest_trees', 'ml_python_iforest_samples', 'ml_python_iforest_contamination'],
         ];
 
         $allowed = $allowedMap[$section] ?? array_keys($post);
@@ -67,6 +68,7 @@ class Settings extends BaseAdminController
             'api' => 'admin/settings/api',
             'security' => 'admin/settings/security',
             'notification' => 'admin/settings/notifications',
+            'ml' => 'admin/ml',
         ];
 
         $this->logAdminAction('admin_settings_update', 'medium', true, [
@@ -129,6 +131,12 @@ class Settings extends BaseAdminController
     {
         $db = $this->getDb();
 
+        $saved = [];
+        $rows = $db->table('settings')->where('class', 'app')->get()->getResultArray();
+        foreach ($rows as $r) {
+            $saved[$r['key']] = $r['value'];
+        }
+
         $tableStats = [];
         $tables = $db->listTables();
         foreach ($tables as $table) {
@@ -161,6 +169,7 @@ class Settings extends BaseAdminController
 
         return $this->renderView('admin/settings/maintenance', [
             'pag' => 'admin-maintenance',
+            'settings' => $saved,
             'table_stats' => $tableStats,
             'total_tables' => count($tableStats),
             'total_db_size' => array_sum(array_column($tableStats, 'size')),

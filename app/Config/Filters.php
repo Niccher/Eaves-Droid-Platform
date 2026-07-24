@@ -17,11 +17,12 @@ class Filters extends BaseConfig
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
-        'throttle'      => \App\Filters\ThrottleFilter::class,  // ← Your custom filter
+        'throttle'      => \App\Filters\ThrottleFilter::class,
+        'maintenance'   => \App\Filters\MaintenanceFilter::class,
     ];
 
     public array $globals = [
-        'before' => [],
+        'before' => ['maintenance'],
         'after'  => ['toolbar'],
     ];
 

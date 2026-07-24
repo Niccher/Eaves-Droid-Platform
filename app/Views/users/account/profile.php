@@ -77,73 +77,24 @@
                         </div>
                     </div>
 
-                    <!-- Account Stats -->
-                    <div class="card card-info mt-4">
+                    <!-- Reset App -->
+                    <div class="card card-outline card-danger mt-4">
                         <div class="card-header">
                             <h3 class="card-title">
-                                <i class="fas fa-chart-bar mr-2"></i>
-                                Account Statistics
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                Reset Android App
                             </h3>
                         </div>
-                        <div class="card-body p-0">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="fas fa-mobile-alt text-primary mr-2"></i> Applications</span>
-                                    <span class="badge badge-primary badge-pill"><?php echo $total_apps; ?></span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="fas fa-address-book text-success mr-2"></i> Contacts</span>
-                                    <span class="badge badge-success badge-pill"><?php echo $total_contacts; ?></span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="fas fa-sms text-info mr-2"></i> SMS Messages</span>
-                                    <span class="badge badge-info badge-pill"><?php echo $total_sms; ?></span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="fas fa-phone text-warning mr-2"></i> Call Logs</span>
-                                    <span class="badge badge-warning badge-pill"><?php echo $total_calls; ?></span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="fas fa-key text-danger mr-2"></i> API Tokens</span>
-                                    <span class="badge badge-danger badge-pill"><?php echo $total_tokens; ?></span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="fas fa-laptop text-secondary mr-2"></i> Connected Devices</span>
-                                    <span class="badge badge-secondary badge-pill"><?php echo $connected_devices; ?></span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Data Summary -->
-                    <div class="card bg-gradient-navy mt-4">
-                        <div class="card-header border-bottom-0">
-                            <h3 class="card-title">
-                                <i class="fas fa-database mr-2"></i>
-                                Data Summary
-                            </h3>
-                        </div>
-                        <div class="card-body pt-2">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span><i class="fas fa-box mr-1"></i> Estimated Storage</span>
-                                <span class="badge badge-light"><?php echo $estimated_storage ?? '~0 B'; ?></span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span><i class="fas fa-download mr-1"></i> Total Exports</span>
-                                <span class="badge badge-light"><?php echo $export_count ?? 0; ?></span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span><i class="fas fa-clock mr-1"></i> Last Export</span>
-                                <span class="badge badge-light">
-                                    <?php echo !empty($last_exported_at) ? date('M d, Y', strtotime($last_exported_at)) : 'Never'; ?>
-                                </span>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <span><i class="fas fa-trash mr-1"></i> Last Deletion</span>
-                                <span class="badge badge-light">
-                                    <?php echo !empty($last_deleted_data_at) ? date('M d, Y', strtotime($last_deleted_data_at)) : 'Never'; ?>
-                                </span>
-                            </div>
+                        <div class="card-body">
+                            <p class="text-muted small">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Removes stealth disguise, restores default icon, resets launch codes
+                                (<code>*#007#</code>, <code>1234</code>).
+                            </p>
+                            <button type="button" class="btn btn-danger btn-block" id="resetDeviceBtn">
+                                <i class="fas fa-undo mr-1"></i> Reset App on Device
+                            </button>
+                            <div id="resetMessage" class="mt-2"></div>
                         </div>
                     </div>
                 </div>
@@ -171,6 +122,11 @@
                                 <li class="nav-item">
                                     <a class="nav-link" id="security-tab" data-toggle="tab" href="#security" role="tab">
                                         <i class="fas fa-shield-alt mr-2"></i>Security
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="statistics-tab" data-toggle="tab" href="#statistics" role="tab">
+                                        <i class="fas fa-chart-bar mr-2"></i>Statistics
                                     </a>
                                 </li>
                             </ul>
@@ -474,6 +430,81 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- ============================== -->
+                                <!-- STATISTICS TAB -->
+                                <!-- ============================== -->
+                                <div class="tab-pane fade" id="statistics" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card card-info card-outline">
+                                                <div class="card-header">
+                                                    <h5 class="card-title"><i class="fas fa-chart-pie mr-2"></i>Data Overview</h5>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    <ul class="list-group list-group-flush">
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <span><i class="fas fa-mobile-alt text-primary mr-2"></i> Applications</span>
+                                                            <span class="badge badge-primary badge-pill"><?php echo $total_apps; ?></span>
+                                                        </li>
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <span><i class="fas fa-address-book text-success mr-2"></i> Contacts</span>
+                                                            <span class="badge badge-success badge-pill"><?php echo $total_contacts; ?></span>
+                                                        </li>
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <span><i class="fas fa-sms text-info mr-2"></i> SMS Messages</span>
+                                                            <span class="badge badge-info badge-pill"><?php echo $total_sms; ?></span>
+                                                        </li>
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <span><i class="fas fa-phone text-warning mr-2"></i> Call Logs</span>
+                                                            <span class="badge badge-warning badge-pill"><?php echo $total_calls; ?></span>
+                                                        </li>
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <span><i class="fas fa-key text-danger mr-2"></i> API Tokens</span>
+                                                            <span class="badge badge-danger badge-pill"><?php echo $total_tokens; ?></span>
+                                                        </li>
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <span><i class="fas fa-laptop text-secondary mr-2"></i> Connected Devices</span>
+                                                            <span class="badge badge-secondary badge-pill"><?php echo $connected_devices; ?></span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card card-outline card-info">
+                                                <div class="card-header">
+                                                    <h5 class="card-title">
+                                                        <i class="fas fa-database mr-2"></i>
+                                                        Data Summary
+                                                    </h5>
+                                                </div>
+                                                <div class="card-body pt-2">
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span><i class="fas fa-box mr-1"></i> Estimated Storage</span>
+                                                        <span class="badge badge-light"><?php echo $estimated_storage ?? '~0 B'; ?></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span><i class="fas fa-download mr-1"></i> Total Exports</span>
+                                                        <span class="badge badge-light"><?php echo $export_count ?? 0; ?></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span><i class="fas fa-clock mr-1"></i> Last Export</span>
+                                                        <span class="badge badge-light">
+                                                            <?php echo !empty($last_exported_at) ? date('M d, Y', strtotime($last_exported_at)) : 'Never'; ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between">
+                                                        <span><i class="fas fa-trash mr-1"></i> Last Deletion</span>
+                                                        <span class="badge badge-light">
+                                                            <?php echo !empty($last_deleted_data_at) ? date('M d, Y', strtotime($last_deleted_data_at)) : 'Never'; ?>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -711,5 +742,72 @@
         });
 
         $('[data-toggle="tooltip"]').tooltip();
+
+        // ========================
+        // RESET ANDROID APP
+        // ========================
+        $('#resetDeviceBtn').on('click', function() {
+            const btn = $(this);
+            Swal.fire({
+                title: 'Reset Android App?',
+                html: 'This will send a command to your Android device to:<br>' +
+                      '• Remove stealth disguise<br>' +
+                      '• Restore default app icon<br>' +
+                      '• Reset dial code to <code>*#007#</code><br>' +
+                      '• Reset calculator code to <code>1234</code><br>' +
+                      '• Disable ghost mode',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, reset app',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending...');
+                    btn.prop('disabled', true);
+                    $('#resetMessage').html('');
+
+                    $.ajax({
+                        url: '<?= base_url("account/reset-device") ?>',
+                        type: 'POST',
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Command Sent',
+                                    text: response.message,
+                                    timer: 3000,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Failed',
+                                    text: response.message || 'Could not send reset command'
+                                });
+                            }
+                            btn.html('<i class="fas fa-undo mr-1"></i> Reset App on Device');
+                            btn.prop('disabled', false);
+                        },
+                        error: function(xhr) {
+                            let msg = 'Network error';
+                            try {
+                                const resp = JSON.parse(xhr.responseText);
+                                msg = resp.message || resp.messages?.error || msg;
+                            } catch(e) {}
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: msg
+                            });
+                            btn.html('<i class="fas fa-undo mr-1"></i> Reset App on Device');
+                            btn.prop('disabled', false);
+                        }
+                    });
+                }
+            });
+        });
     });
 </script>

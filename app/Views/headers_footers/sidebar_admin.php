@@ -183,7 +183,7 @@
                         <li class="nav-header">SYSTEM</li>
 
                         <?php
-                            $logPages = ['admin-logs', 'admin-access-logs', 'admin-error-logs', 'admin-api-logs'];
+                            $logPages = ['admin-logs', 'admin-access-logs', 'admin-error-logs', 'admin-api-logs', 'admin-fcm-logs', 'admin-maintenance-logs'];
                             $isLogOpen = isset($pag) && in_array($pag, $logPages);
                         ?>
                         <li class="nav-item has-treeview <?php echo $isLogOpen ? 'menu-open' : ''; ?>">
@@ -221,6 +221,20 @@
                                        class="nav-link <?php echo (isset($pag) && $pag === 'admin-api-logs') ? 'active' : ''; ?>">
                                         <i class="fas fa-code nav-icon"></i>
                                         <p>API Logs</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('admin/logs/fcm'); ?>"
+                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-fcm-logs') ? 'active' : ''; ?>">
+                                        <i class="fas fa-fire nav-icon"></i>
+                                        <p>FCM Logs</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('admin/logs/maintenance'); ?>"
+                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-maintenance-logs') ? 'active' : ''; ?>">
+                                        <i class="fas fa-shield-alt nav-icon"></i>
+                                        <p>Maintenance Logs</p>
                                     </a>
                                 </li>
                             </ul>

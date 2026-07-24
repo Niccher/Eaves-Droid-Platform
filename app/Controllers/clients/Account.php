@@ -112,6 +112,64 @@ class Account extends BaseClientController
     }
 
     /**
+     * POST /account/reset-device
+     * Sends cmd_reset_app to the user's Android device via FCM.
+     */
+    public function sendDeviceReset(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->fail('Invalid request');
+        }
+
+        try {
+            $device = $this->findFcmDevice();
+            if (!$device || empty($device['fcm_token'])) {
+                return $this->fail('No connected Android device found with FCM');
+            }
+
+            $firebase = new \App\Libraries\FirebaseLib();
+            $result = $firebase->sendDataMessage($device['fcm_token'], [
+                'command' => 'cmd_reset_app',
+                'sent_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            if ($result) {
+                \App\Models\Mod_Log_User_Action::logAction([
+                    'user_id' => $this->userId,
+                    'action_type' => 'device_reset',
+                    'new_values' => json_encode(['fcm_token' => substr($device['fcm_token'], 0, 20) . '...']),
+                ]);
+                return $this->respond(['success' => true, 'message' => 'Reset command sent to device']);
+            }
+
+            return $this->fail('Failed to send FCM command');
+        } catch (\Exception $e) {
+            log_message('error', 'sendDeviceReset error: ' . $e->getMessage());
+            return $this->fail('Server error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Finds the user's registered device with an FCM token.
+     */
+    private function findFcmDevice(): ?array
+    {
+        $userModel = new \App\Models\Mod_User();
+        $devices = $userModel->get_user_devices_from_profile($this->userId);
+        if (empty($devices)) return null;
+
+        $deviceIds = array_column($devices, 'device_id');
+        $db = \Config\Database::connect();
+        return $db->table('tbl_device_profile')
+            ->whereIn('device_id', $deviceIds)
+            ->where('fcm_token !=', '')
+            ->where('fcm_token IS NOT NULL')
+            ->orderBy('counter', 'DESC')
+            ->get()
+            ->getRowArray();
+    }
+
+    /**
      * Estimates storage usage in KB based on record counts.
      */
     private function estimateStorage(array $dataCounts): string
