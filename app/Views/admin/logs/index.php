@@ -24,6 +24,38 @@ function fmtAction(string $type): array {
         $cmd = substr($type, 11);
         return ['label' => 'FCM: ' . ucfirst(str_replace('_', ' ', $cmd)), 'icon' => 'fa-fire', 'color' => 'info'];
     }
+    if (str_starts_with($type, 'admin_')) {
+        $cmd = substr($type, 6);
+        return ['label' => 'Admin: ' . ucfirst(str_replace('_', ' ', $cmd)), 'icon' => 'fa-user-shield', 'color' => 'danger'];
+    }
+    // New descriptive action types (fetch_sms, play_beep, reset_app, etc.)
+    $descriptive = [
+        'fetch_sms' => ['label' => 'Fetch SMS', 'icon' => 'fa-fire', 'color' => 'info'],
+        'fetch_calls' => ['label' => 'Fetch Calls', 'icon' => 'fa-fire', 'color' => 'info'],
+        'fetch_contacts' => ['label' => 'Fetch Contacts', 'icon' => 'fa-fire', 'color' => 'info'],
+        'capture_photo' => ['label' => 'Capture Photo', 'icon' => 'fa-fire', 'color' => 'info'],
+        'record_audio' => ['label' => 'Record Audio', 'icon' => 'fa-fire', 'color' => 'info'],
+        'play_beep' => ['label' => 'Play Beep', 'icon' => 'fa-fire', 'color' => 'info'],
+        'play_siren' => ['label' => 'Play Siren', 'icon' => 'fa-fire', 'color' => 'info'],
+        'reset_app' => ['label' => 'Reset App', 'icon' => 'fa-fire', 'color' => 'warning'],
+        'deactivate_app' => ['label' => 'Deactivate App', 'icon' => 'fa-fire', 'color' => 'warning'],
+        'logout_user' => ['label' => 'Logout User', 'icon' => 'fa-fire', 'color' => 'warning'],
+        'update_settings' => ['label' => 'Update Settings', 'icon' => 'fa-fire', 'color' => 'info'],
+        'open_permission' => ['label' => 'Open Permission', 'icon' => 'fa-fire', 'color' => 'info'],
+        'uninstall_preserve' => ['label' => 'Uninstall (Keep)', 'icon' => 'fa-fire', 'color' => 'danger'],
+        'uninstall_wipe' => ['label' => 'Uninstall (Wipe)', 'icon' => 'fa-fire', 'color' => 'danger'],
+        'sync_all' => ['label' => 'Sync All', 'icon' => 'fa-fire', 'color' => 'info'],
+        'sync_data' => ['label' => 'Sync Data', 'icon' => 'fa-fire', 'color' => 'info'],
+        'locate_device' => ['label' => 'Locate Device', 'icon' => 'fa-fire', 'color' => 'info'],
+        'wipe_logs' => ['label' => 'Wipe Logs', 'icon' => 'fa-fire', 'color' => 'warning'],
+        'reactivate_app' => ['label' => 'Reactivate App', 'icon' => 'fa-fire', 'color' => 'info'],
+        'search_data' => ['label' => 'Search Data', 'icon' => 'fa-fire', 'color' => 'info'],
+        'start_tracking' => ['label' => 'Start Tracking', 'icon' => 'fa-fire', 'color' => 'info'],
+        'fetch_file' => ['label' => 'Fetch File', 'icon' => 'fa-fire', 'color' => 'info'],
+    ];
+    if (isset($descriptive[$type])) {
+        return $descriptive[$type];
+    }
     if (str_starts_with($type, 'upload_')) {
         $cat = substr($type, 7);
         return ['label' => 'Upload: ' . ucfirst(str_replace('_', ' ', $cat)), 'icon' => 'fa-upload', 'color' => 'info'];

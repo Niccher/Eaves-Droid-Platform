@@ -19,6 +19,7 @@ class DeviceConfigController extends BaseController
         $configJson = $this->request->getPost('config_json');
         $permissionsJson = $this->request->getPost('permissions_json');
         $deviceInfoJson = $this->request->getPost('device_info_json');
+        $metadataJson = $this->request->getPost('metadata_json');
 
         if (!$token) {
             return $this->fail('Device token is required.', 400);
@@ -53,6 +54,7 @@ class DeviceConfigController extends BaseController
                 'config_json' => $configJson ?: null,
                 'permissions_json' => $permissionsJson ?: null,
                 'device_info_json' => $deviceInfoJson ?: null,
+                'metadata_json' => $metadataJson ?: null,
                 'last_synced_at' => date('Y-m-d H:i:s'),
             ];
 
@@ -109,10 +111,45 @@ class DeviceConfigController extends BaseController
                 'config_json' => json_decode($config['config_json'], true) ?: new \stdClass(),
                 'permissions_json' => json_decode($config['permissions_json'], true) ?: new \stdClass(),
                 'device_info_json' => json_decode($config['device_info_json'], true) ?: new \stdClass(),
+                'metadata_json' => json_decode($config['metadata_json'] ?? '{}', true) ?: new \stdClass(),
                 'last_synced_at' => $config['last_synced_at'],
             ]);
         } catch (\Exception $e) {
             log_message('error', 'DeviceConfig fetch error: ' . $e->getMessage());
+            return $this->fail('Server error.', 500);
+        }
+    }
+
+    /**
+     * GET /api/v1/device/defaults
+     * Returns current app defaults for Android devices.
+     */
+    public function defaults()
+    {
+        try {
+            $db = \Config\Database::connect();
+            $row = $db->table('tbl_app_defaults')
+                ->orderBy('version', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+
+            if (!$row) {
+                return $this->respond([
+                    'success' => true,
+                    'version' => 0,
+                    'config_json' => new \stdClass(),
+                ]);
+            }
+
+            return $this->respond([
+                'success' => true,
+                'version' => (int) $row['version'],
+                'config_json' => json_decode($row['config_json'], true) ?: new \stdClass(),
+                'updated_at' => $row['updated_at'],
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Defaults fetch error: ' . $e->getMessage());
             return $this->fail('Server error.', 500);
         }
     }

@@ -92,6 +92,22 @@
                             </a>
                         </li>
 
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/remote-device'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-remote-device') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-mobile-alt"></i>
+                                <p>Remote Devices</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/defaults'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-defaults') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-cog"></i>
+                                <p>App Defaults</p>
+                            </a>
+                        </li>
+
                         <?php
                             $reportPages = ['admin-reports', 'admin-reports-user-activity', 'admin-reports-data-usage', 'admin-reports-performance', 'admin-reports-generate'];
                             $isReportOpen = isset($pag) && in_array($pag, $reportPages);

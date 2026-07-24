@@ -37,6 +37,10 @@ class CreateDeviceConfigTable extends Migration
                 'type' => 'JSON',
                 'null' => true,
             ],
+            'metadata_json' => [
+                'type' => 'JSON',
+                'null' => true,
+            ],
             'last_synced_at' => [
                 'type' => 'DATETIME',
                 'null' => true,

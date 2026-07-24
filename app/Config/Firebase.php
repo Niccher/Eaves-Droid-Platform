@@ -10,7 +10,7 @@ class Firebase extends BaseConfig
      * Firebase Service Account Key (JSON file path)
      * If using the new HTTP v1 API (Recommended)
      */
-    public string $serviceAccountPath = FCPATH . 'firebase_service_account.json';
+    public string $serviceAccountPath = WRITEPATH . 'firebase_credentials.json';
 
     /**
      * Firebase Server Key
@@ -21,5 +21,5 @@ class Firebase extends BaseConfig
     /**
      * Firebase Project ID
      */
-    public string $projectId = 'ona-sasa';
+    public string $projectId = 'project-2026-35b76';
 }

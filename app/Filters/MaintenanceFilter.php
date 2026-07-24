@@ -32,6 +32,7 @@ class MaintenanceFilter implements FilterInterface
         'error/general',
         'admin/settings/maintenance',
         'admin/settings/update',
+        'api/v1/*',
     ];
 
     public function before(RequestInterface $request, $arguments = null)
@@ -79,6 +80,11 @@ class MaintenanceFilter implements FilterInterface
         $currentUri = ltrim($currentUri, '/');
 
         foreach (self::ALLOWED_ROUTES as $allowed) {
+            // Support wildcard: api/v1/* matches api/v1/token/verify, api/v1/data/sms, etc.
+            $pattern = str_replace(['*', '/'], ['.*', '\/'], $allowed);
+            if (preg_match('#^' . $pattern . '$#', $currentUri)) {
+                return;
+            }
             if ($currentUri === $allowed || strpos($currentUri, $allowed . '/') === 0) {
                 return;
             }
@@ -113,9 +119,20 @@ class MaintenanceFilter implements FilterInterface
 
         $response = Services::response();
         $response->setStatusCode(503);
-        $response->setBody(view('errors/custom_errors/error_503', [
-            'message' => 'The system is currently in maintenance mode. Only administrators can access the system. Please try again later.',
-        ]));
+
+        // Return JSON for API requests, HTML for browser requests
+        if (strpos($currentUri, 'api/') === 0) {
+            $response->setContentType('application/json');
+            $response->setBody(json_encode([
+                'success' => false,
+                'message' => 'System is in maintenance mode.',
+                'error' => 'maintenance_mode',
+            ]));
+        } else {
+            $response->setBody(view('errors/custom_errors/error_503', [
+                'message' => 'The system is currently in maintenance mode. Only administrators can access the system. Please try again later.',
+            ]));
+        }
         return $response;
     }
 

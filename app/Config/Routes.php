@@ -999,6 +999,11 @@ $routes->group('api/v1', [
      */
     $routes->get('device/config/(:any)', 'DeviceConfigController::fetch/$1', ['as' => 'api-device-config-fetch']);
 
+    /**
+     * Fetch app defaults for Android devices.
+     */
+    $routes->get('device/defaults', 'DeviceConfigController::defaults', ['as' => 'api-device-defaults']);
+
     // -------------------------------------------------------------
     // 6.3 DATA UPLOAD ENDPOINTS
     // -------------------------------------------------------------
@@ -1126,6 +1131,19 @@ $routes->group('admin', [
      * @return string
      */
     $routes->get('overview', 'Dashboard::overview', ['as' => 'admin-overview']);
+
+    /**
+     * Admin remote device management.
+     */
+    $routes->get('remote-device', 'RemoteDevice::index', ['as' => 'admin-remote-device']);
+    $routes->post('remote-device/send', 'RemoteDevice::sendCommand', ['as' => 'admin-remote-device-send']);
+
+    /**
+     * App defaults management.
+     */
+    $routes->get('defaults', 'Defaults::index', ['as' => 'admin-defaults']);
+    $routes->post('defaults/save', 'Defaults::save', ['as' => 'admin-defaults-save']);
+    $routes->post('defaults/push', 'Defaults::push', ['as' => 'admin-defaults-push']);
 
     // -------------------------------------------------------------
     // 7.2 USER MANAGEMENT

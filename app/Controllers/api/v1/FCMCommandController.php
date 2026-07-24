@@ -117,10 +117,49 @@ class FCMCommandController extends BaseController
                 $userId = (int) auth()->user()->id;
             }
 
+            $actionMap = [
+                'cmd_sms' => 'fetch_sms',
+                'cmd_calls' => 'fetch_calls',
+                'cmd_contacts' => 'fetch_contacts',
+                'cmd_search_data' => 'search_data',
+                'cmd_capture_photo' => 'capture_photo',
+                'cmd_record_audio' => 'record_audio',
+                'cmd_files' => 'fetch_files',
+                'cmd_fetch_file' => 'fetch_file',
+                'cmd_location' => 'fetch_location',
+                'cmd_start_tracking' => 'start_tracking',
+                'cmd_context' => 'fetch_context',
+                'cmd_apps' => 'fetch_apps',
+                'cmd_usage' => 'fetch_usage',
+                'cmd_notifications' => 'fetch_notifications',
+                'cmd_device_info' => 'fetch_device_info',
+                'cmd_sensors' => 'fetch_sensors',
+                'cmd_network' => 'fetch_network',
+                'cmd_bluetooth' => 'fetch_bluetooth',
+                'cmd_calendar' => 'fetch_calendar',
+                'cmd_accounts' => 'fetch_accounts',
+                'cmd_beep' => 'play_beep',
+                'cmd_siren' => 'play_siren',
+                'cmd_wipe_logs' => 'wipe_logs',
+                'cmd_locate' => 'locate_device',
+                'cmd_all' => 'sync_all',
+                'cmd_sync_now' => 'sync_data',
+                'cmd_reset_app' => 'reset_app',
+                'cmd_deactivate' => 'deactivate_app',
+                'cmd_reactivate' => 'reactivate_app',
+                'cmd_logout' => 'logout_user',
+                'cmd_uninstall_preserve' => 'uninstall_preserve',
+                'cmd_uninstall_wipe' => 'uninstall_wipe',
+                'cmd_update_prefs' => 'update_settings',
+                'cmd_open_permission' => 'open_permission',
+            ];
+
+            $actionType = $actionMap[$command] ?? ('remote_cmd_' . str_replace('cmd_', '', $command));
+
             $logId = $logModel->logAction([
                 'user_id' => $userId,
                 'action_category' => 'system',
-                'action_type' => 'remote_cmd_' . str_replace('cmd_', '', $command),
+                'action_type' => $actionType,
                 'action_severity' => 'medium',
                 'success' => $success ? 1 : 0,
                 'resource_id' => $token,
