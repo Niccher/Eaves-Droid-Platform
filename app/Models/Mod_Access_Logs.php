@@ -257,7 +257,7 @@ class Mod_Access_Logs extends Model
                 $data['browser'] = $agent->getBrowser() . ' ' . $agent->getVersion();
             } else {
                 if (stripos($uaString, 'okhttp') !== false) {
-                    $data['browser'] = 'OkHttp Client';
+                    $data['browser'] = 'ANDROID_APP';
                 } elseif (stripos($uaString, 'postman') !== false) {
                     $data['browser'] = 'Postman';
                 } else {

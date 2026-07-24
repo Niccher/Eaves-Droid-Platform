@@ -30,6 +30,11 @@ class Tokens extends BaseAdminController
         $db->table('tbl_tokens')
             ->where('counter', $tokenId)
             ->update(['status' => '11']);
+
+        $this->logAdminAction('admin_token_revoke', 'medium', true, [
+            'resource_id' => (string) $tokenId,
+        ]);
+
         return redirect()->to('admin/tokens')->with('message', 'Token revoked.');
     }
 
@@ -55,6 +60,10 @@ class Tokens extends BaseAdminController
                 'last_used_at' => null,
             ]);
 
+        $this->logAdminAction('admin_token_regenerate', 'medium', true, [
+            'resource_id' => (string) $tokenId,
+        ]);
+
         return redirect()->to('admin/tokens')->with('message', 'Token regenerated.');
     }
 
@@ -64,6 +73,11 @@ class Tokens extends BaseAdminController
         $db->table('tbl_tokens')
             ->where('counter', $tokenId)
             ->update(['status' => '99']);
+
+        $this->logAdminAction('admin_token_delete', 'high', true, [
+            'resource_id' => (string) $tokenId,
+        ]);
+
         return redirect()->to('admin/tokens')->with('message', 'Token deleted.');
     }
 

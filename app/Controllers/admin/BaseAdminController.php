@@ -3,6 +3,7 @@
 namespace App\Controllers\admin;
 
 use App\Controllers\BaseController;
+use App\Models\Mod_Log_User_Action;
 
 class BaseAdminController extends BaseController
 {
@@ -48,5 +49,28 @@ class BaseAdminController extends BaseController
     protected function getDb(): \CodeIgniter\Database\BaseConnection
     {
         return \Config\Database::connect();
+    }
+
+    protected function logAdminAction(
+        string $actionType,
+        string $severity = 'medium',
+        bool $success = true,
+        array $extras = []
+    ): void {
+        $logModel = new Mod_Log_User_Action();
+        $request = service('request');
+
+        $data = array_merge([
+            'user_id' => $this->userId,
+            'action_category' => 'admin',
+            'action_type' => $actionType,
+            'action_severity' => $severity,
+            'ip_address' => $request->getIPAddress(),
+            'request_url' => current_url(),
+            'request_method' => $request->getMethod(),
+            'success' => $success ? 1 : 0,
+        ], $extras);
+
+        $logModel->logAction($data);
     }
 }

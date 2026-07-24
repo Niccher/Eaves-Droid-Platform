@@ -69,6 +69,10 @@ class Settings extends BaseAdminController
             'notification' => 'admin/settings/notifications',
         ];
 
+        $this->logAdminAction('admin_settings_update', 'medium', true, [
+            'new_values' => json_encode(['section' => $section, 'updated_keys' => array_keys($post)]),
+        ]);
+
         return redirect()->to($redirects[$section] ?? 'admin/settings')
             ->with('message', "{$updated} settings saved.");
     }
@@ -200,6 +204,11 @@ class Settings extends BaseAdminController
         }
 
         $message = implode(' ', $messages);
+
+        $this->logAdminAction('admin_maintenance_run', 'medium', true, [
+            'new_values' => json_encode(['action' => $action, 'message' => $message]),
+        ]);
+
         return redirect()->to('admin/settings/maintenance')->with('message', $message ?: 'No action performed.');
     }
 
@@ -262,6 +271,11 @@ class Settings extends BaseAdminController
         $gz = gzencode($sql, 9);
         file_put_contents($filepath, $gz);
 
+        $this->logAdminAction('admin_backup_create', 'low', true, [
+            'resource_id' => $filename,
+            'new_values' => json_encode(['filename' => $filename, 'size' => filesize($filepath)]),
+        ]);
+
         return redirect()->to('admin/settings/backup')
             ->with('message', "Backup created: {$filename}");
     }
@@ -299,6 +313,11 @@ class Settings extends BaseAdminController
             }
         }
 
+        $this->logAdminAction('admin_backup_restore', 'critical', true, [
+            'resource_id' => $filename,
+            'new_values' => json_encode(['filename' => $filename, 'statements_executed' => $count]),
+        ]);
+
         return redirect()->to('admin/settings/backup')
             ->with('message', "Restore completed. {$count} statements executed.");
     }
@@ -323,6 +342,11 @@ class Settings extends BaseAdminController
         if (file_exists($filepath)) {
             unlink($filepath);
         }
+
+        $this->logAdminAction('admin_backup_delete', 'high', true, [
+            'resource_id' => $filename,
+        ]);
+
         return redirect()->to('admin/settings/backup')->with('message', 'Backup deleted.');
     }
 }

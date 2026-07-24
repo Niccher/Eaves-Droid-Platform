@@ -2,6 +2,7 @@
 
 namespace App\Controllers\auth;
 
+use App\Models\Mod_Log_User_Action;
 use CodeIgniter\Controller;
 use CodeIgniter\Shield\Authentication\Authenticators\Session;
 use CodeIgniter\Shield\Authentication\Passwords;
@@ -28,11 +29,23 @@ class LoginController extends Controller
      */
     public function loginAction(): RedirectResponse
     {
+        $logModel = new Mod_Log_User_Action();
+        $email    = $this->request->getPost('email');
+
         // 1. Define the validation rules
         $rules = $this->getValidationRules();
 
         // 2. RUN VALIDATION FIRST! If data is missing/invalid, STOP here.
         if (!$this->validate($rules)) {
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'login_password',
+                'action_severity' => 'medium',
+                'success'         => 0,
+                'error_message'   => 'Validation failed',
+                'new_values'      => json_encode(['email' => $email]),
+                'request_url'     => current_url(),
+            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
@@ -40,13 +53,9 @@ class LoginController extends Controller
 
         // 3. ONLY NOW, after validation ensures data is present, create the credentials array
         $credentials = [
-            // Because validation passed, we know these fields contain non-empty, valid data
-            'email'    => $this->request->getPost('email'),
+            'email'    => $email,
             'password' => $this->request->getPost('password'),
         ];
-
-        // NOTE: The 'print_r("Vars as ", $credentials);' line should be removed.
-        // It disrupts the HTTP response flow in CI4. Use `log_message` or `dd()` instead for debugging.
 
         // Attempt to login
         $auth = auth()->setAuthenticator('session');
@@ -60,14 +69,44 @@ class LoginController extends Controller
         if (!$result->isOK()) {
             // If an action is required (like 2FA or email activation), redirect to that action
             if ($result->extraInfo() instanceof \CodeIgniter\Shield\Entities\User === false && isset($result->extraInfo()['action'])) {
+                $logModel->logAction([
+                    'action_category' => 'authentication',
+                    'action_type'     => 'login_password',
+                    'action_severity' => 'medium',
+                    'success'         => 0,
+                    'error_message'   => $result->reason(),
+                    'new_values'      => json_encode(['email' => $email]),
+                    'request_url'     => current_url(),
+                ]);
                 return redirect()->to($result->extraInfo()['action']);
             }
+
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'login_password',
+                'action_severity' => 'medium',
+                'success'         => 0,
+                'error_message'   => $result->reason(),
+                'new_values'      => json_encode(['email' => $email]),
+                'request_url'     => current_url(),
+            ]);
 
             // Login failed (e.g., bad password, user not found)
             return redirect()->route('login')
                 ->withInput()
                 ->with('error', $result->reason());
         }
+
+        // Success! Log the successful login
+        $user = auth()->user();
+        $logModel->logAction([
+            'user_id'         => $user->id,
+            'action_category' => 'authentication',
+            'action_type'     => 'login_password',
+            'action_severity' => 'low',
+            'success'         => 1,
+            'request_url'     => current_url(),
+        ]);
 
         // Success! Redirect to intended page or dashboard
         $session = session();
@@ -81,6 +120,17 @@ class LoginController extends Controller
      */
     public function logoutAction(): RedirectResponse
     {
+        $user = auth()->user();
+        $logModel = new Mod_Log_User_Action();
+        $logModel->logAction([
+            'user_id'         => $user ? $user->id : null,
+            'action_category' => 'authentication',
+            'action_type'     => 'logout',
+            'action_severity' => 'low',
+            'success'         => 1,
+            'request_url'     => current_url(),
+        ]);
+
         auth()->logout();
         session()->destroy();
 

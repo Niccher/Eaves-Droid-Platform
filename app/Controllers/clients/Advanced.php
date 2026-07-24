@@ -498,11 +498,24 @@ class Advanced extends BaseClientController
                 ->getRowArray();
         }
 
+        $recentUploadSources = [];
+        if ($targetDevice) {
+            $db = \Config\Database::connect();
+            $recentUploadSources = $db->table('uploaded_files')
+                ->select('upload_source, COUNT(*) as count')
+                ->where('token_owner_id', $this->userId)
+                ->where('uploaded_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)')
+                ->groupBy('upload_source')
+                ->get()
+                ->getResultArray();
+        }
+
         $counts = $this->getUserDataCounts();
         $data = array_merge($counts, [
             'pag' => 'remote_device',
             'title' => 'Remote Device Control',
-            'targetDevice' => $targetDevice
+            'targetDevice' => $targetDevice,
+            'recentUploadSources' => $recentUploadSources,
         ]);
 
         return $this->renderAppView('users/advanced/remote_device', $data);

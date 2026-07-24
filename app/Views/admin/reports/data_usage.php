@@ -13,45 +13,93 @@
             </div>
         </div>
     </section>
+
     <section class="content">
         <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Total Records by Type</h3></div>
-                        <div class="card-body p-0">
-                            <table class="table table-sm">
-                                <thead><tr><th>Data Type</th><th>Records</th><th>%</th></tr></thead>
-                                <tbody>
-                                    <?php foreach ($totals as $t): ?>
-                                    <tr>
-                                        <td><?= $t['label'] ?></td>
-                                        <td><?= number_format($t['count']) ?></td>
-                                        <td><?= $grand_total > 0 ? round($t['count'] / $grand_total * 100, 1) : 0 ?>%</td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <tfoot><tr class="font-weight-bold"><td>Total</td><td><?= number_format($grand_total) ?></td><td>100%</td></tr></tfoot>
-                            </table>
-                        </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Data Usage by User</h3>
+                    <div class="card-tools">
+                        <span class="badge badge-primary"><?= number_format($grand_total) ?> total records</span>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Records per User</h3></div>
-                        <div class="card-body p-0">
-                            <table class="table table-sm">
-                                <thead><tr><th>User</th><th>Total Records</th></tr></thead>
-                                <tbody>
-                                    <?php foreach ($user_data as $ud): ?>
-                                    <tr><td><?= htmlspecialchars($ud['username']) ?></td><td><?= number_format($ud['total']) ?></td></tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped" id="dataUsageTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 180px;">User</th>
+                                    <th style="width: 100px;" class="text-center">Total</th>
+                                    <th>Records by Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($user_data)): ?>
+                                <tr><td colspan="3" class="text-center text-muted">No data found.</td></tr>
+                                <?php else: ?>
+                                <?php foreach ($user_data as $ud): ?>
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-user-circle fa-lg text-primary mr-1"></i>
+                                        <strong><?= htmlspecialchars($ud['username']) ?></strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-dark badge-lg" style="font-size: 1rem;"><?= number_format($ud['total']) ?></span>
+                                    </td>
+                                    <td>
+                                        <?php foreach ($data_tables as $label => $info): ?>
+                                        <?php $count = $ud['categories'][$label] ?? 0; ?>
+                                        <?php if ($count > 0): ?>
+                                        <span class="d-inline-block mr-2 mb-1" style="white-space: nowrap;">
+                                            <i class="fas <?= $info['icon'] ?> text-muted mr-1" style="width: 16px;"></i>
+                                            <?= $label ?>: <strong><?= number_format($count) ?></strong>
+                                        </span>
+                                        <?php endif; ?>
+                                        <?php endforeach; ?>
+                                        <?php if ($ud['total'] === 0): ?>
+                                        <span class="text-muted">No records</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                            <?php if (!empty($user_data)): ?>
+                            <tfoot>
+                                <tr class="font-weight-bold bg-light">
+                                    <td><i class="fas fa-users text-primary mr-1"></i> All Users</td>
+                                    <td class="text-center">
+                                        <span class="badge badge-primary badge-lg" style="font-size: 1rem;"><?= number_format($grand_total) ?></span>
+                                    </td>
+                                    <td>
+                                        <?php foreach ($data_tables as $label => $info): ?>
+                                        <?php $count = $all_totals[$label] ?? 0; ?>
+                                        <?php if ($count > 0): ?>
+                                        <span class="d-inline-block mr-2 mb-1" style="white-space: nowrap;">
+                                            <i class="fas <?= $info['icon'] ?> text-primary mr-1" style="width: 16px;"></i>
+                                            <?= $label ?>: <strong><?= number_format($count) ?></strong>
+                                        </span>
+                                        <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                            <?php endif; ?>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 </div>
+
+<script>
+$(document).ready(function() {
+    $('#dataUsageTable').DataTable({
+        order: [[1, 'desc']],
+        paging: false,
+        searching: false,
+        responsive: true,
+    });
+});
+</script>

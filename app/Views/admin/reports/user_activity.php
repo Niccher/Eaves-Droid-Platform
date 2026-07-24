@@ -13,23 +13,81 @@
             </div>
         </div>
     </section>
+
     <section class="content">
         <div class="container-fluid">
-            <div class="card">
-                <div class="card-header"><h3 class="card-title">Select a User</h3></div>
-                <div class="card-body">
-                    <div class="row">
-                        <?php foreach ($users as $u): ?>
-                        <div class="col-md-4 col-sm-6 mb-2">
-                            <a href="<?= base_url('admin/reports/user-activity/' . urlencode($u['username'])) ?>" class="btn btn-outline-primary btn-block text-left">
-                                <i class="fas fa-user mr-1"></i> <?= htmlspecialchars($u['username']) ?>
-                                <small class="float-right text-muted"><?= htmlspecialchars($u['email'] ?? '') ?></small>
-                            </a>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="input-group input-group-lg" style="max-width: 400px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
                         </div>
-                        <?php endforeach; ?>
+                        <input type="text" class="form-control" id="userSearch" placeholder="Search users...">
                     </div>
                 </div>
             </div>
+
+            <div class="row" id="userCards">
+                <?php foreach ($users as $u): ?>
+                <div class="col-lg-4 col-md-6 col-sm-12 mb-3 user-card-wrapper">
+                    <a href="<?= base_url('admin/reports/user-activity/' . urlencode($u['username'])) ?>" class="text-decoration-none">
+                        <div class="card card-hover shadow-sm border-0">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                            <i class="fas fa-user fa-2x text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-3 flex-grow-1">
+                                        <h5 class="mb-1 font-weight-bold text-dark"><?= htmlspecialchars($u['username']) ?></h5>
+                                        <small class="text-muted">
+                                            <i class="fas fa-envelope mr-1"></i><?= htmlspecialchars($u['email'] ?? 'No email') ?>
+                                        </small>
+                                    </div>
+                                    <div class="ml-2">
+                                        <i class="fas fa-chevron-right text-muted"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+
+            <?php if (empty($users)): ?>
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-info">No users found.</div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
     </section>
 </div>
+
+<script>
+$(document).ready(function() {
+    $('#userSearch').on('keyup', function() {
+        var value = this.value.toLowerCase();
+        $('#userCards .user-card-wrapper').each(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+});
+</script>
+
+<style>
+.card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12) !important;
+    border-color: #007bff !important;
+}
+.text-decoration-none:hover {
+    text-decoration: none;
+}
+</style>

@@ -226,6 +226,14 @@
                             </ul>
                         </li>
 
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/ml'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-ml') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-brain"></i>
+                                <p>ML / AI</p>
+                            </a>
+                        </li>
+
                         <?php
                             $settingsPages = ['admin-settings', 'admin-settings-api', 'admin-settings-security', 'admin-settings-notifications', 'admin-maintenance', 'admin-backup'];
                             $isSettingsOpen = isset($pag) && in_array($pag, $settingsPages);

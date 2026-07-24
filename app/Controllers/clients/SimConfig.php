@@ -3,6 +3,7 @@
 namespace App\Controllers\clients;
 
 use App\Models\Mod_SimConfig;
+use App\Models\Mod_Log_User_Action;
 
 class SimConfig extends BaseClientController
 {
@@ -37,6 +38,15 @@ class SimConfig extends BaseClientController
         $deleted = $model->deleteSimConfig($id, $this->userId);
 
         if ($deleted) {
+            $logModel = new Mod_Log_User_Action();
+            $logModel->logAction([
+                'user_id' => $this->userId,
+                'action_category' => 'system',
+                'action_type' => 'sim_config_delete',
+                'action_severity' => 'low',
+                'success' => 1,
+                'resource_id' => (string) $id,
+            ]);
             return $this->response->setJSON(['success' => true, 'message' => 'SIM config record deleted']);
         }
 

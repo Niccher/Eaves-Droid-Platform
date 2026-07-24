@@ -98,9 +98,27 @@
                             </div>
                         </div>
                         <div class="card-footer bg-light">
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center flex-wrap">
                                 <i class="fas fa-info-circle text-info mr-2"></i>
                                 <small class="text-muted">Commands are sent via Google Firebase Cloud Messaging (FCM). The device must be online to receive commands.</small>
+                                <?php if (!empty($recentUploadSources)): ?>
+                                    <span class="ml-auto d-flex align-items-center">
+                                        <i class="fas fa-cloud-upload-alt text-muted mr-1"></i>
+                                        <?php foreach ($recentUploadSources as $src): ?>
+                                            <?php
+                                                $badgeClass = match($src['upload_source']) {
+                                                    'manual' => 'badge-primary',
+                                                    'auto_sync' => 'badge-secondary',
+                                                    'web_initiated' => 'badge-success',
+                                                    default => 'badge-secondary',
+                                                };
+                                            ?>
+                                            <span class="badge <?= $badgeClass ?> mr-1" title="Last 7 days">
+                                                <?= str_replace('_', ' ', $src['upload_source']) ?>: <?= $src['count'] ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>

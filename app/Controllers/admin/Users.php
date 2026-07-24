@@ -100,6 +100,15 @@ class Users extends BaseAdminController
                 throw new \RuntimeException('Transaction failed');
             }
 
+            $this->logAdminAction('admin_user_create', 'medium', true, [
+                'new_values' => json_encode([
+                    'username' => $this->request->getPost('username'),
+                    'email' => $this->request->getPost('email'),
+                    'group' => $this->request->getPost('group'),
+                ]),
+                'resource_id' => (string) $userId,
+            ]);
+
             return redirect()->to('admin/users')->with('message', 'User created successfully.');
 
         } catch (\Exception $e) {
@@ -214,6 +223,22 @@ class Users extends BaseAdminController
                 throw new \RuntimeException('Transaction failed');
             }
 
+            $newGroup = $this->request->getPost('group');
+            $this->logAdminAction('admin_user_update', 'medium', true, [
+                'resource_id' => (string) $id,
+                'old_values' => json_encode([
+                    'username' => $existing['username'],
+                    'group' => $existing['group'] ?? null,
+                    'status' => $existing['status'] ?? null,
+                ]),
+                'new_values' => json_encode([
+                    'username' => $this->request->getPost('username'),
+                    'email' => $this->request->getPost('email'),
+                    'group' => $newGroup,
+                    'status' => $this->request->getPost('status'),
+                ]),
+            ]);
+
             return redirect()->to('admin/users')->with('message', 'User updated successfully.');
 
         } catch (\Exception $e) {
@@ -231,6 +256,10 @@ class Users extends BaseAdminController
         $db = $this->getDb();
         $db->table('users')->where('id', $id)->update(['deleted_at' => date('Y-m-d H:i:s')]);
 
+        $this->logAdminAction('admin_user_delete', 'high', true, [
+            'resource_id' => (string) $id,
+        ]);
+
         return redirect()->to('admin/users')->with('message', 'User deleted successfully.');
     }
 
@@ -245,6 +274,10 @@ class Users extends BaseAdminController
             ->where('id', $id)
             ->update(['active' => 0, 'status' => 'suspended']);
 
+        $this->logAdminAction('admin_user_suspend', 'high', true, [
+            'resource_id' => (string) $id,
+        ]);
+
         return redirect()->to('admin/users')->with('message', 'User suspended successfully.');
     }
 
@@ -254,6 +287,10 @@ class Users extends BaseAdminController
         $db->table('users')
             ->where('id', $id)
             ->update(['active' => 1, 'status' => null]);
+
+        $this->logAdminAction('admin_user_activate', 'medium', true, [
+            'resource_id' => (string) $id,
+        ]);
 
         return redirect()->to('admin/users')->with('message', 'User activated successfully.');
     }
@@ -312,6 +349,11 @@ class Users extends BaseAdminController
         $db->table('tbl_tokens')->where('owner_id', $id)->delete();
         $db->table('tbl_user_actions')->where('user_id', $id)->delete();
 
+        $this->logAdminAction('admin_clear_user_data', 'critical', true, [
+            'resource_id' => (string) $id,
+            'new_values' => json_encode(['record_count' => $totalDeleted]),
+        ]);
+
         return redirect()->to('admin/users/data/' . $id)
             ->with('message', "Cleared {$totalDeleted} records for user.");
     }
@@ -339,6 +381,11 @@ class Users extends BaseAdminController
         if ($count > 0) {
             $db->table($tableMap[$type])->where('owner_id', $id)->delete();
         }
+
+        $this->logAdminAction('admin_delete_data_type', 'high', true, [
+            'resource_id' => (string) $id,
+            'new_values' => json_encode(['type' => $type, 'count' => $count]),
+        ]);
 
         return redirect()->to('admin/users/data/' . $id)
             ->with('message', "Deleted {$count} {$type} records.");

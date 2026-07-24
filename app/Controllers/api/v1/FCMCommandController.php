@@ -3,6 +3,7 @@
 namespace App\Controllers\api\v1;
 
 use App\Controllers\BaseController;
+use App\Models\Mod_Log_User_Action;
 use CodeIgniter\API\ResponseTrait;
 
 /**
@@ -38,11 +39,6 @@ class FCMCommandController extends BaseController
             return $this->fail('Firebase credentials file missing.', 500);
         }
 
-        // Support dynamic commands starting with cmd_ or legacy ones
-        if (!str_starts_with($command, 'cmd_') && !in_array($command, ['sync', 'locate'])) {
-            // Optional: you can enforce a check here or allow anything
-        }
-
         $accessToken = $this->getAccessToken();
         if (!$accessToken) {
             return $this->fail('Failed to generate OAuth2 token.', 500);
@@ -50,7 +46,11 @@ class FCMCommandController extends BaseController
 
         $result = $this->dispatchFCMV1($token, $command, $payload, $accessToken);
 
-        if ($result && !isset($result->error)) {
+        $success = $result && !isset($result->error);
+
+        $this->logCommandDispatch($token, $command, $payload, $success);
+
+        if ($success) {
             return $this->respond([
                 'success' => true,
                 'message' => "Remote action '$command' for '$payload' dispatched.",
@@ -62,6 +62,35 @@ class FCMCommandController extends BaseController
                 'message' => 'FCM dispatch failed.',
                 'error' => $result->error ?? 'Unknown error'
             ], 500);
+        }
+    }
+
+    private function logCommandDispatch(string $token, string $command, string $payload, bool $success): void
+    {
+        try {
+            $logModel = new Mod_Log_User_Action();
+            $request = service('request');
+            $userId = null;
+            if (function_exists('auth') && auth()->loggedIn()) {
+                $userId = (int) auth()->user()->id;
+            }
+
+            $logModel->logAction([
+                'user_id' => $userId,
+                'action_category' => 'system',
+                'action_type' => 'remote_cmd_' . str_replace('cmd_', '', $command),
+                'action_severity' => 'medium',
+                'success' => $success ? 1 : 0,
+                'resource_id' => $token,
+                'new_values' => json_encode([
+                    'command' => $command,
+                    'payload' => $payload,
+                ]),
+                'request_url' => current_url(),
+                'request_method' => $request->getMethod(),
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to log FCM command: ' . $e->getMessage());
         }
     }
 

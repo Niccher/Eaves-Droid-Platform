@@ -109,11 +109,13 @@ class Receive extends BaseController
         // 10. Process file based on category
         $result = $this->processUploadedFile($newName, $owner, $fileInfo['category'], $fileRecordId);
 
+        $uploadCategory = $fileInfo['category'];
+        $uploadActionType = 'upload_' . $uploadCategory;
         $logModel = new Mod_Log_User_Action();
         $logModel->logAction([
             'user_id'         => $owner,
             'action_category' => 'file',
-            'action_type'     => 'file_upload',
+            'action_type'     => $uploadActionType,
             'action_severity' => 'low',
             'device_type'     => 'mobile',
             'success'         => ($result && $result['success']) ? 1 : 0,
@@ -122,7 +124,7 @@ class Receive extends BaseController
             'new_values'      => json_encode([
                 'filename' => $fileInfo['original_name'],
                 'size'     => $fileInfo['size'],
-                'category' => $fileInfo['category']
+                'category' => $uploadCategory,
             ]),
             'error_message'   => ($result && $result['success']) ? '' : (is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed'),
             'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
@@ -177,9 +179,13 @@ class Receive extends BaseController
             return $this->failValidationErrors($this->validator->getErrors());
         }
 
-        $token = $this->request->getPost('token');
-        $time = $this->request->getPost('time');
-        $ip = $this->request->getIPAddress();
+        $token  = $this->request->getPost('token');
+        $time   = $this->request->getPost('time');
+        $ip     = $this->request->getIPAddress();
+        $source = $this->request->getPost('source');
+
+        // Determine login source for better logging
+        $loginSource = $this->resolveTokenLoginSource($source);
 
         // Link device info if provided
         $this->updateTokenDevice($token);
@@ -195,11 +201,11 @@ class Receive extends BaseController
             $this->logTokenVerification($token, $time, $ip, 'invalid_token');
             $logModel->logAction([
                 'action_category' => 'authentication',
-                'action_type'     => 'token_verification',
-                'action_severity' => 'low',
-                'device_type'     => 'mobile',
+                'action_type'     => $loginSource,
+                'action_severity' => 'medium',
                 'success'         => 0,
                 'request_url'     => current_url(),
+                'error_message'   => 'Invalid or expired token',
                 'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
             ]);
             return $this->respond([
@@ -216,7 +222,6 @@ class Receive extends BaseController
         $cryptModel = new Mod_Crypt();
 
         $userData = $userModel->get_vars($tokenData['owner_id']);
-//        $userData = $userModel->get_vars(auth()->id());
         if (!$userData) {
             return $this->fail('User not found');
         }
@@ -235,11 +240,13 @@ class Receive extends BaseController
         $logModel->logAction([
             'user_id'         => $tokenData['owner_id'],
             'action_category' => 'authentication',
-            'action_type'     => 'token_verification',
+            'action_type'     => $loginSource,
             'action_severity' => 'low',
-            'device_type'     => 'mobile',
             'success'         => 1,
             'request_url'     => current_url(),
+            'new_values'      => json_encode([
+                'token_id' => $tokenData['counter'],
+            ]),
             'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
         ]);
 
@@ -253,6 +260,24 @@ class Receive extends BaseController
             'token_id' => $tokenData['counter'],
             'token_owner_id' => $this->getTokenOwner($token),
         ]);
+    }
+
+    /**
+     * Resolves the login source for token-based authentication.
+     * Priority: explicit source POST param > user-agent detection > default
+     */
+    private function resolveTokenLoginSource(?string $explicitSource): string
+    {
+        if ($explicitSource && in_array($explicitSource, ['qr', 'manual', 'nfc', 'android'])) {
+            return 'login_' . $explicitSource;
+        }
+
+        $ua = $this->request->getUserAgent()->getAgentString() ?? '';
+        if (stripos($ua, 'okhttp') !== false || stripos($ua, 'android') !== false) {
+            return 'login_token_android';
+        }
+
+        return 'login_token';
     }
 
     /**
@@ -382,6 +407,10 @@ class Receive extends BaseController
             $ownerId = is_array($owner) ? ($owner['Token_Owner'] ?? null) : $owner;
             $devicePrintId = $this->request->getPost('device_print_id');
 
+            $uploadSource = $this->request->getPost('upload_source');
+            $validSources = ['manual', 'auto_sync', 'web_initiated'];
+            $uploadSource = in_array($uploadSource, $validSources) ? $uploadSource : 'auto_sync';
+
             $uploadData = [
                 'original_name' => $fileInfo['original_name'],
                 'new_name' => $fileInfo['new_name'],
@@ -393,7 +422,8 @@ class Receive extends BaseController
                 'owner_id' => $ownerId,
                 'device_checksum' => $devicePrintId,
                 'device_print_id' => $devicePrintId,
-                'upload_path' => $fileInfo['upload_path']
+                'upload_path' => $fileInfo['upload_path'],
+                'upload_source' => $uploadSource,
             ];
 
             $this->updateTokenDevice($token);

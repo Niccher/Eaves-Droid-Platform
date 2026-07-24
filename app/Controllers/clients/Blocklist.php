@@ -3,6 +3,7 @@
 namespace App\Controllers\clients;
 
 use App\Models\Mod_Blocklist;
+use App\Models\Mod_Log_User_Action;
 
 class Blocklist extends BaseClientController
 {
@@ -46,6 +47,15 @@ class Blocklist extends BaseClientController
         $modBlocklist = new Mod_Blocklist();
         if ($modBlocklist->addBlock($userId, $category, $identifier, $description)) {
             session()->setFlashdata('success', '"' . $identifier . '" has been blocked.');
+            $logModel = new Mod_Log_User_Action();
+            $logModel->logAction([
+                'user_id' => $this->userId,
+                'action_category' => 'system',
+                'action_type' => 'blocklist_add',
+                'action_severity' => 'low',
+                'success' => 1,
+                'new_values' => json_encode(['category' => $category, 'identifier' => $identifier]),
+            ]);
         } else {
             session()->setFlashdata('error', 'Failed to add block rule. It may already exist.');
         }
@@ -60,6 +70,15 @@ class Blocklist extends BaseClientController
 
         if ($modBlocklist->removeBlock((int) $id, $this->userId)) {
             session()->setFlashdata('success', 'Block rule removed successfully.');
+            $logModel = new Mod_Log_User_Action();
+            $logModel->logAction([
+                'user_id' => $this->userId,
+                'action_category' => 'system',
+                'action_type' => 'blocklist_remove',
+                'action_severity' => 'low',
+                'success' => 1,
+                'resource_id' => (string) $id,
+            ]);
         } else {
             session()->setFlashdata('error', 'Failed to remove block rule.');
         }

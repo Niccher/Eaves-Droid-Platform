@@ -31,6 +31,10 @@ class Logs extends BaseAdminController
     {
         $db = $this->getDb();
 
+        $actionTotal = $db->table('tbl_user_actions')
+            ->where('action_category', 'authentication')
+            ->countAllResults();
+
         $actions = $db->table('tbl_user_actions')
             ->select("'action' as source, tbl_user_actions.id, tbl_user_actions.user_id, users.username,
                       tbl_user_actions.action_type, tbl_user_actions.ip_address,
@@ -46,6 +50,7 @@ class Logs extends BaseAdminController
         return $this->renderView('admin/logs/access_logs', [
             'pag' => 'admin-access-logs',
             'actions' => $actions,
+            'actionTotal' => $actionTotal,
         ]);
     }
 
@@ -129,6 +134,8 @@ class Logs extends BaseAdminController
 
     public function clear_logs()
     {
+        $this->logAdminAction('admin_logs_clear', 'critical', true);
+
         $db = $this->getDb();
         $db->table('tbl_user_actions')->truncate();
         return redirect()->to('admin/logs')->with('message', 'All system logs cleared.');
@@ -142,6 +149,10 @@ class Logs extends BaseAdminController
         foreach ($files as $file) {
             if (unlink($file)) $deleted++;
         }
+        $this->logAdminAction('admin_error_files_clear', 'medium', true, [
+            'new_values' => json_encode(['deleted_count' => $deleted]),
+        ]);
+
         return redirect()->to('admin/logs/errors')->with('message', "Deleted {$deleted} log files.");
     }
 
@@ -155,19 +166,22 @@ class Logs extends BaseAdminController
             ->get()
             ->getResultArray();
 
+        $this->logAdminAction('admin_logs_export', 'low', true, [
+            'new_values' => json_encode(['record_count' => count($logs)]),
+        ]);
+
         $csv = "ID,User,Action,Category,Severity,IP,Success,Error,Timestamp\n";
         foreach ($logs as $log) {
-            $csv .= implode(',', [$log['id'],
-                $log['id'],
-                '"' . addslashes($log['username'] ?? 'Unknown') . '"',
-                '"' . addslashes($log['action_type'] ?? '') . '"',
-                '"' . addslashes($log['action_category'] ?? '') . '"',
-                '"' . addslashes($log['action_severity'] ?? '') . '"',
-                $log['ip_address'] ?? '',
-                $log['success'] ?? '',
-                '"' . addslashes($log['error_message'] ?? '') . '"',
-                $log['created_at'] ?? '',
-            ]) . "\n";
+            $csv .= '"' . $log['id'] . '",'
+                . '"' . addslashes($log['username'] ?? 'Unknown') . '",'
+                . '"' . addslashes($log['action_type'] ?? '') . '",'
+                . '"' . addslashes($log['action_category'] ?? '') . '",'
+                . '"' . addslashes($log['action_severity'] ?? '') . '",'
+                . '"' . ($log['ip_address'] ?? '') . '",'
+                . ($log['success'] ?? '') . ','
+                . '"' . addslashes($log['error_message'] ?? '') . '",'
+                . '"' . $log['created_at'] . '"'
+                . "\n";
         }
 
         return $this->response

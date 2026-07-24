@@ -1263,7 +1263,13 @@ $routes->group('admin', [
     });
 
     // -------------------------------------------------------------
-    // 7.4 SYSTEM SETTINGS & CONFIGURATION
+    // 7.4 ML / AI CONFIGURATION
+    // -------------------------------------------------------------
+
+    $routes->get('ml', 'Ml::index', ['as' => 'admin-ml']);
+
+    // -------------------------------------------------------------
+    // 7.5 SYSTEM SETTINGS & CONFIGURATION
     // -------------------------------------------------------------
 
     $routes->group('settings', static function ($routes) {

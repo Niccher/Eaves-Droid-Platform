@@ -37,12 +37,15 @@ class Location extends BaseClientController
     {
         $activities = $this->finderModel->get_activities($this->userId, $this->perPage);
         $commonData = $this->getLocationCommonData('activity');
+        $activityStats = $this->finderModel->get_activity_stats($this->userId);
 
         $data = array_merge($commonData, [
             'activity_dump' => $activities,
             'pager' => $this->finderModel->getPager(),
-            'totalActivities' => $this->finderModel->get_count_Activity($this->userId),
+            'totalActivities' => $activityStats['total'],
+            'activity_stats' => $activityStats,
             'current_type' => 'activity',
+            'current_type_filter' => $this->request->getGet('type'),
         ]);
 
         return $this->renderAppView('users/activity_all', $data);

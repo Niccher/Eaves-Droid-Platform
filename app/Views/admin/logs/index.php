@@ -1,9 +1,37 @@
+<?php
+$actionLabels = [
+    'login_password'      => ['label' => 'Password Login',     'icon' => 'fa-sign-in-alt', 'color' => 'success'],
+    'login_token'         => ['label' => 'Token Login',         'icon' => 'fa-key',         'color' => 'primary'],
+    'login_qr'            => ['label' => 'QR Login',            'icon' => 'fa-qrcode',      'color' => 'info'],
+    'login_token_android' => ['label' => 'Android Token Login', 'icon' => 'fa-robot',       'color' => 'primary'],
+    'token_verification'  => ['label' => 'Token Verification',  'icon' => 'fa-key',         'color' => 'secondary'],
+    'file_upload'         => ['label' => 'File Upload',         'icon' => 'fa-upload',      'color' => 'info'],
+    'device_registration' => ['label' => 'Device Registration', 'icon' => 'fa-mobile-alt',  'color' => 'warning'],
+    'profile_update'      => ['label' => 'Profile Update',      'icon' => 'fa-user-edit',   'color' => 'primary'],
+    'token_regenerate'    => ['label' => 'Token Regenerate',    'icon' => 'fa-sync',        'color' => 'warning'],
+    'token_create'        => ['label' => 'Token Created',       'icon' => 'fa-plus-circle', 'color' => 'success'],
+    'register'            => ['label' => 'Registration',        'icon' => 'fa-user-plus',   'color' => 'success'],
+    'password_forgot'     => ['label' => 'Forgot Password',     'icon' => 'fa-question-circle','color' => 'warning'],
+    'password_reset'      => ['label' => 'Password Reset',      'icon' => 'fa-key',         'color' => 'danger'],
+    'password_reset_offline' => ['label' => 'Offline Password Reset','icon' => 'fa-key',  'color' => 'danger'],
+    'logout'              => ['label' => 'Logout',              'icon' => 'fa-sign-out-alt','color' => 'secondary'],
+];
+
+function fmtAction(string $type): array {
+    global $actionLabels;
+    if (str_starts_with($type, 'upload_')) {
+        $cat = substr($type, 7);
+        return ['label' => 'Upload: ' . ucfirst(str_replace('_', ' ', $cat)), 'icon' => 'fa-upload', 'color' => 'info'];
+    }
+    return $actionLabels[$type] ?? ['label' => ucfirst(str_replace('_', ' ', $type)), 'icon' => 'fa-circle', 'color' => 'secondary'];
+}
+?>
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1>System Logs</h1>
+                    <h1><i class="fas fa-clipboard-list mr-1"></i> System Logs</h1>
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
@@ -44,37 +72,50 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <table class="table table-striped table-hover" id="logsTable">
+                    <table class="table table-hover" id="logsTable">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Timestamp</th>
                                 <th>User</th>
-                                <th>Action Type</th>
+                                <th>Action</th>
                                 <th>Category</th>
                                 <th>Severity</th>
                                 <th>IP</th>
-                                <th>Success</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($logs)): ?>
-                            <tr><td colspan="8" class="text-center text-muted">No logs found.</td></tr>
+                            <tr><td colspan="7" class="text-center text-muted py-4">No logs found.</td></tr>
                             <?php else: ?>
                             <?php foreach ($logs as $log): ?>
+                            <?php $ai = fmtAction($log['action_type'] ?? ''); ?>
                             <tr>
-                                <td><?= $log['id'] ?></td>
-                                <td><?= htmlspecialchars($log['date'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($log['username'] ?? 'System') ?></td>
-                                <td><span class="badge badge-info"><?= htmlspecialchars($log['action_type'] ?? '-') ?></span></td>
-                                <td><?= htmlspecialchars($log['category'] ?? '-') ?></td>
+                                <td class="text-nowrap"><small><?= htmlspecialchars($log['date'] ?? '-') ?></small></td>
                                 <td>
-                                    <span class="badge badge-<?= $log['severity'] === 'critical' ? 'danger' : ($log['severity'] === 'high' ? 'warning' : ($log['severity'] === 'medium' ? 'info' : 'secondary')) ?>">
+                                    <i class="fas fa-user-circle text-muted mr-1"></i>
+                                    <?= htmlspecialchars($log['username'] ?? 'System') ?>
+                                </td>
+                                <td>
+                                    <span class="badge badge-<?= $ai['color'] ?>">
+                                        <i class="fas <?= $ai['icon'] ?> mr-1"></i>
+                                        <?= $ai['label'] ?>
+                                    </span>
+                                </td>
+                                <td><span class="badge badge-secondary"><?= htmlspecialchars($log['category'] ?? '-') ?></span></td>
+                                <td>
+                                    <span class="badge badge-<?= ($log['severity'] ?? 'low') === 'critical' ? 'danger' : (($log['severity'] ?? 'low') === 'high' ? 'warning' : (($log['severity'] ?? 'low') === 'medium' ? 'info' : 'secondary')) ?>">
                                         <?= htmlspecialchars($log['severity'] ?? 'low') ?>
                                     </span>
                                 </td>
-                                <td><?= htmlspecialchars($log['ip_address'] ?? '-') ?></td>
-                                <td><?= $log['success'] ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>' ?></td>
+                                <td><code><?= htmlspecialchars($log['ip_address'] ?? '-') ?></code></td>
+                                <td>
+                                    <?php if ($log['success']): ?>
+                                    <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Success</span>
+                                    <?php else: ?>
+                                    <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Failed</span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                             <?php endif; ?>

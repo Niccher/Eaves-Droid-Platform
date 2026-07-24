@@ -2,6 +2,7 @@
 
 namespace App\Controllers\auth;
 
+use App\Models\Mod_Log_User_Action;
 use CodeIgniter\Controller;
 use CodeIgniter\Shield\Models\UserIdentityModel;
 use CodeIgniter\Shield\Models\UserModel;
@@ -28,6 +29,8 @@ class ForgotPasswordController extends Controller
      */
     public function forgotAction(): RedirectResponse
     {
+        $logModel = new Mod_Log_User_Action();
+
         // Validate email
         $rules = [
             'email' => [
@@ -41,6 +44,14 @@ class ForgotPasswordController extends Controller
         ];
 
         if (!$this->validate($rules)) {
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'password_forgot',
+                'action_severity' => 'low',
+                'success'         => 0,
+                'error_message'   => 'Validation failed',
+                'request_url'     => current_url(),
+            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
@@ -53,6 +64,15 @@ class ForgotPasswordController extends Controller
         $user = $users->findByCredentials(['email' => $email]);
 
         if (!$user) {
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'password_forgot',
+                'action_severity' => 'low',
+                'success'         => 0,
+                'error_message'   => 'Email not found',
+                'new_values'      => json_encode(['email' => $email]),
+                'request_url'     => current_url(),
+            ]);
             // For security, don't reveal if email exists or not
             return redirect()->back()
                 ->with('message', 'If your email exists in our system, you will receive a password reset link shortly.');
@@ -78,6 +98,15 @@ class ForgotPasswordController extends Controller
 
         // Send reset email
         $this->sendResetEmail($user->email, $token, $user->username);
+
+        $logModel->logAction([
+            'user_id'         => $user->id,
+            'action_category' => 'authentication',
+            'action_type'     => 'password_forgot',
+            'action_severity' => 'medium',
+            'success'         => 1,
+            'request_url'     => current_url(),
+        ]);
 
         return redirect()->back()
             ->with('message', 'If your email exists in our system, you will receive a password reset link shortly.');
@@ -117,9 +146,18 @@ class ForgotPasswordController extends Controller
      */
     public function resetAction(): RedirectResponse
     {
+        $logModel = new Mod_Log_User_Action();
         $rules = $this->getResetValidationRules();
 
         if (!$this->validate($rules)) {
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'password_reset',
+                'action_severity' => 'low',
+                'success'         => 0,
+                'error_message'   => 'Validation failed',
+                'request_url'     => current_url(),
+            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
@@ -136,6 +174,14 @@ class ForgotPasswordController extends Controller
             ->first();
 
         if (!$identity) {
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'password_reset',
+                'action_severity' => 'low',
+                'success'         => 0,
+                'error_message'   => 'Invalid or expired reset token',
+                'request_url'     => current_url(),
+            ]);
             return redirect()->route('forgot')->with('error', 'Invalid or expired reset token.');
         }
 
@@ -145,6 +191,15 @@ class ForgotPasswordController extends Controller
             ->first();
 
         if (!$emailIdentity) {
+            $logModel->logAction([
+                'user_id'         => $identity->user_id,
+                'action_category' => 'authentication',
+                'action_type'     => 'password_reset',
+                'action_severity' => 'medium',
+                'success'         => 0,
+                'error_message'   => 'User identity not found',
+                'request_url'     => current_url(),
+            ]);
             return redirect()->route('forgot')->with('error', 'User identity not found.');
         }
 
@@ -159,6 +214,15 @@ class ForgotPasswordController extends Controller
         $identities->where('user_id', $identity->user_id)
             ->where('type', 'session')
             ->delete();
+
+        $logModel->logAction([
+            'user_id'         => $identity->user_id,
+            'action_category' => 'authentication',
+            'action_type'     => 'password_reset',
+            'action_severity' => 'high',
+            'success'         => 1,
+            'request_url'     => current_url(),
+        ]);
 
         return redirect()->route('login')->with('message', 'Password reset successfully. Please login with your new password.');
     }
@@ -213,6 +277,7 @@ class ForgotPasswordController extends Controller
      */
     public function offlineResetAction(): RedirectResponse
     {
+        $logModel = new Mod_Log_User_Action();
         $rules = [
             'email' => [
                 'label' => 'Email',
@@ -229,6 +294,14 @@ class ForgotPasswordController extends Controller
         ];
 
         if (!$this->validate($rules)) {
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'password_reset_offline',
+                'action_severity' => 'low',
+                'success'         => 0,
+                'error_message'   => 'Validation failed',
+                'request_url'     => current_url(),
+            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
@@ -241,6 +314,15 @@ class ForgotPasswordController extends Controller
         $user = $users->findByCredentials(['email' => $email]);
 
         if (!$user) {
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'password_reset_offline',
+                'action_severity' => 'low',
+                'success'         => 0,
+                'error_message'   => 'Email not found',
+                'new_values'      => json_encode(['email' => $email]),
+                'request_url'     => current_url(),
+            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'No account found with that email address.');
@@ -253,6 +335,15 @@ class ForgotPasswordController extends Controller
             ->first();
 
         if (!$emailIdentity) {
+            $logModel->logAction([
+                'user_id'         => $user->id,
+                'action_category' => 'authentication',
+                'action_type'     => 'password_reset_offline',
+                'action_severity' => 'medium',
+                'success'         => 0,
+                'error_message'   => 'User identity not found',
+                'request_url'     => current_url(),
+            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'User identity not found.');
@@ -265,6 +356,15 @@ class ForgotPasswordController extends Controller
         $identities->where('user_id', $user->id)
             ->where('type', 'session')
             ->delete();
+
+        $logModel->logAction([
+            'user_id'         => $user->id,
+            'action_category' => 'authentication',
+            'action_type'     => 'password_reset_offline',
+            'action_severity' => 'high',
+            'success'         => 1,
+            'request_url'     => current_url(),
+        ]);
 
         return redirect()->route('forgot-offline')
             ->with('message', 'Password reset successfully!');

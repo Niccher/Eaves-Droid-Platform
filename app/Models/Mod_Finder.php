@@ -970,16 +970,22 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $this->applyOwnerDeviceFilter($builder, $user_id);
+            $builder->select('tbl_location.*, tbl_device_profile.device_model, tbl_device_profile.device_brand');
+            $builder->join('tbl_device_profile', 'tbl_device_profile.device_id = tbl_location.device_id', 'left');
+            $builder->where('tbl_location.owner_id', $user_id);
 
-            if ($hasCoordsOnly) {
-                $builder->where('latitude IS NOT NULL')
-                        ->where('longitude IS NOT NULL')
-                        ->where('latitude !=', '')
-                        ->where('longitude !=', '');
+            if (!empty($this->deviceId) && $this->deviceId !== 'all') {
+                $builder->where('tbl_location.device_id', $this->deviceId);
             }
 
-            $results = $builder->orderBy('extracted_at', 'DESC')
+            if ($hasCoordsOnly) {
+                $builder->where('tbl_location.latitude IS NOT NULL')
+                        ->where('tbl_location.longitude IS NOT NULL')
+                        ->where('tbl_location.latitude !=', '')
+                        ->where('tbl_location.longitude !=', '');
+            }
+
+            $results = $builder->orderBy('tbl_location.extracted_at', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
@@ -1009,8 +1015,21 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $results = $this->applyOwnerDeviceFilter($builder, $user_id)
-                ->orderBy('extracted_at', 'DESC')
+            $typeFilter = service('request')->getGet('type');
+            $builder->select('tbl_activity.*, tbl_device_profile.device_model, tbl_device_profile.device_brand, tbl_device_profile.android_version');
+            $builder->join('tbl_device_profile', 'tbl_device_profile.device_id = tbl_activity.device_id', 'left');
+            $builder->where('tbl_activity.owner_id', $user_id);
+
+            if (!empty($this->deviceId) && $this->deviceId !== 'all') {
+                $builder->where('tbl_activity.device_id', $this->deviceId);
+            }
+
+            if (!empty($typeFilter) && $typeFilter !== 'all') {
+                $builder->where('tbl_activity.activity_type', $typeFilter);
+            }
+
+            $results = $builder
+                ->orderBy('tbl_activity.extracted_at', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
@@ -1022,6 +1041,57 @@ class Mod_Finder extends Model
         } catch (\Exception $e) {
             log_message('error', 'get_activities error: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    public function get_activity_stats(int $user_id): array
+    {
+        try {
+            $builder = $this->db->table('tbl_activity');
+            $this->applyOwnerDeviceFilter($builder, $user_id);
+
+            $total = $builder->countAllResults();
+
+            $todayBuilder = $this->db->table('tbl_activity');
+            $this->applyOwnerDeviceFilter($todayBuilder, $user_id);
+            $todayBuilder->where('DATE(created_at)', date('Y-m-d'));
+            $todayCount = $todayBuilder->countAllResults();
+
+            $typeBuilder = $this->db->table('tbl_activity');
+            $this->applyOwnerDeviceFilter($typeBuilder, $user_id);
+            $typeBuilder->select('activity_type, COUNT(*) as cnt');
+            $typeBuilder->where('activity_type IS NOT NULL');
+            $typeBuilder->groupBy('activity_type');
+            $typeBuilder->orderBy('cnt', 'DESC');
+            $typeBuilder->limit(1);
+            $topType = $typeBuilder->get()->getRowArray();
+
+            $battBuilder = $this->db->table('tbl_activity');
+            $this->applyOwnerDeviceFilter($battBuilder, $user_id);
+            $battBuilder->selectAvg('battery_level', 'avg_battery');
+            $avgBattery = $battBuilder->get()->getRow()->avg_battery ?? 0;
+
+            $distinctTypes = [];
+            $rawTypes = $this->db->query(
+                "SELECT DISTINCT activity_type FROM tbl_activity WHERE owner_id = ? AND activity_type IS NOT NULL AND activity_type != '' ORDER BY activity_type ASC",
+                [$user_id]
+            )->getResultArray();
+            $distinctTypes = array_column($rawTypes, 'activity_type');
+
+            return [
+                'total' => $total,
+                'today' => $todayCount,
+                'top_type' => $topType['activity_type'] ?? null,
+                'top_type_count' => $topType['cnt'] ?? 0,
+                'avg_battery' => round((float) $avgBattery),
+                'distinct_types' => $distinctTypes,
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'get_activity_stats error: ' . $e->getMessage());
+            return [
+                'total' => 0, 'today' => 0, 'top_type' => null,
+                'top_type_count' => 0, 'avg_battery' => 0, 'distinct_types' => [],
+            ];
         }
     }
 

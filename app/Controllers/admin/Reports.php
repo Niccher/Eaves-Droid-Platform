@@ -70,16 +70,32 @@ class Reports extends BaseAdminController
         $userId = $user['id'];
 
         $dataTables = [
-            'SMS' => 'tbl_sms', 'Call Logs' => 'tbl_logs', 'Contacts' => 'tbl_contacts',
-            'Apps' => 'tbl_apps', 'Locations' => 'tbl_location', 'Activities' => 'tbl_activity',
-            'Files' => 'tbl_device_files', 'Uploads' => 'uploaded_files',
+            ['label' => 'SMS',           'table' => 'tbl_sms',           'icon' => 'fa-sms'],
+            ['label' => 'Call Logs',     'table' => 'tbl_logs',          'icon' => 'fa-phone'],
+            ['label' => 'Contacts',      'table' => 'tbl_contacts',      'icon' => 'fa-address-book'],
+            ['label' => 'Apps',          'table' => 'tbl_apps',          'icon' => 'fa-th'],
+            ['label' => 'Locations',     'table' => 'tbl_location',      'icon' => 'fa-map-marker-alt'],
+            ['label' => 'Activities',    'table' => 'tbl_activity',      'icon' => 'fa-running'],
+            ['label' => 'Files',         'table' => 'tbl_device_files',  'icon' => 'fa-file'],
+            ['label' => 'Network',       'table' => 'tbl_network_info',  'icon' => 'fa-wifi'],
+            ['label' => 'Accounts',      'table' => 'tbl_accounts',      'icon' => 'fa-user-circle'],
+            ['label' => 'Calendar',      'table' => 'tbl_calendar_events','icon' => 'fa-calendar'],
+            ['label' => 'App Usage',     'table' => 'tbl_app_usage',     'icon' => 'fa-clock'],
+            ['label' => 'Notifications',  'table' => 'tbl_notifications', 'icon' => 'fa-bell'],
+            ['label' => 'Bluetooth',     'table' => 'tbl_bluetooth',     'icon' => 'fa-bluetooth'],
+            ['label' => 'Sensors',       'table' => 'tbl_sensor_profile','icon' => 'fa-microchip'],
+            ['label' => 'Security',      'table' => 'tbl_security_audit','icon' => 'fa-shield-alt'],
+            ['label' => 'Media',         'table' => 'tbl_captured_media','icon' => 'fa-camera'],
+            ['label' => 'SIM',           'table' => 'tbl_sim_configs',   'icon' => 'fa-sim-card'],
+            ['label' => 'Uploads',       'table' => 'uploaded_files',    'icon' => 'fa-upload'],
         ];
         $counts = [];
-        foreach ($dataTables as $label => $table) {
-            $ownerCol = ($table === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
+        foreach ($dataTables as $item) {
+            $ownerCol = ($item['table'] === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
             $counts[] = [
-                'label' => $label,
-                'count' => $db->table($table)->where($ownerCol, $userId)->countAllResults(),
+                'label' => $item['label'],
+                'icon'  => $item['icon'],
+                'count' => $db->table($item['table'])->where($ownerCol, $userId)->countAllResults(),
             ];
         }
 
@@ -120,24 +136,26 @@ class Reports extends BaseAdminController
         $db = $this->getDb();
 
         $dataTables = [
-            'SMS' => 'tbl_sms', 'Call Logs' => 'tbl_logs', 'Contacts' => 'tbl_contacts',
-            'Apps' => 'tbl_apps', 'Locations' => 'tbl_location', 'Activities' => 'tbl_activity',
-            'Files' => 'tbl_device_files', 'Device Context' => 'tbl_device_context',
-            'Network' => 'tbl_network_info', 'Accounts' => 'tbl_accounts',
-            'Calendar' => 'tbl_calendar_events', 'App Usage' => 'tbl_app_usage',
-            'Notifications' => 'tbl_notifications', 'Bluetooth' => 'tbl_bluetooth',
-            'Sensors' => 'tbl_sensor_profile', 'Security' => 'tbl_security_audit',
-            'Media' => 'tbl_captured_media', 'SIM' => 'tbl_sim_configs',
-            'Uploaded Files' => 'uploaded_files',
+            'SMS'           => ['table' => 'tbl_sms',           'icon' => 'fa-sms'],
+            'Call Logs'     => ['table' => 'tbl_logs',          'icon' => 'fa-phone'],
+            'Contacts'      => ['table' => 'tbl_contacts',      'icon' => 'fa-address-book'],
+            'Apps'          => ['table' => 'tbl_apps',          'icon' => 'fa-th'],
+            'Locations'     => ['table' => 'tbl_location',      'icon' => 'fa-map-marker-alt'],
+            'Activities'    => ['table' => 'tbl_activity',      'icon' => 'fa-running'],
+            'Files'         => ['table' => 'tbl_device_files',  'icon' => 'fa-file'],
+            'Device Context' => ['table' => 'tbl_device_context','icon' => 'fa-cog'],
+            'Network'       => ['table' => 'tbl_network_info',  'icon' => 'fa-wifi'],
+            'Accounts'      => ['table' => 'tbl_accounts',      'icon' => 'fa-user-circle'],
+            'Calendar'      => ['table' => 'tbl_calendar_events','icon' => 'fa-calendar'],
+            'App Usage'     => ['table' => 'tbl_app_usage',     'icon' => 'fa-clock'],
+            'Notifications' => ['table' => 'tbl_notifications', 'icon' => 'fa-bell'],
+            'Bluetooth'     => ['table' => 'tbl_bluetooth',     'icon' => 'fa-bluetooth'],
+            'Sensors'       => ['table' => 'tbl_sensor_profile','icon' => 'fa-microchip'],
+            'Security'      => ['table' => 'tbl_security_audit','icon' => 'fa-shield-alt'],
+            'Media'         => ['table' => 'tbl_captured_media','icon' => 'fa-camera'],
+            'SIM'           => ['table' => 'tbl_sim_configs',   'icon' => 'fa-sim-card'],
+            'Uploads'       => ['table' => 'uploaded_files',    'icon' => 'fa-upload'],
         ];
-
-        $totals = [];
-        $grandTotal = 0;
-        foreach ($dataTables as $label => $table) {
-            $count = $db->table($table)->countAllResults();
-            $totals[] = ['label' => $label, 'count' => $count];
-            $grandTotal += $count;
-        }
 
         $users = $db->table('users')
             ->select('users.id, users.username')
@@ -146,23 +164,41 @@ class Reports extends BaseAdminController
             ->getResultArray();
 
         $userData = [];
+        $grandTotal = 0;
+        $allTotals = [];
+
+        foreach ($dataTables as $label => $info) {
+            $allTotals[$label] = 0;
+        }
+
         foreach ($users as $u) {
             $total = 0;
-            foreach ($dataTables as $table) {
+            $categories = [];
+            foreach ($dataTables as $label => $info) {
+                $table = $info['table'];
                 $ownerCol = ($table === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
-                $total += $db->table($table)->where($ownerCol, $u['id'])->countAllResults();
+                $count = $db->table($table)->where($ownerCol, $u['id'])->countAllResults();
+                $categories[$label] = $count;
+                $total += $count;
+                $allTotals[$label] += $count;
             }
             if ($total > 0) {
-                $userData[] = ['username' => $u['username'], 'total' => $total];
+                $userData[] = [
+                    'username'   => $u['username'],
+                    'total'      => $total,
+                    'categories' => $categories,
+                ];
             }
+            $grandTotal += $total;
         }
         usort($userData, fn($a, $b) => $b['total'] - $a['total']);
 
         return $this->renderView('admin/reports/data_usage', [
-            'pag' => 'admin-reports-data-usage',
-            'totals' => $totals,
+            'pag'         => 'admin-reports-data-usage',
+            'data_tables' => $dataTables,
+            'user_data'   => $userData,
+            'all_totals'  => $allTotals,
             'grand_total' => $grandTotal,
-            'user_data' => $userData,
         ]);
     }
 
@@ -215,48 +251,90 @@ class Reports extends BaseAdminController
     {
         $db = $this->getDb();
 
+        $users = $db->table('users')
+            ->select('users.id, users.username')
+            ->where('users.deleted_at IS NULL')
+            ->orderBy('users.username', 'ASC')
+            ->get()
+            ->getResultArray();
+
         if ($this->request->getMethod() === 'POST') {
-            $dateFrom = $this->request->getPost('date_from');
-            $dateTo = $this->request->getPost('date_to');
+            $dateFrom  = $this->request->getPost('date_from');
+            $dateTo    = $this->request->getPost('date_to');
             $dataTypes = $this->request->getPost('data_types') ?? [];
+            $userId    = $this->request->getPost('user_id');
 
             $tableMap = [
-                'sms' => 'tbl_sms', 'calls' => 'tbl_logs', 'contacts' => 'tbl_contacts',
-                'apps' => 'tbl_apps', 'locations' => 'tbl_location', 'activities' => 'tbl_activity',
-                'uploads' => 'uploaded_files',
+                'sms'           => ['table' => 'tbl_sms',           'icon' => 'fa-sms',           'label' => 'SMS'],
+                'calls'         => ['table' => 'tbl_logs',          'icon' => 'fa-phone',         'label' => 'Call Logs'],
+                'contacts'      => ['table' => 'tbl_contacts',      'icon' => 'fa-address-book',  'label' => 'Contacts'],
+                'apps'          => ['table' => 'tbl_apps',          'icon' => 'fa-th',            'label' => 'Apps'],
+                'locations'     => ['table' => 'tbl_location',      'icon' => 'fa-map-marker-alt','label' => 'Locations'],
+                'activities'    => ['table' => 'tbl_activity',      'icon' => 'fa-running',       'label' => 'Activities'],
+                'notifications' => ['table' => 'tbl_notifications', 'icon' => 'fa-bell',          'label' => 'Notifications'],
+                'accounts'      => ['table' => 'tbl_accounts',      'icon' => 'fa-user-circle',   'label' => 'Accounts'],
+                'bluetooth'     => ['table' => 'tbl_bluetooth',     'icon' => 'fa-bluetooth',     'label' => 'Bluetooth'],
+                'calendar'      => ['table' => 'tbl_calendar_events','icon' => 'fa-calendar',     'label' => 'Calendar'],
+                'uploads'       => ['table' => 'uploaded_files',    'icon' => 'fa-upload',        'label' => 'Uploads'],
             ];
 
             $results = [];
             $grandTotal = 0;
             foreach ($dataTypes as $type) {
                 if (!isset($tableMap[$type])) continue;
-                $table = $tableMap[$type];
+                $info = $tableMap[$type];
+                $table = $info['table'];
                 $dateCol = $type === 'uploads' ? 'uploaded_at' : 'created_at';
-                $count = $db->table($table)
+                $query = $db->table($table)
                     ->where("{$dateCol} >=", $dateFrom ?: '1970-01-01')
-                    ->where("{$dateCol} <=", $dateTo ?: date('Y-m-d'))
-                    ->countAllResults();
-                $results[] = ['type' => $type, 'label' => ucfirst($type), 'count' => $count];
+                    ->where("{$dateCol} <=", $dateTo ?: date('Y-m-d'));
+                if ($userId && $userId !== 'all') {
+                    $ownerCol = ($table === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
+                    $query->where($ownerCol, $userId);
+                }
+                $count = $query->countAllResults();
+                $results[] = [
+                    'type'  => $type,
+                    'label' => $info['label'],
+                    'icon'  => $info['icon'],
+                    'count' => $count,
+                ];
                 $grandTotal += $count;
             }
 
+            $selectedUser = null;
+            if ($userId && $userId !== 'all') {
+                foreach ($users as $u) {
+                    if ((string)$u['id'] === $userId) {
+                        $selectedUser = $u;
+                        break;
+                    }
+                }
+            }
+
             return $this->renderView('admin/reports/generate', [
-                'pag' => 'admin-reports-generate',
-                'results' => $results,
-                'grand_total' => $grandTotal,
-                'date_from' => $dateFrom,
-                'date_to' => $dateTo,
-                'selected_types' => $dataTypes,
+                'pag'           => 'admin-reports-generate',
+                'results'       => $results,
+                'grand_total'   => $grandTotal,
+                'date_from'     => $dateFrom,
+                'date_to'       => $dateTo,
+                'selected_types'=> $dataTypes,
+                'selected_user' => $selectedUser,
+                'selected_user_id' => $userId,
+                'users'         => $users,
             ]);
         }
 
         return $this->renderView('admin/reports/generate', [
-            'pag' => 'admin-reports-generate',
-            'results' => null,
-            'grand_total' => 0,
-            'date_from' => date('Y-m-d', strtotime('-30 days')),
-            'date_to' => date('Y-m-d'),
-            'selected_types' => [],
+            'pag'             => 'admin-reports-generate',
+            'results'         => null,
+            'grand_total'     => 0,
+            'date_from'       => date('Y-m-d', strtotime('-30 days')),
+            'date_to'         => date('Y-m-d'),
+            'selected_types'  => [],
+            'selected_user'   => null,
+            'selected_user_id'=> 'all',
+            'users'           => $users,
         ]);
     }
 

@@ -27,6 +27,7 @@ class Mod_Uploaded_Files extends Model
         'upload_path',
         'upload_status',
         'upload_error',
+        'upload_source',
         'parsed_at',
         'parsed_records',
         'parse_duration_ms',
@@ -92,6 +93,7 @@ class Mod_Uploaded_Files extends Model
                 `upload_path` VARCHAR(500) NOT NULL,
                 `upload_status` ENUM('uploaded', 'processing', 'processed', 'failed') DEFAULT 'uploaded',
                 `upload_error` TEXT NULL,
+                `upload_source` ENUM('manual', 'auto_sync', 'web_initiated') DEFAULT 'auto_sync',
                 `parsed_at` TIMESTAMP NULL,
                 `parsed_records` INT UNSIGNED DEFAULT 0,
                 `parse_duration_ms` INT UNSIGNED NULL,
@@ -130,6 +132,7 @@ class Mod_Uploaded_Files extends Model
                 'device_checksum' => $data['device_checksum'] ?? '',
                 'device_print_id' => $data['device_print_id'] ?? '',
                 'upload_path' => $data['upload_path'] ?? '',
+                'upload_source' => $data['upload_source'] ?? 'auto_sync',
                 'upload_status' => 'uploaded'
             ];
 

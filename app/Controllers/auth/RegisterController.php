@@ -32,6 +32,15 @@ class RegisterController extends Controller
         $rules = $this->getValidationRules();
 
         if (!$this->validate($rules)) {
+            $logModel = new \App\Models\Mod_Log_User_Action();
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'register',
+                'action_severity' => 'low',
+                'success'         => 0,
+                'error_message'   => 'Validation failed',
+                'request_url'     => current_url(),
+            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
@@ -61,6 +70,15 @@ class RegisterController extends Controller
 
             if (!$result) {
                 $errors = $users->errors();
+                $logModel = new \App\Models\Mod_Log_User_Action();
+                $logModel->logAction([
+                    'action_category' => 'authentication',
+                    'action_type'     => 'register',
+                    'action_severity' => 'low',
+                    'success'         => 0,
+                    'error_message'   => json_encode($errors),
+                    'request_url'     => current_url(),
+                ]);
                 return redirect()->back()
                     ->withInput()
                     ->with('errors', $errors);
@@ -94,20 +112,29 @@ class RegisterController extends Controller
             $db->table('user_profiles')->insert($profileData);
 
             // Log registration action
-            $logModel = new \App\Models\Mod_Access_Logs();
+            $logModel = new \App\Models\Mod_Log_User_Action();
             $logModel->logAction([
-                'user_id' => $userId,
+                'user_id'         => $userId,
                 'action_category' => 'authentication',
-                'action_type' => 'Register',
+                'action_type'     => 'register',
                 'action_severity' => 'medium',
-                'device_type' => 'desktop', // Or detect, but leaving as desktop/default for now
-                'success' => 1
+                'success'         => 1,
+                'request_url'     => current_url(),
             ]);
 
             // Commit transaction
             $db->transComplete();
 
             if ($db->transStatus() === false) {
+                $logModel = new \App\Models\Mod_Log_User_Action();
+                $logModel->logAction([
+                    'action_category' => 'authentication',
+                    'action_type'     => 'register',
+                    'action_severity' => 'low',
+                    'success'         => 0,
+                    'error_message'   => 'Transaction failed',
+                    'request_url'     => current_url(),
+                ]);
                 throw new \Exception('Failed to save user to tbl_Users table.');
             }
 
@@ -129,6 +156,16 @@ class RegisterController extends Controller
             if (isset($db) && $db->transStatus() !== false) {
                 $db->transRollback();
             }
+
+            $logModel = new \App\Models\Mod_Log_User_Action();
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'register',
+                'action_severity' => 'low',
+                'success'         => 0,
+                'error_message'   => $e->getMessage(),
+                'request_url'     => current_url(),
+            ]);
 
             return redirect()->back()
                 ->withInput()

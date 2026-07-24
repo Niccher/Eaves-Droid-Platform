@@ -274,6 +274,9 @@ class Account extends BaseClientController
     {
         try {
             $this->modAccessLogs->where('user_id', $this->userId)->delete();
+
+            $this->logUserAction('access_logs_clear', 'system', 'medium', 1);
+
             return $this->response->setJSON(['success' => true, 'message' => 'Logs cleared']);
         } catch (\Exception $e) {
             log_message('error', 'clearLogs: ' . $e->getMessage());
