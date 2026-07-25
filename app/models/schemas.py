@@ -1,30 +1,56 @@
+"""
+Pydantic models for the ML backend API and internal data transfer.
+"""
+
 from pydantic import BaseModel
 from typing import Any
+from datetime import datetime
 
 
 class AnalyzeRequest(BaseModel):
+    """
+    Payload the PHP side POSTs to /api/analyze.
+
+    Renamed from the old data-blob approach:
+    - ``algorithms`` — list of Python-only algorithm IDs to run
+    - ``user_id`` — target user whose data to analyse
+    - ``scope`` — ``full`` (all entries) or ``incremental`` (only new)
+    - ``incremental_since`` — ISO datetime cutoff for incremental runs
+      (PHP reads this from ml_analysis_tracking.last_analyzed_at)
+    """
+    job_id: int
+    user_id: int
     algorithms: list[str]
-    user_id: int | None = None
-    data: dict[str, list[dict[str, Any]]] = {}
+    scope: str = "full"
+    incremental_since: str | None = None
 
 
 class AnomalyResult(BaseModel):
+    """
+    A single anomaly finding.  Detector.detect() returns a list of these;
+    the analyze router persists each one into ml_results.
+    """
     algorithm: str
     algorithm_id: str
     category: str
     severity: str
     anomaly: str
     score: float
-    timestamp: str
+    event_timestamp: str = ""
     details: dict[str, Any] = {}
 
 
 class AnalyzeResponse(BaseModel):
+    """
+    Lightweight response the PHP side receives after the Python backend
+    finishes processing a job.  The actual findings are in ml_results;
+    this is just a status signal.
+    """
     status: str
-    run_id: str
-    results: list[AnomalyResult]
+    job_id: int
+    results_count: int
     timing_ms: float
-    engine_note: str = "python"
+    error: str | None = None
 
 
 class HealthResponse(BaseModel):
@@ -33,6 +59,7 @@ class HealthResponse(BaseModel):
     models_loaded: list[str]
     cuda_available: bool
     memory_mb: dict[str, float]
+    cache_entries: int = 0
 
 
 class ModelInfo(BaseModel):

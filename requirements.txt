@@ -11,3 +11,5 @@ httpx==0.28.1
 prometheus-client==0.21.1
 psutil==6.1.0
 sqlalchemy==2.0.36
+networkx==3.4.2
+onnxruntime==1.20.1

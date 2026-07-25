@@ -1,3 +1,11 @@
+"""
+Isolation Forest Outlier Detection — flags anomalous call records using
+scikit-learn's Isolation Forest on multi-dimensional call features
+(duration, direction, hour, network presence).
+
+Queries ``tbl_logs`` directly from the shared MySQL database.
+"""
+
 import numpy as np
 from app.detectors.base import BaseDetector
 from app.detectors.shared.isolation_forest import run_iforest
@@ -9,25 +17,49 @@ class CallsIsolationDetector(BaseDetector):
     algorithm_name = "Isolation Forest Outlier Detection"
     category = "call_logs"
 
-    async def detect(self, data: list[dict], user_id: int | None = None) -> list[AnomalyResult]:
-        if len(data) < 10:
+    async def detect(self, user_id: int, scope: str = "full",
+                     incremental_since: str | None = None) -> list[AnomalyResult]:
+        from sqlalchemy import text
+        from app.utils.db import get_engine
+
+        where = "owner_id = :uid"
+        params: dict = {"uid": user_id}
+        if scope == "incremental" and incremental_since:
+            where += " AND created_at > :since"
+            params["since"] = incremental_since
+
+        sql = text(f"""
+            SELECT duration_seconds, call_type AS direction,
+                   DATE_FORMAT(FROM_UNIXTIME(call_date/1000), '%Y-%m-%d %H:%i:%s') AS ts,
+                   network_type
+            FROM tbl_logs
+            WHERE {where}
+            ORDER BY call_date DESC
+            LIMIT 3000
+        """)
+
+        with get_engine().connect() as conn:
+            rows = conn.execute(sql, params).mappings().fetchall()
+
+        if len(rows) < 10:
             return []
 
         features = []
         timestamps = []
-        for row in data:
-            duration = float(row.get("duration", 0))
-            direction = 1 if row.get("direction", "").lower() in ("outgoing", "dialled", "dialed") else 0
+        for row in rows:
+            duration = float(row["duration_seconds"] or 0)
+            direction = 1 if (row["direction"] or "").lower() in ("outgoing", "dialled", "dialed") else 0
             hour = 12
-            try:
-                ts = row.get("timestamp", "")
-                if ts:
-                    hour = __import__("datetime").datetime.fromisoformat(ts).hour
-            except Exception:
-                pass
-            network = 1 if row.get("network_type") or row.get("network") else 0
+            ts = str(row["ts"] or "")
+            if ts:
+                try:
+                    dt = __import__("datetime").datetime.fromisoformat(ts)
+                    hour = dt.hour
+                except Exception:
+                    pass
+            network = 1 if row["network_type"] else 0
             features.append([duration, direction, hour, network, duration * direction])
-            timestamps.append(row.get("timestamp", ""))
+            timestamps.append(ts)
 
         X = np.array(features)
         X = np.nan_to_num(X)
@@ -36,21 +68,30 @@ class CallsIsolationDetector(BaseDetector):
 
         preds, scores = run_iforest(X, n_estimators=200, contamination=0.05)
         anomaly_indices = np.where(preds == -1)[0]
-
         score_mean = np.mean(scores)
         score_std = np.std(scores) or 1.0
 
         results = []
         for idx in anomaly_indices[:10]:
             z = (scores[idx] - score_mean) / score_std
+            dur, direc, hr, net, _ = features[idx]
             results.append(AnomalyResult(
                 algorithm=self.algorithm_name,
                 algorithm_id=self.algorithm_id,
                 category=self.category,
                 severity="High" if z < -2 else "Medium",
-                anomaly=f"Anomalous call: duration={features[idx][0]:.0f}s, direction={'outgoing' if features[idx][1] else 'incoming'} at hour {features[idx][2]:.0f}",
+                anomaly=(
+                    f"Anomalous call: duration={dur:.0f}s, "
+                    f"{'outgoing' if direc else 'incoming'} at ~{hr:.0f}:00"
+                ),
                 score=round(float(scores[idx]), 4),
-                timestamp=timestamps[idx] if idx < len(timestamps) else "",
-                details={"call_features": features[idx], "anomaly_score": float(scores[idx])},
+                event_timestamp=timestamps[idx] if idx < len(timestamps) else "",
+                details={
+                    "duration_seconds": round(dur, 1),
+                    "direction": "outgoing" if direc else "incoming",
+                    "hour": int(hr),
+                    "has_network": bool(net),
+                    "anomaly_score": float(scores[idx]),
+                },
             ))
         return results

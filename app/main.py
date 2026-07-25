@@ -1,3 +1,11 @@
+"""
+FastAPI application entry point for the ML Eaves Droid anomaly detection backend.
+
+The PHP web app POSTs lightweight ``{job_id, user_id, algorithms, scope}``
+payloads to ``/api/analyze``.  This backend queries the shared MySQL database
+directly and stores findings into ``ml_results`` — no HTTP data blobs.
+"""
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +17,7 @@ from app.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Load all 7 detectors into the analyze module's DETECTOR_MAP on startup."""
     analyze.load_detectors()
     yield
 
@@ -20,6 +29,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Permissive CORS — this runs inside a Docker network, not exposed publicly.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,12 +42,14 @@ app.include_router(health.router)
 app.include_router(analyze.router)
 app.include_router(models_info.router)
 
+# Prometheus metrics exposed at /metrics for operational monitoring.
 metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
 
 @app.get("/")
 async def root():
+    """Service landing page — returns endpoint URLs for discovery."""
     return {
         "service": "ML Eaves Droid",
         "version": "1.0.0",
