@@ -27,40 +27,6 @@
     <section class="content">
         <div class="container-fluid">
 
-            <!-- Wizard Progress Bar -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card card-outline card-primary shadow-sm mb-0">
-                        <div class="card-body py-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <!-- Step 1 (completed) -->
-                                <div class="d-flex align-items-center flex-column" style="min-width:90px;">
-                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center shadow-sm"
-                                         style="width:42px;height:42px;font-weight:700;font-size:1.1rem; border:2px solid #fff;">
-                                        <i class="fas fa-check"></i>
-                                    </div>
-                                    <small class="mt-1 text-success font-weight-bold">Engine</small>
-                                </div>
-                                <div class="flex-grow-1 mx-3" style="height:3px;background:#28a745;"></div>
-                                <!-- Step 2 (active) -->
-                                <div class="d-flex align-items-center flex-column" style="min-width:90px;">
-                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm"
-                                         style="width:42px;height:42px;font-weight:700;font-size:1.1rem; border:2px solid #fff;">2</div>
-                                    <small class="mt-1 text-primary font-weight-bold">Algorithms</small>
-                                </div>
-                                <div class="flex-grow-1 border-top border-secondary mx-3" style="height:3px;background:#dee2e6;"></div>
-                                <!-- Step 3 -->
-                                <div class="d-flex align-items-center flex-column" style="min-width:90px;">
-                                    <div class="rounded-circle bg-light text-muted border d-flex align-items-center justify-content-center"
-                                         style="width:42px;height:42px;font-weight:700;font-size:1.1rem;">3</div>
-                                    <small class="mt-1 text-muted">Results</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Instruction callout -->
             <?php 
                 $engine = service('request')->getGet('engine') ?? 'php';
@@ -149,12 +115,17 @@
                                                         <span class="badge badge-success ml-1">Default</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td class="align-middle">
-                                                    <?php if ($isPythonOnly): ?>
-                                                        <span class="badge badge-warning"><i class="fab fa-python mr-1"></i>Python-Only</span>
-                                                    <?php else: ?>
-                                                        <span class="badge badge-secondary"><i class="fas fa-check-circle mr-1"></i>PHP &amp; Python</span>
-                                                    <?php endif; ?>
+                                                <td class="align-middle" style="min-width:130px;">
+                                                    <span class="d-block mb-1">
+                                                        <?php if ($isPythonOnly): ?>
+                                                            <span class="badge badge-danger" style="opacity:0.6;"><i class="fab fa-php mr-1"></i>PHP ✗</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-success"><i class="fab fa-php mr-1"></i>PHP ✓</span>
+                                                        <?php endif; ?>
+                                                    </span>
+                                                    <span class="d-block">
+                                                        <span class="badge badge-success"><i class="fab fa-python mr-1"></i>Python ✓</span>
+                                                    </span>
                                                 </td>
                                                 <td class="align-middle small"><?= esc($alg['description']) ?></td>
                                                 <td class="align-middle small">
@@ -178,6 +149,49 @@
                     <?php endforeach; ?>
 
                 </div><!-- /#accordion-algorithms -->
+
+                <!-- Analysis scope -->
+                <div class="card card-outline card-secondary shadow-sm mt-3">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-search-plus mr-2"></i>Analysis Scope
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="custom-control custom-radio">
+                                    <input class="custom-control-input" type="radio" id="scope-full"
+                                           name="scope" value="full" checked>
+                                    <label class="custom-control-label font-weight-bold" for="scope-full">
+                                        Analyze All Entries
+                                    </label>
+                                    <small class="d-block text-muted ml-4 mt-1">
+                                        Scan every record in the database — recommended for first-time or comprehensive analysis.
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="custom-control custom-radio">
+                                    <input class="custom-control-input" type="radio" id="scope-incremental"
+                                           name="scope" value="incremental"
+                                           <?= ($engine !== 'python') ? 'disabled' : '' ?>>
+                                    <label class="custom-control-label font-weight-bold" for="scope-incremental">
+                                        Analyze New Entries Only
+                                    </label>
+                                    <small class="d-block text-muted ml-4 mt-1">
+                                        Only inspect records added since the last analysis.
+                                        <?php if ($engine !== 'python'): ?>
+                                            <span class="text-warning d-block mt-1">
+                                                <i class="fas fa-info-circle"></i> Requires Python engine.
+                                            </span>
+                                        <?php endif; ?>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Action buttons -->
                 <div class="row mt-4 mb-2">

@@ -51,12 +51,11 @@ class Anomalies extends BaseClientController
             return redirect()->to(base_url('analysis/anomalies/results'));
         }
 
-        // Auto-configure: PHP engine + random selection of PHP-compatible algorithms,
-        // then redirect to results so the user doesn't have to step through the wizard.
-        $this->session->set('anomaly_engine', 'php');
-        $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
+        // Show engine selection page so the user can choose
+        $data = $this->baseData();
+        $data['engines'] = $this->anomalyModel->getEngines();
 
-        return redirect()->to(base_url('analysis/anomalies/results'));
+        return $this->renderWizardView('analysis/info', $data);
     }
 
     // -------------------------------------------------------------------------
@@ -113,10 +112,15 @@ class Anomalies extends BaseClientController
         if ($this->request->getGet('reset') === 'true') {
             $this->session->remove('anomaly_engine');
             $this->session->remove('anomaly_algorithms');
-            // Auto-apply fresh PHP defaults so the user lands on results immediately
             $this->session->set('anomaly_engine', 'php');
             $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
             return redirect()->to(base_url('analysis/anomalies/results'));
+        }
+
+        // ── Handle skip: auto-configure with PHP defaults (from landing page button)
+        if ($this->request->getGet('skip') === '1') {
+            $this->session->set('anomaly_engine', 'php');
+            $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
         }
 
         // ── Guard: must have engine configured (Step 1)
@@ -133,6 +137,11 @@ class Anomalies extends BaseClientController
         $selectedEngine = $this->session->get('anomaly_engine') ?? 'php';
         $selectedAlgs   = $this->session->get('anomaly_algorithms') ?? [];
 
+        // Read analysis scope from POST/GET — 'full' (all data) or 'incremental' (new only)
+        $scope = $this->request->getPost('scope')
+              ?? $this->request->getGet('scope')
+              ?? 'full';
+
         // ── Run detection via the appropriate engine
         // PHP engine: real detection methods via Mod_Anomalies (DB queries + PHP-ML)
         // Python engine: delegates Python-only algorithms to the ml-eaves-droid
@@ -143,7 +152,7 @@ class Anomalies extends BaseClientController
             $results = $this->anomalyModel->runPhpDetection($selectedAlgs, $userId);
         } else {
             // Python engine: dispatch Python-only algorithms to the FastAPI backend
-            $results = $this->anomalyModel->runPythonDetection($selectedAlgs, $userId);
+            $results = $this->anomalyModel->runPythonDetection($selectedAlgs, $userId, $scope);
         }
 
         // Resolve engine label for the view badge
@@ -157,9 +166,11 @@ class Anomalies extends BaseClientController
         $data['results']         = $results;
         $data['selected_engine'] = $selectedEngine;
         $data['engine_meta']     = $engineMeta;
-        $data['severity_map']    = $this->anomalyModel->getSeverityMap();
-        $data['severity_counts'] = $this->anomalyModel->getSeverityCounts($results);
-        $data['selected_algs']   = $selectedAlgs;
+        $data['severity_map']     = $this->anomalyModel->getSeverityMap();
+        $data['severity_counts']  = $this->anomalyModel->getSeverityCounts($results);
+        $data['selected_algs']    = $selectedAlgs;
+        $data['analysis_counts']  = $this->anomalyModel->getAnalysisCounts($userId);
+        $data['scope']            = $scope;
 
         return $this->renderWizardView('analysis/results', $data);
     }

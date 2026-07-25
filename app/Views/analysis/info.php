@@ -38,38 +38,6 @@
                 </p>
             </div>
 
-            <!-- Wizard Progress Bar -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card card-outline card-primary shadow-sm mb-0">
-                        <div class="card-body py-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <!-- Step 1 -->
-                                <div class="d-flex align-items-center flex-column" style="min-width:90px;">
-                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm"
-                                         style="width:42px;height:42px;font-weight:700;font-size:1.1rem; border: 2px solid #fff;">1</div>
-                                    <small class="mt-1 text-primary font-weight-bold">Engine</small>
-                                </div>
-                                <div class="flex-grow-1 border-top border-primary mx-3" style="height:3px;background:#007bff; opacity: 0.3;"></div>
-                                <!-- Step 2 -->
-                                <div class="d-flex align-items-center flex-column" style="min-width:90px;">
-                                    <div class="rounded-circle bg-light text-muted border d-flex align-items-center justify-content-center"
-                                         style="width:42px;height:42px;font-weight:700;font-size:1.1rem;">2</div>
-                                    <small class="mt-1 text-muted">Algorithms</small>
-                                </div>
-                                <div class="flex-grow-1 border-top border-secondary mx-3" style="height:3px;background:#dee2e6;"></div>
-                                <!-- Step 3 -->
-                                <div class="d-flex align-items-center flex-column" style="min-width:90px;">
-                                    <div class="rounded-circle bg-light text-muted border d-flex align-items-center justify-content-center"
-                                         style="width:42px;height:42px;font-weight:700;font-size:1.1rem;">3</div>
-                                    <small class="mt-1 text-muted">Results</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="row">
 
                 <!-- LEFT: Information Block -->
@@ -187,7 +155,7 @@
                             <!-- Buttons Section -->
                             <div class="d-flex justify-content-between align-items-center mt-4">
                                 <!-- Default settings skip option -->
-                                <a href="<?= base_url('analysis/anomalies/results') ?>"
+                                <a href="<?= base_url('analysis/anomalies/results?skip=1') ?>"
                                    class="btn btn-outline-success font-weight-bold"
                                    id="btn-skip-results">
                                     <i class="fas fa-magic mr-1"></i> Use Default &amp; Skip to Results

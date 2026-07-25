@@ -1397,32 +1397,16 @@ class Mod_Anomalies extends Model
     // =========================================================================
 
     /**
-     * Category-to-icon mapping shared by both PHP and Python result rendering.
-     * Maps the Python engine's lowercase category keys to display labels
-     * and Font Awesome icon classes used in the wizard results view.
-     */
-    private array $categoryMeta = [
-        'sms'         => ['label' => 'SMS',             'icon' => 'fas fa-sms'],
-        'contacts'    => ['label' => 'Contacts',        'icon' => 'fas fa-address-book'],
-        'call_logs'   => ['label' => 'Call Log',        'icon' => 'fas fa-phone'],
-        'locations'   => ['label' => 'Location',        'icon' => 'fas fa-map-marker-alt'],
-        'apps'        => ['label' => 'Installed Apps',  'icon' => 'fas fa-th-large'],
-        'files'       => ['label' => 'Files',           'icon' => 'fas fa-folder-open'],
-        'activity'    => ['label' => 'Activity',        'icon' => 'fas fa-heartbeat'],
-        'device_info' => ['label' => 'Device Info',     'icon' => 'fas fa-microchip'],
-    ];
-
-    /**
      * Reads the ml_python_* connection settings from the database.
      *
-     * Settings are stored in tbl_settings with class='ml' and keys:
+     * Settings stored in tbl_settings with class='ml':
      *   ml_python_host, ml_python_port, ml_python_endpoint
      *
      * @return array{host: string, port: int, endpoint: string, base_url: string}
      */
     protected function getPythonSettings(): array
     {
-        $host     = 'localhost';
+        $host     = 'ml-eaves-droid';
         $port     = 8000;
         $endpoint = '/api/analyze';
 
@@ -1434,20 +1418,15 @@ class Mod_Anomalies extends Model
                 ->getResultArray();
 
             foreach ($rows as $row) {
-                switch ($row['key']) {
-                    case 'ml_python_host':
-                        $host = $row['value'] ?: $host;
-                        break;
-                    case 'ml_python_port':
-                        $port = (int)($row['value'] ?: $port);
-                        break;
-                    case 'ml_python_endpoint':
-                        $endpoint = $row['value'] ?: $endpoint;
-                        break;
-                }
+                match ($row['key']) {
+                    'ml_python_host'     => $host = $row['value'] ?: $host,
+                    'ml_python_port'     => $port = (int)($row['value'] ?: $port),
+                    'ml_python_endpoint' => $endpoint = $row['value'] ?: $endpoint,
+                    default              => null,
+                };
             }
         } catch (\Throwable $e) {
-            // If settings table doesn't exist yet, use defaults
+            // Use defaults if settings table doesn't exist yet
         }
 
         $baseUrl = rtrim("http://{$host}:{$port}", '/');
@@ -1460,185 +1439,99 @@ class Mod_Anomalies extends Model
     }
 
     /**
-     * Normalises PHP-fetched data rows into the shape the Python FastAPI
-     * backend expects for each category.  Maps differing column names from
-     * the PHP database schema to the Python detector signatures.
+     * Returns analysis counts per category so the wizard UI can show
+     * "X new entries since last analysis" and offer full/incremental choices.
      *
-     * @param  string $category  Lowercase category key (sms, calls, …)
-     * @param  array  $rows      Raw rows from the PHP data fetcher
-     * @return array             Normalised rows ready for JSON encoding
-     */
-    protected function normaliseForPython(string $category, array $rows): array
-    {
-        return match ($category) {
-            'sms' => array_map(fn($r) => [
-                'body'      => $r['body'] ?? '',
-                'address'   => $r['address'] ?? '',
-                'timestamp' => $r['date'] ?? $r['timestamp'] ?? '',
-            ], $rows),
-
-            'contacts' => array_map(fn($r) => [
-                'display_name' => $r['display_name'] ?? '',
-                'phone_number' => $r['phone_number'] ?? '',
-            ], $rows),
-
-            'call_logs' => array_map(fn($r) => [
-                'duration'    => $r['duration_seconds'] ?? 0,
-                'direction'   => $r['type'] ?? $r['direction'] ?? 'unknown',
-                'timestamp'   => $r['date'] ?? $r['timestamp'] ?? '',
-                'network'     => $r['network_type'] ?? $r['network'] ?? '',
-                'number'      => $r['number'] ?? '',
-            ], $rows),
-
-            'locations' => array_map(fn($r) => [
-                'latitude'  => (float)($r['latitude'] ?? 0),
-                'longitude' => (float)($r['longitude'] ?? 0),
-                'timestamp' => $r['timestamp'] ?? '',
-            ], $rows),
-
-            'apps' => array_map(fn($r) => [
-                'app_name'     => $r['app_name'] ?? '',
-                'package_name' => $r['package_name'] ?? '',
-                'permissions'  => $r['permissions'] ?? [],
-            ], $rows),
-
-            'files' => array_map(fn($r) => [
-                'file_name' => $r['file_name'] ?? $r['name'] ?? '',
-                'timestamp' => $r['created_at'] ?? $r['timestamp'] ?? '',
-            ], $rows),
-
-            'activity' => array_map(fn($r) => [
-                'screen_on_minutes' => (int)($r['screen_on_minutes'] ?? 0),
-                'app_package'       => $r['app_package'] ?? '',
-                'timestamp'         => $r['timestamp'] ?? $r['date'] ?? '',
-            ], $rows),
-
-            'device_info' => array_map(fn($r) => [
-                'cpu'           => (float)($r['cpu_usage'] ?? $r['cpu'] ?? 0),
-                'ram'           => (float)($r['ram_usage'] ?? $r['ram'] ?? 0),
-                'battery_temp'  => (float)($r['battery_temperature'] ?? $r['battery_temp'] ?? 0),
-                'radio_active'  => (int)($r['active_radios'] ?? $r['radio_active'] ?? 0),
-                'timestamp'     => $r['timestamp'] ?? '',
-            ], $rows),
-
-            default => $rows,
-        };
-    }
-
-    /**
-     * Collects all user data needed for Python engine algorithms and returns
-     * it as a category-keyed array.  Each key maps to the normalised rows
-     * that the Python backend expects for that algorithm category.
+     * Reads from ml_analysis_tracking (updated by Python backend after each job)
+     * and compares against the current record count in each data table.
      *
-     * @param  int   $userId  Authenticated user ID
-     * @param  array $algs    Selected algorithm map from session
-     * @return array          ['sms' => [...], 'calls' => [...], …]
+     * @param  int  $userId
+     * @return array  ['sms' => ['total' => 1500, 'analyzed' => 500, 'new' => 1000], ...]
      */
-    protected function collectPythonData(int $userId, array $algs): array
+    public function getAnalysisCounts(int $userId): array
     {
-        $data = [];
+        if ($userId <= 0) {
+            return [];
+        }
 
-        // Build a set of categories that need fetching based on selected algos
-        $needed = [
-            'sms'         => isset($algs['sms']),
-            'contacts'    => isset($algs['contacts']),
-            'call_logs'   => isset($algs['call_logs']),
-            'locations'   => isset($algs['locations']),
-            'apps'        => isset($algs['apps']),
-            'files'       => isset($algs['files']),
-            'activity'    => isset($algs['activity']),
-            'device_info' => isset($algs['device_info']),
+        $categories = $this->getAlgorithmCategories();
+        $counts     = [];
+
+        // How many records each category's primary table has for this user
+        $tableMap = [
+            'sms'         => ['table' => 'tbl_sms',          'owner' => 'owner_id'],
+            'contacts'    => ['table' => 'tbl_contacts',     'owner' => 'owner_id'],
+            'call_logs'   => ['table' => 'tbl_logs',         'owner' => 'owner_id'],
+            'locations'   => ['table' => 'tbl_location',     'owner' => 'owner_id'],
+            'apps'        => ['table' => 'tbl_apps',         'owner' => 'owner_id'],
+            'files'       => ['table' => 'tbl_device_files', 'owner' => 'owner_id'],
+            'activity'    => ['table' => 'tbl_app_usage',    'owner' => 'owner_id'],
+            'device_info' => ['table' => 'tbl_device_profile','owner' => 'device_id'],
         ];
 
-        if ($needed['sms']) {
-            $data['sms'] = $this->normaliseForPython('sms', $this->fetchSms($userId));
+        // Fetch tracking rows for this user
+        $tracking = [];
+        try {
+            $rows = $this->db->table('ml_analysis_tracking')
+                ->where('user_id', $userId)
+                ->get()->getResultArray();
+            foreach ($rows as $r) {
+                $tracking[$r['category']] = $r;
+            }
+        } catch (\Throwable $e) {
+            // Table may not exist yet; return empty counts
         }
-        if ($needed['contacts']) {
-            $data['contacts'] = $this->normaliseForPython('contacts', $this->fetchContacts($userId));
-        }
-        if ($needed['call_logs']) {
-            $data['call_logs'] = $this->normaliseForPython('call_logs', $this->fetchCallLogs($userId));
-        }
-        if ($needed['locations']) {
-            $data['locations'] = $this->normaliseForPython('locations', $this->fetchLocations($userId));
-        }
-        if ($needed['apps']) {
-            $data['apps'] = $this->normaliseForPython('apps', $this->fetchApps($userId));
-        }
-        if ($needed['files']) {
-            $data['files'] = $this->normaliseForPython('files', $this->fetchFiles($userId));
-        }
-        if ($needed['activity']) {
-            $data['activity'] = [
-                'screen_time' => $this->normaliseForPython('activity', $this->fetchActivityScreenTime($userId)),
-                'switch_rate' => $this->normaliseForPython('activity', $this->fetchActivitySwitchRate($userId)),
+
+        foreach ($categories as $catKey => $cat) {
+            $info   = $tableMap[$catKey] ?? null;
+            $total  = 0;
+            $analyzed = (int)($tracking[$catKey]['total_analyzed'] ?? 0);
+
+            if ($info) {
+                try {
+                    $total = (int)$this->db->table($info['table'])
+                        ->where($info['owner'], $userId)
+                        ->countAllResults();
+                } catch (\Throwable $e) {
+                    $total = 0;
+                }
+            }
+
+            $counts[$catKey] = [
+                'label'    => $cat['label'],
+                'total'    => $total,
+                'analyzed' => $analyzed,
+                'new'      => max(0, $total - $analyzed),
             ];
         }
-        if ($needed['device_info']) {
-            $data['device_info'] = $this->normaliseForPython('device_info', $this->fetchDeviceInfo($userId, 'current'));
-        }
 
-        return $data;
+        return $counts;
     }
 
     /**
-     * Maps a Python backend result entry into the same associative array
-     * format that runPhpDetection() returns, so the wizard results view
-     * can render both engines identically.
+     * Runs the Python-backed anomaly detection pipeline (DB-direct mode).
      *
-     * @param  object|array $item  Single result from Python /api/analyze response
-     * @return array               Normalised PHP result row
+     * 1. PHP-compatible algorithms run locally via runPhpDetection().
+     * 2. Python-only algorithms:
+     *    a. Read ml_analysis_tracking to get last_analyzed_at cutoff.
+     *    b. INSERT a row in ml_jobs with scope + incremental_since.
+     *    c. POST a lightweight JSON to the FastAPI backend (no data blobs).
+     *    d. The Python backend queries MySQL directly, stores findings in
+     *       ml_results, and returns a status response.
+     *    e. SELECT FROM ml_results WHERE job_id = ? and map to view format.
+     * 3. If the backend is unreachable, show static demo fallbacks.
+     *
+     * @param  array $selectedAlgs  Session algorithms map
+     * @param  int   $userId        Authenticated user ID
+     * @param  string $scope        'full' | 'incremental' (from wizard UI)
+     * @return array                Merged anomaly findings
      */
-    protected function mapPythonResult(object|array $item): array
+    public function runPythonDetection(array $selectedAlgs, int $userId = 0,
+                                       string $scope = 'full'): array
     {
-        $item = (array)$item;
-        $cat  = $item['category'] ?? 'unknown';
-        $meta = $this->categoryMeta[$cat] ?? ['label' => ucfirst($cat), 'icon' => 'fas fa-question-circle'];
-
-        // Determine severity based on the Python score if not already set
-        $severity = $item['severity'] ?? 'Medium';
-        $score    = (float)($item['score'] ?? 0);
-
-        if ($severity === 'Medium' && $score > 0) {
-            if ($score >= 0.9)      $severity = 'High';
-            elseif ($score <= 0.6)  $severity = 'Low';
-        }
-
-        return [
-            'category'    => $meta['label'],
-            'icon'        => $meta['icon'],
-            'anomaly'     => $item['anomaly'] ?? 'No details provided',
-            'severity'    => $severity,
-            'algorithm'   => $item['algorithm'] ?? 'Unknown',
-            'timestamp'   => $item['timestamp'] ?? date('Y-m-d H:i:s'),
-            'engine_note' => sprintf(
-                'Python %s (score: %.4f)',
-                $item['algorithm_id'] ?? 'detector',
-                $score
-            ),
-        ];
-    }
-
-    /**
-     * Runs the Python-backed anomaly detection pipeline.
-     *
-     * Gathers user data per the selected algorithms, POSTs it as a JSON
-     * payload to the ml-eaves-droid FastAPI backend, and maps the response
-     * into the same result format as runPhpDetection().
-     *
-     * If the Python backend is unreachable or returns an error, falls back
-     * to the static demo data for each requested algorithm so the wizard
-     * never shows an empty error state to the user.
-     *
-     * @param  array $selectedAlgs  Session algorithms map: ['sms' => ['sms_bert'], ...]
-     * @param  int   $userId        Target user ID for data queries
-     * @return array                Merged anomaly findings (same shape as runPhpDetection)
-     */
-    public function runPythonDetection(array $selectedAlgs, int $userId = 0): array
-    {
-        // ── Split algorithms into PHP-compatible (run locally) and Python-only (remote) ──
-        $phpAlgs = [];    // compat = 'both' → run via PHP-ML
-        $pyOnly  = [];    // compat = 'python' → dispatch to FastAPI backend
+        // ── Split algorithms into PHP-compatible and Python-only ──
+        $phpAlgs = [];
+        $pyOnly  = [];
 
         foreach ($selectedAlgs as $category => $algList) {
             foreach ((array)$algList as $algId) {
@@ -1660,12 +1553,25 @@ class Mod_Anomalies extends Model
             $results = $this->runPhpDetection($phpAlgs, $userId);
         }
 
-        // ── Dispatch Python-only algorithms to the FastAPI backend ──
         if (empty($pyOnly)) {
             return $results;
         }
 
-        // Flatten to a simple list of algorithm IDs for the remote payload
+        // ── Determine incremental cutoff from ml_analysis_tracking ──
+        $incrementalSince = null;
+        if ($scope === 'incremental') {
+            try {
+                $tracking = $this->db->table('ml_analysis_tracking')
+                    ->select('MIN(last_analyzed_at) AS cutoff')
+                    ->where('user_id', $userId)
+                    ->get()->getRowArray();
+                $incrementalSince = $tracking['cutoff'] ?? null;
+            } catch (\Throwable $e) {
+                $incrementalSince = null;
+            }
+        }
+
+        // ── Create a job in ml_jobs ──
         $pyAlgIds = [];
         foreach ($pyOnly as $algList) {
             foreach ((array)$algList as $algId) {
@@ -1673,57 +1579,76 @@ class Mod_Anomalies extends Model
             }
         }
 
-        // Build payload from user data
-        $payload = [
-            'algorithms' => $pyAlgIds,
-            'user_id'    => $userId,
-            'data'       => $this->collectPythonData($userId, $selectedAlgs),
-        ];
-
-        // Send request to the Python backend
-        $settings = $this->getPythonSettings();
-        $url      = $settings['base_url'] . $settings['endpoint'];
-
-        $pyResults = [];
-
+        $jobId = 0;
         try {
-            $client = service('curlrequest', [
-                'timeout'         => 30,
-                'connect_timeout' => 5,
-                'http_errors'     => false,
-                'headers'         => [
-                    'Accept'       => 'application/json',
-                    'Content-Type' => 'application/json',
-                ],
+            $this->db->table('ml_jobs')->insert([
+                'user_id'           => $userId,
+                'engine'            => 'python',
+                'algorithms'        => json_encode($pyAlgIds),
+                'scope'             => $scope,
+                'incremental_since' => $incrementalSince,
+                'status'            => 'pending',
             ]);
-
-            $response = $client->post($url, [
-                'body' => json_encode($payload),
-            ]);
-
-            $statusCode = $response->getStatusCode();
-
-            if ($statusCode === 200) {
-                $body = $response->getBody();
-                $decoded = json_decode($body);
-
-                if ($decoded && isset($decoded->results) && is_array($decoded->results)) {
-                    foreach ($decoded->results as $item) {
-                        $pyResults[] = $this->mapPythonResult($item);
-                    }
-                }
-            } else {
-                log_message('error', sprintf(
-                    'Python ML backend returned HTTP %d: %s',
-                    $statusCode,
-                    $response->getBody() ?? '(empty)'
-                ));
-            }
+            $jobId = $this->db->insertID();
         } catch (\Throwable $e) {
-            log_message('error', 'Python ML backend unreachable: ' . $e->getMessage());
+            log_message('error', 'Failed to create ml_jobs row: ' . $e->getMessage());
+            // Fall through to static fallback
         }
 
-        // If the Python backend returned nothing, show static demo fallbacks
+        // ── POST lightweight request to Python backend ──
+        $pyResults = [];
+        if ($jobId > 0) {
+            $settings = $this->getPythonSettings();
+            $url      = $settings['base_url'] . $settings['endpoint'];
+
+            $payload = [
+                'job_id'            => $jobId,
+                'user_id'           => $userId,
+                'algorithms'        => $pyAlgIds,
+                'scope'             => $scope,
+                'incremental_since' => $incrementalSince,
+            ];
+
+            try {
+                $client = service('curlrequest', [
+                    'timeout'         => 120,
+                    'connect_timeout' => 5,
+                    'http_errors'     => false,
+                    'headers'         => [
+                        'Accept'       => 'application/json',
+                        'Content-Type' => 'application/json',
+                    ],
+                ]);
+
+                $response = $client->post($url, [
+                    'body' => json_encode($payload),
+                ]);
+
+                $statusCode = $response->getStatusCode();
+
+                if ($statusCode === 200) {
+                    $body = $response->getBody();
+                    $decoded = json_decode($body);
+
+                    if ($decoded && isset($decoded->status) && $decoded->status === 'completed') {
+                        // Python finished — read results from ml_results
+                        $pyResults = $this->fetchJobResults($jobId, $userId);
+                    } else {
+                        log_message('error', 'Python backend returned unexpected response: ' . ($body ?? '(empty)'));
+                    }
+                } else {
+                    log_message('error', sprintf(
+                        'Python backend HTTP %d: %s',
+                        $statusCode,
+                        $response->getBody() ?? '(empty)'
+                    ));
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Python backend unreachable: ' . $e->getMessage());
+            }
+        }
+
+        // ── Fallback if Python returned nothing ──
         if (empty($pyResults)) {
             foreach ($pyAlgIds as $algId) {
                 $fallback = $this->staticFallback($algId);
@@ -1738,14 +1663,78 @@ class Mod_Anomalies extends Model
             unset($r);
         }
 
-        // Merge PHP + Python results
+        // ── Merge PHP + Python results ──
         $results = array_merge($results, $pyResults);
 
-        // Sort by severity (High → Medium → Low) matching PHP engine behaviour
         $severityOrder = ['High' => 0, 'Medium' => 1, 'Low' => 2];
         usort($results, function ($a, $b) use ($severityOrder) {
             return ($severityOrder[$a['severity']] ?? 9) <=> ($severityOrder[$b['severity']] ?? 9);
         });
+
+        return $results;
+    }
+
+    /**
+     * Reads anomaly findings from ml_results for a completed job and maps
+     * them into the associative-array format the wizard view expects.
+     *
+     * @param  int  $jobId
+     * @param  int  $userId
+     * @return array
+     */
+    protected function fetchJobResults(int $jobId, int $userId): array
+    {
+        $iconMap = [
+            'sms'         => 'fas fa-sms',
+            'contacts'    => 'fas fa-address-book',
+            'call_logs'   => 'fas fa-phone',
+            'locations'   => 'fas fa-map-marker-alt',
+            'apps'        => 'fas fa-th-large',
+            'files'       => 'fas fa-folder-open',
+            'activity'    => 'fas fa-heartbeat',
+            'device_info' => 'fas fa-microchip',
+        ];
+
+        $labelMap = [
+            'sms'         => 'SMS',
+            'contacts'    => 'Contacts',
+            'call_logs'   => 'Call Log',
+            'locations'   => 'Location',
+            'apps'        => 'Installed Apps',
+            'files'       => 'Files',
+            'activity'    => 'Activity',
+            'device_info' => 'Device Info',
+        ];
+
+        try {
+            $rows = $this->db->table('ml_results')
+                ->where('job_id', $jobId)
+                ->where('user_id', $userId)
+                ->orderBy("FIELD(severity, 'High', 'Medium', 'Low')")
+                ->get()
+                ->getResultArray();
+        } catch (\Throwable $e) {
+            log_message('error', 'fetchJobResults failed: ' . $e->getMessage());
+            return [];
+        }
+
+        $results = [];
+        foreach ($rows as $r) {
+            $cat = $r['category'] ?? 'unknown';
+            $results[] = [
+                'category'    => $labelMap[$cat] ?? ucfirst($cat),
+                'icon'        => $iconMap[$cat] ?? 'fas fa-question-circle',
+                'anomaly'     => $r['anomaly'] ?? 'No details',
+                'severity'    => $r['severity'] ?? 'Medium',
+                'algorithm'   => $r['algorithm'] ?? 'Unknown',
+                'timestamp'   => $r['event_timestamp'] ?? $r['created_at'] ?? date('Y-m-d H:i:s'),
+                'engine_note' => sprintf(
+                    'Python %s (score: %.4f)',
+                    $r['algorithm_id'] ?? 'detector',
+                    (float)($r['score'] ?? 0)
+                ),
+            ];
+        }
 
         return $results;
     }
