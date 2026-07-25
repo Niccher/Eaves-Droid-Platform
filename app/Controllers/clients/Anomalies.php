@@ -134,15 +134,16 @@ class Anomalies extends BaseClientController
         $selectedAlgs   = $this->session->get('anomaly_algorithms') ?? [];
 
         // ── Run detection via the appropriate engine
-        // PHP engine: real detection methods (with DB + static fallbacks)
-        // Python engine: placeholder – will delegate to Docker microservice in future
+        // PHP engine: real detection methods via Mod_Anomalies (DB queries + PHP-ML)
+        // Python engine: delegates Python-only algorithms to the ml-eaves-droid
+        //               FastAPI backend; PHP-compatible algorithms still run locally.
         // $this->userId is set by BaseClientController::initController() from the authenticated user.
         $userId = $this->userId;
         if ($selectedEngine === 'php') {
             $results = $this->anomalyModel->runPhpDetection($selectedAlgs, $userId);
         } else {
-            // Python engine not yet connected; fall back to PHP pipeline with live data.
-            $results = $this->anomalyModel->runPhpDetection($selectedAlgs, $userId);
+            // Python engine: dispatch Python-only algorithms to the FastAPI backend
+            $results = $this->anomalyModel->runPythonDetection($selectedAlgs, $userId);
         }
 
         // Resolve engine label for the view badge

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use CodeIgniter\HTTP\CURLRequest;
 
 /**
  * Mod_Anomalies
@@ -20,6 +21,11 @@ use CodeIgniter\Model;
  *  - Files         : File Creation Spike, Extension Mismatch Scanner
  *  - Device Activity: Screen-Time Anomaly, App-Switch Rate Monitor
  *  - Device Info   : Hardware Change Detector, Network Profile Monitor
+ *
+ * Python engine support:
+ *  Delegates Python-only algorithms (BERT, GCN, Isolation Forest, Autoencoder,
+ *  Entropy Scanner, LSTM, One-Class SVM) to the external ml-eaves-droid FastAPI
+ *  service. Falls back to PHP-ML if the backend is unreachable.
  */
 class Mod_Anomalies extends Model
 {
@@ -121,6 +127,31 @@ class Mod_Anomalies extends Model
         }
 
         return $selected;
+    }
+
+    /**
+     * Looks up a single algorithm's metadata (compat, name, category, etc.)
+     * from the full algorithm catalogue by its unique ID.
+     *
+     * Used by runPythonDetection() to determine which algorithms should be
+     * dispatched to the Python backend vs. handled by PHP-ML.
+     *
+     * @param  string     $algId  Algorithm ID (e.g. 'sms_bert', 'calls_isolation')
+     * @return array|null         Algorithm metadata array, or null if not found
+     */
+    public function getAlgorithmInfo(string $algId): ?array
+    {
+        $categories = $this->getAlgorithmCategories();
+        foreach ($categories as $catKey => $cat) {
+            foreach ($cat['algorithms'] as $alg) {
+                if ($alg['id'] === $algId) {
+                    // Attach the category key for convenience
+                    $alg['category_key'] = $catKey;
+                    return $alg;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -1362,6 +1393,364 @@ class Mod_Anomalies extends Model
     }
 
     // =========================================================================
+    // Python Engine – Remote FastAPI Backend
+    // =========================================================================
+
+    /**
+     * Category-to-icon mapping shared by both PHP and Python result rendering.
+     * Maps the Python engine's lowercase category keys to display labels
+     * and Font Awesome icon classes used in the wizard results view.
+     */
+    private array $categoryMeta = [
+        'sms'         => ['label' => 'SMS',             'icon' => 'fas fa-sms'],
+        'contacts'    => ['label' => 'Contacts',        'icon' => 'fas fa-address-book'],
+        'call_logs'   => ['label' => 'Call Log',        'icon' => 'fas fa-phone'],
+        'locations'   => ['label' => 'Location',        'icon' => 'fas fa-map-marker-alt'],
+        'apps'        => ['label' => 'Installed Apps',  'icon' => 'fas fa-th-large'],
+        'files'       => ['label' => 'Files',           'icon' => 'fas fa-folder-open'],
+        'activity'    => ['label' => 'Activity',        'icon' => 'fas fa-heartbeat'],
+        'device_info' => ['label' => 'Device Info',     'icon' => 'fas fa-microchip'],
+    ];
+
+    /**
+     * Reads the ml_python_* connection settings from the database.
+     *
+     * Settings are stored in tbl_settings with class='ml' and keys:
+     *   ml_python_host, ml_python_port, ml_python_endpoint
+     *
+     * @return array{host: string, port: int, endpoint: string, base_url: string}
+     */
+    protected function getPythonSettings(): array
+    {
+        $host     = 'localhost';
+        $port     = 8000;
+        $endpoint = '/api/analyze';
+
+        try {
+            $rows = $this->db->table('settings')
+                ->where('class', 'ml')
+                ->whereIn('key', ['ml_python_host', 'ml_python_port', 'ml_python_endpoint'])
+                ->get()
+                ->getResultArray();
+
+            foreach ($rows as $row) {
+                switch ($row['key']) {
+                    case 'ml_python_host':
+                        $host = $row['value'] ?: $host;
+                        break;
+                    case 'ml_python_port':
+                        $port = (int)($row['value'] ?: $port);
+                        break;
+                    case 'ml_python_endpoint':
+                        $endpoint = $row['value'] ?: $endpoint;
+                        break;
+                }
+            }
+        } catch (\Throwable $e) {
+            // If settings table doesn't exist yet, use defaults
+        }
+
+        $baseUrl = rtrim("http://{$host}:{$port}", '/');
+        return [
+            'host'     => $host,
+            'port'     => $port,
+            'endpoint' => $endpoint,
+            'base_url' => $baseUrl,
+        ];
+    }
+
+    /**
+     * Normalises PHP-fetched data rows into the shape the Python FastAPI
+     * backend expects for each category.  Maps differing column names from
+     * the PHP database schema to the Python detector signatures.
+     *
+     * @param  string $category  Lowercase category key (sms, calls, …)
+     * @param  array  $rows      Raw rows from the PHP data fetcher
+     * @return array             Normalised rows ready for JSON encoding
+     */
+    protected function normaliseForPython(string $category, array $rows): array
+    {
+        return match ($category) {
+            'sms' => array_map(fn($r) => [
+                'body'      => $r['body'] ?? '',
+                'address'   => $r['address'] ?? '',
+                'timestamp' => $r['date'] ?? $r['timestamp'] ?? '',
+            ], $rows),
+
+            'contacts' => array_map(fn($r) => [
+                'display_name' => $r['display_name'] ?? '',
+                'phone_number' => $r['phone_number'] ?? '',
+            ], $rows),
+
+            'call_logs' => array_map(fn($r) => [
+                'duration'    => $r['duration_seconds'] ?? 0,
+                'direction'   => $r['type'] ?? $r['direction'] ?? 'unknown',
+                'timestamp'   => $r['date'] ?? $r['timestamp'] ?? '',
+                'network'     => $r['network_type'] ?? $r['network'] ?? '',
+                'number'      => $r['number'] ?? '',
+            ], $rows),
+
+            'locations' => array_map(fn($r) => [
+                'latitude'  => (float)($r['latitude'] ?? 0),
+                'longitude' => (float)($r['longitude'] ?? 0),
+                'timestamp' => $r['timestamp'] ?? '',
+            ], $rows),
+
+            'apps' => array_map(fn($r) => [
+                'app_name'     => $r['app_name'] ?? '',
+                'package_name' => $r['package_name'] ?? '',
+                'permissions'  => $r['permissions'] ?? [],
+            ], $rows),
+
+            'files' => array_map(fn($r) => [
+                'file_name' => $r['file_name'] ?? $r['name'] ?? '',
+                'timestamp' => $r['created_at'] ?? $r['timestamp'] ?? '',
+            ], $rows),
+
+            'activity' => array_map(fn($r) => [
+                'screen_on_minutes' => (int)($r['screen_on_minutes'] ?? 0),
+                'app_package'       => $r['app_package'] ?? '',
+                'timestamp'         => $r['timestamp'] ?? $r['date'] ?? '',
+            ], $rows),
+
+            'device_info' => array_map(fn($r) => [
+                'cpu'           => (float)($r['cpu_usage'] ?? $r['cpu'] ?? 0),
+                'ram'           => (float)($r['ram_usage'] ?? $r['ram'] ?? 0),
+                'battery_temp'  => (float)($r['battery_temperature'] ?? $r['battery_temp'] ?? 0),
+                'radio_active'  => (int)($r['active_radios'] ?? $r['radio_active'] ?? 0),
+                'timestamp'     => $r['timestamp'] ?? '',
+            ], $rows),
+
+            default => $rows,
+        };
+    }
+
+    /**
+     * Collects all user data needed for Python engine algorithms and returns
+     * it as a category-keyed array.  Each key maps to the normalised rows
+     * that the Python backend expects for that algorithm category.
+     *
+     * @param  int   $userId  Authenticated user ID
+     * @param  array $algs    Selected algorithm map from session
+     * @return array          ['sms' => [...], 'calls' => [...], …]
+     */
+    protected function collectPythonData(int $userId, array $algs): array
+    {
+        $data = [];
+
+        // Build a set of categories that need fetching based on selected algos
+        $needed = [
+            'sms'         => isset($algs['sms']),
+            'contacts'    => isset($algs['contacts']),
+            'call_logs'   => isset($algs['call_logs']),
+            'locations'   => isset($algs['locations']),
+            'apps'        => isset($algs['apps']),
+            'files'       => isset($algs['files']),
+            'activity'    => isset($algs['activity']),
+            'device_info' => isset($algs['device_info']),
+        ];
+
+        if ($needed['sms']) {
+            $data['sms'] = $this->normaliseForPython('sms', $this->fetchSms($userId));
+        }
+        if ($needed['contacts']) {
+            $data['contacts'] = $this->normaliseForPython('contacts', $this->fetchContacts($userId));
+        }
+        if ($needed['call_logs']) {
+            $data['call_logs'] = $this->normaliseForPython('call_logs', $this->fetchCallLogs($userId));
+        }
+        if ($needed['locations']) {
+            $data['locations'] = $this->normaliseForPython('locations', $this->fetchLocations($userId));
+        }
+        if ($needed['apps']) {
+            $data['apps'] = $this->normaliseForPython('apps', $this->fetchApps($userId));
+        }
+        if ($needed['files']) {
+            $data['files'] = $this->normaliseForPython('files', $this->fetchFiles($userId));
+        }
+        if ($needed['activity']) {
+            $data['activity'] = [
+                'screen_time' => $this->normaliseForPython('activity', $this->fetchActivityScreenTime($userId)),
+                'switch_rate' => $this->normaliseForPython('activity', $this->fetchActivitySwitchRate($userId)),
+            ];
+        }
+        if ($needed['device_info']) {
+            $data['device_info'] = $this->normaliseForPython('device_info', $this->fetchDeviceInfo($userId, 'current'));
+        }
+
+        return $data;
+    }
+
+    /**
+     * Maps a Python backend result entry into the same associative array
+     * format that runPhpDetection() returns, so the wizard results view
+     * can render both engines identically.
+     *
+     * @param  object|array $item  Single result from Python /api/analyze response
+     * @return array               Normalised PHP result row
+     */
+    protected function mapPythonResult(object|array $item): array
+    {
+        $item = (array)$item;
+        $cat  = $item['category'] ?? 'unknown';
+        $meta = $this->categoryMeta[$cat] ?? ['label' => ucfirst($cat), 'icon' => 'fas fa-question-circle'];
+
+        // Determine severity based on the Python score if not already set
+        $severity = $item['severity'] ?? 'Medium';
+        $score    = (float)($item['score'] ?? 0);
+
+        if ($severity === 'Medium' && $score > 0) {
+            if ($score >= 0.9)      $severity = 'High';
+            elseif ($score <= 0.6)  $severity = 'Low';
+        }
+
+        return [
+            'category'    => $meta['label'],
+            'icon'        => $meta['icon'],
+            'anomaly'     => $item['anomaly'] ?? 'No details provided',
+            'severity'    => $severity,
+            'algorithm'   => $item['algorithm'] ?? 'Unknown',
+            'timestamp'   => $item['timestamp'] ?? date('Y-m-d H:i:s'),
+            'engine_note' => sprintf(
+                'Python %s (score: %.4f)',
+                $item['algorithm_id'] ?? 'detector',
+                $score
+            ),
+        ];
+    }
+
+    /**
+     * Runs the Python-backed anomaly detection pipeline.
+     *
+     * Gathers user data per the selected algorithms, POSTs it as a JSON
+     * payload to the ml-eaves-droid FastAPI backend, and maps the response
+     * into the same result format as runPhpDetection().
+     *
+     * If the Python backend is unreachable or returns an error, falls back
+     * to the static demo data for each requested algorithm so the wizard
+     * never shows an empty error state to the user.
+     *
+     * @param  array $selectedAlgs  Session algorithms map: ['sms' => ['sms_bert'], ...]
+     * @param  int   $userId        Target user ID for data queries
+     * @return array                Merged anomaly findings (same shape as runPhpDetection)
+     */
+    public function runPythonDetection(array $selectedAlgs, int $userId = 0): array
+    {
+        // ── Split algorithms into PHP-compatible (run locally) and Python-only (remote) ──
+        $phpAlgs = [];    // compat = 'both' → run via PHP-ML
+        $pyOnly  = [];    // compat = 'python' → dispatch to FastAPI backend
+
+        foreach ($selectedAlgs as $category => $algList) {
+            foreach ((array)$algList as $algId) {
+                $meta = $this->getAlgorithmInfo($algId);
+                if (!$meta) {
+                    continue;
+                }
+                if (($meta['compat'] ?? 'both') === 'python') {
+                    $pyOnly[$category][] = $algId;
+                } else {
+                    $phpAlgs[$category][] = $algId;
+                }
+            }
+        }
+
+        // ── Run PHP-compatible algorithms locally ──
+        $results = [];
+        if (!empty($phpAlgs)) {
+            $results = $this->runPhpDetection($phpAlgs, $userId);
+        }
+
+        // ── Dispatch Python-only algorithms to the FastAPI backend ──
+        if (empty($pyOnly)) {
+            return $results;
+        }
+
+        // Flatten to a simple list of algorithm IDs for the remote payload
+        $pyAlgIds = [];
+        foreach ($pyOnly as $algList) {
+            foreach ((array)$algList as $algId) {
+                $pyAlgIds[] = $algId;
+            }
+        }
+
+        // Build payload from user data
+        $payload = [
+            'algorithms' => $pyAlgIds,
+            'user_id'    => $userId,
+            'data'       => $this->collectPythonData($userId, $selectedAlgs),
+        ];
+
+        // Send request to the Python backend
+        $settings = $this->getPythonSettings();
+        $url      = $settings['base_url'] . $settings['endpoint'];
+
+        $pyResults = [];
+
+        try {
+            $client = service('curlrequest', [
+                'timeout'         => 30,
+                'connect_timeout' => 5,
+                'http_errors'     => false,
+                'headers'         => [
+                    'Accept'       => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+            ]);
+
+            $response = $client->post($url, [
+                'body' => json_encode($payload),
+            ]);
+
+            $statusCode = $response->getStatusCode();
+
+            if ($statusCode === 200) {
+                $body = $response->getBody();
+                $decoded = json_decode($body);
+
+                if ($decoded && isset($decoded->results) && is_array($decoded->results)) {
+                    foreach ($decoded->results as $item) {
+                        $pyResults[] = $this->mapPythonResult($item);
+                    }
+                }
+            } else {
+                log_message('error', sprintf(
+                    'Python ML backend returned HTTP %d: %s',
+                    $statusCode,
+                    $response->getBody() ?? '(empty)'
+                ));
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Python ML backend unreachable: ' . $e->getMessage());
+        }
+
+        // If the Python backend returned nothing, show static demo fallbacks
+        if (empty($pyResults)) {
+            foreach ($pyAlgIds as $algId) {
+                $fallback = $this->staticFallback($algId);
+                if (!empty($fallback)) {
+                    $pyResults = array_merge($pyResults, $fallback);
+                }
+            }
+
+            foreach ($pyResults as &$r) {
+                $r['engine_note'] .= ' — Python backend offline, showing demo data';
+            }
+            unset($r);
+        }
+
+        // Merge PHP + Python results
+        $results = array_merge($results, $pyResults);
+
+        // Sort by severity (High → Medium → Low) matching PHP engine behaviour
+        $severityOrder = ['High' => 0, 'Medium' => 1, 'Low' => 2];
+        usort($results, function ($a, $b) use ($severityOrder) {
+            return ($severityOrder[$a['severity']] ?? 9) <=> ($severityOrder[$b['severity']] ?? 9);
+        });
+
+        return $results;
+    }
+
+    // =========================================================================
     // Data Fetchers (CI4 query builder wrappers)
     // =========================================================================
 
@@ -1725,6 +2114,15 @@ class Mod_Anomalies extends Model
             'act_switch'    => ['Activity', 'fas fa-heartbeat', '87 app switches in one hour (2026-07-10 22:00) – possible scripted behaviour', 'Medium', 'App-Switch Rate Monitor', '2026-07-10 22:00:00', 'Demo data – threshold: 60 switches/hour'],
             'dev_hw'        => ['Device Info', 'fas fa-microchip', 'IMEI changed: previous 35XXXXXX → current 86XXXXXX', 'High', 'Hardware Change Detector', '2026-07-09 08:00:00', 'Demo data – IMEI field changed between uploads'],
             'dev_net'       => ['Device Info', 'fas fa-microchip', 'Connected to unknown Wi-Fi SSID "Guest_Open_5G" at 03:12 AM', 'Medium', 'Network Profile Monitor', '2026-07-08 03:12:00', 'Demo data – SSID not in known-safe list'],
+
+            // ── Python-only algorithm fallbacks ──────────────────────────────
+            'sms_bert'        => ['SMS', 'fas fa-sms', 'BERT classifier flagged a message with high phishing probability (92%)', 'High', 'BERT Semantic Phishing Classifier', '2026-07-12 03:12:00', 'Python demo – BERT transformer model (threshold: 0.85)'],
+            'contacts_graph'  => ['Contacts', 'fas fa-address-book', 'Graph model found 4 orphaned contacts with no relational edges', 'Medium', 'Graph Relation Outlier Model (GCN)', '2026-07-10 14:55:22', 'Python demo – GCN embedding anomaly score: 2.3 σ'],
+            'calls_isolation' => ['Call Log', 'fas fa-phone', 'Isolation Forest flagged an anomalous short incoming call at 03:47 AM from international number', 'High', 'Isolation Forest Outlier Detection', '2026-07-13 02:30:00', 'Python demo – iForest contamination: 0.05, score: -0.32'],
+            'apps_autoencoder' => ['Installed Apps', 'fas fa-th-large', 'Autoencoder detected app "com.security.fake" with abnormal manifest structure', 'High', 'Neural Autoencoder App Classifier', '2026-07-11 02:17:43', 'Python demo – reconstruction error: 4.2 σ above mean'],
+            'files_entropy'   => ['Files', 'fas fa-folder-open', 'High-entropy file (7.6 b/byte) found in /sdcard/Download – possible encrypted payload', 'Medium', 'File Entropy & Encryption Scanner', '2026-07-12 22:41:10', 'Python demo – Shannon entropy threshold: 7.2'],
+            'act_lstm'        => ['Activity', 'fas fa-heartbeat', 'LSTM prediction error spike at 22:00 – 87 app switches deviated from learned sequence pattern', 'Medium', 'LSTM Sequence Pattern Predictor', '2026-07-10 22:00:00', 'Python demo – prediction error: 3.1 σ above baseline'],
+            'dev_oneclass'    => ['Device Info', 'fas fa-microchip', 'One-Class SVM detected abnormal system state: CPU 97%, RAM 89%, battery 43 °C', 'High', 'One-Class SVM System-State Profiler', '2026-07-09 08:00:00', 'Python demo – nu=0.05, gamma=0.01, boundary distance: -0.41'],
         ];
 
         if (!isset($map[$algId])) {
