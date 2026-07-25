@@ -111,6 +111,9 @@ class RegisterController extends Controller
 
             $db->table('user_profiles')->insert($profileData);
 
+            // Send welcome email
+            $this->sendWelcomeEmail($user);
+
             // Log registration action
             $logModel = new \App\Models\Mod_Log_User_Action();
             $logModel->logAction([
@@ -221,5 +224,78 @@ class RegisterController extends Controller
                 ]
             ],
         ];
+    }
+
+    /**
+     * Sends a welcome email after successful registration.
+     */
+    private function sendWelcomeEmail($user): void
+    {
+        try {
+            $emailAddr = $user->email ?? '';
+            if (!$emailAddr) return;
+
+            $db = \Config\Database::connect();
+            $smtp = [];
+            $rows = $db->table('settings')->where('class', 'notification')->get()->getResultArray();
+            foreach ($rows as $r) {
+                $smtp[$r['key']] = $r['value'];
+            }
+            if (empty($smtp['smtp_host'])) return;
+
+            $email = \Config\Services::email();
+            $email->initialize([
+                'protocol'   => 'smtp',
+                'SMTPHost'   => $smtp['smtp_host'],
+                'SMTPPort'   => $smtp['smtp_port'] ?? '587',
+                'SMTPUser'   => $smtp['smtp_user'] ?? '',
+                'SMTPPass'   => $smtp['smtp_pass'] ?? '',
+                'SMTPCrypto' => 'tls',
+                'mailType'   => 'html',
+            ]);
+            $email->setFrom($smtp['smtp_from_email'] ?? '', $smtp['smtp_from_name'] ?? 'Eaves Droid');
+            $email->setTo($emailAddr);
+            $email->setSubject('Welcome to Eaves Droid — Your Account Is Ready');
+            $email->setMessage('
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+<div style="background:#007bff;padding:25px;text-align:center;">
+<h1 style="color:#fff;margin:0;font-size:24px;">👋 Welcome to Eaves Droid</h1>
+</div>
+<div style="padding:25px;">
+<p style="color:#333;font-size:15px;line-height:1.6;">Hello <strong>' . htmlspecialchars($user->username ?? '') . '</strong>,</p>
+<p style="color:#333;font-size:15px;line-height:1.6;">Your account has been created successfully. Here are your account details:</p>
+<table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f8f9fa;border-radius:6px;">
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Email</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . htmlspecialchars($emailAddr) . '</td></tr>
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Username</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . htmlspecialchars($user->username ?? '') . '</td></tr>
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Password</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">Set during registration (not stored in plain text)</td></tr>
+<tr><td style="padding:10px 15px;font-weight:bold;color:#495057;">Status</td><td style="padding:10px 15px;"><span style="color:#28a745;font-weight:bold;">Active</span></td></tr>
+</table>
+<div style="background:#e8f4fd;border-left:4px solid #007bff;padding:15px;margin:20px 0;border-radius:4px;">
+<p style="margin:0 0 8px 0;color:#333;font-size:14px;font-weight:bold;">🚀 Getting Started</p>
+<ul style="margin:0;padding-left:18px;color:#333;font-size:14px;line-height:1.8;">
+<li><strong>Log in</strong> using your email and password</li>
+<li><strong>Generate an API token</strong> from your account settings to connect your Android device</li>
+<li><strong>Install the Eaves Droid app</strong> on your Android device and scan the token</li>
+<li><strong>Data collection</strong> begins automatically once the device is paired</li>
+</ul>
+</div>
+<div style="background:#fef3cd;border-left:4px solid #ffc107;padding:12px 15px;margin:15px 0;border-radius:4px;">
+<p style="margin:0;color:#856404;font-size:13px;"><strong>🔒 Security Tip:</strong> Never share your password or API tokens with anyone. Enable two-factor authentication in your security settings for added protection.</p>
+</div>
+<p style="color:#333;font-size:15px;line-height:1.6;">If you have any questions, refer to the documentation or contact support.</p>
+<p style="color:#333;font-size:15px;line-height:1.6;">Best regards,<br><strong>Eaves Droid Team</strong></p>
+</div>
+<div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">
+Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform
+</div>
+</div></body></html>');
+            $email->send();
+        } catch (\Exception $e) {
+            log_message('error', 'Welcome email failed: ' . $e->getMessage());
+        }
     }
 }

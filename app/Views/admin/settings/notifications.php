@@ -75,6 +75,7 @@
                             </div>
                             <div class="card-footer">
                                 <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save Settings</button>
+                                <button type="button" class="btn btn-outline-info ml-2" onclick="testEmail()"><i class="fas fa-envelope mr-1"></i> Test Email</button>
                             </div>
                         </form>
                     </div>
@@ -83,3 +84,43 @@
         </div>
     </section>
 </div>
+
+<script>
+function testEmail() {
+    Swal.fire({
+        title: 'Send Test Email',
+        input: 'email',
+        inputValue: '<?= htmlspecialchars($settings['smtp_from_email'] ?? '') ?>',
+        text: 'Enter the recipient email address:',
+        showCancelButton: true,
+        confirmButtonText: 'Send Test',
+        cancelButtonText: 'Cancel',
+        showLoaderOnConfirm: true,
+        preConfirm: (email) => {
+            return $.ajax({
+                url: '<?= base_url('admin/settings/notifications/test-email') ?>',
+                method: 'POST',
+                data: {
+                    email: email,
+                    smtp_host: $('input[name=\"smtp_host\"]').val(),
+                    smtp_port: $('input[name=\"smtp_port\"]').val(),
+                    smtp_user: $('input[name=\"smtp_user\"]').val(),
+                    smtp_pass: $('input[name=\"smtp_pass\"]').val(),
+                    smtp_from_email: $('input[name=\"smtp_from_email\"]').val(),
+                    smtp_from_name: $('input[name=\"smtp_from_name\"]').val()
+                },
+                dataType: 'json'
+            }).then(r => {
+                if (!r.success) throw new Error(r.message);
+                return r;
+            }).catch(err => {
+                Swal.showValidationMessage(err.responseJSON?.message || err.message || 'Request failed');
+            });
+        }
+    }).then(r => {
+        if (r.isConfirmed) {
+            Swal.fire({ icon: 'success', title: 'Sent', text: r.value.message, timer: 3000, showConfirmButton: false });
+        }
+    });
+}
+</script>

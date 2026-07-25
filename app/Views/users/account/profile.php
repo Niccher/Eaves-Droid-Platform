@@ -256,6 +256,10 @@
                                                             data-type="<?php echo $key; ?>">
                                                         <i class="fas fa-download mr-1"></i> Export
                                                     </button>
+                                                    <button class="btn btn-outline-<?php echo $et['color']; ?> btn-sm btn-block mt-1 email-export-btn"
+                                                            data-type="<?php echo $key; ?>">
+                                                        <i class="fas fa-envelope mr-1"></i> Email
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -282,6 +286,9 @@
                                                 </ul>
                                                 <button class="btn btn-primary btn-lg btn-block export-btn" data-type="all">
                                                     <i class="fas fa-file-archive mr-2"></i> Export All Data
+                                                </button>
+                                                <button class="btn btn-primary btn-sm btn-block mt-2 email-export-btn" data-type="all">
+                                                    <i class="fas fa-envelope mr-1"></i> Email All Data
                                                 </button>
                                             </div>
                                         </div>
@@ -641,6 +648,46 @@
                 btn.html(originalText);
                 btn.prop('disabled', false);
             }, 3000);
+        });
+
+        // ========================
+        // EXPORT VIA EMAIL
+        // ========================
+        $('.email-export-btn').on('click', function() {
+            const type = $(this).data('type');
+            const format = $('input[name="export-format"]:checked').val() || 'json';
+            const userEmail = '<?= htmlspecialchars($user_info['email'] ?? '') ?>';
+
+            Swal.fire({
+                title: 'Email Export',
+                input: 'email',
+                inputValue: userEmail,
+                text: 'Enter the email address to send the export to:',
+                showCancelButton: true,
+                confirmButtonText: 'Send',
+                cancelButtonText: 'Cancel',
+                showLoaderOnConfirm: true,
+                preConfirm: (email) => {
+                    return $.ajax({
+                        url: '<?= base_url("account/export-email") ?>',
+                        method: 'POST',
+                        data: {
+                            type: type,
+                            format: format,
+                            email: email
+                        }
+                    }).then(r => {
+                        if (!r.success) throw new Error(r.message);
+                        return r;
+                    }).catch(err => {
+                        Swal.showValidationMessage(err.responseJSON?.message || err.message || 'Request failed');
+                    });
+                }
+            }).then(r => {
+                if (r.isConfirmed) {
+                    Swal.fire({ icon: 'success', title: 'Sent', text: r.value.message, timer: 4000, showConfirmButton: false });
+                }
+            });
         });
 
         // ========================

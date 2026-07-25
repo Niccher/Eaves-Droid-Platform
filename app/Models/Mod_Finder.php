@@ -44,6 +44,20 @@ class Mod_Finder extends Model
     }
 
     /**
+     * Count records for a user in a given table, using the same owner/device filter.
+     */
+    public function cq(string $table, int $userId): int
+    {
+        try {
+            $result = $this->fq($table, $userId)->countAllResults();
+            return $result ?: 0;
+        } catch (\Exception $e) {
+            log_message('error', "count query error for {$table}: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Gets basic user data if logged in.
      *
      * @return array|false

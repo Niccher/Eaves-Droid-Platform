@@ -2,8 +2,11 @@
 
 namespace App\Controllers\admin;
 
+use CodeIgniter\API\ResponseTrait;
+
 class Settings extends BaseAdminController
 {
+    use ResponseTrait;
     public function index()
     {
         $db = $this->getDb();
@@ -63,20 +66,56 @@ class Settings extends BaseAdminController
             $updated++;
         }
 
-        $redirects = [
-            'app' => 'admin/settings',
-            'api' => 'admin/settings/api',
-            'security' => 'admin/settings/security',
-            'notification' => 'admin/settings/notifications',
-            'ml' => 'admin/ml',
-        ];
+        return redirect()->back()->with('message', "Updated {$updated} setting(s) for section '{$section}'.");
+    }
 
-        $this->logAdminAction('admin_settings_update', 'medium', true, [
-            'new_values' => json_encode(['section' => $section, 'updated_keys' => array_keys($post)]),
+    public function database()
+    {
+        $db = $this->getDb();
+
+        $tableStats = [];
+        $tables = $db->listTables();
+        foreach ($tables as $table) {
+            $status = $db->query("SHOW TABLE STATUS LIKE '{$table}'")->getRow();
+            $tableStats[] = [
+                'name' => $table,
+                'engine' => $status->Engine ?? '-',
+                'rows' => $status->Rows ?? 0,
+                'data_size' => $status->Data_length ?? 0,
+                'index_size' => $status->Index_length ?? 0,
+                'size' => ($status->Data_length ?? 0) + ($status->Index_length ?? 0),
+            ];
+        }
+
+        $logPath = WRITEPATH . 'logs';
+        $logSize = 0;
+        $logCount = 0;
+        if (is_dir($logPath)) {
+            foreach (glob($logPath . '/*') as $f) {
+                if (is_file($f)) { $logSize += filesize($f); $logCount++; }
+            }
+        }
+
+        $cachePath = WRITEPATH . 'cache';
+        $cacheSize = 0;
+        $cacheCount = 0;
+        if (is_dir($cachePath)) {
+            foreach (glob($cachePath . '/*') as $f) {
+                if (is_file($f)) { $cacheSize += filesize($f); $cacheCount++; }
+            }
+        }
+
+        return $this->renderView('admin/settings/database', [
+            'pag' => 'admin-db-info',
+            'db' => $db,
+            'table_stats' => $tableStats,
+            'total_tables' => count($tableStats),
+            'total_db_size' => array_sum(array_column($tableStats, 'size')),
+            'log_count' => $logCount,
+            'log_size' => $logSize,
+            'cache_count' => $cacheCount,
+            'cache_size' => $cacheSize,
         ]);
-
-        return redirect()->to($redirects[$section] ?? 'admin/settings')
-            ->with('message', "{$updated} settings saved.");
     }
 
     public function api_settings()
@@ -125,6 +164,88 @@ class Settings extends BaseAdminController
             'pag' => 'admin-settings-notifications',
             'settings' => $saved,
         ]);
+    }
+
+    public function testEmail()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->fail('Invalid request');
+        }
+
+        // Use POSTed values first, fall back to saved settings
+        $smtpHost = $this->request->getPost('smtp_host');
+        $smtpPort = $this->request->getPost('smtp_port');
+        $smtpUser = $this->request->getPost('smtp_user');
+        $smtpPass = $this->request->getPost('smtp_pass');
+        $smtpFromEmail = $this->request->getPost('smtp_from_email');
+        $smtpFromName = $this->request->getPost('smtp_from_name');
+        $recipient = $this->request->getPost('email');
+
+        // Fall back to DB if not provided via POST
+        if (!$smtpHost || !$smtpUser) {
+            $db = $this->getDb();
+            $settings = [];
+            $rows = $db->table('settings')->where('class', 'notification')->get()->getResultArray();
+            foreach ($rows as $r) {
+                $settings[$r['key']] = $r['value'];
+            }
+            $smtpHost = $smtpHost ?: ($settings['smtp_host'] ?? '');
+            $smtpPort = $smtpPort ?: ($settings['smtp_port'] ?? '587');
+            $smtpUser = $smtpUser ?: ($settings['smtp_user'] ?? '');
+            $smtpPass = $smtpPass ?: ($settings['smtp_pass'] ?? '');
+            $smtpFromEmail = $smtpFromEmail ?: ($settings['smtp_from_email'] ?? '');
+            $smtpFromName = $smtpFromName ?: ($settings['smtp_from_name'] ?? 'Eaves Droid');
+        }
+
+        $email = \Config\Services::email();
+        $email->initialize([
+            'protocol'   => 'smtp',
+            'SMTPHost'   => $smtpHost,
+            'SMTPPort'   => $smtpPort,
+            'SMTPUser'   => $smtpUser,
+            'SMTPPass'   => $smtpPass,
+            'SMTPCrypto' => 'tls',
+            'mailType'   => 'html',
+            'wordWrap'   => true,
+        ]);
+        $email->setFrom($smtpFromEmail, $smtpFromName);
+        $email->setTo($recipient);
+        $email->setSubject('Eaves Droid — SMTP Configuration Test');
+        $email->setMessage('
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+    <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <div style="background:#28a745;padding:20px;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:22px;">✅ SMTP Test Successful</h1>
+        </div>
+        <div style="padding:25px;">
+            <p style="color:#333;font-size:15px;line-height:1.6;">Hello,</p>
+            <p style="color:#333;font-size:15px;line-height:1.6;">This is a test email from <strong>Eaves Droid</strong>. If you received this message, your SMTP configuration is working correctly.</p>
+            <div style="background:#e8fce8;border-left:4px solid #28a745;padding:12px 15px;margin:15px 0;border-radius:4px;">
+                <p style="margin:0;color:#333;font-size:13px;line-height:1.5;">
+                    <strong>Server:</strong> ' . htmlspecialchars($smtpHost) . ':' . htmlspecialchars($smtpPort) . '<br>
+                    <strong>User:</strong> ' . htmlspecialchars($smtpUser) . '<br>
+                    <strong>From:</strong> ' . htmlspecialchars($smtpFromEmail) . ' (' . htmlspecialchars($smtpFromName) . ')<br>
+                    <strong>Sent at:</strong> ' . date('F j, Y, g:i A') . '
+                </p>
+            </div>
+            <p style="color:#333;font-size:15px;line-height:1.6;">Your platform is now ready to send emails to users.</p>
+            <p style="color:#333;font-size:15px;line-height:1.6;">Thank you,<br><strong>Eaves Droid Team</strong></p>
+        </div>
+        <div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">
+            Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform
+        </div>
+    </div>
+</body>
+</html>');
+
+        if ($email->send()) {
+            return $this->respond(['success' => true, 'message' => 'Test email sent successfully to ' . $recipient]);
+        } else {
+            return $this->respond(['success' => false, 'message' => 'Failed: ' . $email->printDebugger(['headers', 'subject', 'body'])]);
+        }
     }
 
     public function maintenance()

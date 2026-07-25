@@ -108,6 +108,14 @@
                             </a>
                         </li>
 
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/db_info'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-db-info') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-database"></i>
+                                <p>DB Info</p>
+                            </a>
+                        </li>
+
                         <?php
                             $reportPages = ['admin-reports', 'admin-reports-user-activity', 'admin-reports-data-usage', 'admin-reports-performance', 'admin-reports-generate'];
                             $isReportOpen = isset($pag) && in_array($pag, $reportPages);
@@ -308,7 +316,7 @@
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('admin/settings/maintenance'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag === 'admin-maintenance') ? 'active' : ''; ?>">
-                                        <i class="fas fa-tools nav-icon"></i>
+                                        <i class="nav-icon fas fa-tools"></i>
                                         <p>Maintenance</p>
                                     </a>
                                 </li>
