@@ -30,6 +30,16 @@
             </div>
             <?php endif; ?>
 
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">Edit User</h5>
+                        <p class="mb-0 small text-muted">Modify an existing user's profile details, contact information, account status, role assignments, and permission overrides.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Edit User: <?= htmlspecialchars($edit_user['username']) ?></h3>

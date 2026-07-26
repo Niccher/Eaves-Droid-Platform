@@ -17,6 +17,15 @@
 
     <section class="content">
         <div class="container-fluid">
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">Database Settings</h5>
+                        <p class="mb-0 small text-muted">Database connection parameters, query logging options, backup configuration, and maintenance routines for the application database.</p>
+                    </div>
+                </div>
+            </div>
             <div class="card card-outline card-primary shadow-sm">
                 <div class="card-header p-0">
                     <ul class="nav nav-pills ml-3 mt-2 mb-2" id="dbTabs" role="tablist">

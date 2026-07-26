@@ -17,6 +17,17 @@
 
     <section class="content">
         <div class="container-fluid">
+
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">Reports Dashboard</h5>
+                        <p class="mb-0 small text-muted">Generate and view system reports — data usage summaries, user activity logs, performance metrics, and custom report exports.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-info"><div class="inner"><h3><?= number_format($total_users) ?></h3><p>Total Users</p></div><div class="icon"><i class="fas fa-users"></i></div></div>

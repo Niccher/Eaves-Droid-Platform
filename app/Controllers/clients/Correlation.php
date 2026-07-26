@@ -12,6 +12,7 @@ use App\Models\Mod_Receive;
 use App\Models\Mod_Android;
 use App\Models\Mod_User;
 use App\Models\Mod_ML_Analyzer;
+use App\Models\Mod_Anomalies;
 
 class Correlation extends BaseClientController{
 
@@ -368,6 +369,7 @@ class Correlation extends BaseClientController{
             'totalSpending' => $totalSpending
         ];
         $data['ml_insight'] = Mod_ML_Analyzer::analyzeFinance($data['financial_data']['transactions']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['sms']);
 
         // Pagination
         $page = $this->request->getGet('page') ?? 1;
@@ -408,6 +410,7 @@ class Correlation extends BaseClientController{
         } else {
             $data['locations'] = $this->finderModel->get_location_history($this->userId);
         }
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['locations']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -453,6 +456,7 @@ class Correlation extends BaseClientController{
         $data['perPage'] = $perPage;
         $data['total'] = $total;
         $data['ml_insight'] = Mod_ML_Analyzer::analyzeSocial($data['social_graph']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['contacts']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -567,6 +571,7 @@ class Correlation extends BaseClientController{
 
         $data['mobility'] = $this->finderModel->get_mobility_aggregates($this->userId);
         $data['ml_insight'] = Mod_ML_Analyzer::analyzeMobility($data['mobility']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['activity']);
         
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -620,6 +625,7 @@ class Correlation extends BaseClientController{
         $data['audit_total'] = $total;
         
         $data['ml_insight'] = Mod_ML_Analyzer::analyzePrivacy($data['audit']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['apps', 'device_info']);
         
         $allScams = $this->finderModel->get_scam_sms_audit($this->userId);
         $scamPage = (int) ($this->request->getGet('scam_page') ?? 1);
@@ -649,6 +655,7 @@ class Correlation extends BaseClientController{
 
         $data['forecast'] = $this->finderModel->get_subscription_forecast($this->userId);
         $data['ml_insight'] = Mod_ML_Analyzer::analyzeSubscriptions($data['forecast']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['sms']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -667,6 +674,7 @@ class Correlation extends BaseClientController{
 
         $data['categories'] = $this->finderModel->get_app_category_dist($this->userId);
         $data['ml_insight'] = Mod_ML_Analyzer::analyzeApps($data['categories']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['apps']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -697,6 +705,7 @@ class Correlation extends BaseClientController{
         $data['perPage'] = $perPage;
         $data['total'] = $total;
         $data['ml_insight'] = Mod_ML_Analyzer::analyzeStorage($data['storage']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['files']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -725,6 +734,7 @@ class Correlation extends BaseClientController{
         $data['perPage'] = $perPage;
         $data['total'] = $total;
         $data['ml_insight'] = Mod_ML_Analyzer::analyzeSentimentML($data['sentiment']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['sms']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -744,11 +754,22 @@ class Correlation extends BaseClientController{
 
         $data['clusters'] = $this->finderModel->get_geospatial_clusters($this->userId);
         $data['ml_insight'] = Mod_ML_Analyzer::analyzeHotspots($data['clusters']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['locations']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
             . view('users/correlation/geospatial_hotspots', $data)
             . view('headers_footers/footer_users');
+    }
+
+    /**
+     * Fetches anomaly alerts from the most recent completed ml_job
+     * for the given category keys. Returns an empty array if none.
+     */
+    protected function getAnomalyAlertsForPage(array $categories): array
+    {
+        $model = new Mod_Anomalies();
+        return $model->getAnomalyAlerts($categories, $this->userId);
     }
 
     /**

@@ -32,6 +32,16 @@
             </div>
             <?php endif; ?>
 
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">User Data Overview</h5>
+                        <p class="mb-0 small text-muted">Comprehensive view of a single user's uploaded data, activity history, device associations, and anomaly detection results.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-md-12">
                     <div class="card">

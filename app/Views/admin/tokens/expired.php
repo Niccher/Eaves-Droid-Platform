@@ -15,12 +15,25 @@
     </section>
     <section class="content">
         <div class="container-fluid">
+
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">Expired Tokens</h5>
+                        <p class="mb-0 small text-muted">View and clean up expired or revoked API tokens. Tokens beyond their validity period are listed here for audit and purging.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
-                    <span class="badge badge-warning"><?= $total ?> expired tokens</span>
-                    <div class="card-tools">
-                        <a href="<?= base_url('admin/tokens') ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-arrow-left mr-1"></i> All Tokens</a>
+                    <div class="btn-group">
+                        <a href="<?= base_url('admin/tokens') ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-list mr-1"></i>All</a>
+                        <a href="<?= base_url('admin/tokens/expired') ?>" class="btn btn-sm btn-warning"><i class="fas fa-clock mr-1"></i>Expired</a>
+                        <a href="<?= base_url('admin/tokens/analytics') ?>" class="btn btn-sm btn-outline-info"><i class="fas fa-chart-bar mr-1"></i>Analytics</a>
                     </div>
+                    <div class="card-tools"><span class="badge badge-warning"><?= $total ?> expired tokens</span></div>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-striped" id="expiredTable">

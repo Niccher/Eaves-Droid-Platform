@@ -55,7 +55,7 @@ class Mod_Anomalies extends Model
                 'description' => 'Runs entirely within the PHP runtime. Suitable for most datasets. '
                                . 'Uses PHP‑ML for K-Means clustering, statistical z-score analysis, '
                                . 'and rule-based pattern matching.',
-                'default'     => true,
+                'default'     => false,
             ],
             [
                 'id'          => 'python',
@@ -71,6 +71,23 @@ class Mod_Anomalies extends Model
                 'description' => 'Offloads computation to an isolated Docker microservice. '
                                . 'Supports advanced models (LSTM, Autoencoders, DBSCAN) and larger datasets.',
                 'default'     => false,
+            ],
+            [
+                'id'          => 'both',
+                'label'       => 'Hybrid Engine (PHP + Python)',
+                'subtitle'    => 'Best of both worlds',
+                'icon'        => 'fas fa-project-diagram',
+                'icon_color'  => 'text-success',
+                'badges'      => [
+                    ['color' => 'success', 'icon' => 'fas fa-code',     'text' => 'PHP'],
+                    ['color' => 'warning', 'icon' => 'fab fa-python',   'text' => 'Python'],
+                    ['color' => 'primary', 'icon' => 'fas fa-cogs',     'text' => 'Auto-split'],
+                ],
+                'description' => 'Runs PHP‑compatible algorithms locally via PHP and Python‑only '
+                               . 'algorithms via the remote Docker backend — automatically. '
+                               . 'You get the speed of PHP for traditional stat/rule detectors '
+                               . 'and the power of scikit-learn/PyOD for deep learning models.',
+                'default'     => true,
             ],
         ];
     }
@@ -1547,16 +1564,6 @@ class Mod_Anomalies extends Model
             }
         }
 
-        // ── Run PHP-compatible algorithms locally ──
-        $results = [];
-        if (!empty($phpAlgs)) {
-            $results = $this->runPhpDetection($phpAlgs, $userId);
-        }
-
-        if (empty($pyOnly)) {
-            return $results;
-        }
-
         // ── Determine incremental cutoff from ml_analysis_tracking ──
         $incrementalSince = null;
         if ($scope === 'incremental') {
@@ -1571,33 +1578,56 @@ class Mod_Anomalies extends Model
             }
         }
 
-        // ── Create a job in ml_jobs ──
-        $pyAlgIds = [];
-        foreach ($pyOnly as $algList) {
+        // ── Collect all algorithm IDs ──
+        $allAlgIds = [];
+        foreach ($phpAlgs as $algList) {
             foreach ((array)$algList as $algId) {
-                $pyAlgIds[] = $algId;
+                $allAlgIds[] = $algId;
             }
         }
+        foreach ($pyOnly as $algList) {
+            foreach ((array)$algList as $algId) {
+                $allAlgIds[] = $algId;
+            }
+        }
+        $allAlgIds = array_values(array_unique($allAlgIds));
 
-        $jobId = 0;
+        // ── Determine engine label ──
+        $hasPhp   = !empty($phpAlgs);
+        $hasPy    = !empty($pyOnly);
+        $engine   = $hasPhp && $hasPy ? 'both' : ($hasPy ? 'python' : 'php');
+        $jobId    = 0;
+        $jobEntry = [
+            'user_id'    => $userId,
+            'engine'     => $engine,
+            'algorithms' => json_encode($allAlgIds),
+            'scope'      => $scope,
+            'status'     => 'running',
+        ];
         try {
-            $this->db->table('ml_jobs')->insert([
-                'user_id'           => $userId,
-                'engine'            => 'python',
-                'algorithms'        => json_encode($pyAlgIds),
-                'scope'             => $scope,
-                'incremental_since' => $incrementalSince,
-                'status'            => 'pending',
-            ]);
+            $this->ensureJobTrackingColumns();
+            $this->db->table('ml_jobs')->insert($jobEntry);
             $jobId = $this->db->insertID();
         } catch (\Throwable $e) {
             log_message('error', 'Failed to create ml_jobs row: ' . $e->getMessage());
-            // Fall through to static fallback
         }
 
-        // ── POST lightweight request to Python backend ──
+        // ── Run PHP-compatible algorithms locally ──
+        $results = [];
+        if ($hasPhp) {
+            $results = $this->runPhpDetection($phpAlgs, $userId);
+        }
+
+        // ── Handle Python-only algorithms ──
         $pyResults = [];
-        if ($jobId > 0) {
+        if ($hasPy && $jobId > 0) {
+            $pyAlgIds = [];
+            foreach ($pyOnly as $algList) {
+                foreach ((array)$algList as $algId) {
+                    $pyAlgIds[] = $algId;
+                }
+            }
+
             $settings = $this->getPythonSettings();
             $url      = $settings['base_url'] . $settings['endpoint'];
 
@@ -1632,6 +1662,12 @@ class Mod_Anomalies extends Model
 
                     if ($decoded && isset($decoded->status) && $decoded->status === 'completed') {
                         // Python finished — read results from ml_results
+                        $this->db->table('ml_jobs')
+                            ->where('id', $jobId)
+                            ->update([
+                                'status'       => 'completed',
+                                'completed_at' => date('Y-m-d H:i:s'),
+                            ]);
                         $pyResults = $this->fetchJobResults($jobId, $userId);
                     } else {
                         log_message('error', 'Python backend returned unexpected response: ' . ($body ?? '(empty)'));
@@ -1649,7 +1685,13 @@ class Mod_Anomalies extends Model
         }
 
         // ── Fallback if Python returned nothing ──
-        if (empty($pyResults)) {
+        if ($hasPy && empty($pyResults)) {
+            $pyAlgIds = [];
+            foreach ($pyOnly as $algList) {
+                foreach ((array)$algList as $algId) {
+                    $pyAlgIds[] = $algId;
+                }
+            }
             foreach ($pyAlgIds as $algId) {
                 $fallback = $this->staticFallback($algId);
                 if (!empty($fallback)) {
@@ -1661,6 +1703,16 @@ class Mod_Anomalies extends Model
                 $r['engine_note'] .= ' — Python backend offline, showing demo data';
             }
             unset($r);
+        }
+
+        // ── Mark job completed if PHP-only (no Python backend call) ──
+        if (!$hasPy && $jobId > 0) {
+            $this->db->table('ml_jobs')
+                ->where('id', $jobId)
+                ->update([
+                    'status'       => 'completed',
+                    'completed_at' => date('Y-m-d H:i:s'),
+                ]);
         }
 
         // ── Merge PHP + Python results ──
@@ -2135,10 +2187,223 @@ class Mod_Anomalies extends Model
     // =========================================================================
 
     /**
+     * Returns anomaly alert findings from the most recent completed job
+     * for the specified categories. Used to embed alert cards into
+     * the intelligence dashboard pages.
+     *
+     * @param  string[] $categoryKeys  Machine category keys (sms, contacts, locations, ...)
+     * @param  int      $userId
+     * @param  int      $limit         Max alerts to return
+     * @return array
+     */
+    public function getAnomalyAlerts(array $categoryKeys, int $userId, int $limit = 5): array
+    {
+        if ($userId <= 0 || empty($categoryKeys)) {
+            return [];
+        }
+
+        try {
+            $job = $this->db->table('ml_jobs')
+                ->where('user_id', $userId)
+                ->where('status', 'completed')
+                ->orderBy('created_at', 'DESC')
+                ->limit(1)
+                ->get()->getRowArray();
+
+            if (!$job) {
+                return [];
+            }
+
+            $rows = $this->db->table('ml_results')
+                ->where('job_id', $job['id'])
+                ->where('user_id', $userId)
+                ->whereIn('category', $categoryKeys)
+                ->orderBy("FIELD(severity, 'High', 'Medium', 'Low')")
+                ->limit($limit)
+                ->get()->getResultArray();
+
+            return $rows ?: [];
+        } catch (\Throwable $e) {
+            log_message('error', 'getAnomalyAlerts failed: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    // =========================================================================
+    // Admin configuration helpers
+    // =========================================================================
+
+    /**
+     * Reads anomaly detection settings from the DB settings table
+     * (class='anomaly'). Returns default engine and allowed algorithm list.
+     *
+     * @return array{default_engine: string, allowed_algorithms: string[]|null}
+     */
+    public function getAdminAnomalySettings(): array
+    {
+        $result = [
+            'default_engine'    => 'both',
+            'allowed_algorithms' => null, // null = all allowed
+        ];
+
+        try {
+            $rows = $this->db->table('settings')
+                ->where('class', 'anomaly')
+                ->get()->getResultArray();
+
+            foreach ($rows as $r) {
+                if ($r['key'] === 'default_engine') {
+                    $result['default_engine'] = $r['value'] ?: 'both';
+                }
+                if ($r['key'] === 'allowed_algorithms' && $r['value']) {
+                    $decoded = json_decode($r['value'], true);
+                    $result['allowed_algorithms'] = is_array($decoded) && !empty($decoded)
+                        ? $decoded
+                        : null;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Settings table may not exist; return defaults
+        }
+
+        return $result;
+    }
+
+    /**
+     * Returns the allowed algorithm IDs from admin config.
+     * Returns null if all algorithms are allowed.
+     *
+     * @return string[]|null
+     */
+    public function getAllowedAlgorithmIds(): ?array
+    {
+        $settings = $this->getAdminAnomalySettings();
+        return $settings['allowed_algorithms'];
+    }
+
+    /**
+     * Returns the admin-configured default engine.
+     *
+     * @return string 'php' | 'python' | 'both'
+     */
+    public function getDefaultEngine(): string
+    {
+        $settings = $this->getAdminAnomalySettings();
+        return $settings['default_engine'];
+    }
+
+    /**
+     * Filters algorithm categories to only include algorithms
+     * present in the allowed list. If allowed list is null/empty,
+     * returns all algorithms unchanged.
+     *
+     * @param  array      $categories Full category tree from getAlgorithmCategories()
+     * @param  string[]|null $allowedIds Algorithm IDs to keep, or null for all
+     * @return array
+     */
+    public function filterAllowedAlgorithms(array $categories, ?array $allowedIds): array
+    {
+        if ($allowedIds === null || empty($allowedIds)) {
+            return $categories;
+        }
+
+        $allowedSet = array_flip($allowedIds);
+        $filtered = [];
+
+        foreach ($categories as $catKey => $cat) {
+            $filteredAlgs = array_values(array_filter(
+                $cat['algorithms'],
+                fn($a) => isset($allowedSet[$a['id']])
+            ));
+
+            if (!empty($filteredAlgs)) {
+                $cat['algorithms'] = $filteredAlgs;
+                $filtered[$catKey] = $cat;
+            }
+        }
+
+        return $filtered;
+    }
+
+    /**
      * Returns severity-to-badge mapping for the results view.
      *
      * @return array<string, array{badge: string, icon: string}>
      */
+    // =========================================================================
+    // Job history
+    // =========================================================================
+
+    /**
+     * Ensures the ml_jobs table has columns needed for tracking run timing.
+     */
+    protected function ensureJobTrackingColumns(): void
+    {
+        try {
+            $this->db->query("ALTER TABLE ml_jobs ADD COLUMN completed_at DATETIME DEFAULT NULL AFTER status");
+        } catch (\Throwable $e) {
+            // Column already exists
+        }
+    }
+
+    /**
+     * Returns anomaly detection run history (all users, for admin view).
+     *
+     * @param  int  $limit
+     * @return array
+     */
+    public function getJobHistory(int $limit = 50): array
+    {
+        $this->ensureJobTrackingColumns();
+
+        try {
+            $rows = $this->db->table('ml_jobs j')
+                ->select("
+                    j.id, j.user_id, j.engine, j.algorithms, j.scope,
+                    j.status, j.created_at, j.completed_at,
+                    u.username AS owner_name,
+                    TIMESTAMPDIFF(SECOND, j.created_at, COALESCE(j.completed_at, j.created_at)) AS time_taken
+                ")
+                ->join('users u', 'u.id = j.user_id', 'left')
+                ->orderBy('j.created_at', 'DESC')
+                ->limit($limit)
+                ->get()
+                ->getResultArray();
+
+            foreach ($rows as &$row) {
+                $algIds = json_decode($row['algorithms'] ?? '[]', true);
+                $algNames = [];
+                foreach ((array)$algIds as $aid) {
+                    $algNames[] = $this->algorithmDisplayName($aid);
+                }
+                $row['algorithm_names'] = array_filter($algNames);
+                $row['algorithm_count'] = count($algIds);
+            }
+            unset($row);
+
+            return $rows;
+        } catch (\Throwable $e) {
+            log_message('error', 'getJobHistory failed: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Returns a human-readable display name for an algorithm ID.
+     */
+    protected function algorithmDisplayName(string $algorithmId): ?string
+    {
+        $categories = $this->getAlgorithmCategories();
+        foreach ($categories as $cat) {
+            foreach ($cat['algorithms'] as $alg) {
+                if ($alg['id'] === $algorithmId) {
+                    return $alg['name'];
+                }
+            }
+        }
+        return null;
+    }
+
     public function getSeverityMap(): array
     {
         return [

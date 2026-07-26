@@ -16,6 +16,17 @@
 
     <section class="content">
         <div class="container-fluid">
+
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">User Activity Report</h5>
+                        <p class="mb-0 small text-muted">Detailed log of user actions — logins, page views, feature usage, and administrative operations with timestamps and IP addresses.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="input-group input-group-lg" style="max-width: 400px;">

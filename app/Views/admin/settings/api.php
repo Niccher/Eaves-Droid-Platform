@@ -25,6 +25,16 @@
             </div>
             <?php endif; ?>
 
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">API Settings</h5>
+                        <p class="mb-0 small text-muted">Manage API authentication tokens, rate limiting thresholds, CORS origins, and integration endpoints for external services connecting to the platform.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-md-3">
                     <div class="card">

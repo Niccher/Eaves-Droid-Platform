@@ -9,7 +9,7 @@
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Admin</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/logs') ?>">Logs</a></li>
-                        <li class="breadcrumb-item"><a href="<?= base_url('admin/logs/errors') ?>">Errors</a></li>
+                        <li class="breadcrumb-item"><a href="<?= base_url('admin/logs/php-errors') ?>">PHP Errors</a></li>
                         <li class="breadcrumb-item active"><?= htmlspecialchars($filename) ?></li>
                     </ol>
                 </div>
@@ -23,7 +23,7 @@
                 <div class="card-header">
                     <span class="badge badge-info"><?= number_format($total_lines) ?> lines</span>
                     <div class="card-tools">
-                        <a href="<?= base_url('admin/logs/errors') ?>" class="btn btn-sm btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+                        <a href="<?= base_url('admin/logs/php-errors') ?>" class="btn btn-sm btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
                     </div>
                 </div>
                 <div class="card-body p-0" style="max-height: 70vh; overflow-y: auto;">

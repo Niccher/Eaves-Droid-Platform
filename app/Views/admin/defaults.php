@@ -21,6 +21,17 @@ $isChecked = fn($key) => filter_var($defConfig[$key] ?? false, FILTER_VALIDATE_B
 
     <section class="content">
         <div class="container-fluid">
+
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">Application Defaults</h5>
+                        <p class="mb-0 small text-muted">Set default values and fallback configurations for new users — default device settings, analysis preferences, notification presets, and UI defaults.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card card-primary card-outline">
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-sliders-h mr-2"></i>Default Configuration</h3>

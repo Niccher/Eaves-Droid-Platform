@@ -25,28 +25,27 @@
             </div>
             <?php endif; ?>
 
-            <div class="callout callout-warning bg-light shadow-sm border-left-warning mb-4">
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
                 <div class="d-flex align-items-center">
-                    <i class="fas fa-exclamation-triangle text-warning fa-2x mr-3"></i>
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
                     <div>
-                        <h5 class="text-warning font-weight-bold mb-1">Maintenance Mode Access Blocks</h5>
-                        <p class="mb-0 small text-muted">
-                            Every time a non-admin user is blocked from accessing the system during maintenance mode, the attempt is logged here.
-                            Total blocked attempts recorded: <strong><?= number_format($total) ?></strong>.
-                        </p>
+                        <h5 class="text-info font-weight-bold mb-1">Maintenance Block Logs</h5>
+                        <p class="mb-0 small text-muted">Non-admin users blocked from accessing the system during maintenance mode. Each entry records the attempted URL, IP address, and whether the visitor was authenticated.</p>
                     </div>
                 </div>
             </div>
 
-            <div class="card card-outline card-warning shadow-sm">
+            <div class="card card-outline card-secondary shadow-sm">
                 <div class="card-header">
                     <div class="btn-group">
-                        <a href="<?= base_url('admin/logs') ?>" class="btn btn-sm btn-outline-primary">All</a>
-                        <a href="<?= base_url('admin/logs/access') ?>" class="btn btn-sm btn-outline-primary">Access</a>
-                        <a href="<?= base_url('admin/logs/errors') ?>" class="btn btn-sm btn-outline-danger">Errors</a>
-                        <a href="<?= base_url('admin/logs/api') ?>" class="btn btn-sm btn-outline-info">API</a>
-                        <a href="<?= base_url('admin/logs/fcm') ?>" class="btn btn-sm btn-outline-info">FCM</a>
-                        <a href="<?= base_url('admin/logs/maintenance') ?>" class="btn btn-sm btn-warning">Maintenance Blocks</a>
+                        <a href="<?= base_url('admin/logs') ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-list mr-1"></i>All</a>
+                        <a href="<?= base_url('admin/logs/access') ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-sign-in-alt mr-1"></i>Access</a>
+                        <a href="<?= base_url('admin/logs/errors') ?>" class="btn btn-sm btn-outline-danger"><i class="fas fa-exclamation-triangle mr-1"></i>Errors</a>
+                        <a href="<?= base_url('admin/logs/php-errors') ?>" class="btn btn-sm btn-outline-secondary"><i class="fas fa-file-alt mr-1"></i>PHP Errors</a>
+                        <a href="<?= base_url('admin/logs/api') ?>" class="btn btn-sm btn-outline-info"><i class="fas fa-code mr-1"></i>API</a>
+                        <a href="<?= base_url('admin/logs/fcm') ?>" class="btn btn-sm btn-outline-info"><i class="fas fa-fire mr-1"></i>FCM</a>
+                        <a href="<?= base_url('admin/logs/maintenance') ?>" class="btn btn-sm btn-warning"><i class="fas fa-shield-alt mr-1"></i>Maintenance</a>
+                        <a href="<?= base_url('admin/logs/engine') ?>" class="btn btn-sm btn-outline-secondary"><i class="fas fa-robot mr-1"></i>Engine</a>
                     </div>
                     <div class="card-tools">
                         <form method="post" action="<?= base_url('admin/logs/clear') ?>" style="display:inline">

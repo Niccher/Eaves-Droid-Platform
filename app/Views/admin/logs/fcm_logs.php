@@ -20,13 +20,10 @@
         <div class="container-fluid">
             <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
                 <div class="d-flex align-items-center">
-                    <i class="fas fa-fire text-info fa-2x mr-3"></i>
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
                     <div>
-                        <h5 class="text-info font-weight-bold mb-1">Firebase Cloud Messaging</h5>
-                        <p class="mb-0 small text-muted">
-                            Remote commands sent to Android devices via FCM. Each entry shows the command, target device, and the FCM API response.
-                            Total commands sent: <strong><?= number_format($total) ?></strong>.
-                        </p>
+                        <h5 class="text-info font-weight-bold mb-1">Firebase Cloud Messaging Logs</h5>
+                        <p class="mb-0 small text-muted">Remote commands dispatched to Android devices via Firebase Cloud Messaging. Each entry shows the command, target device, and delivery status.</p>
                     </div>
                 </div>
             </div>
@@ -34,12 +31,14 @@
             <div class="card card-outline card-info shadow-sm">
                 <div class="card-header">
                     <div class="btn-group">
-                        <a href="<?= base_url('admin/logs') ?>" class="btn btn-sm btn-outline-primary">All</a>
-                        <a href="<?= base_url('admin/logs/access') ?>" class="btn btn-sm btn-outline-primary">Access</a>
-                        <a href="<?= base_url('admin/logs/errors') ?>" class="btn btn-sm btn-outline-danger">Errors</a>
-                        <a href="<?= base_url('admin/logs/api') ?>" class="btn btn-sm btn-outline-info">API</a>
-                        <a href="<?= base_url('admin/logs/maintenance') ?>" class="btn btn-sm btn-outline-warning">Maintenance</a>
-                        <a href="<?= base_url('admin/logs/fcm') ?>" class="btn btn-sm btn-info">FCM</a>
+                        <a href="<?= base_url('admin/logs') ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-list mr-1"></i>All</a>
+                        <a href="<?= base_url('admin/logs/access') ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-sign-in-alt mr-1"></i>Access</a>
+                        <a href="<?= base_url('admin/logs/errors') ?>" class="btn btn-sm btn-outline-danger"><i class="fas fa-exclamation-triangle mr-1"></i>Errors</a>
+                        <a href="<?= base_url('admin/logs/php-errors') ?>" class="btn btn-sm btn-outline-secondary"><i class="fas fa-file-alt mr-1"></i>PHP Errors</a>
+                        <a href="<?= base_url('admin/logs/api') ?>" class="btn btn-sm btn-outline-info"><i class="fas fa-code mr-1"></i>API</a>
+                        <a href="<?= base_url('admin/logs/fcm') ?>" class="btn btn-sm btn-info"><i class="fas fa-fire mr-1"></i>FCM</a>
+                        <a href="<?= base_url('admin/logs/maintenance') ?>" class="btn btn-sm btn-outline-warning"><i class="fas fa-shield-alt mr-1"></i>Maintenance</a>
+                        <a href="<?= base_url('admin/logs/engine') ?>" class="btn btn-sm btn-outline-secondary"><i class="fas fa-robot mr-1"></i>Engine</a>
                     </div>
                     <div class="card-tools">
                         <span class="badge badge-info p-2"><i class="fas fa-fire mr-1"></i> <?= number_format($total) ?> commands</span>

@@ -47,6 +47,8 @@
             </div>
         </section>
 
+<?= view('analysis/anomaly_alert_card', ['anomaly_alerts' => $anomaly_alerts ?? []]) ?>
+
         <!-- Main content -->
         <section class="content">
             <div class="container-fluid">

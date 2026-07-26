@@ -52,6 +52,12 @@ abstract class BaseController extends Controller
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);
 
+        // cleanup settings rows with invalid type values (fallback in case pre_system event couldn't connect)
+        try {
+            \Config\Database::connect()->table('settings')->where('type', 'json')->delete();
+        } catch (\Throwable $e) {
+        }
+
         // Preload any models, libraries, etc, here.
 
 //        // E.g.: $this->session = \Config\Services::session();

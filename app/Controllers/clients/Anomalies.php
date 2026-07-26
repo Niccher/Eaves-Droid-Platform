@@ -46,6 +46,13 @@ class Anomalies extends BaseClientController
      */
     public function index()
     {
+        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
+
+        // If admin has locked the engine, skip selection — go to algorithms
+        if ($adminSettings['default_engine'] !== 'both') {
+            return redirect()->to(base_url('analysis/anomalies/algorithms'));
+        }
+
         // If already configured, go straight to results
         if ($this->session->has('anomaly_engine') && $this->session->has('anomaly_algorithms')) {
             return redirect()->to(base_url('analysis/anomalies/results'));
@@ -71,18 +78,29 @@ class Anomalies extends BaseClientController
      */
     public function algorithms()
     {
-        $engine = $this->request->getGet('engine');
-        if ($engine) {
-            $this->session->set('anomaly_engine', $engine);
-        }
+        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
 
-        // If no engine in URL or Session, redirect to Step 1
-        if (!$this->session->has('anomaly_engine')) {
-            return redirect()->to(base_url('analysis/anomalies'));
+        // Resolve effective engine: admin config takes precedence
+        if ($adminSettings['default_engine'] === 'both') {
+            $engine = $this->session->get('anomaly_engine') ?? 'php';
+        } else {
+            $engine = $adminSettings['default_engine'];
+        }
+        $this->session->set('anomaly_engine', $engine);
+
+        $categories = $this->anomalyModel->getAlgorithmCategories();
+
+        // Filter algorithms by admin config
+        if ($adminSettings['allowed_algorithms'] !== null) {
+            $categories = $this->anomalyModel->filterAllowedAlgorithms(
+                $categories,
+                $adminSettings['allowed_algorithms']
+            );
         }
 
         $data = $this->baseData();
-        $data['categories'] = $this->anomalyModel->getAlgorithmCategories();
+        $data['categories'] = $categories;
+        $data['engine'] = $engine;
 
         return $this->renderWizardView('analysis/select_algorithms', $data);
     }
@@ -137,6 +155,28 @@ class Anomalies extends BaseClientController
         $selectedEngine = $this->session->get('anomaly_engine') ?? 'php';
         $selectedAlgs   = $this->session->get('anomaly_algorithms') ?? [];
 
+        // Filter selected algorithms against admin config
+        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
+        if ($adminSettings['allowed_algorithms'] !== null) {
+            foreach ($selectedAlgs as $catKey => $algList) {
+                $selectedAlgs[$catKey] = array_values(array_intersect(
+                    (array)$algList,
+                    $adminSettings['allowed_algorithms']
+                ));
+                if (empty($selectedAlgs[$catKey])) {
+                    unset($selectedAlgs[$catKey]);
+                }
+            }
+        }
+
+        // Resolve engine based on admin config and session
+        if ($adminSettings['default_engine'] === 'both') {
+            $effectiveEngine = $selectedEngine;
+        } else {
+            $effectiveEngine = $adminSettings['default_engine'];
+            $this->session->set('anomaly_engine', $effectiveEngine);
+        }
+
         // Read analysis scope from POST/GET — 'full' (all data) or 'incremental' (new only)
         $scope = $this->request->getPost('scope')
               ?? $this->request->getGet('scope')
@@ -148,7 +188,7 @@ class Anomalies extends BaseClientController
         //               FastAPI backend; PHP-compatible algorithms still run locally.
         // $this->userId is set by BaseClientController::initController() from the authenticated user.
         $userId = $this->userId;
-        if ($selectedEngine === 'php') {
+        if ($effectiveEngine === 'php') {
             $results = $this->anomalyModel->runPhpDetection($selectedAlgs, $userId);
         } else {
             // Python engine: dispatch Python-only algorithms to the FastAPI backend

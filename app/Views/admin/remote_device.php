@@ -17,6 +17,17 @@
 
     <section class="content">
         <div class="container-fluid">
+
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">Remote Device Console</h5>
+                        <p class="mb-0 small text-muted">Send commands to connected Android devices remotely — trigger data syncs, configure settings, push notifications, and view device status.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card card-info shadow-sm">
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-users mr-2"></i>Target Selection</h3>
@@ -109,7 +120,7 @@
 
                 <!-- DEVICE MANAGEMENT -->
                 <div class="tab-pane fade" id="tab-mgmt">
-                    <div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i><strong>Caution:</strong> These commands make permanent changes. Confirm each action.</div>
+                    <div class="alert alert-info"><i class="fas fa-info-circle mr-2"></i><strong>Note:</strong> These commands make permanent changes. Confirm each action before proceeding.</div>
                     <div class="row">
                         <div class="col-lg-4 mb-4">
                             <div class="card h-100 border border-warning">
@@ -302,8 +313,8 @@
 
                 <!-- PERMISSIONS -->
                 <div class="tab-pane fade" id="tab-perms">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
                         <strong>Upload Permissions:</strong> Revoking a permission stops the device from uploading that data type. The app retains on-device access. This cannot be undone automatically — permissions must be re-granted on the device.
                     </div>
                     <div class="row">

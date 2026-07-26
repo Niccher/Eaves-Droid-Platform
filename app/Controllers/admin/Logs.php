@@ -2,6 +2,8 @@
 
 namespace App\Controllers\admin;
 
+use App\Models\Mod_Anomalies;
+
 class Logs extends BaseAdminController
 {
     public function index()
@@ -68,12 +70,21 @@ class Logs extends BaseAdminController
             ->get()
             ->getResultArray();
 
+        return $this->renderView('admin/logs/error_logs', [
+            'pag' => 'admin-error-logs',
+            'logs' => $logs,
+            'total' => count($logs),
+        ]);
+    }
+
+    public function php_error_logs()
+    {
         $errorFiles = [];
         $logPath = WRITEPATH . 'logs';
         if (is_dir($logPath)) {
             $files = glob($logPath . '/log-*.log');
             rsort($files);
-            foreach (array_slice($files, 0, 10) as $file) {
+            foreach (array_slice($files, 0, 50) as $file) {
                 $basename = basename($file);
                 $size = filesize($file);
                 $lines = $size > 0 ? count(file($file)) : 0;
@@ -86,11 +97,10 @@ class Logs extends BaseAdminController
             }
         }
 
-        return $this->renderView('admin/logs/error_logs', [
-            'pag' => 'admin-error-logs',
-            'logs' => $logs,
-            'total' => count($logs),
+        return $this->renderView('admin/logs/php_error_logs', [
+            'pag' => 'admin-php-error-logs',
             'error_files' => $errorFiles,
+            'total' => count($errorFiles),
         ]);
     }
 
@@ -136,6 +146,17 @@ class Logs extends BaseAdminController
             'pag' => 'admin-api-logs',
             'logs' => $logs,
             'total' => count($logs),
+        ]);
+    }
+
+    public function engine_logs()
+    {
+        $model = new Mod_Anomalies();
+        $history = $model->getJobHistory(100);
+
+        return $this->renderView('admin/logs/engine_logs', [
+            'pag' => 'admin-engine-logs',
+            'history' => $history,
         ]);
     }
 
@@ -202,7 +223,7 @@ class Logs extends BaseAdminController
             'new_values' => json_encode(['deleted_count' => $deleted]),
         ]);
 
-        return redirect()->to('admin/logs/errors')->with('message', "Deleted {$deleted} log files.");
+        return redirect()->to('admin/logs/php-errors')->with('message', "Deleted {$deleted} log files.");
     }
 
     public function export_logs()

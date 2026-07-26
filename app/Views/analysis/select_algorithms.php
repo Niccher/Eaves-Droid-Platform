@@ -29,16 +29,15 @@
 
             <!-- Instruction callout -->
             <?php 
-                $engine = service('request')->getGet('engine') ?? 'php';
                 $engineLabel = ($engine === 'python') ? 'Python (Docker Container)' : 'PHP (In-Process PHP-ML)';
             ?>
             <div class="callout callout-primary bg-light shadow-sm">
                 <h5><i class="fas fa-hand-pointer mr-2 text-primary"></i>Configuration Settings</h5>
                 <p class="mb-0">
-                    Selected Engine: <strong><span class="badge badge-info"><?= esc($engineLabel) ?></span></strong>. 
-                    Select <strong>multiple algorithms</strong> in each category to execute them concurrently. Each category has at least one pre-selected recommended default.
+                    Detection Engine: <strong><span class="badge badge-info"><?= esc($engineLabel) ?></span></strong> (configured by administrator).
+                    Select the algorithms below to run during anomaly detection. Only administrator-approved algorithms are shown.
                     <?php if ($engine === 'php'): ?>
-                        <br><span class="text-danger small mt-1 d-block"><i class="fas fa-exclamation-circle"></i> Note: Algorithms that are <strong>Python-only</strong> have been disabled because you selected the PHP engine. To enable them, go back and choose the Python-based Engine.</span>
+                        <br><span class="text-muted small mt-1 d-block"><i class="fas fa-info-circle"></i> Python-only algorithms are not available with the PHP engine.</span>
                     <?php endif; ?>
                 </p>
             </div>
@@ -78,7 +77,6 @@
                                             <tr>
                                                 <th style="width:50px;" class="text-center">Active</th>
                                                 <th>Algorithm</th>
-                                                <th>Required Engine</th>
                                                 <th>Description</th>
                                                 <th>Strengths</th>
                                                 <th>Weaknesses</th>
@@ -115,18 +113,6 @@
                                                         <span class="badge badge-success ml-1">Default</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td class="align-middle" style="min-width:130px;">
-                                                    <span class="d-block mb-1">
-                                                        <?php if ($isPythonOnly): ?>
-                                                            <span class="badge badge-danger" style="opacity:0.6;"><i class="fab fa-php mr-1"></i>PHP ✗</span>
-                                                        <?php else: ?>
-                                                            <span class="badge badge-success"><i class="fab fa-php mr-1"></i>PHP ✓</span>
-                                                        <?php endif; ?>
-                                                    </span>
-                                                    <span class="d-block">
-                                                        <span class="badge badge-success"><i class="fab fa-python mr-1"></i>Python ✓</span>
-                                                    </span>
-                                                </td>
                                                 <td class="align-middle small"><?= esc($alg['description']) ?></td>
                                                 <td class="align-middle small">
                                                     <span class="text-success font-weight-bold">
@@ -150,56 +136,9 @@
 
                 </div><!-- /#accordion-algorithms -->
 
-                <!-- Analysis scope -->
-                <div class="card card-outline card-secondary shadow-sm mt-3">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-search-plus mr-2"></i>Analysis Scope
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="custom-control custom-radio">
-                                    <input class="custom-control-input" type="radio" id="scope-full"
-                                           name="scope" value="full" checked>
-                                    <label class="custom-control-label font-weight-bold" for="scope-full">
-                                        Analyze All Entries
-                                    </label>
-                                    <small class="d-block text-muted ml-4 mt-1">
-                                        Scan every record in the database — recommended for first-time or comprehensive analysis.
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="custom-control custom-radio">
-                                    <input class="custom-control-input" type="radio" id="scope-incremental"
-                                           name="scope" value="incremental"
-                                           <?= ($engine !== 'python') ? 'disabled' : '' ?>>
-                                    <label class="custom-control-label font-weight-bold" for="scope-incremental">
-                                        Analyze New Entries Only
-                                    </label>
-                                    <small class="d-block text-muted ml-4 mt-1">
-                                        Only inspect records added since the last analysis.
-                                        <?php if ($engine !== 'python'): ?>
-                                            <span class="text-warning d-block mt-1">
-                                                <i class="fas fa-info-circle"></i> Requires Python engine.
-                                            </span>
-                                        <?php endif; ?>
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Action buttons -->
                 <div class="row mt-4 mb-2">
-                    <div class="col-12 d-flex justify-content-between align-items-center">
-                        <a href="<?= base_url('analysis/anomalies') ?>"
-                           class="btn btn-outline-secondary font-weight-bold">
-                            <i class="fas fa-arrow-left mr-1"></i> Back: Change Engine
-                        </a>
+                    <div class="col-12 text-center">
                         <button type="button" onclick="submitForm()" class="btn btn-primary btn-lg shadow-sm font-weight-bold">
                             <i class="fas fa-play-circle mr-2"></i> Start Detection
                         </button>

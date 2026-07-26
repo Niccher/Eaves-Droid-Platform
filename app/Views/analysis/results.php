@@ -103,6 +103,60 @@ $algMeta = [
         'icon'   => 'fas fa-wifi',
         'color'  => 'dark',
     ],
+
+    // ── Python-only algorithms ──
+
+    'BERT Semantic Phishing Classifier' => [
+        'how'    => 'Uses a pre-trained transformer-based NLP model (BERT) to embed SMS message text into high-dimensional semantic vectors. A classifier head trained on phishing corpora scores each message for deceptive intent.',
+        'means'  => 'A high phishing score indicates the message uses social-engineering language patterns — urgency, impersonation of trusted entities, suspicious shortened URLs, or requests for credentials. These are hallmarks of targeted SMS phishing (smishing) attacks.',
+        'icon'   => 'fas fa-brain',
+        'color'  => 'danger',
+    ],
+    'Graph Relation Outlier Model (GCN)' => [
+        'how'    => 'Builds a directed graph where contacts are nodes and communication frequency/direction are edge weights. A Graph Convolutional Network (GCN) learns embeddings for each node; nodes with high reconstruction error or anomalous degree centrality are flagged.',
+        'means'  => 'Contacts flagged by this model exhibit unusual relational patterns — they connect to many otherwise-isolated nodes, appear in unexpected hierarchical positions, or have no reciprocal communication. This can reveal synthetic contacts or covert command nodes in a social network.',
+        'icon'   => 'fas fa-share-alt',
+        'color'  => 'success',
+    ],
+    'Isolation Forest Outlier Detection' => [
+        'how'    => 'Treats each call as a multi-dimensional point (duration, hour, day-of-week, direction, network type). The Isolation Forest algorithm randomly partitions the feature space — outliers require fewer splits to isolate, producing a low anomaly score.',
+        'means'  => 'A call flagged as anomalous deviates from the caller\'s normal patterns across multiple dimensions simultaneously — for example, a long-duration call at 3 AM to an international number. Such multi-factor outliers are unlikely to be innocent.',
+        'icon'   => 'fas fa-tree',
+        'color'  => 'warning',
+    ],
+    'Neural Autoencoder App Classifier' => [
+        'how'    => 'Trains an undercomplete autoencoder on feature vectors extracted from APK manifest data (permissions, intents, services, receivers, providers). Apps with high reconstruction error have configurations far from the norm for their category.',
+        'means'  => 'A flagged app contains a combination of manifest declarations rarely seen in legitimate apps of its type — for example, a calculator requesting SMS permissions and a background locating service. This is a hallmark of repackaged trojans.',
+        'icon'   => 'fas fa-network-wired',
+        'color'  => 'info',
+    ],
+    'File Entropy & Encryption Scanner' => [
+        'how'    => 'Reads file byte streams in chunks and computes Shannon entropy per chunk using H(x) = −Σ p(i)·log₂(p(i)). Files with average entropy > 0.85 bits across all chunks are flagged as encrypted/compressed. Metadata anomalies (hidden names, asset-dir location) compound severity.',
+        'means'  => 'High-entropy files packaged as media (images, audio) are a standard malware delivery technique — the payload is encrypted to evade signature scanning, then decrypted at runtime. Such files warrant immediate manual review.',
+        'icon'   => 'fas fa-file-contract',
+        'color'  => 'secondary',
+    ],
+    'LSTM Sequence Pattern Predictor' => [
+        'how'    => 'A long short-term memory (LSTM) recurrent neural network is trained on chronologically ordered user interaction events. At inference, the model predicts the next event type and timestamp; a large prediction error (MSE > threshold) flags the transition as unexpected.',
+        'means'  => 'An unexpected interaction sequence — e.g. switching to an obscure settings menu at 2 AM, then immediately to the dialler — does not match the user\'s learned behaviour profile. This may indicate remote control by an attacker or automated spyware activity.',
+        'icon'   => 'fas fa-chart-line',
+        'color'  => 'danger',
+    ],
+    'One-Class SVM System-State Profiler' => [
+        'how'    => 'Collects system telemetry (CPU load, memory usage, battery temperature, active radios) at regular intervals. A one-class SVM learns the compact region of normal operational states; any point falling outside this decision boundary is flagged.',
+        'means'  => 'Abnormal system states — high CPU with elevated battery temp while the screen is off, radios active but no user interaction — strongly indicate background malicious processes: cryptominers, C2 beaconing, or data exfiltration. The SVM catches combined deviations a single-threshold rule would miss.',
+        'icon'   => 'fas fa-microchip',
+        'color'  => 'dark',
+    ],
+
+    // ── Both-compat algorithms (not yet in PHP implementation) ──
+
+    'Extension Mismatch Scanner' => [
+        'how'    => 'Reads the first few bytes (magic bytes) of each file and compares them against known file-type signatures. If the detected MIME type contradicts the file\'s extension, a mismatch is recorded.',
+        'means'  => 'A mismatch indicates deliberate renaming — a .jpg that is actually a ZIP archive, or a .txt that is an executable. This is a common obfuscation technique used to bypass security scans or trick users into opening malicious files.',
+        'icon'   => 'fas fa-file-signature',
+        'color'  => 'secondary',
+    ],
 ];
 
 // ── Category metadata ────────────────────────────────────────────────────────
@@ -150,7 +204,6 @@ $sevMap = $severity_map ?? [
                         <li class="breadcrumb-item"><a href="<?= base_url('home') ?>"><i class="fas fa-home mr-1"></i>Home</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>"><i class="fas fa-brain mr-1"></i>Intelligence</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('analysis/anomalies') ?>"><i class="fas fa-bug mr-1"></i>Anomaly Detection</a></li>
-                        <li class="breadcrumb-item"><a href="<?= base_url('analysis/anomalies/algorithms?engine=' . esc($selected_engine)) ?>"><i class="fas fa-sliders-h mr-1"></i>Algorithms</a></li>
                         <li class="breadcrumb-item active"><i class="fas fa-table mr-1"></i>Results</li>
                     </ol>
                 </div>
@@ -208,8 +261,8 @@ $sevMap = $severity_map ?? [
             <!-- Empty state -->
             <div class="card shadow-sm">
                 <div class="card-body text-center py-5">
-                    <i class="fas fa-shield-alt fa-4x text-success mb-3"></i>
-                    <h4 class="text-success">No Anomalies Detected</h4>
+                    <i class="fas fa-shield-alt fa-4x text-primary mb-3"></i>
+                    <h4 class="text-primary">No Anomalies Detected</h4>
                     <p class="text-muted">All selected algorithms ran successfully and found no anomalies in your data. This is a great sign!</p>
                 </div>
             </div>
@@ -233,7 +286,6 @@ $sevMap = $severity_map ?? [
                         <?php
                         $firstCat = true;
                         foreach ($grouped as $catName => $catRows):
-                            $cm      = $catMeta[$catName] ?? ['icon' => 'fas fa-circle', 'color' => 'secondary'];
                             $paneId  = 'pane-' . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
                             $tabId   = 'tab-'  . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
                             $highCnt = count(array_filter($catRows, fn($r) => ($r['severity'] ?? '') === 'High'));
@@ -241,8 +293,8 @@ $sevMap = $severity_map ?? [
                         <li class="nav-item">
                             <a class="nav-link <?= $firstCat ? 'active' : '' ?>" id="<?= $tabId ?>" data-toggle="pill"
                                href="#<?= $paneId ?>" role="tab" aria-controls="<?= $paneId ?>" aria-selected="<?= $firstCat ? 'true' : 'false' ?>">
-                                <i class="<?= $cm['icon'] ?> mr-1"></i><?= esc($catName) ?>
-                                <span class="badge badge-<?= $cm['color'] ?> ml-1"><?= count($catRows) ?></span>
+                                <i class="<?= $catMeta[$catName]['icon'] ?? 'fas fa-circle' ?> mr-1"></i><?= esc($catName) ?>
+                                <span class="badge badge-primary ml-1"><?= count($catRows) ?></span>
                                 <?php if ($highCnt > 0): ?>
                                 <span class="badge badge-danger ml-1" title="<?= $highCnt ?> high severity"><i class="fas fa-bolt"></i></span>
                                 <?php endif; ?>
@@ -269,11 +321,10 @@ $sevMap = $severity_map ?? [
                             }
                         ?>
                         <div class="tab-pane fade <?= $firstCatPane ? 'show active' : '' ?>" id="<?= $paneId ?>" role="tabpanel">
-                            <!-- Algorithm sub-tab nav -->
+<!-- Algorithm sub-tab nav -->
                             <ul class="nav nav-tabs flex-wrap mb-0" id="<?= $paneId ?>-alg-nav" role="tablist" style="border-bottom:2px solid #dee2e6;">
                                 <?php $firstAlg = true; foreach ($rowsByAlg as $algName => $algRows):
                                     $am      = $algMeta[$algName] ?? null;
-                                    $mc      = $am['color'] ?? 'secondary';
                                     $algHash = md5($paneId . $algName);
                                     $highN   = count(array_filter($algRows, fn($r) => ($r['severity'] ?? '') === 'High'));
                                 ?>
@@ -284,15 +335,15 @@ $sevMap = $severity_map ?? [
                                        href="#algpane-<?= $algHash ?>"
                                        role="tab"
                                        style="font-size:.82rem; padding:.45rem .9rem;">
-                                        <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> mr-1 text-<?= $mc ?>"></i>
-                                        <?= esc($algName) ?>
-                                        <span class="badge badge-<?= $mc ?> ml-2"><?= count($algRows) ?></span>
-                                        <?php if ($highN > 0): ?>
-                                        <span class="badge badge-danger ml-1" title="<?= $highN ?> High severity"><i class="fas fa-bolt"></i></span>
-                                        <?php endif; ?>
-                                    </a>
-                                </li>
-                                <?php $firstAlg = false; endforeach; ?>
+                                         <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> mr-1 text-primary"></i>
+                                         <?= esc($algName) ?>
+                                         <span class="badge badge-primary ml-2"><?= count($algRows) ?></span>
+                                         <?php if ($highN > 0): ?>
+                                         <span class="badge badge-danger ml-1" title="<?= $highN ?> High severity"><i class="fas fa-bolt"></i></span>
+                                         <?php endif; ?>
+                                     </a>
+                                 </li>
+                                 <?php $firstAlg = false; endforeach; ?>
                             </ul>
 
                             <!-- Algorithm sub-tab panes -->
@@ -305,12 +356,12 @@ $sevMap = $severity_map ?? [
                                 <div class="tab-pane fade <?= $firstAlg ? 'show active' : '' ?> p-3"
                                      id="algpane-<?= $algHash ?>" role="tabpanel">
 
-                                    <!-- Explanation card — expanded by default (no collapse class) -->
+<!-- Explanation card — expanded by default (no collapse class) -->
                                     <?php if ($am): ?>
-                                    <div class="card card-<?= $mc ?> card-outline shadow-sm mb-3">
+                                    <div class="card card-info card-outline shadow-sm mb-3">
                                         <div class="card-header py-2">
                                             <h3 class="card-title mb-0">
-                                                <i class="<?= $am['icon'] ?> text-<?= $mc ?> mr-2"></i>
+                                                <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> text-primary mr-2"></i>
                                                 <strong><?= esc($algName) ?></strong>
                                                 <small class="text-muted ml-2">— algorithm details</small>
                                             </h3>
@@ -324,13 +375,13 @@ $sevMap = $severity_map ?? [
                                         <div class="card-body py-3">
                                             <div class="row">
                                                 <div class="col-md-6">
-                                                    <h6 class="text-<?= $mc ?> font-weight-bold mb-2">
+                                                    <h6 class="text-primary font-weight-bold mb-2">
                                                         <i class="fas fa-cogs mr-1"></i> How it works
                                                     </h6>
                                                     <p class="text-muted mb-0" style="font-size:.875rem; line-height:1.6;"><?= esc($am['how']) ?></p>
                                                 </div>
                                                 <div class="col-md-6 mt-3 mt-md-0">
-                                                    <h6 class="text-<?= $mc ?> font-weight-bold mb-2">
+                                                    <h6 class="text-primary font-weight-bold mb-2">
                                                         <i class="fas fa-lightbulb mr-1"></i> What the results mean
                                                     </h6>
                                                     <p class="text-muted mb-0" style="font-size:.875rem; line-height:1.6;"><?= esc($am['means']) ?></p>
@@ -358,18 +409,13 @@ $sevMap = $severity_map ?? [
 
             <!-- ── Action Buttons ── -->
             <div class="row mt-3 mb-4">
-                <div class="col-12 d-flex justify-content-between align-items-center flex-wrap" style="gap:.5rem;">
-                    <button type="button" class="btn btn-outline-danger font-weight-bold" id="btn-reset">
-                        <i class="fas fa-trash-restore mr-1"></i> Reset &amp; Reconfigure
+                <div class="col-12 d-flex justify-content-center flex-wrap" style="gap:.5rem;">
+                    <a href="<?= base_url('analysis/anomalies/algorithms') ?>" class="btn btn-outline-primary font-weight-bold">
+                        <i class="fas fa-sliders-h mr-1"></i> Change Algorithms
+                    </a>
+                    <button type="button" class="btn btn-warning font-weight-bold shadow-sm" id="btn-rerun">
+                        <i class="fas fa-redo mr-1"></i> Re-run Detection
                     </button>
-                    <div class="d-flex flex-wrap" style="gap:.5rem;">
-                        <a href="<?= base_url('analysis/anomalies/algorithms?engine=' . esc($selected_engine)) ?>" class="btn btn-outline-primary font-weight-bold">
-                            <i class="fas fa-sliders-h mr-1"></i> Change Algorithms
-                        </a>
-                        <button type="button" class="btn btn-warning font-weight-bold shadow-sm" id="btn-rerun">
-                            <i class="fas fa-redo mr-1"></i> Re-run Detection
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -558,36 +604,38 @@ function renderTable(string $paneId, array $rows, array $sevMap, array $algMeta,
 
 <!-- SweetAlert2 dialog scripts -->
 <script>
-document.getElementById('btn-reset').addEventListener('click', function () {
-    Swal.fire({
-        title: 'Reset Anomaly Settings?',
-        text: 'This will clear your selected Engine and Algorithms and return you to Step 1.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fas fa-trash-restore mr-1"></i> Yes, Reset',
-        cancelButtonText: 'Cancel'
-    }).then(function (result) {
-        if (result.isConfirmed) {
-            window.location.href = '<?= base_url('analysis/anomalies/results?reset=true') ?>';
-        }
-    });
-});
-
 document.getElementById('btn-rerun').addEventListener('click', function () {
     Swal.fire({
-        title: 'Re-run Detection?',
-        text: 'This will re-execute the detection pipeline using the same engine and algorithm settings.',
+        title: 'Re-run Detection',
+        html:
+            '<div class="text-left" style="font-size:0.95rem;">' +
+            '<p>Choose the analysis scope:</p>' +
+            '<div class="custom-control custom-radio mb-2">' +
+            '<input type="radio" id="rerun-full" name="rerunScope" value="full" class="custom-control-input" checked>' +
+            '<label class="custom-control-label font-weight-bold" for="rerun-full">' +
+            '<i class="fas fa-database text-primary mr-1"></i> Full Scan</label>' +
+            '<small class="d-block text-muted ml-4">Re-analyze all data from scratch</small>' +
+            '</div>' +
+            '<div class="custom-control custom-radio">' +
+            '<input type="radio" id="rerun-incr" name="rerunScope" value="incremental" class="custom-control-input">' +
+            '<label class="custom-control-label font-weight-bold" for="rerun-incr">' +
+            '<i class="fas fa-plus-circle text-success mr-1"></i> New Data Only</label>' +
+            '<small class="d-block text-muted ml-4">Only analyze entries since the last analysis</small>' +
+            '</div>' +
+            '</div>',
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#ffc107',
         cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fas fa-redo mr-1"></i> Yes, Re-run',
-        cancelButtonText: 'Cancel'
+        confirmButtonText: '<i class="fas fa-redo mr-1"></i> Run',
+        cancelButtonText: 'Cancel',
+        preConfirm: function () {
+            var scope = document.querySelector('input[name="rerunScope"]:checked');
+            return scope ? scope.value : 'full';
+        }
     }).then(function (result) {
         if (result.isConfirmed) {
-            window.location.href = '<?= base_url('analysis/anomalies/results') ?>';
+            window.location.href = '<?= base_url('analysis/anomalies/results') ?>?scope=' + result.value;
         }
     });
 });

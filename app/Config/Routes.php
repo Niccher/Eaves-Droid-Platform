@@ -1140,6 +1140,11 @@ $routes->group('admin', [
     $routes->post('remote-device/send', 'RemoteDevice::sendCommand', ['as' => 'admin-remote-device-send']);
 
     /**
+     * Admin anomaly detection engine configuration.
+     */
+    $routes->match(['get', 'post'], 'anomalies', 'Anomalies::index', ['as' => 'admin-anomalies']);
+
+    /**
      * App defaults management.
      */
         $routes->get('defaults', 'Defaults::index', ['as' => 'admin-defaults']);
@@ -1270,6 +1275,13 @@ $routes->group('admin', [
         $routes->get('errors', 'Logs::error_logs', ['as' => 'admin-error-logs']);
 
         /**
+         * Displays PHP error log files.
+         *
+         * @return string
+         */
+        $routes->get('php-errors', 'Logs::php_error_logs', ['as' => 'admin-php-error-logs']);
+
+        /**
          * Displays API logs.
          *
          * @return string
@@ -1289,6 +1301,13 @@ $routes->group('admin', [
          * @return string
          */
         $routes->get('fcm', 'Logs::fcm_logs', ['as' => 'admin-fcm-logs']);
+
+        /**
+         * Displays anomaly engine run logs.
+         *
+         * @return string
+         */
+        $routes->get('engine', 'Logs::engine_logs', ['as' => 'admin-engine-logs']);
 
         /**
          * Clears system logs.

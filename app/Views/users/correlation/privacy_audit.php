@@ -19,7 +19,8 @@
             <div class="col-md-12">
                 <div class="card card-outline card-info shadow-sm">
                     <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-brain mr-2"></i> PHP-ML Intelligence</h3>
+                        <?php $_eng = (new \App\Models\Mod_Anomalies())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
+                        <h3 class="card-title"><i class="fas fa-brain mr-2"></i> <?= $_engLabel ?> Intelligence</h3>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -43,6 +44,8 @@
     </div>
 </section>
 <?php endif; ?>
+
+<?= view('analysis/anomaly_alert_card', ['anomaly_alerts' => $anomaly_alerts ?? []]) ?>
 
     <section class="content">
         <div class="container-fluid">

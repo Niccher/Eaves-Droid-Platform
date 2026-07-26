@@ -206,8 +206,8 @@
 
                         <li class="nav-header">SYSTEM</li>
 
-                        <?php
-                            $logPages = ['admin-logs', 'admin-access-logs', 'admin-error-logs', 'admin-api-logs', 'admin-fcm-logs', 'admin-maintenance-logs'];
+<?php
+    $logPages = ['admin-logs', 'admin-access-logs', 'admin-error-logs', 'admin-php-error-logs', 'admin-api-logs', 'admin-fcm-logs', 'admin-maintenance-logs', 'admin-engine-logs'];
                             $isLogOpen = isset($pag) && in_array($pag, $logPages);
                         ?>
                         <li class="nav-item has-treeview <?php echo $isLogOpen ? 'menu-open' : ''; ?>">
@@ -241,6 +241,13 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a href="<?php echo base_url('admin/logs/php-errors'); ?>"
+                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-php-error-logs') ? 'active' : ''; ?>">
+                                        <i class="fas fa-file-alt nav-icon"></i>
+                                        <p>PHP Errors</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a href="<?php echo base_url('admin/logs/api'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag === 'admin-api-logs') ? 'active' : ''; ?>">
                                         <i class="fas fa-code nav-icon"></i>
@@ -261,6 +268,13 @@
                                         <p>Maintenance Logs</p>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('admin/logs/engine'); ?>"
+                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-engine-logs') ? 'active' : ''; ?>">
+                                        <i class="fas fa-robot nav-icon"></i>
+                                        <p>Engine Logs</p>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
 
@@ -269,6 +283,14 @@
                                class="nav-link <?php echo (isset($pag) && $pag === 'admin-ml') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-brain"></i>
                                 <p>ML / AI</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/anomalies'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-anomalies') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-exclamation-triangle text-warning"></i>
+                                <p>Anomaly Engine</p>
                             </a>
                         </li>
 

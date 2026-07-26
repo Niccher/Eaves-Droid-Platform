@@ -20,12 +20,23 @@
             <?php if (session()->getFlashdata('error')): ?>
             <div class="alert alert-danger alert-dismissible"><button type="button" class="close" data-dismiss="alert">&times;</button><?= session()->getFlashdata('error') ?></div>
             <?php endif; ?>
+
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">API Tokens</h5>
+                        <p class="mb-0 small text-muted">Manage API access tokens for external integrations. Create, revoke, and regenerate tokens with granular permission scopes.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <div class="btn-group">
-                        <a href="<?= base_url('admin/tokens') ?>" class="btn btn-sm btn-primary">All</a>
-                        <a href="<?= base_url('admin/tokens/expired') ?>" class="btn btn-sm btn-outline-warning">Expired</a>
-                        <a href="<?= base_url('admin/tokens/analytics') ?>" class="btn btn-sm btn-outline-info">Analytics</a>
+                        <a href="<?= base_url('admin/tokens') ?>" class="btn btn-sm btn-primary"><i class="fas fa-list mr-1"></i>All</a>
+                        <a href="<?= base_url('admin/tokens/expired') ?>" class="btn btn-sm btn-outline-warning"><i class="fas fa-clock mr-1"></i>Expired</a>
+                        <a href="<?= base_url('admin/tokens/analytics') ?>" class="btn btn-sm btn-outline-info"><i class="fas fa-chart-bar mr-1"></i>Analytics</a>
                     </div>
                     <div class="card-tools"><span class="badge badge-primary"><?= $total ?> tokens</span></div>
                 </div>

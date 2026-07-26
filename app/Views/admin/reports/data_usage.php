@@ -16,6 +16,17 @@
 
     <section class="content">
         <div class="container-fluid">
+
+            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1">Data Usage Report</h5>
+                        <p class="mb-0 small text-muted">Aggregated statistics on data volumes — uploaded file sizes, SMS and call counts, storage consumption per user, and platform-wide growth trends.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Data Usage by User</h3>

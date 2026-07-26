@@ -24,6 +24,12 @@ use CodeIgniter\HotReloader\HotReloader;
  */
 
 Events::on('pre_system', static function () {
+    try {
+        \Config\Database::connect()->table('settings')->where('type', 'json')->delete();
+    } catch (\Throwable $e) {
+        // DB not available yet
+    }
+
     if (ENVIRONMENT !== 'testing') {
         if (ini_get('zlib.output_compression')) {
             throw FrameworkException::forEnabledZlibOutputCompression();
