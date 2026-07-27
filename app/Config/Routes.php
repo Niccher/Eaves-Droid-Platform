@@ -666,6 +666,10 @@ $routes->group('', [
         $routes->get('/',          'Anomalies::index',      ['as' => 'anomalies-info']);
         $routes->get('algorithms', 'Anomalies::algorithms', ['as' => 'anomalies-algorithms']);
         $routes->match(['get', 'post'], 'results', 'Anomalies::results', ['as' => 'anomalies-results']);
+        $routes->match(['get', 'post'], 'run', 'Anomalies::run', ['as' => 'anomalies-run']);
+        $routes->get('progress/(:num)', 'Anomalies::progress/$1', ['as' => 'anomalies-progress']);
+        $routes->get('status/(:num)',   'Anomalies::status/$1',   ['as' => 'anomalies-status']);
+        $routes->post('process/(:num)','Anomalies::process/$1',  ['as' => 'anomalies-process']);
     });
 
         /**
@@ -1308,6 +1312,7 @@ $routes->group('admin', [
          * @return string
          */
         $routes->get('engine', 'Logs::engine_logs', ['as' => 'admin-engine-logs']);
+        $routes->get('engine/algo-details/(:num)', 'Logs::engineAlgoDetails/$1', ['as' => 'admin-engine-algo-details']);
 
         /**
          * Clears system logs.
@@ -1344,6 +1349,8 @@ $routes->group('admin', [
     // -------------------------------------------------------------
 
     $routes->get('ml', 'Ml::index', ['as' => 'admin-ml']);
+    $routes->post('ml/test-python', 'Ml::testPython', ['as' => 'admin-ml-test-python']);
+    $routes->post('ml/set-connection', 'Ml::setConnection', ['as' => 'admin-ml-set-connection']);
 
     // -------------------------------------------------------------
     // 7.5 SYSTEM SETTINGS & CONFIGURATION

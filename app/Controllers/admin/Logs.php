@@ -160,6 +160,13 @@ class Logs extends BaseAdminController
         ]);
     }
 
+    public function engineAlgoDetails(int $jobId)
+    {
+        $model = new Mod_Anomalies();
+        $logs = $model->getAlgorithmLogs($jobId);
+        return $this->response->setJSON($logs);
+    }
+
     public function fcm_logs()
     {
         $db = $this->getDb();

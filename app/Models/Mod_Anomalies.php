@@ -636,7 +636,8 @@ class Mod_Anomalies extends Model
         }
 
         // Run K-Means Clustering using PHP-ML
-        $k = min(3, $countSenders);
+        $configuredK = max(2, (int)($this->getMlSetting('ml_phpml_kmeans_k', '3')));
+        $k = min($configuredK, $countSenders);
         try {
             $kmeans = new \Phpml\Clustering\KMeans($k);
             $clusters = $kmeans->cluster($scaledSamples);
@@ -976,9 +977,11 @@ class Mod_Anomalies extends Model
             ];
         }
 
-        // Run DBSCAN: epsilon = 0.01 (approx 1 km), minSamples = 2
+        // Read DBSCAN params from DB settings
+        $epsilon    = max(0.001, (float)($this->getMlSetting('ml_phpml_dbscan_epsilon', '0.01')));
+        $minSamples = max(1, (int)($this->getMlSetting('ml_phpml_dbscan_minpoints', '2')));
         try {
-            $dbscan = new \Phpml\Clustering\DBSCAN(0.01, 2);
+            $dbscan = new \Phpml\Clustering\DBSCAN($epsilon, $minSamples);
             $clusters = $dbscan->cluster($samples);
         } catch (\Throwable $e) {
             log_message('error', 'DBSCAN failed: ' . $e->getMessage());
@@ -1008,7 +1011,7 @@ class Mod_Anomalies extends Model
                     'severity'  => 'Medium',
                     'algorithm' => 'DBSCAN Trajectory Clustering',
                     'timestamp' => $row['timestamp'] ?? date('Y-m-d H:i:s'),
-                    'engine_note' => 'PHP-ML DBSCAN outlier (epsilon=0.01, minSamples=2)',
+                    'engine_note' => 'PHP-ML DBSCAN outlier (epsilon=' . $epsilon . ', minSamples=' . $minSamples . ')',
                 ];
             }
         }
@@ -1343,64 +1346,59 @@ class Mod_Anomalies extends Model
      * @param  int    $userId        Target user ID for querying data (from BaseClientController::$userId)
      * @return array                 Merged anomaly findings
      */
-    public function runPhpDetection(array $selectedAlgs, int $userId = 0): array
+    public function runPhpDetection(array $selectedAlgs, int $userId = 0,
+                                    int $jobId = 0): array
     {
         $results = [];
 
-        // Map of algorithm ID → [method, data-fetch closure]
+        $algCount = 0;
+        foreach ($selectedAlgs as $algList) {
+            $algCount += count((array)$algList);
+        }
+        $completed = 0;
+
         $dispatch = [
-            // SMS
             'sms_freq'      => fn() => $this->detectSmsFrequencySpike($this->fetchSms($userId)),
             'sms_time'      => fn() => $this->detectSmsTimePattern($this->fetchSms($userId)),
             'sms_cluster'   => fn() => $this->detectSmsCluster($this->fetchSms($userId)),
-
-            // Contacts
             'contacts_freq' => fn() => $this->detectContactsFrequency($this->fetchContacts($userId)),
             'contacts_dup'  => fn() => $this->detectContactsDuplicates($this->fetchContacts($userId)),
-
-            // Call Logs
             'calls_burst'   => fn() => $this->detectCallsBurst($this->fetchCallLogs($userId)),
             'calls_night'   => fn() => $this->detectCallsNight($this->fetchCallLogs($userId)),
-
-            // Locations
             'loc_geofence'  => fn() => $this->detectLocationGeofence($this->fetchLocations($userId)),
             'loc_speed'     => fn() => $this->detectLocationSpeed($this->fetchLocations($userId)),
             'loc_dbscan'    => fn() => $this->detectLocationDbscan($this->fetchLocations($userId)),
-
-            // Apps
             'apps_rep'      => fn() => $this->detectAppsReputation($this->fetchApps($userId)),
             'apps_perm'     => fn() => $this->detectAppsPermission($this->fetchApps($userId)),
-
-            // Files
             'files_spike'   => fn() => $this->detectFilesSpike($this->fetchFiles($userId)),
-
-            // Activity
             'act_screen'    => fn() => $this->detectActivityScreenTime($this->fetchActivityScreenTime($userId)),
             'act_switch'    => fn() => $this->detectActivitySwitchRate($this->fetchActivitySwitchRate($userId)),
-
-            // Device Info
             'dev_hw'        => fn() => $this->detectDeviceHardwareChange(
                                     $this->fetchDeviceInfo($userId, 'current'),
-                                    $this->fetchDeviceInfo($userId, 'previous')
-                                ),
+                                    $this->fetchDeviceInfo($userId, 'previous')),
             'dev_net'       => fn() => $this->detectDeviceNetworkProfile(
-                                    $this->fetchNetworkProfile($userId),
-                                    []
-                                ),
+                                    $this->fetchNetworkProfile($userId), []),
         ];
 
         foreach ($selectedAlgs as $category => $algList) {
             foreach ((array)$algList as $algId) {
                 if (isset($dispatch[$algId])) {
+                    $completed++;
+                    $startMs = $this->startAlgorithm($jobId, $completed, $algCount, $algId, 'php');
                     $found = $dispatch[$algId]();
+                    $durationMs = $startMs ? (int)((microtime(true) * 1000) - $startMs) : 0;
+                    $this->completeAlgorithm($jobId, $completed, $algCount, $algId, $durationMs);
                     if (!empty($found)) {
+                        foreach ($found as &$f) {
+                            $f['algorithm_id'] = $algId;
+                        }
+                        unset($f);
                         $results = array_merge($results, $found);
                     }
                 }
             }
         }
 
-        // Sort by severity (High → Medium → Low)
         $severityOrder = ['High' => 0, 'Medium' => 1, 'Low' => 2];
         usort($results, function ($a, $b) use ($severityOrder) {
             return ($severityOrder[$a['severity']] ?? 9) <=> ($severityOrder[$b['severity']] ?? 9);
@@ -1421,16 +1419,29 @@ class Mod_Anomalies extends Model
      *
      * @return array{host: string, port: int, endpoint: string, base_url: string}
      */
-    protected function getPythonSettings(): array
+    public function getPythonSettings(): array
     {
         $host     = 'ml-eaves-droid';
-        $port     = 8000;
+        $port     = 9070;
         $endpoint = '/api/analyze';
+        $url      = '';
+
+        if (getenv('PYTHON_BACKEND_HOST') !== false) {
+            $host = getenv('PYTHON_BACKEND_HOST');
+        }
+
+        if (getenv('PYTHON_BACKEND_PORT') !== false) {
+            $port = (int)getenv('PYTHON_BACKEND_PORT');
+        }
+
+        if (getenv('PYTHON_BACKEND_ENDPOINT') !== false) {
+            $endpoint = getenv('PYTHON_BACKEND_ENDPOINT');
+        }
 
         try {
             $rows = $this->db->table('settings')
                 ->where('class', 'ml')
-                ->whereIn('key', ['ml_python_host', 'ml_python_port', 'ml_python_endpoint'])
+                ->whereIn('key', ['ml_python_host', 'ml_python_port', 'ml_python_endpoint', 'ml_python_url'])
                 ->get()
                 ->getResultArray();
 
@@ -1439,6 +1450,7 @@ class Mod_Anomalies extends Model
                     'ml_python_host'     => $host = $row['value'] ?: $host,
                     'ml_python_port'     => $port = (int)($row['value'] ?: $port),
                     'ml_python_endpoint' => $endpoint = $row['value'] ?: $endpoint,
+                    'ml_python_url'      => $url = $row['value'] ?: '',
                     default              => null,
                 };
             }
@@ -1446,13 +1458,150 @@ class Mod_Anomalies extends Model
             // Use defaults if settings table doesn't exist yet
         }
 
-        $baseUrl = rtrim("http://{$host}:{$port}", '/');
+        // If a full URL is stored, use it directly
+        if ($url) {
+            $baseUrl = rtrim($url, '/');
+            // Parse URL for display purposes
+            $parts = parse_url($baseUrl);
+            $host = $parts['host'] ?? $host;
+            $port = $parts['port'] ?? $port;
+        } else {
+            $baseUrl = rtrim("http://{$host}:{$port}", '/');
+        }
+
         return [
-            'host'     => $host,
-            'port'     => $port,
-            'endpoint' => $endpoint,
-            'base_url' => $baseUrl,
+            'host'      => $host,
+            'port'      => $port,
+            'endpoint'  => $endpoint,
+            'base_url'  => $baseUrl,
+            'url'       => $baseUrl,
         ];
+    }
+
+    public function testPythonConnection(?string $testUrl = null): array
+    {
+        $settings = $this->getPythonSettings();
+        $baseUrl = $testUrl ? rtrim($testUrl, '/') : $settings['base_url'];
+        $healthUrl = $baseUrl . '/api/health';
+
+        try {
+            $client = service('curlrequest', [
+                'timeout'         => 10,
+                'connect_timeout' => 5,
+                'http_errors'     => false,
+            ]);
+            $response = $client->get($healthUrl);
+            $statusCode = $response->getStatusCode();
+            $body = $response->getBody() ? json_decode($response->getBody(), true) : [];
+
+            if ($statusCode === 200) {
+                return [
+                    'success'      => true,
+                    'message'      => 'Python backend is running.',
+                    'tested_url'   => $baseUrl,
+                    'status'       => $body['status'] ?? 'healthy',
+                    'version'      => $body['version'] ?? '',
+                    'models'       => $body['models_loaded'] ?? $body['models'] ?? $body['algorithms'] ?? [],
+                    'modules'      => $body['modules'] ?? [],
+                    'database'     => $body['database'] ?? '',
+                    'cuda'         => $body['cuda_available'] ?? false,
+                    'cuda_device'  => $body['cuda_device'] ?? '',
+                    'memory'       => $body['memory_mb'] ?? [],
+                    'cache'        => $body['cache_entries'] ?? 0,
+                    'uptime'       => $body['uptime_seconds'] ?? 0,
+                    'settings'     => $settings,
+                ];
+            }
+
+            return [
+                'success'    => false,
+                'message'    => "Backend returned HTTP {$statusCode}.",
+                'tested_url' => $baseUrl,
+                'settings'   => $settings,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success'  => false,
+                'message'  => 'Connection failed: ' . $e->getMessage(),
+                'settings' => $settings,
+            ];
+        }
+    }
+
+    /**
+     * Parse the central docker-compose.yml to extract ml-eaves-droid
+     * container service info (host, ports, image) so the admin ML page
+     * can pre-fill defaults automatically.
+     *
+     * @return array {host, internal_port, external_port, metrics_port, tf_serving_port, endpoint}
+     */
+    public function getDockerComposeMLSettings(): array
+    {
+        $defaults = [
+            'host'               => 'ml-eaves-droid',
+            'internal_port'      => 9070,
+            'external_port'      => 9071,
+            'metrics_port'       => 9073,
+            'tf_serving_port'    => 9072,
+            'debug_port'         => 9094,
+            'mgmt_port'          => 9095,
+            'endpoint'           => '/api/analyze',
+            'detected'           => false,
+            'compose_file'       => '/home/niccher/Music/hosts/docker-compose.yml',
+        ];
+
+        $composeFile = '/home/niccher/Music/hosts/docker-compose.yml';
+        if (!file_exists($composeFile)) {
+            return $defaults;
+        }
+
+        $content = file_get_contents($composeFile);
+        if ($content === false) {
+            return $defaults;
+        }
+
+        // Find the ml-eaves-droid service block
+        if (!preg_match('/ml-eaves-droid\s*:\s*(?:\n|.)+?(?=\n  \w)/s', $content, $serviceMatch)) {
+            return $defaults;
+        }
+
+        $serviceBlock = $serviceMatch[0];
+
+        // Extract container name
+        if (preg_match('/container_name:\s*\$\{[^}]*:\s*([^}]+)\}/', $serviceBlock, $m)) {
+            $defaults['host'] = trim($m[1]);
+        } elseif (preg_match('/container_name:\s*(\S+)/', $serviceBlock, $m)) {
+            $defaults['host'] = trim($m[1]);
+        }
+
+        // Extract ports from the format "${VAR_NAME:-DEFAULT}:CONTAINER_PORT"
+        // e.g. "${ML_EAVES_DROID_API_PORT:-9071}:8000"
+        if (preg_match_all('/-\s*"\$\{[^}:]+:(\d+)\}:(\d+)"/', $serviceBlock, $portMatches, PREG_SET_ORDER)) {
+            $seen = [];
+            foreach ($portMatches as $pm) {
+                $externalPort = (int)$pm[1];
+                $containerPort = (int)$pm[2];
+                if (in_array($containerPort, $seen)) continue;
+                $seen[] = $containerPort;
+                if ($containerPort === 9070 || $containerPort === 8000) {
+                    $defaults['internal_port'] = $containerPort;
+                    $defaults['external_port'] = $externalPort;
+                } elseif ($containerPort === 9073 || $containerPort === 9090) {
+                    $defaults['metrics_port'] = $externalPort;
+                } elseif ($containerPort === 9072 || $containerPort === 8501) {
+                    $defaults['tf_serving_port'] = $externalPort;
+                } elseif ($containerPort === 9094) {
+                    $defaults['debug_port'] = $externalPort;
+                } elseif ($containerPort === 9095) {
+                    $defaults['mgmt_port'] = $externalPort;
+                }
+            }
+        }
+
+        // Detect the actual compose file location for reference
+        $defaults['detected'] = true;
+
+        return $defaults;
     }
 
     /**
@@ -1544,7 +1693,8 @@ class Mod_Anomalies extends Model
      * @return array                Merged anomaly findings
      */
     public function runPythonDetection(array $selectedAlgs, int $userId = 0,
-                                       string $scope = 'full'): array
+                                       string $scope = 'full',
+                                       int $jobId = 0): array
     {
         // ── Split algorithms into PHP-compatible and Python-only ──
         $phpAlgs = [];
@@ -1596,31 +1746,37 @@ class Mod_Anomalies extends Model
         $hasPhp   = !empty($phpAlgs);
         $hasPy    = !empty($pyOnly);
         $engine   = $hasPhp && $hasPy ? 'both' : ($hasPy ? 'python' : 'php');
-        $jobId    = 0;
-        $jobEntry = [
-            'user_id'    => $userId,
-            'engine'     => $engine,
-            'algorithms' => json_encode($allAlgIds),
-            'scope'      => $scope,
-            'status'     => 'running',
-        ];
-        try {
-            $this->ensureJobTrackingColumns();
-            $this->db->table('ml_jobs')->insert($jobEntry);
-            $jobId = $this->db->insertID();
-        } catch (\Throwable $e) {
-            log_message('error', 'Failed to create ml_jobs row: ' . $e->getMessage());
+
+        // Only create a job row if one wasn't provided by the caller
+        if ($jobId <= 0) {
+            $jobEntry = [
+                'user_id'    => $userId,
+                'engine'     => $engine,
+                'algorithms' => json_encode($allAlgIds),
+                'scope'      => $scope,
+                'status'     => 'running',
+            ];
+            try {
+                $this->ensureJobTrackingColumns();
+                $this->db->table('ml_jobs')->insert($jobEntry);
+                $jobId = $this->db->insertID();
+            } catch (\Throwable $e) {
+                log_message('error', 'Failed to create ml_jobs row: ' . $e->getMessage());
+            }
         }
 
         // ── Run PHP-compatible algorithms locally ──
         $results = [];
         if ($hasPhp) {
-            $results = $this->runPhpDetection($phpAlgs, $userId);
+            $results = $this->runPhpDetection($phpAlgs, $userId, $jobId);
         }
 
         // ── Handle Python-only algorithms ──
         $pyResults = [];
         if ($hasPy && $jobId > 0) {
+            // Report progress before Python dispatch
+            $this->updateJobProgress($jobId, 1, 3, 'python_backend');
+
             $pyAlgIds = [];
             foreach ($pyOnly as $algList) {
                 foreach ((array)$algList as $algId) {
@@ -1631,12 +1787,27 @@ class Mod_Anomalies extends Model
             $settings = $this->getPythonSettings();
             $url      = $settings['base_url'] . $settings['endpoint'];
 
+            // Fetch all ML config params from DB to pass to Python backend
+            $mlParams = [];
+            try {
+                $paramRows = $this->db->table('settings')
+                    ->where('class', 'ml')
+                    ->get()
+                    ->getResultArray();
+                foreach ($paramRows as $pr) {
+                    $mlParams[$pr['key']] = $pr['value'];
+                }
+            } catch (\Throwable $e) {
+                // Use empty params if settings table doesn't exist yet
+            }
+
             $payload = [
                 'job_id'            => $jobId,
                 'user_id'           => $userId,
                 'algorithms'        => $pyAlgIds,
                 'scope'             => $scope,
                 'incremental_since' => $incrementalSince,
+                'params'            => $mlParams,
             ];
 
             try {
@@ -1662,12 +1833,7 @@ class Mod_Anomalies extends Model
 
                     if ($decoded && isset($decoded->status) && $decoded->status === 'completed') {
                         // Python finished — read results from ml_results
-                        $this->db->table('ml_jobs')
-                            ->where('id', $jobId)
-                            ->update([
-                                'status'       => 'completed',
-                                'completed_at' => date('Y-m-d H:i:s'),
-                            ]);
+                        $this->updateJobProgress($jobId, 2, 3, 'python_results');
                         $pyResults = $this->fetchJobResults($jobId, $userId);
                     } else {
                         log_message('error', 'Python backend returned unexpected response: ' . ($body ?? '(empty)'));
@@ -1707,12 +1873,7 @@ class Mod_Anomalies extends Model
 
         // ── Mark job completed if PHP-only (no Python backend call) ──
         if (!$hasPy && $jobId > 0) {
-            $this->db->table('ml_jobs')
-                ->where('id', $jobId)
-                ->update([
-                    'status'       => 'completed',
-                    'completed_at' => date('Y-m-d H:i:s'),
-                ]);
+            $this->completeJob($jobId);
         }
 
         // ── Merge PHP + Python results ──
@@ -1734,7 +1895,7 @@ class Mod_Anomalies extends Model
      * @param  int  $userId
      * @return array
      */
-    protected function fetchJobResults(int $jobId, int $userId): array
+    public function fetchJobResults(int $jobId, int $userId): array
     {
         $iconMap = [
             'sms'         => 'fas fa-sms',
@@ -2337,7 +2498,7 @@ class Mod_Anomalies extends Model
     /**
      * Ensures the ml_jobs table has columns needed for tracking run timing.
      */
-    protected function ensureJobTrackingColumns(): void
+    public function ensureJobTrackingColumns(): void
     {
         try {
             $this->db->query("ALTER TABLE ml_jobs ADD COLUMN completed_at DATETIME DEFAULT NULL AFTER status");
@@ -2473,5 +2634,397 @@ class Mod_Anomalies extends Model
         $a  = sin($dL / 2) ** 2
             + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dG / 2) ** 2;
         return $R * 2 * asin(sqrt($a));
+    }
+
+    /**
+     * Persist anomaly results to ml_results so the results page can read them.
+     */
+    public function saveResults(int $jobId, int $userId, array $results): void
+    {
+        try {
+            $batch = [];
+            foreach ($results as $r) {
+                $batch[] = [
+                    'job_id'          => $jobId,
+                    'user_id'         => $userId,
+                    'category'        => $r['category'] ?? '',
+                    'algorithm'       => $r['algorithm'] ?? '',
+                    'algorithm_id'    => $r['algorithm_id'] ?? '',
+                    'severity'        => $r['severity'] ?? 'Low',
+                    'anomaly'         => $r['anomaly'] ?? '',
+                    'score'           => (float)($r['score'] ?? 0),
+                    'event_timestamp' => $r['timestamp'] ?? null,
+                    'details'         => json_encode([
+                        'engine_note' => $r['engine_note'] ?? '',
+                        'icon'        => $r['icon'] ?? '',
+                    ]),
+                    'created_at'      => date('Y-m-d H:i:s'),
+                ];
+            }
+            if (!empty($batch)) {
+                $this->db->table('ml_results')->insertBatch($batch);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'saveResults failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a new ml_jobs row and return its ID.
+     */
+    public function createJob(int $userId, string $engine, array $algIds,
+                              string $scope = 'full', int $totalAlgorithms = 0): int
+    {
+        $this->ensureJobTrackingColumns();
+        try {
+            $this->db->table('ml_jobs')->insert([
+                'user_id'          => $userId,
+                'engine'           => $engine,
+                'algorithms'       => json_encode($algIds),
+                'scope'            => $scope,
+                'status'           => 'running',
+                'total_algorithms' => $totalAlgorithms,
+                'progress_pct'     => 0,
+                'started_at'       => date('Y-m-d H:i:s'),
+                'created_at'       => date('Y-m-d H:i:s'),
+            ]);
+            return $this->db->insertID();
+        } catch (\Throwable $e) {
+            log_message('error', 'createJob failed: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            throw $e;
+        }
+    }
+
+    /**
+     * Fetch a single ml_jobs row by ID.
+     */
+    public function getJob(int $jobId): ?array
+    {
+        $row = $this->db->table('ml_jobs')
+            ->where('id', $jobId)
+            ->get()
+            ->getRowArray();
+        return $row ?: null;
+    }
+
+    /**
+     * Fetch the last completed ml_jobs row for a given user.
+     */
+    public function getUserLastCompletedJob(int $userId): ?array
+    {
+        try {
+            $row = $this->db->table('ml_jobs')
+                ->where('user_id', $userId)
+                ->where('status', 'completed')
+                ->orderBy('created_at', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+            return $row ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Fetch a single ML setting from the database.
+     */
+    protected function getMlSetting(string $key, $default = null)
+    {
+        $row = $this->db->table('settings')
+            ->where('class', 'ml')
+            ->where('key', $key)
+            ->get()
+            ->getRow();
+        return $row ? $row->value : $default;
+    }
+
+    /**
+     * Update ml_jobs progress columns.
+     */
+    public function updateJobProgress(int $jobId, int $completed, int $total, string $algId): void
+    {
+        if ($jobId <= 0) return;
+        $pct = $total > 0 ? (int)round(($completed / $total) * 100) : 0;
+        try {
+            $this->db->table('ml_jobs')
+                ->where('id', $jobId)
+                ->update([
+                    'progress_pct'         => min(99, $pct),
+                    'completed_algorithms' => $completed,
+                    'total_algorithms'     => $total,
+                    'current_algorithm'    => $algId,
+                ]);
+        } catch (\Throwable $e) {
+            // Ignore progress update failures
+        }
+    }
+
+    public function startAlgorithm(int $jobId, int $completed, int $total, string $algId, string $engine = 'php'): ?float
+    {
+        if ($jobId <= 0) return null;
+        $startMs = microtime(true) * 1000;
+
+        $logs = $this->getAlgorithmLogsFromDb($jobId);
+        $logs[] = [
+            'id'           => $algId,
+            'engine'       => $engine,
+            'status'       => 'running',
+            'started_at'   => date('Y-m-d H:i:s'),
+            'completed_at' => null,
+            'duration_ms'  => null,
+        ];
+        $this->saveAlgorithmLogsToDb($jobId, $logs);
+        $this->updateJobProgress($jobId, $completed, $total, $algId);
+
+        return $startMs;
+    }
+
+    public function completeAlgorithm(int $jobId, int $completed, int $total, string $algId, int $durationMs): void
+    {
+        if ($jobId <= 0) return;
+
+        $logs = $this->getAlgorithmLogsFromDb($jobId);
+        foreach ($logs as &$entry) {
+            if ($entry['id'] === $algId && $entry['status'] === 'running') {
+                $entry['status']       = 'completed';
+                $entry['completed_at'] = date('Y-m-d H:i:s');
+                $entry['duration_ms']  = $durationMs;
+                break;
+            }
+        }
+        unset($entry);
+        $this->saveAlgorithmLogsToDb($jobId, $logs);
+        $this->updateJobProgress($jobId, $completed, $total, $algId);
+    }
+
+    public function getAlgorithmLogs(int $jobId): array
+    {
+        $job = $this->getJob($jobId);
+        $algorithmLogs = $this->getAlgorithmLogsFromDb($jobId);
+
+        $results = $this->db->table('ml_results')
+            ->where('job_id', $jobId)
+            ->get()
+            ->getResultArray();
+
+        $resultsByAlg = [];
+        foreach ($results as $r) {
+            $resultsByAlg[$r['algorithm_id']][] = $r;
+        }
+
+        // If no algorithm_logs stored (old jobs), build from ml_results
+        if (empty($algorithmLogs) && !empty($results)) {
+            $seen = [];
+            foreach ($results as $r) {
+                $algId = $r['algorithm_id'] ?? '';
+                if (!$algId || isset($seen[$algId])) continue;
+                $seen[$algId] = true;
+                $name = $this->algorithmDisplayName($algId) ?? $algId;
+                $compat = $this->getAlgorithmCompat($algId);
+                $algorithmLogs[] = [
+                    'id'           => $algId,
+                    'name'         => $name,
+                    'engine'       => $compat === 'python' ? 'python' : 'php',
+                    'status'       => 'completed',
+                    'started_at'   => null,
+                    'completed_at' => null,
+                    'duration_ms'  => null,
+                    'findings'     => $resultsByAlg[$algId] ?? [],
+                ];
+            }
+        }
+
+        // Enrich logs with algorithm display names and compat info
+        $categories = $this->getAlgorithmCategories();
+        foreach ($algorithmLogs as &$entry) {
+            if (empty($entry['name'])) {
+                $entry['name'] = $this->algorithmDisplayName($entry['id']) ?? $entry['id'];
+            }
+            if (empty($entry['engine'])) {
+                $entry['engine'] = $this->getAlgorithmCompat($entry['id']);
+            }
+            $entry['findings'] = $resultsByAlg[$entry['id']] ?? [];
+        }
+
+        return $algorithmLogs;
+    }
+
+    private function getAlgorithmCompat(string $algId): string
+    {
+        $categories = $this->getAlgorithmCategories();
+        foreach ($categories as $cat) {
+            foreach ($cat['algorithms'] as $alg) {
+                if ($alg['id'] === $algId) {
+                    return $alg['compat'] ?? 'both';
+                }
+            }
+        }
+        return 'both';
+    }
+
+    private function getAlgorithmLogsFromDb(int $jobId): array
+    {
+        $row = $this->db->table('ml_jobs')
+            ->select('algorithm_logs')
+            ->where('id', $jobId)
+            ->get()
+            ->getRowArray();
+        if (!$row || empty($row['algorithm_logs'])) return [];
+        $decoded = json_decode($row['algorithm_logs'], true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function saveAlgorithmLogsToDb(int $jobId, array $logs): void
+    {
+        try {
+            $this->db->table('ml_jobs')
+                ->where('id', $jobId)
+                ->update(['algorithm_logs' => json_encode($logs)]);
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+    }
+
+    public function completeJob(int $jobId, ?string $error = null): void
+    {
+        if ($jobId <= 0) return;
+        try {
+            $logs = $this->getAlgorithmLogsFromDb($jobId);
+            foreach ($logs as &$entry) {
+                if ($entry['status'] === 'running') {
+                    $entry['status']       = $error ? 'failed' : 'interrupted';
+                    $entry['completed_at'] = date('Y-m-d H:i:s');
+                }
+            }
+            unset($entry);
+            $this->saveAlgorithmLogsToDb($jobId, $logs);
+
+            $this->db->table('ml_jobs')
+                ->where('id', $jobId)
+                ->update([
+                    'status'            => $error ? 'failed' : 'completed',
+                    'progress_pct'      => 100,
+                    'completed_at'      => date('Y-m-d H:i:s'),
+                    'error_message'     => $error,
+                ]);
+
+            // Send completion email if job succeeded
+            if (!$error) {
+                $job = $this->getJob($jobId);
+                if ($job) {
+                    $algIds = json_decode($job['algorithms'] ?? '[]', true);
+                    $this->sendAnalysisCompleteEmail((int)$job['user_id'], $jobId, count((array)$algIds));
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+    }
+
+    public function sendAnalysisCompleteEmail(int $userId, int $jobId, int $totalAlgs): void
+    {
+        $emailRow = $this->db->table('auth_identities')
+            ->select('secret AS email, name AS display_name')
+            ->where('user_id', $userId)
+            ->where('type', 'email_password')
+            ->get()
+            ->getRowArray();
+        if (!$emailRow || empty($emailRow['email'])) return;
+
+        $userName = $emailRow['display_name'] ?: 'User';
+        $userEmail = $emailRow['email'];
+
+        $job = $this->getJob($jobId);
+        if (!$job) return;
+
+        $results = $this->db->table('ml_results')
+            ->where('job_id', $jobId)
+            ->where('user_id', $userId)
+            ->orderBy("FIELD(severity, 'High', 'Medium', 'Low')")
+            ->get()
+            ->getResultArray();
+
+        $severityIcons = ['High' => '🔴', 'Medium' => '🟡', 'Low' => '🟢'];
+
+        $categorySummary = [];
+        foreach ($results as $r) {
+            $cat = $r['category'] ?? 'Other';
+            if (!isset($categorySummary[$cat])) {
+                $categorySummary[$cat] = ['High' => 0, 'Medium' => 0, 'Low' => 0, 'total' => 0, 'items' => []];
+            }
+            $sev = $r['severity'] ?? 'Low';
+            $categorySummary[$cat][$sev]++;
+            $categorySummary[$cat]['total']++;
+            if (count($categorySummary[$cat]['items']) < 5) {
+                $categorySummary[$cat]['items'][] = sprintf(
+                    "  - %s %s (score: %.4f) — %s",
+                    $severityIcons[$sev] ?? '',
+                    $r['algorithm'] ?? $r['algorithm_id'] ?? 'Unknown',
+                    (float)($r['score'] ?? 0),
+                    substr($r['anomaly'] ?? '', 0, 120)
+                );
+            }
+        }
+
+        $emailService = \Config\Services::email();
+        $mailConfig   = config('Email');
+
+        $subject = 'Analysis Complete – Eaves Droid (Job #' . $jobId . ')';
+        $message = "Hi {$userName},\n\n";
+        $message .= "Your anomaly detection analysis has completed.\n";
+        $message .= str_repeat('=', 50) . "\n\n";
+
+        $message .= "📋  SUMMARY\n";
+        $message .= "  Job ID:        {$jobId}\n";
+        $message .= "  Status:        {$job['status']}\n";
+        if (!empty($job['engine'])) {
+            $message .= "  Engine:        {$job['engine']}\n";
+        }
+        $message .= "  Algorithms:    {$totalAlgs}\n";
+        $message .= "  Findings:      " . count($results) . " anomaly(s) detected\n";
+        $message .= "  Completed At:  {$job['completed_at']}\n\n";
+
+        if (!empty($job['error_message'])) {
+            $message .= "❌  ERROR: {$job['error_message']}\n\n";
+        }
+
+        if (!empty($categorySummary)) {
+            $message .= str_repeat('-', 50) . "\n";
+            $message .= "📊  BREAKDOWN BY CATEGORY\n\n";
+            foreach ($categorySummary as $cat => $info) {
+                $icon = match (strtolower($cat)) {
+                    'sms' => '💬', 'contacts' => '👤', 'call_logs' => '📞',
+                    'locations' => '📍', 'apps' => '📱', 'files' => '📁',
+                    'activity' => '📊', 'device_info' => '🔧',
+                    default => '📌'
+                };
+                $message .= "{$icon}  " . ucfirst(str_replace('_', ' ', $cat)) . " ({$info['total']} findings)\n";
+                $message .= "     High: {$info['High']}  |  Medium: {$info['Medium']}  |  Low: {$info['Low']}\n";
+                foreach ($info['items'] as $item) {
+                    $message .= "{$item}\n";
+                }
+                $message .= "\n";
+            }
+        }
+
+        $message .= str_repeat('=', 50) . "\n";
+        $message .= "View full results at: " . site_url("analysis/results/{$jobId}") . "\n";
+        $message .= "\n— Eaves Droid Anomaly Detection System\n";
+
+        try {
+            $emailService->setFrom($mailConfig->fromEmail ?? 'no-reply@eavesdroid.local', $mailConfig->fromName ?? 'Eaves Droid');
+            $emailService->setTo($userEmail);
+            $emailService->setSubject($subject);
+            $emailService->setMessage($message);
+            $sent = $emailService->send();
+            if (!$sent) {
+                log_message('error', 'sendAnalysisCompleteEmail: failed to send to ' . $userEmail . ' for job #' . $jobId . '. Debug: ' . json_encode($emailService->printDebugger(['headers'])));
+            } else {
+                log_message('info', 'sendAnalysisCompleteEmail: sent to ' . $userEmail . ' for job #' . $jobId);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'sendAnalysisCompleteEmail exception for job #' . $jobId . ': ' . $e->getMessage());
+        }
     }
 }

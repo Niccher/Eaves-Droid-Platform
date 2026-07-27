@@ -26,6 +26,22 @@
     <section class="content">
         <div class="container-fluid">
 
+            <!-- No Previous Results Callout -->
+            <div class="callout callout-info bg-white shadow-sm border-left-info mb-3">
+                <div class="d-flex align-items-start">
+                    <div class="mr-3">
+                        <i class="fas fa-chart-bar fa-3x text-info"></i>
+                    </div>
+                    <div>
+                        <h5 class="text-info font-weight-bold mb-1"><i class="fas fa-info-circle mr-1"></i>No Previous Analysis Results</h5>
+                        <p class="mb-2">You haven't run an anomaly detection analysis yet. Select an engine and algorithms below, then click <strong>Next: Algorithms</strong> to get started.</p>
+                        <a href="<?= base_url('analysis/anomalies/algorithms') ?>" class="btn btn-info btn-sm font-weight-bold shadow-sm">
+                            <i class="fas fa-play mr-1"></i> Start New Analysis
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Combined Info & Warning Callout at Top -->
             <div class="callout callout-warning bg-light shadow-sm border-left-warning mb-4">
                 <h5 class="text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-2"></i>About This Tool &amp; Accuracy Disclaimer</h5>
@@ -155,7 +171,7 @@
                             <!-- Buttons Section -->
                             <div class="d-flex justify-content-between align-items-center mt-4">
                                 <!-- Default settings skip option -->
-                                <a href="<?= base_url('analysis/anomalies/results?skip=1') ?>"
+                                <a href="<?= base_url('analysis/anomalies/run?skip=1') ?>"
                                    class="btn btn-outline-success font-weight-bold"
                                    id="btn-skip-results">
                                     <i class="fas fa-magic mr-1"></i> Use Default &amp; Skip to Results

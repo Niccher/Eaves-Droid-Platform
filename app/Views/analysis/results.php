@@ -179,6 +179,15 @@ foreach ($results as $row) {
 }
 ksort($grouped);
 
+// ── Category pill gradient colors ────────────────────────────────────────────
+$pillGradient = ['danger', 'warning', 'info', 'primary', 'success', 'secondary', 'dark', 'danger'];
+$pillIdx = 0;
+$catPillColors = [];
+foreach ($catMeta as $cat => $meta) {
+    $catPillColors[$cat] = $pillGradient[$pillIdx % count($pillGradient)];
+    $pillIdx++;
+}
+
 // ── Severity map (badge + icon) ───────────────────────────────────────────────
 $sevMap = $severity_map ?? [
     'High'   => ['badge' => 'danger',  'icon' => 'fas fa-angle-double-up'],
@@ -286,15 +295,17 @@ $sevMap = $severity_map ?? [
                         <?php
                         $firstCat = true;
                         foreach ($grouped as $catName => $catRows):
-                            $paneId  = 'pane-' . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
-                            $tabId   = 'tab-'  . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
-                            $highCnt = count(array_filter($catRows, fn($r) => ($r['severity'] ?? '') === 'High'));
+                            $paneId   = 'pane-' . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
+                            $tabId    = 'tab-'  . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
+                            $highCnt  = count(array_filter($catRows, fn($r) => ($r['severity'] ?? '') === 'High'));
+                            $pillClr  = $catPillColors[$catName] ?? 'primary';
                         ?>
                         <li class="nav-item">
                             <a class="nav-link <?= $firstCat ? 'active' : '' ?>" id="<?= $tabId ?>" data-toggle="pill"
-                               href="#<?= $paneId ?>" role="tab" aria-controls="<?= $paneId ?>" aria-selected="<?= $firstCat ? 'true' : 'false' ?>">
-                                <i class="<?= $catMeta[$catName]['icon'] ?? 'fas fa-circle' ?> mr-1"></i><?= esc($catName) ?>
-                                <span class="badge badge-primary ml-1"><?= count($catRows) ?></span>
+                               href="#<?= $paneId ?>" role="tab" aria-controls="<?= $paneId ?>" aria-selected="<?= $firstCat ? 'true' : 'false' ?>"
+                               data-pill-color="<?= $pillClr ?>">
+                                <i class="<?= $catMeta[$catName]['icon'] ?? 'fas fa-circle' ?> mr-1 text-<?= $pillClr ?>"></i><?= esc($catName) ?>
+                                <span class="badge badge-<?= $pillClr ?> ml-1"><?= count($catRows) ?></span>
                                 <?php if ($highCnt > 0): ?>
                                 <span class="badge badge-danger ml-1" title="<?= $highCnt ?> high severity"><i class="fas fa-bolt"></i></span>
                                 <?php endif; ?>
@@ -329,15 +340,15 @@ $sevMap = $severity_map ?? [
                                     $highN   = count(array_filter($algRows, fn($r) => ($r['severity'] ?? '') === 'High'));
                                 ?>
                                 <li class="nav-item">
-                                    <a class="nav-link d-flex align-items-center <?= $firstAlg ? 'active' : '' ?>"
-                                       id="algtab-<?= $algHash ?>"
-                                       data-toggle="tab"
-                                       href="#algpane-<?= $algHash ?>"
-                                       role="tab"
-                                       style="font-size:.82rem; padding:.45rem .9rem;">
-                                         <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> mr-1 text-primary"></i>
-                                         <?= esc($algName) ?>
-                                         <span class="badge badge-primary ml-2"><?= count($algRows) ?></span>
+                                 <a class="nav-link d-flex align-items-center <?= $firstAlg ? 'active' : '' ?>"
+                                        id="algtab-<?= $algHash ?>"
+                                        data-toggle="tab"
+                                        href="#algpane-<?= $algHash ?>"
+                                        role="tab"
+                                        style="font-size:.82rem; padding:.45rem .9rem;">
+                                          <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> mr-1 text-<?= $am['color'] ?? 'primary' ?>"></i>
+                                          <?= esc($algName) ?>
+                                          <span class="badge badge-<?= $am['color'] ?? 'primary' ?> ml-2"><?= count($algRows) ?></span>
                                          <?php if ($highN > 0): ?>
                                          <span class="badge badge-danger ml-1" title="<?= $highN ?> High severity"><i class="fas fa-bolt"></i></span>
                                          <?php endif; ?>
@@ -416,6 +427,9 @@ $sevMap = $severity_map ?? [
                     <button type="button" class="btn btn-warning font-weight-bold shadow-sm" id="btn-rerun">
                         <i class="fas fa-redo mr-1"></i> Re-run Detection
                     </button>
+                    <a href="<?= base_url('analysis/anomalies/run') ?>" class="btn btn-primary font-weight-bold shadow-sm" id="btn-run-now" style="display:none;">
+                        <i class="fas fa-play mr-1"></i> Run Now
+                    </a>
                 </div>
             </div>
 
@@ -602,6 +616,36 @@ function renderTable(string $paneId, array $rows, array $sevMap, array $algMeta,
 }
 ?>
 
+<style>
+/* Category pill active border */
+.nav-pills .nav-link[data-pill-color] {
+    border-left: 3px solid transparent;
+    transition: border-color 0.2s;
+}
+</style>
+
+<script>
+// Bootstrap 4 / AdminLTE color mapping for pill borders
+var pillColorMap = {
+    danger: '#dc3545', warning: '#ffc107', info: '#17a2b8',
+    primary: '#007bff', success: '#28a745', secondary: '#6c757d',
+    dark: '#343a40', light: '#f8f9fa'
+};
+document.querySelectorAll('#cat-tabs a[data-toggle="pill"]').forEach(function (el) {
+    el.addEventListener('shown.bs.tab', function () {
+        var clr = this.getAttribute('data-pill-color');
+        if (clr) this.style.borderLeftColor = pillColorMap[clr] || '#007bff';
+    });
+});
+document.addEventListener('DOMContentLoaded', function () {
+    var active = document.querySelector('#cat-tabs a.active[data-pill-color]');
+    if (active) {
+        var clr = active.getAttribute('data-pill-color');
+        if (clr) active.style.borderLeftColor = pillColorMap[clr] || '#007bff';
+    }
+});
+</script>
+
 <!-- SweetAlert2 dialog scripts -->
 <script>
 document.getElementById('btn-rerun').addEventListener('click', function () {
@@ -635,7 +679,7 @@ document.getElementById('btn-rerun').addEventListener('click', function () {
         }
     }).then(function (result) {
         if (result.isConfirmed) {
-            window.location.href = '<?= base_url('analysis/anomalies/results') ?>?scope=' + result.value;
+            window.location.href = '<?= base_url('analysis/anomalies/run') ?>?scope=' + result.value;
         }
     });
 });

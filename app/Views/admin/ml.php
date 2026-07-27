@@ -123,12 +123,17 @@
                             <!-- ======================== PHP-ML ======================== -->
                             <div class="tab-pane fade" id="pane-phpml" role="tabpanel">
 
+                                <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
+                                    <i class="fas fa-database text-info mr-1"></i>
+                                    Algorithm parameters below are stored in the database (<code>settings</code> table, <code>class='ml'</code>) and read at runtime by the PHP-ML engine. Defaults apply when no custom value has been saved.
+                                </div>
+
                                 <!-- K-Means -->
                                 <div class="card card-outline card-info shadow-sm mb-3">
                                     <div class="card-header"><h3 class="card-title"><i class="fas fa-circle-nodes mr-1"></i> K-Means Clustering</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Number of Clusters (K)</label>
+                                            <label class="col-sm-2 col-form-label">Number of Clusters (K) <small class="text-muted">(default: 3)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_phpml_kmeans_k" class="form-control" value="<?= htmlspecialchars($settings['ml_phpml_kmeans_k'] ?? '3') ?>" min="2" max="20">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -149,7 +154,7 @@
                                     <div class="card-header"><h3 class="card-title"><i class="fas fa-bezier-curve mr-1"></i> DBSCAN Density-Based Clustering</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Epsilon (&epsilon;)</label>
+                                            <label class="col-sm-2 col-form-label">Epsilon (&epsilon;) <small class="text-muted">(default: 0.01)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" step="0.001" name="ml_phpml_dbscan_epsilon" class="form-control" value="<?= htmlspecialchars($settings['ml_phpml_dbscan_epsilon'] ?? '0.01') ?>" min="0.001" max="1">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -163,7 +168,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Min Samples</label>
+                                            <label class="col-sm-2 col-form-label">Min Samples <small class="text-muted">(default: 2)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_phpml_dbscan_minpoints" class="form-control" value="<?= htmlspecialchars($settings['ml_phpml_dbscan_minpoints'] ?? '2') ?>" min="1" max="50">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -184,7 +189,7 @@
                                     <div class="card-header"><h3 class="card-title"><i class="fas fa-tree mr-1"></i> Isolation Forest</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Number of Trees</label>
+                                            <label class="col-sm-2 col-form-label">Number of Trees <small class="text-muted">(default: 100)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_phpml_isolationforest_trees" class="form-control" value="<?= htmlspecialchars($settings['ml_phpml_isolationforest_trees'] ?? '100') ?>" min="10" max="1000">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -198,7 +203,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Samples Per Tree</label>
+                                            <label class="col-sm-2 col-form-label">Samples Per Tree <small class="text-muted">(default: 256)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_phpml_isolationforest_samples" class="form-control" value="<?= htmlspecialchars($settings['ml_phpml_isolationforest_samples'] ?? '256') ?>" min="32" max="4096">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -219,10 +224,16 @@
                                     <i class="fas fa-exclamation-triangle text-warning mr-1"></i>
                                     <strong>Requires a running Python backend service.</strong> Deploy via Docker with the required Python dependencies (scikit-learn, TensorFlow/PyTorch, Flask/FastAPI). The Python backend provides GPU acceleration, deep learning models, and advanced algorithms not available in PHP-ML. Use it for production-scale deployments with &gt;50k records.
                                 </div>
+                                <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
+                                    <i class="fas fa-database text-info mr-1"></i>
+                                    Python algorithm parameters below are stored in the database and sent to the Python backend at runtime. Defaults apply when no custom value has been saved.
+                                </div>
 
                                 <!-- Connection Settings -->
                                 <div class="card card-outline card-warning shadow-sm mb-3">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-plug mr-1"></i> Connection Settings</h3></div>
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-plug mr-1"></i> Connection Settings</h3>
+                                    </div>
                                     <div class="card-body">
                                         <div class="form-group row">
                                             <label class="col-sm-2 col-form-label">Enable Python</label>
@@ -235,26 +246,63 @@
                                             </div>
                                         </div>
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Host</label>
+                                            <label class="col-sm-2 col-form-label">Connection URL</label>
                                             <div class="col-sm-10">
-                                                <input type="text" name="ml_python_host" class="form-control" value="<?= htmlspecialchars($settings['ml_python_host'] ?? 'localhost') ?>" placeholder="localhost">
-                                                <small class="text-muted">Container name, service name, or IP address. Use <code>ml-backend</code> in Docker Compose networks, or <code>localhost</code> for same-machine deployments.</small>
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" id="python_connection_url"
+                                                        value="<?= htmlspecialchars($settings['ml_python_url'] ?? $python_settings['url']) ?>"
+                                                        placeholder="http://ml-eaves-droid:9070">
+                                                    <div class="input-group-append">
+                                                        <button class="btn btn-outline-info" type="button" onclick="testPythonConnection()">
+                                                            <i class="fas fa-plug mr-1"></i> Test
+                                                        </button>
+                                                        <button class="btn btn-outline-success" type="button" onclick="setPythonConnection()">
+                                                            <i class="fas fa-check mr-1"></i> Set
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">Enter the full URL of the Python ML backend (e.g., <code>http://ml-eaves-droid:9070</code>). Click <strong>Test</strong> to verify connectivity, then <strong>Set</strong> to activate.</small>
                                             </div>
                                         </div>
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Port</label>
-                                            <div class="col-sm-10">
-                                                <input type="number" name="ml_python_port" class="form-control" value="<?= htmlspecialchars($settings['ml_python_port'] ?? '5000') ?>" min="1" max="65535">
-                                                <small class="text-muted">Default: <code>5000</code> (Flask/FastAPI standard). Adjust if your backend container uses a different port mapping.</small>
-                                            </div>
+
+                                        <!-- Test result display -->
+                                        <div id="connectionTestResult" class="mt-2" style="display:none;"></div>
+
+                                        <?php
+                                        $activeUrl = $settings['ml_python_url'] ?? ($python_settings['url'] ?? '');
+                                        $lastTest = $settings['ml_python_last_test'] ?? '';
+                                        $lastTestOk = ($settings['ml_python_last_test_status'] ?? '') === 'ok';
+                                        ?>
+                                        <div class="mt-2 p-2 bg-light rounded small" id="activeConnectionInfo">
+                                            <i class="fas fa-info-circle text-info mr-1"></i>
+                                            <strong>Active backend:</strong>
+                                            <?php if ($activeUrl && $lastTestOk): ?>
+                                                <span class="text-success"><i class="fas fa-check-circle mr-1"></i></span>
+                                            <?php elseif ($activeUrl): ?>
+                                                <span class="text-warning"><i class="fas fa-exclamation-triangle mr-1"></i> (not tested)</span>
+                                            <?php else: ?>
+                                                <span class="text-muted">not configured</span>
+                                            <?php endif; ?>
+                                            <code><?= htmlspecialchars($activeUrl ?: '—') ?></code>
+                                            <?php if ($lastTest): ?>
+                                                <span class="text-muted ml-2">| Last tested: <?= htmlspecialchars($lastTest) ?></span>
+                                            <?php endif; ?>
                                         </div>
-                                        <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">API Endpoint</label>
-                                            <div class="col-sm-10">
-                                                <input type="text" name="ml_python_endpoint" class="form-control" value="<?= htmlspecialchars($settings['ml_python_endpoint'] ?? '/api/analyze') ?>" placeholder="/api/analyze">
-                                                <small class="text-muted">Full URL becomes <code>http://{host}:{port}{endpoint}</code>. Must accept POST JSON with <code>engine</code> and <code>data</code> payload and return JSON scores.</small>
-                                            </div>
+
+                                        <?php if (!empty($docker_settings) && ($docker_settings['detected'] ?? false)): ?>
+                                        <div class="mt-3 p-3 bg-light rounded small">
+                                            <i class="fab fa-docker text-success mr-1"></i>
+                                            <strong>Docker-compose detected</strong> — ml-eaves-droid container (<code><?= esc($docker_settings['host']) ?></code>)
+                                            <table class="table table-sm table-bordered mt-2 mb-0">
+                                                <thead class="thead-light"><tr><th>Service</th><th>Internal Port</th><th>External (Host)</th></tr></thead>
+                                                <tbody>
+                                                    <tr><td><i class="fas fa-brain mr-1"></i>FastAPI (ML)</td><td><code><?= (int)($docker_settings['internal_port'] ?? 9070) ?></code></td><td><code><?= (int)($docker_settings['external_port'] ?? 9071) ?></code></td></tr>
+                                                    <tr><td><i class="fas fa-chart-line mr-1"></i>Metrics</td><td><code><?= (int)($docker_settings['metrics_port'] ?? 9073) ?></code></td><td><code><?= (int)($docker_settings['metrics_port'] ?? 9073) ?></code></td></tr>
+                                                    <tr><td><i class="fas fa-microchip mr-1"></i>TF Serving</td><td><code><?= (int)($docker_settings['tf_serving_port'] ?? 9072) ?></code></td><td><code><?= (int)($docker_settings['tf_serving_port'] ?? 9072) ?></code></td></tr>
+                                                </tbody>
+                                            </table>
                                         </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
 
@@ -263,7 +311,7 @@
                                     <div class="card-header"><h3 class="card-title"><i class="fas fa-network-wired mr-1"></i> Autoencoder Neural Network</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Latent Dimensions</label>
+                                            <label class="col-sm-2 col-form-label">Latent Dimensions <small class="text-muted">(default: 16)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_python_autoencoder_latent" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_latent'] ?? '16') ?>" min="2" max="128">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -277,7 +325,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Training Epochs</label>
+                                            <label class="col-sm-2 col-form-label">Training Epochs <small class="text-muted">(default: 50)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_python_autoencoder_epochs" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_epochs'] ?? '50') ?>" min="10" max="500">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -289,7 +337,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Anomaly Threshold (&sigma;)</label>
+                                            <label class="col-sm-2 col-form-label">Anomaly Threshold (&sigma;) <small class="text-muted">(default: 3.0)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" step="0.1" name="ml_python_autoencoder_threshold" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_threshold'] ?? '3.0') ?>" min="1.0" max="6.0">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -310,7 +358,7 @@
                                     <div class="card-header"><h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> LSTM Sequence Predictor</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Sequence Length</label>
+                                            <label class="col-sm-2 col-form-label">Sequence Length <small class="text-muted">(default: 20)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_python_lstm_sequence" class="form-control" value="<?= htmlspecialchars($settings['ml_python_lstm_sequence'] ?? '20') ?>" min="5" max="100">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -324,7 +372,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">LSTM Units</label>
+                                            <label class="col-sm-2 col-form-label">LSTM Units <small class="text-muted">(default: 64)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_python_lstm_units" class="form-control" value="<?= htmlspecialchars($settings['ml_python_lstm_units'] ?? '64') ?>" min="16" max="256">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -345,7 +393,7 @@
                                     <div class="card-header"><h3 class="card-title"><i class="fas fa-vector-square mr-1"></i> One-Class SVM</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Nu (&nu;)</label>
+                                            <label class="col-sm-2 col-form-label">Nu (&nu;) <small class="text-muted">(default: 0.05)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" step="0.01" name="ml_python_oneclass_nu" class="form-control" value="<?= htmlspecialchars($settings['ml_python_oneclass_nu'] ?? '0.05') ?>" min="0.01" max="0.5">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -359,7 +407,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Gamma (&gamma;)</label>
+                                            <label class="col-sm-2 col-form-label">Gamma (&gamma;) <small class="text-muted">(default: 0.01)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" step="0.001" name="ml_python_oneclass_gamma" class="form-control" value="<?= htmlspecialchars($settings['ml_python_oneclass_gamma'] ?? '0.01') ?>" min="0.001" max="1.0">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -380,7 +428,7 @@
                                     <div class="card-header"><h3 class="card-title"><i class="fas fa-tree mr-1"></i> Isolation Forest (Python)</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Trees</label>
+                                            <label class="col-sm-2 col-form-label">Trees <small class="text-muted">(default: 200)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_python_iforest_trees" class="form-control" value="<?= htmlspecialchars($settings['ml_python_iforest_trees'] ?? '200') ?>" min="10" max="2000">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -394,7 +442,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Samples</label>
+                                            <label class="col-sm-2 col-form-label">Samples <small class="text-muted">(default: 512)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" name="ml_python_iforest_samples" class="form-control" value="<?= htmlspecialchars($settings['ml_python_iforest_samples'] ?? '512') ?>" min="32" max="8192">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -408,7 +456,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Contamination</label>
+                                            <label class="col-sm-2 col-form-label">Contamination <small class="text-muted">(default: 0.05)</small></label>
                                             <div class="col-sm-10">
                                                 <input type="number" step="0.01" name="ml_python_iforest_contamination" class="form-control" value="<?= htmlspecialchars($settings['ml_python_iforest_contamination'] ?? '0.05') ?>" min="0.01" max="0.5">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
@@ -683,3 +731,193 @@ networks:
         </div>
     </section>
 </div>
+
+<div class="modal fade" id="pythonTestModal" tabindex="-1" role="dialog" aria-labelledby="pythonTestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title text-white" id="pythonTestModalLabel">
+                    <i class="fab fa-python mr-1"></i> Python Backend Connection Test
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="pythonTestBody">
+                <div class="text-center py-5">
+                    <i class="fas fa-spinner fa-pulse fa-3x text-muted"></i>
+                    <p class="mt-2 text-muted">Connecting to Python backend...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="setFromTestBtn" style="display:none;" onclick="setFromTestResult()">
+                    <i class="fas fa-check mr-1"></i> Set This Connection
+                </button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info" onclick="testPythonConnection()"><i class="fas fa-sync mr-1"></i> Test Again</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let lastTestedUrl = '';
+let lastTestResult = null;
+
+function getConnectionUrl() {
+    const urlInput = document.getElementById('python_connection_url');
+    return urlInput ? urlInput.value.trim() : '';
+}
+
+function testPythonConnection() {
+    const modal = $('#pythonTestModal');
+    const body = $('#pythonTestBody');
+    const setBtn = document.getElementById('setFromTestBtn');
+    setBtn.style.display = 'none';
+    lastTestedUrl = getConnectionUrl();
+
+    body.html('<div class="text-center py-5"><i class="fas fa-spinner fa-pulse fa-3x text-muted"></i><p class="mt-2 text-muted">Connecting to <code>' + escHtml(lastTestedUrl) + '</code>...</p></div>');
+    modal.modal('show');
+
+    $.post('<?= base_url('admin/ml/test-python') ?>', {
+        '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+        'url': lastTestedUrl
+    }, function(data) {
+        lastTestResult = data;
+        let html = '';
+
+        if (data.success) {
+            html += '<div class="alert alert-success">';
+            html += '    <h5><i class="fas fa-check-circle mr-1"></i> Python Backend is running</h5>';
+            html += '    <p class="mb-0 small">Status: <strong>' + escHtml(data.status || 'healthy') + '</strong>';
+            if (data.version) html += ' | Version: <strong>' + escHtml(data.version) + '</strong>';
+            if (data.uptime) html += ' | Uptime: <strong>' + Math.round(data.uptime) + 's</strong>';
+            html += '</p></div>';
+        } else {
+            html += '<div class="alert alert-danger">';
+            html += '    <h5><i class="fas fa-times-circle mr-1"></i> Connection Failed</h5>';
+            html += '    <p class="mb-0 small">' + escHtml(data.message) + '</p>';
+            html += '</div>';
+        }
+
+        // Backend info
+        html += '<div class="card card-outline card-secondary shadow-sm mt-3"><div class="card-header"><h6 class="card-title"><i class="fas fa-cogs mr-1"></i> Backend Status</h6></div><div class="card-body p-0"><table class="table table-sm table-bordered mb-0">';
+        html += '<tr><th>URL Tested</th><td><code>' + escHtml(data.tested_url || lastTestedUrl) + '</code></td></tr>';
+        if (data.success) {
+            html += '<tr><th>Database</th><td>' + (data.database === 'connected' ? '<span class="text-success"><i class="fas fa-check-circle mr-1"></i> Connected</span>' : '<span class="text-danger"><i class="fas fa-times-circle mr-1"></i> ' + escHtml(data.database) + '</span>') + '</td></tr>';
+            html += '<tr><th>CUDA</th><td>' + (data.cuda ? '<span class="text-success"><i class="fas fa-microchip mr-1"></i> ' + escHtml(data.cuda_device || 'Available') + '</span>' : '<span class="text-muted"><i class="fas fa-times mr-1"></i> Not available</span>') + '</td></tr>';
+            html += '<tr><th>Cache Entries</th><td>' + (data.cache || 0) + '</td></tr>';
+            if (data.memory) {
+                html += '<tr><th>Memory</th><td>' + Math.round(data.memory.used) + ' MB / ' + Math.round(data.memory.total) + ' MB</td></tr>';
+            }
+            if (data.models && data.models.length > 0) {
+                html += '<tr><th>Models Loaded</th><td><code>' + data.models.join(', ') + '</code></td></tr>';
+            }
+        }
+        html += '</table></div></div>';
+
+        // Module statuses
+        if (data.success && data.modules && data.modules.length > 0) {
+            html += '<div class="card card-outline card-info shadow-sm mt-3"><div class="card-header"><h6 class="card-title"><i class="fas fa-puzzle-piece mr-1"></i> Module Health</h6></div><div class="card-body p-0"><table class="table table-sm table-bordered mb-0"><thead class="thead-light"><tr><th>Module</th><th>Status</th><th>Message</th></tr></thead><tbody>';
+            data.modules.forEach(function(m) {
+                const statusIcon = m.status === 'ok' ? '<span class="text-success"><i class="fas fa-check-circle"></i></span>' :
+                    (m.status === 'warn' ? '<span class="text-warning"><i class="fas fa-exclamation-triangle"></i></span>' :
+                    '<span class="text-danger"><i class="fas fa-times-circle"></i></span>');
+                html += '<tr><td>' + escHtml(m.name) + '</td><td>' + statusIcon + ' ' + escHtml(m.status) + '</td><td class="small">' + escHtml(m.message) + '</td></tr>';
+            });
+            html += '</tbody></table></div></div>';
+        }
+
+        if (data.success) {
+            setBtn.style.display = 'inline-block';
+        }
+
+        body.html(html);
+    }).fail(function(xhr) {
+        body.html('<div class="alert alert-danger"><h5><i class="fas fa-exclamation-triangle mr-1"></i> Request Failed</h5><p class="mb-0 small">HTTP ' + xhr.status + ': ' + xhr.statusText + '</p></div>');
+    });
+}
+
+function setPythonConnection() {
+    const url = getConnectionUrl();
+    if (!url) {
+        showConnectionResult('error', '<i class="fas fa-exclamation-triangle mr-1"></i> Please enter a connection URL.');
+        return;
+    }
+
+    showConnectionResult('info', '<i class="fas fa-spinner fa-pulse mr-1"></i> Testing connection before saving...');
+
+    $.post('<?= base_url('admin/ml/test-python') ?>', {
+        '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+        'url': url
+    }, function(data) {
+        if (data.success) {
+            $.post('<?= base_url('admin/ml/set-connection') ?>', {
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                'url': url
+            }, function(saveData) {
+                if (saveData.success) {
+                    showConnectionResult('success', '<i class="fas fa-check-circle mr-1"></i> ' + saveData.message);
+                    updateActiveConnection(url, true);
+                } else {
+                    showConnectionResult('error', '<i class="fas fa-times-circle mr-1"></i> ' + saveData.message);
+                }
+            }).fail(function() {
+                showConnectionResult('error', '<i class="fas fa-times-circle mr-1"></i> Failed to save connection settings.');
+            });
+        } else {
+            showConnectionResult('error', '<i class="fas fa-times-circle mr-1"></i> ' + data.message + ' Test the connection first.');
+        }
+    }).fail(function() {
+        showConnectionResult('error', '<i class="fas fa-times-circle mr-1"></i> Cannot reach ' + url + '. Verify the URL and try again.');
+    });
+}
+
+function setFromTestResult() {
+    if (!lastTestedUrl || !lastTestResult || !lastTestResult.success) return;
+
+    $.post('<?= base_url('admin/ml/set-connection') ?>', {
+        '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+        'url': lastTestedUrl
+    }, function(data) {
+        if (data.success) {
+            const body = $('#pythonTestBody');
+            body.append('<div class="alert alert-success mt-3"><i class="fas fa-check-circle mr-1"></i> Connection saved! You can now close this dialog.</div>');
+            document.getElementById('setFromTestBtn').style.display = 'none';
+            updateActiveConnection(lastTestedUrl, true);
+            $('#python_connection_url').val(lastTestedUrl);
+        }
+    });
+}
+
+function updateActiveConnection(url, isOk) {
+    const info = document.getElementById('activeConnectionInfo');
+    if (info) {
+        const icon = isOk ? '<span class="text-success"><i class="fas fa-check-circle mr-1"></i></span>' :
+            '<span class="text-warning"><i class="fas fa-exclamation-triangle mr-1"></i></span>';
+        info.innerHTML = '<i class="fas fa-info-circle text-info mr-1"></i>' +
+            '<strong>Active backend:</strong> ' + icon +
+            ' <code>' + escHtml(url) + '</code>' +
+            '<span class="text-muted ml-2">| Last tested: just now</span>';
+    }
+}
+
+function showConnectionResult(type, msg) {
+    const resultDiv = document.getElementById('connectionTestResult');
+    if (!resultDiv) return;
+    resultDiv.style.display = 'block';
+    const alertClass = type === 'success' ? 'alert-success' : (type === 'error' ? 'alert-danger' : 'alert-info');
+    resultDiv.innerHTML = '<div class="alert ' + alertClass + ' py-2 px-3 mb-0 small">' + msg + '</div>';
+    setTimeout(function() {
+        if (type === 'success') {
+            resultDiv.style.display = 'none';
+        }
+    }, 8000);
+}
+
+function escHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str || ''));
+    return div.innerHTML;
+}
+</script>

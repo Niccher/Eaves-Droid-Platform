@@ -48,6 +48,15 @@ class Anomalies extends BaseClientController
     {
         $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
 
+        // Check if user has a last completed job — redirect to its results
+        $lastJob = $this->anomalyModel->getUserLastCompletedJob($this->userId);
+        if ($lastJob) {
+            $this->session->set('anomaly_engine', $lastJob['engine']);
+            $algs = json_decode($lastJob['algorithms'] ?? '[]', true);
+            $this->session->set('anomaly_algorithms', $algs);
+            return redirect()->to(base_url('analysis/anomalies/results?job_id=' . $lastJob['id']));
+        }
+
         // If admin has locked the engine, skip selection — go to algorithms
         if ($adminSettings['default_engine'] !== 'both') {
             return redirect()->to(base_url('analysis/anomalies/algorithms'));
@@ -106,19 +115,17 @@ class Anomalies extends BaseClientController
     }
 
     // -------------------------------------------------------------------------
-    // Step 3 – Anomaly Results
+    // Step 3 – Start Detection (non-blocking with progress)
     // -------------------------------------------------------------------------
 
     /**
-     * Renders the static demo anomaly results table.
+     * Creates a detection job and redirects to the progress page.
      *
-     * URL: GET/POST /analysis/anomalies/results
-     *
-     * @return string|\CodeIgniter\HTTP\RedirectResponse Rendered HTML or Redirect
+     * URL: GET|POST /analysis/anomalies/run
      */
-    public function results()
+    public function run()
     {
-        // ── Handle POST: algorithm selection form submitted
+        // ── Handle POST: algorithm selection form submitted ──
         if ($this->request->getMethod() === 'post') {
             $algs = $this->request->getPost('algs');
             if ($algs && is_array($algs)) {
@@ -126,76 +133,184 @@ class Anomalies extends BaseClientController
             }
         }
 
-        // ── Handle reset: clear session, auto-reconfigure with PHP defaults, go back to results
+        // ── Handle reset: clear session, reconfigure with PHP defaults ──
         if ($this->request->getGet('reset') === 'true') {
             $this->session->remove('anomaly_engine');
             $this->session->remove('anomaly_algorithms');
             $this->session->set('anomaly_engine', 'php');
             $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
-            return redirect()->to(base_url('analysis/anomalies/results'));
+            return redirect()->to(base_url('analysis/anomalies/run'));
         }
 
-        // ── Handle skip: auto-configure with PHP defaults (from landing page button)
+        // ── Handle skip: auto-configure with PHP defaults (from landing page) ──
         if ($this->request->getGet('skip') === '1') {
             $this->session->set('anomaly_engine', 'php');
             $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
         }
 
-        // ── Guard: must have engine configured (Step 1)
-        if (!$this->session->has('anomaly_engine')) {
-            return redirect()->to(base_url('analysis/anomalies'));
-        }
-
-        // ── Guard: must have algorithms configured (Step 2)
-        if (!$this->session->has('anomaly_algorithms')) {
-            $engine = $this->session->get('anomaly_engine');
-            return redirect()->to(base_url('analysis/anomalies/algorithms?engine=' . $engine));
-        }
+        // ── Configure from session ──
+        $this->ensureConfigured();
 
         $selectedEngine = $this->session->get('anomaly_engine') ?? 'php';
         $selectedAlgs   = $this->session->get('anomaly_algorithms') ?? [];
 
-        // Filter selected algorithms against admin config
         $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
-        if ($adminSettings['allowed_algorithms'] !== null) {
-            foreach ($selectedAlgs as $catKey => $algList) {
-                $selectedAlgs[$catKey] = array_values(array_intersect(
-                    (array)$algList,
-                    $adminSettings['allowed_algorithms']
-                ));
-                if (empty($selectedAlgs[$catKey])) {
-                    unset($selectedAlgs[$catKey]);
-                }
+        $selectedAlgs = $this->filterAlgs($selectedAlgs, $adminSettings);
+
+        if ($adminSettings['default_engine'] !== 'both') {
+            $selectedEngine = $adminSettings['default_engine'];
+            $this->session->set('anomaly_engine', $selectedEngine);
+        }
+
+        $scope = $this->request->getGet('scope') ?? 'full';
+
+        // Count total algorithms
+        $algCount = 0;
+        foreach ($selectedAlgs as $algList) {
+            $algCount += count((array)$algList);
+        }
+
+        // Create ml_jobs row
+        $allAlgIds = [];
+        foreach ($selectedAlgs as $algList) {
+            foreach ((array)$algList as $aid) {
+                $allAlgIds[] = $aid;
             }
         }
 
-        // Resolve engine based on admin config and session
-        if ($adminSettings['default_engine'] === 'both') {
-            $effectiveEngine = $selectedEngine;
-        } else {
-            $effectiveEngine = $adminSettings['default_engine'];
-            $this->session->set('anomaly_engine', $effectiveEngine);
+        $jobId = $this->anomalyModel->createJob(
+            $this->userId,
+            $selectedEngine,
+            $allAlgIds,
+            $scope,
+            $algCount
+        );
+
+        // Store job info in session for the results page
+        $this->session->set('anomaly_job_id', $jobId);
+        $this->session->set('anomaly_scope', $scope);
+
+        return redirect()->to(base_url("analysis/anomalies/progress/{$jobId}"));
+    }
+
+    /**
+     * Progress page — polls /analysis/anomalies/status/{jobId} every 2s.
+     *
+     * URL: GET /analysis/anomalies/progress/{jobId}
+     */
+    public function progress(int $jobId)
+    {
+        $job = $this->anomalyModel->getJob($jobId);
+        if (!$job) {
+            return redirect()->to(base_url('analysis/anomalies'))
+                ->with('error', 'Job not found.');
         }
 
-        // Read analysis scope from POST/GET — 'full' (all data) or 'incremental' (new only)
-        $scope = $this->request->getPost('scope')
-              ?? $this->request->getGet('scope')
-              ?? 'full';
-
-        // ── Run detection via the appropriate engine
-        // PHP engine: real detection methods via Mod_Anomalies (DB queries + PHP-ML)
-        // Python engine: delegates Python-only algorithms to the ml-eaves-droid
-        //               FastAPI backend; PHP-compatible algorithms still run locally.
-        // $this->userId is set by BaseClientController::initController() from the authenticated user.
-        $userId = $this->userId;
-        if ($effectiveEngine === 'php') {
-            $results = $this->anomalyModel->runPhpDetection($selectedAlgs, $userId);
-        } else {
-            // Python engine: dispatch Python-only algorithms to the FastAPI backend
-            $results = $this->anomalyModel->runPythonDetection($selectedAlgs, $userId, $scope);
+        // If job is already done, skip progress and go straight to results
+        if ($job['status'] === 'completed' || $job['status'] === 'failed') {
+            return redirect()->to(base_url("analysis/anomalies/results?job_id={$jobId}"));
         }
 
-        // Resolve engine label for the view badge
+        $data = $this->baseData();
+        $data['job'] = $job;
+
+        return $this->renderWizardView('analysis/progress', $data);
+    }
+
+    /**
+     * AJAX status endpoint — returns job progress as JSON.
+     *
+     * URL: GET /analysis/anomalies/status/{jobId}
+     */
+    public function status(int $jobId)
+    {
+        $job = $this->anomalyModel->getJob($jobId);
+        if (!$job) {
+            return $this->response->setJSON(['error' => 'Job not found']);
+        }
+
+        return $this->response->setJSON([
+            'status'             => $job['status'],
+            'progress_pct'       => (int)($job['progress_pct'] ?? 0),
+            'current_algorithm'  => $job['current_algorithm'] ?? '',
+            'completed_algorithms' => (int)($job['completed_algorithms'] ?? 0),
+            'total_algorithms'   => (int)($job['total_algorithms'] ?? 0),
+            'error_message'      => $job['error_message'] ?? null,
+        ]);
+    }
+
+    /**
+     * Kicks off detection in the background (called by progress page JS).
+     *
+     * URL: POST /analysis/anomalies/process/{jobId}
+     */
+    public function process(int $jobId)
+    {
+        $job = $this->anomalyModel->getJob($jobId);
+        if (!$job || $job['status'] !== 'running') {
+            return $this->response->setJSON(['error' => 'Job not ready']);
+        }
+
+        $selectedEngine = $this->session->get('anomaly_engine') ?? 'php';
+
+        if ($selectedEngine === 'php') {
+            $sparkPath = ROOTPATH . 'spark';
+            $cmd = "php {$sparkPath} anomalies:run-job {$jobId}";
+            exec($cmd . ' > /dev/null 2>&1 &');
+
+            return $this->response->setJSON(['status' => 'started', 'mode' => 'background']);
+        }
+
+        // Python detection runs synchronously
+        $selectedAlgs   = $this->session->get('anomaly_algorithms') ?? [];
+        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
+        $selectedAlgs = $this->filterAlgs($selectedAlgs, $adminSettings);
+
+        $scope = $this->session->get('anomaly_scope') ?? 'full';
+
+        try {
+            $results = $this->anomalyModel->runPythonDetection($selectedAlgs, $this->userId, $scope, $jobId);
+            $this->anomalyModel->saveResults($jobId, $this->userId, $results);
+            $this->anomalyModel->completeJob($jobId);
+        } catch (\Throwable $e) {
+            $this->anomalyModel->completeJob($jobId, $e->getMessage());
+        }
+
+        return $this->response->setJSON(['status' => 'completed']);
+    }
+
+    // -------------------------------------------------------------------------
+    // Step 4 – Anomaly Results (reads cached or runs if needed)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Shows detection results. If job exists and is completed, reads from DB.
+     *
+     * URL: GET /analysis/anomalies/results?job_id=X
+     */
+    public function results()
+    {
+        $jobId = $this->request->getGet('job_id')
+              ?? $this->session->get('anomaly_job_id');
+
+        // ── Handle old-style direct access (no job) — redirect to run ──
+        if (!$jobId) {
+            return redirect()->to(base_url('analysis/anomalies/run'));
+        }
+
+        $job = $this->anomalyModel->getJob($jobId);
+        if (!$job || $job['status'] === 'running' || $job['status'] === 'pending') {
+            return redirect()->to(base_url("analysis/anomalies/progress/{$jobId}"));
+        }
+
+        $selectedEngine = $this->session->get('anomaly_engine') ?? 'php';
+
+        // Fetch results from ml_results table
+        $results = [];
+        if ($job['status'] === 'completed') {
+            $results = $this->anomalyModel->fetchJobResults($jobId, $this->userId);
+        }
+
         $engineLabels = [
             'php'    => ['label' => 'PHP Engine',    'icon' => 'fab fa-php',    'badge' => 'primary'],
             'python' => ['label' => 'Python Engine',  'icon' => 'fab fa-python', 'badge' => 'warning'],
@@ -206,13 +321,51 @@ class Anomalies extends BaseClientController
         $data['results']         = $results;
         $data['selected_engine'] = $selectedEngine;
         $data['engine_meta']     = $engineMeta;
-        $data['severity_map']     = $this->anomalyModel->getSeverityMap();
-        $data['severity_counts']  = $this->anomalyModel->getSeverityCounts($results);
-        $data['selected_algs']    = $selectedAlgs;
-        $data['analysis_counts']  = $this->anomalyModel->getAnalysisCounts($userId);
-        $data['scope']            = $scope;
+        $data['severity_map']    = $this->anomalyModel->getSeverityMap();
+        $data['severity_counts'] = $this->anomalyModel->getSeverityCounts($results);
+        $data['selected_algs']   = $this->session->get('anomaly_algorithms') ?? [];
+        $data['analysis_counts'] = $this->anomalyModel->getAnalysisCounts($this->userId);
+        $data['scope']           = $job['scope'] ?? 'full';
+        $data['job']             = $job;
 
         return $this->renderWizardView('analysis/results', $data);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Ensure engine and algorithms are configured in session.
+     */
+    private function ensureConfigured(): void
+    {
+        if (!$this->session->has('anomaly_engine')) {
+            $this->session->set('anomaly_engine', 'php');
+        }
+        if (!$this->session->has('anomaly_algorithms')) {
+            $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
+        }
+    }
+
+    /**
+     * Filter algorithms against admin allowed list.
+     */
+    private function filterAlgs(array $selectedAlgs, array $adminSettings): array
+    {
+        if ($adminSettings['allowed_algorithms'] === null) {
+            return $selectedAlgs;
+        }
+        foreach ($selectedAlgs as $catKey => $algList) {
+            $selectedAlgs[$catKey] = array_values(array_intersect(
+                (array)$algList,
+                $adminSettings['allowed_algorithms']
+            ));
+            if (empty($selectedAlgs[$catKey])) {
+                unset($selectedAlgs[$catKey]);
+            }
+        }
+        return $selectedAlgs;
     }
 
     // -------------------------------------------------------------------------

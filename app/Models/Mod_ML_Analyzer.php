@@ -64,14 +64,23 @@ class Mod_ML_Analyzer
         return self::vectorize($texts, $maxFeatures);
     }
 
-    public static function kmeans(array $vectors, int $k = 3): array
+    public static function kmeans(array $vectors, ?int $k = null): array
     {
+        if ($k === null) {
+            $k = (int) self::getMlConfig('ml_phpml_kmeans_k', '3');
+        }
         $kmeans = new KMeans($k);
         return $kmeans->cluster($vectors);
     }
 
-    public static function dbscan(array $vectors, float $epsilon = 0.5, int $minSamples = 3): array
+    public static function dbscan(array $vectors, ?float $epsilon = null, ?int $minSamples = null): array
     {
+        if ($epsilon === null) {
+            $epsilon = (float) self::getMlConfig('ml_phpml_dbscan_epsilon', '0.5');
+        }
+        if ($minSamples === null) {
+            $minSamples = (int) self::getMlConfig('ml_phpml_dbscan_minpoints', '3');
+        }
         $dbscan = new DBSCAN($epsilon, $minSamples);
         return $dbscan->cluster($vectors);
     }
@@ -537,5 +546,19 @@ class Mod_ML_Analyzer
             'description' => 'Groups files by source folder (WhatsApp, Camera, Downloads) and age (Recent, Mid, Old). Large files (>50 MB) are flagged as space hogs for cleanup prioritization.',
             'insights' => $insights,
         ];
+    }
+
+    /**
+     * Fetch a single ML setting from the database.
+     */
+    private static function getMlConfig(string $key, $default = null)
+    {
+        $db = \Config\Database::connect();
+        $row = $db->table('settings')
+            ->where('class', 'ml')
+            ->where('key', $key)
+            ->get()
+            ->getRow();
+        return $row ? $row->value : $default;
     }
 }

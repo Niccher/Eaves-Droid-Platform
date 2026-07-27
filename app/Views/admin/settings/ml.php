@@ -130,17 +130,20 @@
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label>Host</label>
-                                    <input type="text" name="ml_python_host" class="form-control" value="<?= htmlspecialchars($settings['ml_python_host'] ?? 'localhost') ?>" placeholder="localhost">
+                                    <label>Connection URL</label>
+                                    <div class="input-group">
+                                        <input type="text" name="ml_python_url" class="form-control" value="<?= htmlspecialchars($settings['ml_python_url'] ?? 'http://ml-eaves-droid:9070') ?>" placeholder="http://ml-eaves-droid:9070">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text bg-light text-muted small" title="Full URL to the Python ML backend">
+                                                <i class="fas fa-plug"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Full URL of the Python ML backend (e.g., <code>http://ml-eaves-droid:9070</code>)</small>
                                 </div>
-                                <div class="form-group">
-                                    <label>Port</label>
-                                    <input type="number" name="ml_python_port" class="form-control" value="<?= htmlspecialchars($settings['ml_python_port'] ?? '5000') ?>" min="1" max="65535">
-                                </div>
-                                <div class="form-group">
-                                    <label>API Endpoint</label>
-                                    <input type="text" name="ml_python_endpoint" class="form-control" value="<?= htmlspecialchars($settings['ml_python_endpoint'] ?? '/api/analyze') ?>" placeholder="/api/analyze">
-                                </div>
+                                <input type="hidden" name="ml_python_host" value="">
+                                <input type="hidden" name="ml_python_port" value="">
+                                <input type="hidden" name="ml_python_endpoint" value="">
                             </div>
                         </div>
 

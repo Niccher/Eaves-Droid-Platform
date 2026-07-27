@@ -54,11 +54,12 @@
                                     <th>Scope</th>
                                     <th>Status</th>
                                     <th>Time Taken</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (empty($history)): ?>
-                                <tr><td colspan="8" class="text-center text-muted py-4">No anomaly engine runs recorded yet.</td></tr>
+                                <tr><td colspan="9" class="text-center text-muted py-4">No anomaly engine runs recorded yet.</td></tr>
                                 <?php else: ?>
                                 <?php $i = 1; ?>
                                 <?php foreach ($history as $j): ?>
@@ -121,6 +122,11 @@
                                         <span class="text-muted">&mdash;</span>
                                         <?php endif; ?>
                                     </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="showAlgoDetails(<?= $j['id'] ?>)">
+                                            <i class="fas fa-list-alt mr-1"></i>Details
+                                        </button>
+                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                                 <?php endif; ?>
@@ -139,3 +145,72 @@
         </div>
     </section>
 </div>
+
+<div class="modal fade" id="algoDetailsModal" tabindex="-1" role="dialog" aria-labelledby="algoDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title text-white" id="algoDetailsModalLabel">
+                    <i class="fas fa-microchip mr-1"></i> Algorithm Run Details
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="algoDetailsBody">
+                <div class="text-center py-5">
+                    <i class="fas fa-spinner fa-pulse fa-3x text-muted"></i>
+                    <p class="mt-2 text-muted">Loading algorithm details...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showAlgoDetails(jobId) {
+    const modal = $('#algoDetailsModal');
+    const body = $('#algoDetailsBody');
+    body.html('<div class="text-center py-5"><i class="fas fa-spinner fa-pulse fa-3x text-muted"></i><p class="mt-2 text-muted">Loading algorithm details...</p></div>');
+    modal.modal('show');
+
+    $.get('<?= base_url('admin/logs/engine/algo-details') ?>/' + jobId, function(data) {
+        if (data && data.length > 0) {
+            let html = '<div class="small text-muted mb-2">Job #' + jobId + ' — ' + data.length + ' algorithm(s)</div>';
+            html += '<table class="table table-sm table-bordered"><thead class="thead-light"><tr><th>Algorithm</th><th>Engine</th><th>Status</th><th>Time Taken</th><th>Started</th><th>Findings</th></tr></thead><tbody>';
+            data.forEach(function(alg) {
+                const statusBadge = alg.status === 'completed' ? 'success' : (alg.status === 'running' ? 'primary' : (alg.status === 'failed' ? 'danger' : 'secondary'));
+                const duration = alg.duration_ms != null ? (alg.duration_ms >= 1000 ? (alg.duration_ms / 1000).toFixed(1) + 's' : alg.duration_ms + 'ms') : '—';
+                const findingsCount = (alg.findings && alg.findings.length) || 0;
+                const algoName = alg.name || alg.id || 'Unknown';
+                const engineLabel = alg.engine === 'python' ? 'Python' : 'PHP';
+                const engineBadge = alg.engine === 'python' ? 'warning' : 'success';
+                const statusIcon = alg.status === 'completed' ? 'check-circle' : (alg.status === 'running' ? 'spinner fa-pulse' : (alg.status === 'failed' ? 'times-circle' : 'clock'));
+                html += '<tr>';
+                html += '<td><code>' + escHtml(algoName) + '</code><br><small class="text-muted">' + escHtml(alg.id) + '</small></td>';
+                html += '<td><span class="badge badge-' + engineBadge + '"><i class="fab fa-' + (alg.engine === 'python' ? 'python' : 'php') + ' mr-1"></i>' + engineLabel + '</span></td>';
+                html += '<td><span class="badge badge-' + statusBadge + '"><i class="fas fa-' + statusIcon + ' mr-1"></i>' + escHtml(alg.status) + '</span></td>';
+                html += '<td class="text-nowrap"><i class="far fa-clock mr-1"></i>' + duration + '</td>';
+                html += '<td class="small">' + (alg.started_at ? escHtml(alg.started_at) : '—') + '</td>';
+                html += '<td class="text-center"><span class="badge badge-' + (findingsCount > 0 ? 'danger' : 'secondary') + ' badge-pill">' + findingsCount + '</span></td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            body.html(html);
+        } else {
+            body.html('<div class="text-center py-4 text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><p>No algorithm details available for this job.</p></div>');
+        }
+    }).fail(function() {
+        body.html('<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p>Failed to load algorithm details.</p></div>');
+    });
+}
+
+function escHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str || ''));
+    return div.innerHTML;
+}
+</script>

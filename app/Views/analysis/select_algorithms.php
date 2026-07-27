@@ -43,7 +43,7 @@
             </div>
 
             <!-- Algorithm accordion form -->
-            <form action="<?= base_url('analysis/anomalies/results') ?>" method="post" id="form-algorithms">
+            <form action="<?= base_url('analysis/anomalies/run') ?>" method="post" id="form-algorithms">
                 <!-- CSRF Token (CI4 default) -->
                 <?= csrf_field() ?>
 
