@@ -130,7 +130,7 @@
                             <p>Device Metrics</p>
                         </div>
                         <div class="icon"><i class="fas fa-microchip"></i></div>
-                        <a href="<?= base_url('advanced/device') ?>" class="small-box-footer">View All <i class="fas fa-arrow-circle-right"></i></a>
+                        <a href="<?= base_url('advanced/hardware/device') ?>" class="small-box-footer">View All <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                 </div>
             </div>

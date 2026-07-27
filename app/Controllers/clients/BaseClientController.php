@@ -106,7 +106,7 @@ class BaseClientController extends BaseController
      *
      * @return array
      */
-    protected function getUserDataCounts(): array
+protected function getUserDataCounts(): array
     {
         return [
             'total_apps'     => $this->finderModel->get_count_Apps($this->userId),
@@ -127,10 +127,15 @@ class BaseClientController extends BaseController
             'total_media'           => $this->finderModel->get_count_CapturedMedia($this->userId),
             'total_security_audit'  => $this->finderModel->get_count_SecurityAudit($this->userId),
             'total_sim_configs'     => $this->finderModel->get_count_SimConfig($this->userId),
+            'total_camera_info'     => $this->finderModel->get_count_CameraInfo($this->userId),
+            'total_battery_stats'   => $this->finderModel->get_count_BatteryStats($this->userId),
+            'total_accessibility'   => $this->finderModel->get_count_Accessibility($this->userId),
+            'total_input_methods'   => $this->finderModel->get_count_InputMethods($this->userId),
+            'total_processes'       => $this->finderModel->get_count_Processes($this->userId),
+            'total_proc_info'       => $this->finderModel->get_count_ProcInfo($this->userId),
             'active_sms'       => $this->finderModel->get_sms_active($this->userId),
             'active_calls'     => $this->finderModel->get_calls_active($this->userId),
         ];
-
     }
 
     /**

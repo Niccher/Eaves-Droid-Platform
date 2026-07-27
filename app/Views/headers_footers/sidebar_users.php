@@ -157,8 +157,8 @@
 
                         <!-- Data Section (Collapsible) -->
                         <?php 
-                            $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'advanced', 'remote_device', 'sim_configs'];
-                            $data_sub_pages = ['sim_configs'];
+                            $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'remote_device'];
+                            $data_sub_pages = [];
                             $is_data_open   = (isset($pag) && in_array($pag, $data_pages))
                                            || (isset($sub_pag) && in_array($sub_pag, $data_sub_pages));
                         ?>
@@ -234,39 +234,25 @@
                                     </a>
                                 </li>
 
-                                <?php 
-                                    $adv_total = ($total_device ?? 0) + ($total_network ?? 0) + ($total_accounts ?? 0) + 
-                                                 ($total_calendar ?? 0) + ($total_app_usage ?? 0) + ($total_notifications ?? 0) + 
-                                                 ($total_bluetooth ?? 0) + ($total_sensors ?? 0) + ($total_media ?? 0);
-                                ?>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('advanced/device'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag == 'advanced') ? 'active' : ''; ?>">
-                                        <i class="fas fa-microchip nav-icon"></i>
-                                        <p>
-                                            Device Metrics
-                                            <span class="badge badge-success float-right"><?php echo $adv_total; ?></span>
-                                        </p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('remote-device'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag == 'remote_device') ? 'active' : ''; ?>">
-                                        <i class="fas fa-desktop nav-icon"></i>
-                                        <p>Remote Device</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('sim-configs'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag == 'sim_configs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-sim-card nav-icon"></i>
-                                        <p>
-                                            SIM Configs
-                                            <span class="badge badge-success float-right"><?php echo $total_sim_configs ?? 0; ?></span>
-                                        </p>
-                                    </a>
-                                </li>
-                            </ul>
+</ul>
+                        </li>
+
+<!-- Hardware Button -->
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('advanced/hardware'); ?>"
+                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'sim_configs', 'hardware_landing'])) ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-microchip"></i>
+                                <p>HARDWARE</p>
+                            </a>
+                        </li>
+
+                        <!-- Software Button -->
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('advanced/software'); ?>"
+                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'remote_media', 'accessibility', 'input_methods', 'software_landing'])) ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-laptop-code"></i>
+                                <p>SOFTWARE</p>
+                            </a>
                         </li>
 
                         <!-- Intelligence Section (Collapsible) -->

@@ -27,36 +27,24 @@ class Advanced extends BaseClientController
      */
     private function getAdvancedNavUrls(string $activeView, array $counts = []): string
     {
-        $tabs = [
-            'device_context' => ['url' => 'advanced/device', 'label' => 'Device', 'icon' => 'fas fa-battery-three-quarters', 'count' => $counts['total_device'] ?? 0],
-            'network_info' => ['url' => 'advanced/network', 'label' => 'Network', 'icon' => 'fas fa-wifi', 'count' => $counts['total_network'] ?? 0],
-            'accounts' => ['url' => 'advanced/accounts', 'label' => 'Accounts', 'icon' => 'fas fa-user-circle', 'count' => $counts['total_accounts'] ?? 0],
-            'calendar' => ['url' => 'advanced/calendar', 'label' => 'Calendar', 'icon' => 'fas fa-calendar-alt', 'count' => $counts['total_calendar'] ?? 0],
-            'app_usage' => ['url' => 'advanced/app-usage', 'label' => 'Usage', 'icon' => 'fas fa-chart-pie', 'count' => $counts['total_app_usage'] ?? 0],
-            'notifications' => ['url' => 'advanced/notifications', 'label' => 'Alerts', 'icon' => 'fas fa-bell', 'count' => $counts['total_notifications'] ?? 0],
-            'bluetooth' => ['url' => 'advanced/bluetooth', 'label' => 'Bluetooth', 'icon' => 'fab fa-bluetooth-b', 'count' => $counts['total_bluetooth'] ?? 0],
-            'sensors' => ['url' => 'advanced/sensors', 'label' => 'Sensors', 'icon' => 'fas fa-microchip', 'count' => $counts['total_sensors'] ?? 0],
-            'security_audit' => ['url' => 'advanced/security_audit', 'label' => 'Security', 'icon' => 'fas fa-shield-alt', 'count' => $counts['total_security_audit'] ?? 0],
-            'remote_media' => ['url' => 'advanced/media', 'label' => 'Remote Media', 'icon' => 'fas fa-photo-video', 'count' => $counts['total_media'] ?? 0],
-        ];
+        $hardware_tabs = ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info'];
+        $software_tabs = ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'accessibility', 'input_methods', 'remote_media'];
 
-        $html = '<div class="d-flex justify-content-end flex-wrap mb-3" style="gap: 5px;">';
-        foreach ($tabs as $key => $tab) {
-            $active = ($key === $activeView) ? 'active' : '';
-            $btnClass = ($key === $activeView) ? 'btn-primary' : 'btn-outline-primary';
-            $html .= sprintf(
-                '<a class="btn btn-sm %s %s" href="%s"><i class="%s mr-1"></i> %s <span class="badge %s ml-1" style="opacity: 0.8;">%d</span></a>',
-                $btnClass,
-                $active,
-                base_url($tab['url']),
-                $tab['icon'],
-                $tab['label'],
-                ($key === $activeView ? 'badge-light' : 'badge-primary'),
-                $tab['count']
-            );
-        }
+        $is_hardware = in_array($activeView, $hardware_tabs) || $activeView === 'hardware_landing';
+        $is_software = in_array($activeView, $software_tabs) || $activeView === 'software_landing';
+
+        $html = '<div class="d-flex justify-content-end flex-wrap mb-3" style="gap: 8px;">';
+        $html .= sprintf(
+            '<a class="btn btn-sm %s" href="%s"><i class="fas fa-microchip mr-1"></i> Hardware</a>',
+            $is_hardware ? 'btn-primary' : 'btn-outline-secondary',
+            base_url('advanced/hardware')
+        );
+        $html .= sprintf(
+            '<a class="btn btn-sm %s" href="%s"><i class="fas fa-laptop-code mr-1"></i> Software</a>',
+            $is_software ? 'btn-primary' : 'btn-outline-secondary',
+            base_url('advanced/software')
+        );
         $html .= '</div>';
-
         return $html;
     }
 
@@ -710,5 +698,166 @@ class Advanced extends BaseClientController
             return $this->response->setJSON(['success' => true, 'message' => 'All usage data for this app has been deleted.']);
         }
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete usage data.']);
+    }
+
+    /** GET /advanced/camera_info */
+    public function camera_info()
+    {
+        $data = array_merge($this->commonData('camera_info', 'Camera Info'), [
+            'rows' => $this->finderModel->get_camera_info($this->userId),
+            'total' => $this->finderModel->get_count_CameraInfo($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/camera_info', $data);
+    }
+
+    /** GET /advanced/battery_stats */
+    public function battery_stats()
+    {
+        $data = array_merge($this->commonData('battery_stats', 'Battery Stats'), [
+            'rows' => $this->finderModel->get_battery_stats($this->userId),
+            'total' => $this->finderModel->get_count_BatteryStats($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/battery_stats', $data);
+    }
+
+    /** GET /advanced/accessibility */
+    public function accessibility()
+    {
+        $data = array_merge($this->commonData('accessibility', 'Accessibility Services'), [
+            'rows' => $this->finderModel->get_accessibility($this->userId),
+            'total' => $this->finderModel->get_count_Accessibility($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/accessibility', $data);
+    }
+
+    /** GET /advanced/input_methods */
+    public function input_methods()
+    {
+        $data = array_merge($this->commonData('input_methods', 'Input Methods (IMEs)'), [
+            'rows' => $this->finderModel->get_input_methods($this->userId),
+            'total' => $this->finderModel->get_count_InputMethods($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/input_methods', $data);
+    }
+
+    /** GET /advanced/processes */
+    public function processes()
+    {
+        $data = array_merge($this->commonData('processes', 'Running Processes'), [
+            'rows' => $this->finderModel->get_processes($this->userId),
+            'total' => $this->finderModel->get_count_Processes($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/processes', $data);
+    }
+
+    /** POST /advanced/camera_info/delete/(:num) */
+    public function delete_camera_info($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_camera_info_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/battery_stats/delete/(:num) */
+    public function delete_battery_stats($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_battery_stats_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/accessibility/delete/(:num) */
+    public function delete_accessibility($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_accessibility_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/input_methods/delete/(:num) */
+    public function delete_input_methods($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_input_methods_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/proc_info */
+    public function proc_info()
+    {
+        $data = array_merge($this->commonData('proc_info', 'Proc Info'), [
+            'rows' => $this->finderModel->get_proc_info($this->userId),
+            'total' => $this->finderModel->get_count_ProcInfo($this->userId),
+        ]);
+        return $this->renderAppView('users/advanced/proc_info', $data);
+    }
+
+    /** POST /advanced/proc_info/delete/(:num) */
+    public function delete_proc_info($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_proc_info_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/processes/delete/(:num) */
+    public function delete_processes($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_processes_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware */
+    public function hardware()
+    {
+        $counts = $this->getUserDataCounts();
+        return $this->renderAppView('users/advanced/hardware', [
+            'pag' => 'advanced',
+            'active_tab' => 'hardware_landing',
+            'title' => 'Hardware',
+            'counts' => $counts,
+        ]);
+    }
+
+    /** GET /advanced/software */
+    public function software()
+    {
+        $counts = $this->getUserDataCounts();
+        return $this->renderAppView('users/advanced/software', [
+            'pag' => 'advanced',
+            'active_tab' => 'software_landing',
+            'title' => 'Software',
+            'counts' => $counts,
+        ]);
     }
 }

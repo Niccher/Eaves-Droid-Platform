@@ -29,6 +29,12 @@
                     </div>
                     <p class="text-muted mt-2 mb-0">SIM card configurations and change history</p>
                 </div>
+                <div class="col-lg-4 col-md-6 text-right">
+                    <div class="d-flex justify-content-end flex-wrap" style="gap: 8px;">
+                        <a class="btn btn-sm btn-primary" href="<?php echo base_url('advanced/hardware'); ?>"><i class="fas fa-microchip mr-1"></i> Hardware</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="<?php echo base_url('advanced/software'); ?>"><i class="fas fa-laptop-code mr-1"></i> Software</a>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

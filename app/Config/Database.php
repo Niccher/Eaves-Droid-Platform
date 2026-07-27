@@ -29,7 +29,7 @@ class Database extends Config
         'hostname'     => 'localhost',
         'username'     => 'chegecac_prj_imgs',
         'password'     => 'R6rQhag3qcWQ2Yi',
-        'database'     => 'chegecac_prj_imgs_v4',
+        'database'     => 'db_eaves_droid',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',
         'pConnect'     => false,

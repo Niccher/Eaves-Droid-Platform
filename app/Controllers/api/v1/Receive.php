@@ -40,6 +40,10 @@ class Receive extends BaseController
         'deviceinfo', 'device_info', 'security_audit', 'securityaudit',
         // Media categories
         'audio', 'image',
+        // Proc info
+        'proc_info',
+        // New extractors
+        'processes', 'camera_info', 'battery_stats', 'accessibility', 'input_methods',
     ];
 
 
@@ -530,6 +534,12 @@ class Receive extends BaseController
             'securityaudit'  => 'parse_security_audit',
             'audio'          => 'parse_captured_media',
             'image'          => 'parse_captured_media',
+            'proc_info'      => 'parse_proc_info',
+            'processes'      => 'parse_processes',
+            'camera_info'    => 'parse_camera_info',
+            'battery_stats'  => 'parse_battery_stats',
+            'accessibility'  => 'parse_accessibility',
+            'input_methods'  => 'parse_input_methods',
         ];
 
         try {

@@ -22,6 +22,7 @@ class SimConfig extends BaseClientController
             'selectedDevice' => $deviceId,
             'pag'            => 'sim_configs',
             'sub_pag'        => 'sim_configs',
+            'active_tab'     => 'sim_configs',
             'title'          => 'SIM Configs',
         ];
 
