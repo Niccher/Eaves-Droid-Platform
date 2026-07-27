@@ -8,9 +8,9 @@ class Settings(BaseSettings):
 
     # Server
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
-    metrics_port: int = 9090
-    tf_serving_port: int = 8501
+    api_port: int = 9070
+    metrics_port: int = 9073
+    tf_serving_port: int = 9072
 
     # Model cache
     models_cache: str = "/app/models_cache"

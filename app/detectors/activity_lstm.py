@@ -22,7 +22,8 @@ class LSTMSequenceDetector(BaseDetector):
     category = "activity"
 
     async def detect(self, user_id: int, scope: str = "full",
-                     incremental_since: str | None = None) -> list[AnomalyResult]:
+                     incremental_since: str | None = None,
+                     params: dict | None = None) -> list[AnomalyResult]:
         from sqlalchemy import text
         from app.utils.db import get_engine
 
@@ -62,7 +63,9 @@ class LSTMSequenceDetector(BaseDetector):
         hour_arr = np.array(hours, dtype=np.float32).reshape(-1, 1)
         hour_arr = (hour_arr - 12.0) / 12.0
 
-        seq_len = 20 if len(hour_arr) > 21 else max(3, len(hour_arr) // 2)
+        seq_len_param = int(params.get('ml_python_lstm_sequence', 20)) if params else 20
+        lstm_units_param = int(params.get('ml_python_lstm_units', 32)) if params else 32
+        seq_len = seq_len_param if len(hour_arr) > seq_len_param + 1 else max(3, len(hour_arr) // 2)
         X, y = [], []
         for i in range(len(hour_arr) - seq_len):
             X.append(hour_arr[i:i + seq_len].flatten())
@@ -74,7 +77,7 @@ class LSTMSequenceDetector(BaseDetector):
         y_arr = np.array(y, dtype=np.float32)
 
         model = MLPRegressor(
-            hidden_layer_sizes=(32,),
+            hidden_layer_sizes=(lstm_units_param,),
             activation="relu",
             solver="adam",
             max_iter=30,

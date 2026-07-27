@@ -34,7 +34,8 @@ class FileEntropyDetector(BaseDetector):
     category = "files"
 
     async def detect(self, user_id: int, scope: str = "full",
-                     incremental_since: str | None = None) -> list[AnomalyResult]:
+                     incremental_since: str | None = None,
+                     params: dict | None = None) -> list[AnomalyResult]:
         from sqlalchemy import text
         from app.utils.db import get_engine
 

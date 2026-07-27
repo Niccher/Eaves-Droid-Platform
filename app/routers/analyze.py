@@ -132,6 +132,7 @@ async def analyze(req: AnalyzeRequest):
                 user_id=req.user_id,
                 scope=req.scope,
                 incremental_since=req.incremental_since,
+                params=req.params,
             )
             results.extend(found)
             affected_categories.add(meta["category"])

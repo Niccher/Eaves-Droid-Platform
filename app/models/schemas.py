@@ -23,6 +23,7 @@ class AnalyzeRequest(BaseModel):
     algorithms: list[str]
     scope: str = "full"
     incremental_since: str | None = None
+    params: dict[str, str] = {}
 
 
 class AnomalyResult(BaseModel):
@@ -53,13 +54,23 @@ class AnalyzeResponse(BaseModel):
     error: str | None = None
 
 
+class ModuleCheck(BaseModel):
+    name: str
+    status: str
+    message: str = ""
+
+
 class HealthResponse(BaseModel):
     status: str
     version: str
     models_loaded: list[str]
     cuda_available: bool
+    cuda_device: str = ""
     memory_mb: dict[str, float]
     cache_entries: int = 0
+    modules: list[ModuleCheck] = []
+    database: str = ""
+    uptime_seconds: float = 0
 
 
 class ModelInfo(BaseModel):

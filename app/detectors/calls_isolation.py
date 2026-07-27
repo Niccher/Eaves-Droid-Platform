@@ -18,7 +18,8 @@ class CallsIsolationDetector(BaseDetector):
     category = "call_logs"
 
     async def detect(self, user_id: int, scope: str = "full",
-                     incremental_since: str | None = None) -> list[AnomalyResult]:
+                     incremental_since: str | None = None,
+                     params: dict | None = None) -> list[AnomalyResult]:
         from sqlalchemy import text
         from app.utils.db import get_engine
 
@@ -66,7 +67,16 @@ class CallsIsolationDetector(BaseDetector):
         if X.shape[0] < 10 or np.all(X == 0):
             return []
 
-        preds, scores = run_iforest(X, n_estimators=200, contamination=0.05)
+        n_estimators = int(params.get('ml_python_iforest_trees', 200)) if params else 200
+        max_samples_param = params.get('ml_python_iforest_samples', None) if params else None
+        max_samples: int | str = 'auto'
+        if max_samples_param is not None:
+            try:
+                max_samples = int(max_samples_param)
+            except (ValueError, TypeError):
+                max_samples = 'auto'
+        contamination = float(params.get('ml_python_iforest_contamination', 0.05)) if params else 0.05
+        preds, scores = run_iforest(X, n_estimators=n_estimators, max_samples=max_samples, contamination=contamination)
         anomaly_indices = np.where(preds == -1)[0]
         score_mean = np.mean(scores)
         score_std = np.std(scores) or 1.0

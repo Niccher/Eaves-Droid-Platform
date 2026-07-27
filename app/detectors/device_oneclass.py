@@ -17,7 +17,8 @@ class DeviceOneClassDetector(BaseDetector):
     category = "device_info"
 
     async def detect(self, user_id: int, scope: str = "full",
-                     incremental_since: str | None = None) -> list[AnomalyResult]:
+                     incremental_since: str | None = None,
+                     params: dict | None = None) -> list[AnomalyResult]:
         from sqlalchemy import text
         from app.utils.db import get_engine
 
@@ -72,7 +73,9 @@ class DeviceOneClassDetector(BaseDetector):
         X = np.array(features)
         X = np.nan_to_num(X)
 
-        model = OneClassSVM(nu=0.05, gamma=0.01, kernel="rbf")
+        nu = float(params.get('ml_python_oneclass_nu', 0.05)) if params else 0.05
+        gamma = float(params.get('ml_python_oneclass_gamma', 0.01)) if params else 0.01
+        model = OneClassSVM(nu=nu, gamma=gamma, kernel="rbf")
         preds = model.fit_predict(X)
         scores = model.score_samples(X)
 

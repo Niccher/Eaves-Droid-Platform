@@ -26,9 +26,13 @@ class BaseDetector(ABC):
 
     @abstractmethod
     async def detect(self, user_id: int, scope: str = "full",
-                     incremental_since: str | None = None) -> list[AnomalyResult]:
+                     incremental_since: str | None = None,
+                     params: dict | None = None) -> list[AnomalyResult]:
         """
         Query the database for *user_id*'s data (respecting *scope* /
         *incremental_since*), run the detection logic, and return findings.
+
+        *params* carries ML algorithm parameters from the PHP settings table
+        (class='ml') so each detector can override its hardcoded defaults.
         """
         ...

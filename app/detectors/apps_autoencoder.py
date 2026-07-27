@@ -36,7 +36,8 @@ class AutoencoderAppDetector(BaseDetector):
     category = "apps"
 
     async def detect(self, user_id: int, scope: str = "full",
-                     incremental_since: str | None = None) -> list[AnomalyResult]:
+                     incremental_since: str | None = None,
+                     params: dict | None = None) -> list[AnomalyResult]:
         from sqlalchemy import text
         from app.utils.db import get_engine
 
@@ -85,7 +86,8 @@ class AutoencoderAppDetector(BaseDetector):
             ], dtype=np.float32)
 
         features = np.array([extract_features(r) for r in rows])
-        n_components = min(2, features.shape[1] - 1)
+        n_components_param = int(params.get('ml_python_autoencoder_latent', 2)) if params else 2
+        n_components = min(n_components_param, features.shape[1] - 1)
         if n_components < 1:
             return []
 
@@ -97,10 +99,12 @@ class AutoencoderAppDetector(BaseDetector):
         mean_err = float(np.mean(errors))
         std_err = float(np.std(errors)) or 1.0
 
+        anomaly_threshold = float(params.get('ml_python_autoencoder_threshold', 2.0)) if params else 2.0
+
         results = []
         for i in range(len(errors)):
             z = (errors[i] - mean_err) / std_err
-            if z > 2.0:
+            if z > anomaly_threshold:
                 name = rows[i]["app_name"] or rows[i]["package_name"] or f"app #{i}"
                 results.append(AnomalyResult(
                     algorithm=self.algorithm_name,
