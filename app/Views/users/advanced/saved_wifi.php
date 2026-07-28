@@ -67,14 +67,8 @@
                                     <td class="text-center">
                                         <?= isset($net['is_hidden']) && $net['is_hidden'] ? '<span class="badge badge-danger">Yes</span>' : '<span class="badge badge-secondary">No</span>' ?>
                                     </td>
-                                    <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-primary details-row"
-                                                data-data='<?= htmlspecialchars(json_encode(array_merge($r, ['network' => $net]), ENT_QUOTES)) ?>'
-                                                data-title="Saved WiFi Network Details"
-                                                title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
                                         <button class="btn btn-sm btn-outline-danger delete-row"
                                                 data-id="<?= $r['id'] ?? '' ?>"
                                                 data-url="<?= base_url('advanced/saved_wifi/delete') ?>"
@@ -86,7 +80,7 @@
                             <?php endforeach; else: ?>
                                 <tr>
                                     <td colspan="6" class="text-center text-muted">No saved networks</td>
-                                    <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-danger delete-row"
                                                 data-id="<?= $r['id'] ?? '' ?>"

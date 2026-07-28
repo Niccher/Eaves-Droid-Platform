@@ -55,7 +55,7 @@
                                 <td><?= esc($info['used_formatted'] ?? ($info['used_bytes'] ? number_format($info['used_bytes']/1024/1024/1024, 2) . ' GB' : 'N/A')) ?></td>
                                 <td class="text-center"><?= isset($vol['is_removable']) && $vol['is_removable'] ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-secondary">No</span>' ?></td>
                                 <td><?= esc($vol['state'] ?? 'N/A') ?></td>
-                                <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-danger delete-row"
                                             data-id="<?= $r['id'] ?? '' ?>"
@@ -74,7 +74,7 @@
                                 <td><?= esc($appCache['used_formatted'] ?? number_format($appCache['used_bytes']/1024/1024/1024, 2) . ' GB') ?></td>
                                 <td class="text-center">-</td>
                                 <td>-</td>
-                                <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-danger delete-row"
                                             data-id="<?= $r['id'] ?? '' ?>"
@@ -93,7 +93,7 @@
                                 <td><?= esc($appData['used_formatted'] ?? number_format($appData['used_bytes']/1024/1024/1024, 2) . ' GB') ?></td>
                                 <td class="text-center">-</td>
                                 <td>-</td>
-                                <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-danger delete-row"
                                             data-id="<?= $r['id'] ?? '' ?>"

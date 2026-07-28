@@ -56,7 +56,7 @@
                                     <td><?= esc($tower['pci'] ?? 'N/A') ?></td>
                                     <td><?= esc($tower['rssi'] ?? 'N/A') ?> dBm</td>
                                     <td><?= esc($tower['rsrp'] ?? 'N/A') ?> / <?= esc($tower['rsrq'] ?? 'N/A') ?></td>
-                                    <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                     <td class="text-center">
                                             <button class="btn btn-sm btn-outline-danger delete-row"
                                                 data-id="<?= $r['id'] ?? '' ?>"
@@ -69,7 +69,7 @@
                             <?php endforeach; else: ?>
                                 <tr>
                                     <td colspan="7" class="text-center text-muted">No tower data</td>
-                                    <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-danger delete-row"
                                                 data-id="<?= $r['id'] ?? '' ?>"

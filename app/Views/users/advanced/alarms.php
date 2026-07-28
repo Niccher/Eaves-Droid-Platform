@@ -60,7 +60,7 @@
                                     <td class="text-center">
                                         <?= isset($job['requires_charging']) && $job['requires_charging'] ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-secondary">No</span>' ?>
                                     </td>
-                                    <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                     <td class="text-center">
                                             <button class="btn btn-sm btn-outline-danger delete-row"
                                                 data-id="<?= $r['id'] ?? '' ?>"
@@ -80,7 +80,7 @@
                                     <td>-</td>
                                     <td>-</td>
                                     <td>-</td>
-                                    <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                     <td class="text-center">
                                             <button class="btn btn-sm btn-outline-danger delete-row"
                                                 data-id="<?= $r['id'] ?? '' ?>"

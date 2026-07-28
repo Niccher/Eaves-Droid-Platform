@@ -170,6 +170,58 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-user-shield fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">App Security</h6>
+                            <p class="text-muted small mb-2">Device admins, permission maps, running services</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_app_security'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/software/app_security'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-lock fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Network Security</h6>
+                            <p class="text-muted small mb-2">DNS config, VPN status, proxy settings</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_network_security'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/software/network_security'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-signal fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Mobile Network</h6>
+                            <p class="text-muted small mb-2">IMS/VoLTE, data roaming, carrier config</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_telephony_network'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/software/telephony_network'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-language fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">System Locale</h6>
+                            <p class="text-muted small mb-2">Locale, region, timezone, system fonts</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_system_locale'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/software/system_locale'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

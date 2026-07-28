@@ -1164,6 +1164,11 @@ class Mod_Finder extends Model
         return $this->getCount('tbl_security_audit', $user_id);
     }
 
+    public function get_count_HardwareGraphics(int $user_id): int
+    {
+        return $this->getCount('tbl_hardware_graphics', $user_id);
+    }
+
     public function get_count_CameraInfo(int $user_id): int
     {
         return $this->getCount('tbl_camera_info', $user_id);
@@ -1794,6 +1799,30 @@ class Mod_Finder extends Model
                     } else {
                         $r['user_ca_certs'] = [];
                     }
+                    if (!empty($r['system_ca_certs_json'])) {
+                        $decoded = json_decode($r['system_ca_certs_json'], true);
+                        $r['system_ca_certs'] = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $r['system_ca_certs'] = [];
+                    }
+                    if (!empty($r['vpn_config_json'])) {
+                        $decoded = json_decode($r['vpn_config_json'], true);
+                        $r['vpn_config'] = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $r['vpn_config'] = [];
+                    }
+                    if (!empty($r['device_admin_apps_json'])) {
+                        $decoded = json_decode($r['device_admin_apps_json'], true);
+                        $r['device_admin_apps'] = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $r['device_admin_apps'] = [];
+                    }
+                    if (!empty($r['dns_config_json'])) {
+                        $decoded = json_decode($r['dns_config_json'], true);
+                        $r['dns_config'] = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $r['dns_config'] = [];
+                    }
                     if (!empty($r['open_ports_json'])) {
                         $decoded = json_decode($r['open_ports_json'], true);
                         $r['open_ports'] = is_array($decoded) ? $decoded : [];
@@ -1808,6 +1837,37 @@ class Mod_Finder extends Model
             return $results;
         } catch (\Exception $e) {
             log_message('error', 'get_security_audit: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_hardware_graphics(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_HardwareGraphics($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_hardware_graphics', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            if (!empty($results)) {
+                foreach ($results as &$r) {
+                    foreach (['gpu_renderer_json', 'media_codecs_json', 'input_devices_json'] as $col) {
+                        if (!empty($r[$col])) {
+                            $decoded = json_decode($r[$col], true);
+                            $r[str_replace('_json', '', $col)] = is_array($decoded) ? $decoded : [];
+                        } else {
+                            $r[str_replace('_json', '', $col)] = [];
+                        }
+                    }
+                }
+                unset($r);
+            }
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_hardware_graphics: ' . $e->getMessage());
             return [];
         }
     }
@@ -4777,13 +4837,26 @@ class Mod_Finder extends Model
 
     public function delete_nfc_row(int $id, int $userId): bool
     {
-        try {
+try {
             return (bool) $this->db->table('tbl_nfc')
                 ->where('id', $id)
                 ->where('owner_id', $userId)
                 ->delete();
         } catch (\Exception $e) {
             log_message('error', 'delete_nfc_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_hardware_graphics_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_hardware_graphics')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_hardware_graphics_row error: ' . $e->getMessage());
             return false;
         }
     }
@@ -4840,4 +4913,208 @@ class Mod_Finder extends Model
         }
     }
 
+    // ── Hardware Network ──
+    public function get_count_HardwareNetwork(int $user_id): int
+    {
+        return $this->getCount('tbl_hardware_network', $user_id);
+    }
+
+    public function get_hardware_network(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_HardwareNetwork($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_hardware_network', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['network_interfaces' => 'network_interfaces_json', 'proc_net_dev' => 'proc_net_dev_json', 'link_properties' => 'link_properties_json', 'arp_cache' => 'arp_cache_json', 'wifi_passpoint' => 'wifi_passpoint_json'] as $key => $field) {
+                    $r[$key] = json_decode($r[$field] ?? '{}', true);
+                }
+                $r['ts_display'] = $r['extracted_at'] ? date('Y-m-d H:i:s', (int)$r['extracted_at']) : '';
+            }
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_hardware_network: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_hardware_network_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_hardware_network')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_hardware_network_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ── App Security ──
+    public function get_count_AppSecurity(int $user_id): int
+    {
+        return $this->getCount('tbl_app_security', $user_id);
+    }
+
+    public function get_app_security(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_AppSecurity($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_app_security', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['device_admin_apps' => 'device_admin_apps_json', 'app_permissions_map' => 'app_permissions_map_json', 'running_services' => 'running_services_json'] as $key => $field) {
+                    $r[$key] = json_decode($r[$field] ?? '{}', true);
+                }
+                $r['ts_display'] = $r['extracted_at'] ? date('Y-m-d H:i:s', (int)$r['extracted_at']) : '';
+            }
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_security: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_app_security_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_app_security')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_app_security_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ── Network Security ──
+    public function get_count_NetworkSecurity(int $user_id): int
+    {
+        return $this->getCount('tbl_network_security', $user_id);
+    }
+
+    public function get_network_security(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_NetworkSecurity($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_network_security', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['dns_config' => 'dns_config_json', 'vpn_config' => 'vpn_config_json'] as $key => $field) {
+                    $r[$key] = json_decode($r[$field] ?? '{}', true);
+                }
+                $r['ts_display'] = $r['extracted_at'] ? date('Y-m-d H:i:s', (int)$r['extracted_at']) : '';
+            }
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_network_security: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_network_security_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_network_security')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_network_security_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ── Telephony Network ──
+    public function get_count_TelephonyNetwork(int $user_id): int
+    {
+        return $this->getCount('tbl_telephony_network', $user_id);
+    }
+
+    public function get_telephony_network(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_TelephonyNetwork($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_telephony_network', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['ims_volte' => 'ims_volte_json', 'data_roaming' => 'data_roaming_json'] as $key => $field) {
+                    $r[$key] = json_decode($r[$field] ?? '{}', true);
+                }
+                $r['ts_display'] = $r['extracted_at'] ? date('Y-m-d H:i:s', (int)$r['extracted_at']) : '';
+            }
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_telephony_network: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_telephony_network_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_telephony_network')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_telephony_network_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ── System Locale ──
+    public function get_count_SystemLocale(int $user_id): int
+    {
+        return $this->getCount('tbl_system_locale', $user_id);
+    }
+
+    public function get_system_locale(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_SystemLocale($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_system_locale', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['locale_region' => 'locale_region_json', 'system_fonts' => 'system_fonts_json'] as $key => $field) {
+                    $r[$key] = json_decode($r[$field] ?? '{}', true);
+                }
+                $r['ts_display'] = $r['extracted_at'] ? date('Y-m-d H:i:s', (int)$r['extracted_at']) : '';
+            }
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_system_locale: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_system_locale_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_system_locale')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_system_locale_row: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

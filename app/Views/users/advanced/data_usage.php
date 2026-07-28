@@ -9,6 +9,13 @@
                         <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i> Total: <b><?= $total ?? 0 ?></b></span>
                     </div>
                     <p class="text-muted mt-1 mb-0">Per-network mobile/WiFi data usage (current month totals)</p>
+                    <small class="text-muted">
+                        <strong>Legend:</strong>
+                        <span class="mr-3" title="Received bytes — data downloaded from the network"><abbr title="Received">RX</abbr> &mdash; Downloaded</span>
+                        <span class="mr-3" title="Transmitted bytes — data uploaded to the network"><abbr title="Transmitted">TX</abbr> &mdash; Uploaded</span>
+                        <span class="mr-3" title="Total bytes — RX + TX combined"><abbr title="Total">Total</abbr> &mdash; Combined</span>
+                        <span class="mr-3" title="Unique identifier for each record in the database">Sub ID &mdash; Record ID</span>
+                    </small>
                 </div>
                 <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
             </div>
@@ -49,14 +56,8 @@
                                     <td><?= esc($rec['tx_formatted'] ?? ($rec['tx_bytes'] ? number_format($rec['tx_bytes']/1024/1024, 2) . ' MB' : 'N/A')) ?></td>
                                     <td><?= esc($rec['total_bytes'] ? number_format($rec['total_bytes']/1024/1024, 2) . ' MB' : 'N/A') ?></td>
                                     <td><?= date('M d', $rec['bucket_start'] ?? 0) ?> - <?= date('M d', $rec['bucket_end'] ?? 0) ?></td>
-                                    <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-primary details-row"
-                                                data-data='<?= htmlspecialchars(json_encode(array_merge($r, ['record' => $rec]), ENT_QUOTES)) ?>'
-                                                data-title="Data Usage Record Details"
-                                                title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
                                         <button class="btn btn-sm btn-outline-danger delete-row"
                                                 data-id="<?= $r['id'] ?? '' ?>"
                                                 data-url="<?= base_url('advanced/data_usage/delete') ?>"
@@ -68,12 +69,12 @@
                             <?php endforeach; endif; ?>
                             <?php if (!empty($totalsArr)): ?>
                                 <tr class="table-active">
-                                    <td colspan="2"><strong>Totals (<?= date('M', $r['extracted_at'] ?? 0) ?>)</strong></td>
-                                    <td></td>
+                                    <td colspan="2"><strong>Totals (<?= !empty($r['extracted_at']) ? date('M', (int)($r['extracted_at'] / 1000)) : '' ?>)</strong></td>
                                     <td><strong><?= esc($totalsArr['total_rx_formatted'] ?? 'N/A') ?></strong></td>
                                     <td><strong><?= esc($totalsArr['total_tx_formatted'] ?? 'N/A') ?></strong></td>
                                     <td><strong><?= esc(number_format(($totalsArr['total_rx'] ?? 0) + ($totalsArr['total_tx'] ?? 0), 2)) ?> MB</strong></td>
-                                    <td colspan="2"><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                    <td></td>
+                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-danger delete-row"
                                                 data-id="<?= $r['id'] ?? '' ?>"

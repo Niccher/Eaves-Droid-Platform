@@ -27,8 +27,8 @@ class Advanced extends BaseClientController
      */
     private function getAdvancedNavUrls(string $activeView, array $counts = []): string
     {
-        $hardware_tabs = ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc'];
-        $software_tabs = ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'accessibility', 'input_methods', 'remote_media', 'data_usage', 'saved_wifi', 'default_apps', 'alarms'];
+        $hardware_tabs = ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network'];
+        $software_tabs = ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'accessibility', 'input_methods', 'remote_media', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale'];
 
         $is_hardware = in_array($activeView, $hardware_tabs) || $activeView === 'hardware_landing';
         $is_software = in_array($activeView, $software_tabs) || $activeView === 'software_landing';
@@ -978,6 +978,29 @@ class Advanced extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
+    /** GET /advanced/hardware/hardware_graphics */
+    public function hardware_graphics()
+    {
+        $data = array_merge($this->commonData('hardware_graphics', 'Hardware Graphics'), [
+            'rows' => $this->finderModel->get_hardware_graphics($this->userId),
+            'total' => $this->finderModel->get_count_HardwareGraphics($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/hardware_graphics', $data);
+    }
+
+    /** POST /advanced/hardware/hardware_graphics/delete/(:num) */
+    public function delete_hardware_graphics($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_hardware_graphics_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
     // ── NEW EXTRACTORS: Software ──
 
     /** GET /advanced/software/data_usage */
@@ -1072,4 +1095,113 @@ class Advanced extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
+    // ── Hardware Network ──
+    public function hardware_network()
+    {
+        $data = array_merge($this->commonData('hardware_network', 'Network Hardware'), [
+            'rows' => $this->finderModel->get_hardware_network($this->userId),
+            'total' => $this->finderModel->get_count_HardwareNetwork($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/hardware_network', $data);
+    }
+
+    public function delete_hardware_network($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_hardware_network_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    // ── App Security ──
+    public function app_security()
+    {
+        $data = array_merge($this->commonData('app_security', 'App Security'), [
+            'rows' => $this->finderModel->get_app_security($this->userId),
+            'total' => $this->finderModel->get_count_AppSecurity($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/app_security', $data);
+    }
+
+    public function delete_app_security($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_app_security_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    // ── Network Security ──
+    public function network_security()
+    {
+        $data = array_merge($this->commonData('network_security', 'Network Security'), [
+            'rows' => $this->finderModel->get_network_security($this->userId),
+            'total' => $this->finderModel->get_count_NetworkSecurity($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/network_security', $data);
+    }
+
+    public function delete_network_security($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_network_security_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    // ── Telephony Network ──
+    public function telephony_network()
+    {
+        $data = array_merge($this->commonData('telephony_network', 'Mobile Network'), [
+            'rows' => $this->finderModel->get_telephony_network($this->userId),
+            'total' => $this->finderModel->get_count_TelephonyNetwork($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/telephony_network', $data);
+    }
+
+    public function delete_telephony_network($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_telephony_network_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    // ── System Locale ──
+    public function system_locale()
+    {
+        $data = array_merge($this->commonData('system_locale', 'System Locale'), [
+            'rows' => $this->finderModel->get_system_locale($this->userId),
+            'total' => $this->finderModel->get_count_SystemLocale($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/system_locale', $data);
+    }
+
+    public function delete_system_locale($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_system_locale_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
 }

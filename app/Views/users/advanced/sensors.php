@@ -77,7 +77,7 @@
                                     </span>
                                 </td>
                                 <td><small class="text-muted">v<?= $r['version'] ?? '1' ?></small></td>
-                                <td><?= !empty($r['extracted_at']) ? date('M d, Y H:i', (int)$r['extracted_at']) : '—' ?></td>
+                                <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-danger delete-row"
                                             data-id="<?= $r['id'] ?? '' ?>"

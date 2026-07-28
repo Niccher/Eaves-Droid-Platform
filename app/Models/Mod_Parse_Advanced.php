@@ -982,7 +982,8 @@ class Mod_Parse_Advanced extends Model
     /**
      * SecurityAuditExtractor → tbl_security_audit
      * File category: security_audit / securityaudit
-     * Stores VPN/proxy status, open ports and user-installed CA certificates.
+     * Stores VPN/proxy status, open ports, user-installed CA certificates, system CA certificates,
+     * VPN configuration details, device admin apps, and DNS configuration.
      */
     public function parse_security_audit(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
@@ -1017,21 +1018,45 @@ class Mod_Parse_Advanced extends Model
                 $user_ca_certs = json_encode($user_ca_certs);
             }
 
+            $system_ca_certs = $json['system_ca_certs'] ?? null;
+            if (is_array($system_ca_certs)) {
+                $system_ca_certs = json_encode($system_ca_certs);
+            }
+
+            $vpn_config = $json['vpn_config'] ?? null;
+            if (is_array($vpn_config)) {
+                $vpn_config = json_encode($vpn_config);
+            }
+
+            $device_admin_apps = $json['device_admin_apps'] ?? null;
+            if (is_array($device_admin_apps)) {
+                $device_admin_apps = json_encode($device_admin_apps);
+            }
+
+            $dns_config = $json['dns_config'] ?? null;
+            if (is_array($dns_config)) {
+                $dns_config = json_encode($dns_config);
+            }
+
             $open_ports = $json['open_ports'] ?? null;
             if (is_array($open_ports)) {
                 $open_ports = json_encode($open_ports);
             }
 
             $data = [
-                'owner_id'           => $owner_id,
-                'device_id'          => $device_id,
-                'vpn_active'         => isset($json['vpn_active'])   ? ($json['vpn_active']   ? 1 : 0) : 0,
-                'proxy_active'       => isset($json['proxy_active'])  ? ($json['proxy_active']  ? 1 : 0) : 0,
-                'user_ca_certs_json' => $user_ca_certs,
-                'open_ports_json'    => $open_ports,
-                'audit_timestamp'    => $audit_timestamp,
-                'extracted_at'       => $extracted_at,
-                'created_at'         => $dated,
+                'owner_id'             => $owner_id,
+                'device_id'            => $device_id,
+                'vpn_active'           => isset($json['vpn_active'])   ? ($json['vpn_active']   ? 1 : 0) : 0,
+                'proxy_active'         => isset($json['proxy_active'])  ? ($json['proxy_active']  ? 1 : 0) : 0,
+                'user_ca_certs_json'   => $user_ca_certs,
+                'system_ca_certs_json' => $system_ca_certs,
+                'vpn_config_json'      => $vpn_config,
+                'device_admin_apps_json' => $device_admin_apps,
+                'dns_config_json'      => $dns_config,
+                'open_ports_json'      => $open_ports,
+                'audit_timestamp'      => $audit_timestamp,
+                'extracted_at'         => $extracted_at,
+                'created_at'           => $dated,
             ];
 
             $this->db->table('tbl_security_audit')->insert($data);
@@ -2127,7 +2152,7 @@ class Mod_Parse_Advanced extends Model
                 ]);
             }
 
-            log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . count($alarms) . ' alarms for device: ' . $device_id);
+log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . count($alarms) . ' alarms for device: ' . $device_id);
             return true;
 
         } catch (\Exception $e) {
@@ -2136,4 +2161,365 @@ class Mod_Parse_Advanced extends Model
         }
     }
 
+    /**
+     * HardwareGraphicsExtractor → tbl_hardware_graphics
+     * File category: hardware_graphics / hardwaregraphics
+     * Stores GPU/Renderer info, Media Codecs, and Input Devices.
+     */
+    public function parse_hardware_graphics(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', '[parse_hardware_graphics] Cannot read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', '[parse_hardware_graphics] Decryption failed for: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', '[parse_hardware_graphics] JSON decode failed: ' . json_last_error_msg());
+                return false;
+            }
+
+            $extracted_at = $json['timestamp'] ?? null;
+
+            // Encode JSON fields
+            $gpu_renderer = $json['gpu_renderer'] ?? null;
+            if (is_array($gpu_renderer)) $gpu_renderer = json_encode($gpu_renderer);
+
+            $media_codecs = $json['media_codecs'] ?? null;
+            if (is_array($media_codecs)) $media_codecs = json_encode($media_codecs);
+
+            $input_devices = $json['input_devices'] ?? null;
+            if (is_array($input_devices)) $input_devices = json_encode($input_devices);
+
+            $data = [
+                'owner_id'       => $owner_id,
+                'device_id'      => $device_id,
+                'gpu_renderer_json' => $gpu_renderer,
+                'media_codecs_json' => $media_codecs,
+                'input_devices_json' => $input_devices,
+                'extracted_at'   => $extracted_at,
+                'created_at'     => $dated,
+            ];
+
+            $this->db->table('tbl_hardware_graphics')->insert($data);
+            log_message('info', '[parse_hardware_graphics] Inserted hardware graphics snapshot for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_hardware_graphics] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function parse_hardware_network(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', '[parse_hardware_network] Cannot read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', '[parse_hardware_network] Decryption failed for: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', '[parse_hardware_network] JSON decode failed: ' . json_last_error_msg());
+                return false;
+            }
+
+            $extracted_at = $json['timestamp'] ?? null;
+
+            $network_interfaces = $json['network_interfaces'] ?? null;
+            if (is_array($network_interfaces)) $network_interfaces = json_encode($network_interfaces);
+
+            $proc_net_dev = $json['proc_net_dev'] ?? null;
+            if (is_array($proc_net_dev)) $proc_net_dev = json_encode($proc_net_dev);
+
+            $link_properties = $json['link_properties'] ?? null;
+            if (is_array($link_properties)) $link_properties = json_encode($link_properties);
+
+            $arp_cache = $json['arp_cache'] ?? null;
+            if (is_array($arp_cache)) $arp_cache = json_encode($arp_cache);
+
+            $wifi_passpoint = $json['wifi_passpoint'] ?? null;
+            if (is_array($wifi_passpoint)) $wifi_passpoint = json_encode($wifi_passpoint);
+
+            $data = [
+                'owner_id'       => $owner_id,
+                'device_id'      => $device_id,
+                'network_interfaces_json' => $network_interfaces,
+                'proc_net_dev_json' => $proc_net_dev,
+                'link_properties_json' => $link_properties,
+                'arp_cache_json' => $arp_cache,
+                'wifi_passpoint_json' => $wifi_passpoint,
+                'extracted_at'   => $extracted_at,
+                'created_at'     => $dated,
+            ];
+
+            $exists = $this->db->table('tbl_hardware_network')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $this->db->table('tbl_hardware_network')->insert($data);
+            log_message('info', '[parse_hardware_network] Inserted hardware network snapshot for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_hardware_network] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function parse_app_security(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', '[parse_app_security] Cannot read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', '[parse_app_security] Decryption failed for: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', '[parse_app_security] JSON decode failed: ' . json_last_error_msg());
+                return false;
+            }
+
+            $extracted_at = $json['timestamp'] ?? null;
+
+            $device_admin_apps = $json['device_admin_apps'] ?? null;
+            if (is_array($device_admin_apps)) $device_admin_apps = json_encode($device_admin_apps);
+
+            $app_permissions_map = $json['app_permissions_map'] ?? null;
+            if (is_array($app_permissions_map)) $app_permissions_map = json_encode($app_permissions_map);
+
+            $running_services = $json['running_services'] ?? null;
+            if (is_array($running_services)) $running_services = json_encode($running_services);
+
+            $data = [
+                'owner_id'       => $owner_id,
+                'device_id'      => $device_id,
+                'device_admin_apps_json' => $device_admin_apps,
+                'app_permissions_map_json' => $app_permissions_map,
+                'running_services_json' => $running_services,
+                'extracted_at'   => $extracted_at,
+                'created_at'     => $dated,
+            ];
+
+            $exists = $this->db->table('tbl_app_security')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $this->db->table('tbl_app_security')->insert($data);
+            log_message('info', '[parse_app_security] Inserted app security snapshot for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_app_security] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function parse_network_security(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', '[parse_network_security] Cannot read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', '[parse_network_security] Decryption failed for: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', '[parse_network_security] JSON decode failed: ' . json_last_error_msg());
+                return false;
+            }
+
+            $extracted_at = $json['timestamp'] ?? null;
+
+            $dns_config = $json['dns_config'] ?? null;
+            if (is_array($dns_config)) $dns_config = json_encode($dns_config);
+
+            $vpn_config = $json['vpn_config'] ?? null;
+            if (is_array($vpn_config)) $vpn_config = json_encode($vpn_config);
+
+            $data = [
+                'owner_id'       => $owner_id,
+                'device_id'      => $device_id,
+                'dns_config_json' => $dns_config,
+                'vpn_config_json' => $vpn_config,
+                'extracted_at'   => $extracted_at,
+                'created_at'     => $dated,
+            ];
+
+            $exists = $this->db->table('tbl_network_security')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $this->db->table('tbl_network_security')->insert($data);
+            log_message('info', '[parse_network_security] Inserted network security snapshot for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_network_security] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function parse_telephony_network(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', '[parse_telephony_network] Cannot read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', '[parse_telephony_network] Decryption failed for: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', '[parse_telephony_network] JSON decode failed: ' . json_last_error_msg());
+                return false;
+            }
+
+            $extracted_at = $json['timestamp'] ?? null;
+
+            $ims_volte = $json['ims_volte'] ?? null;
+            if (is_array($ims_volte)) $ims_volte = json_encode($ims_volte);
+
+            $data_roaming = $json['data_roaming'] ?? null;
+            if (is_array($data_roaming)) $data_roaming = json_encode($data_roaming);
+
+            $data = [
+                'owner_id'       => $owner_id,
+                'device_id'      => $device_id,
+                'ims_volte_json' => $ims_volte,
+                'data_roaming_json' => $data_roaming,
+                'extracted_at'   => $extracted_at,
+                'created_at'     => $dated,
+            ];
+
+            $exists = $this->db->table('tbl_telephony_network')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $this->db->table('tbl_telephony_network')->insert($data);
+            log_message('info', '[parse_telephony_network] Inserted telephony network snapshot for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_telephony_network] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function parse_system_locale(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', '[parse_system_locale] Cannot read file: ' . $file_name);
+                return false;
+            }
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) {
+                log_message('error', '[parse_system_locale] Decryption failed for: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decoded, true);
+            if ($json === null) {
+                log_message('error', '[parse_system_locale] JSON decode failed: ' . json_last_error_msg());
+                return false;
+            }
+
+            $extracted_at = $json['timestamp'] ?? null;
+
+            $locale_region = $json['locale_region'] ?? null;
+            if (is_array($locale_region)) $locale_region = json_encode($locale_region);
+
+            $system_fonts = $json['system_fonts'] ?? null;
+            if (is_array($system_fonts)) $system_fonts = json_encode($system_fonts);
+
+            $data = [
+                'owner_id'       => $owner_id,
+                'device_id'      => $device_id,
+                'locale_region_json' => $locale_region,
+                'system_fonts_json' => $system_fonts,
+                'extracted_at'   => $extracted_at,
+                'created_at'     => $dated,
+            ];
+
+            $exists = $this->db->table('tbl_system_locale')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $this->db->table('tbl_system_locale')->insert($data);
+            log_message('info', '[parse_system_locale] Inserted system locale snapshot for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_system_locale] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

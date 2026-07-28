@@ -59,7 +59,7 @@
                                         <span class="text-muted">None</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= date('M d, Y H:i', $r['extracted_at'] ?? 0) ?></td>
+                                <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-danger delete-row"
                                             data-id="<?= $r['id'] ?? '' ?>"
