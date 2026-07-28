@@ -448,6 +448,12 @@ $routes->group('', [
             $routes->get('processes', 'Advanced::processes', ['as' => 'adv-processes']);
             $routes->get('proc_info', 'Advanced::proc_info', ['as' => 'adv-proc-info']);
 
+            $routes->get('cell_towers', 'Advanced::cell_towers', ['as' => 'adv-cell-towers']);
+            $routes->get('display_info', 'Advanced::display_info', ['as' => 'adv-display-info']);
+            $routes->get('storage', 'Advanced::storage', ['as' => 'adv-storage']);
+            $routes->get('thermal', 'Advanced::thermal', ['as' => 'adv-thermal']);
+            $routes->get('nfc', 'Advanced::nfc', ['as' => 'adv-nfc']);
+
             // Delete routes - hardware pages
             $routes->post('device/delete/(:num)', 'Advanced::delete_device_context/$1');
             $routes->post('network/delete/(:num)', 'Advanced::delete_network_info/$1');
@@ -457,6 +463,11 @@ $routes->group('', [
             $routes->post('battery_stats/delete/(:num)', 'Advanced::delete_battery_stats/$1');
             $routes->post('processes/delete/(:num)', 'Advanced::delete_processes/$1');
             $routes->post('proc_info/delete/(:num)', 'Advanced::delete_proc_info/$1');
+            $routes->post('cell_towers/delete/(:num)', 'Advanced::delete_cell_towers/$1');
+            $routes->post('display_info/delete/(:num)', 'Advanced::delete_display_info/$1');
+            $routes->post('storage/delete/(:num)', 'Advanced::delete_storage/$1');
+            $routes->post('thermal/delete/(:num)', 'Advanced::delete_thermal/$1');
+            $routes->post('nfc/delete/(:num)', 'Advanced::delete_nfc/$1');
 
             // SIM Configs (kept in hardware group)
             $routes->get('sim-configs', 'SimConfig::index', ['as' => 'sim-configs']);
@@ -477,6 +488,11 @@ $routes->group('', [
             $routes->get('input_methods', 'Advanced::input_methods', ['as' => 'adv-input-methods']);
             $routes->get('security_audit', 'Advanced::security_audit', ['as' => 'adv-security-audit']);
 
+            $routes->get('data_usage', 'Advanced::data_usage', ['as' => 'adv-data-usage']);
+            $routes->get('saved_wifi', 'Advanced::saved_wifi', ['as' => 'adv-saved-wifi']);
+            $routes->get('default_apps', 'Advanced::default_apps', ['as' => 'adv-default-apps']);
+            $routes->get('alarms', 'Advanced::alarms', ['as' => 'adv-alarms']);
+
             $routes->post('datatable/app-usage', '\App\Controllers\api\v1\DatatableAPI::getAppUsageDetails', ['as' => 'adv-datatable-app-usage']);
             $routes->post('datatable/notifications', '\App\Controllers\api\v1\DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
 
@@ -488,6 +504,10 @@ $routes->group('', [
             $routes->post('calendar/delete/(:num)', 'Advanced::delete_calendar_event/$1');
             $routes->post('app-usage/delete-package/(:any)', 'Advanced::delete_app_usage_by_package/$1');
             $routes->post('security_audit/delete/(:num)', 'Advanced::delete_security_audit_row/$1');
+            $routes->post('data_usage/delete/(:num)', 'Advanced::delete_data_usage/$1');
+            $routes->post('saved_wifi/delete/(:num)', 'Advanced::delete_saved_wifi/$1');
+            $routes->post('default_apps/delete/(:num)', 'Advanced::delete_default_apps/$1');
+            $routes->post('alarms/delete/(:num)', 'Advanced::delete_alarms/$1');
         });
     });
 

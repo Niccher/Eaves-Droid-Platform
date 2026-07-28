@@ -44,6 +44,8 @@ class Receive extends BaseController
         'proc_info',
         // New extractors
         'processes', 'camera_info', 'battery_stats', 'accessibility', 'input_methods',
+        // NEW: 9 additional extractors
+        'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'data_usage', 'saved_wifi', 'default_apps', 'alarms',
     ];
 
 
@@ -540,6 +542,16 @@ class Receive extends BaseController
             'battery_stats'  => 'parse_battery_stats',
             'accessibility'  => 'parse_accessibility',
             'input_methods'  => 'parse_input_methods',
+            // NEW: 9 additional extractors
+            'cell_towers'    => 'parse_cell_towers',
+            'display_info'   => 'parse_display_info',
+            'storage'        => 'parse_storage',
+            'thermal'        => 'parse_thermal',
+            'nfc'            => 'parse_nfc',
+            'data_usage'     => 'parse_data_usage',
+            'saved_wifi'     => 'parse_saved_wifi',
+            'default_apps'   => 'parse_default_apps',
+            'alarms'         => 'parse_alarms',
         ];
 
         try {

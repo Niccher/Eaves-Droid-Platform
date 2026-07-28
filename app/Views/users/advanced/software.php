@@ -118,6 +118,58 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-chart-line fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Data Usage</h6>
+                            <p class="text-muted small mb-2">Per-app mobile and WiFi data usage</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_data_usage'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/software/data_usage'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-wifi fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Saved WiFi</h6>
+                            <p class="text-muted small mb-2">Configured WiFi networks and security types</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_saved_wifi'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/software/saved_wifi'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-cogs fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Default Apps</h6>
+                            <p class="text-muted small mb-2">Default browser, dialer, SMS, launcher handlers</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_default_apps'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/software/default_apps'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-clock fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Alarms & Jobs</h6>
+                            <p class="text-muted small mb-2">Scheduled JobScheduler jobs and AlarmManager alarms</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_alarms'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/software/alarms'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

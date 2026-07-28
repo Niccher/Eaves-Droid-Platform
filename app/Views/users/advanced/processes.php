@@ -25,7 +25,6 @@
                     <table class="table table-hover table-striped mb-0">
                         <thead class="thead-light">
                         <tr>
-                            <th><i class="fas fa-hashtag text-muted mr-1"></i> ID</th>
                             <th><i class="fas fa-cogs text-primary mr-1"></i> Snapshot</th>
                             <th><i class="fas fa-microchip text-info mr-1"></i> Processes</th>
                             <th><i class="fas fa-cogs text-warning mr-1"></i> Services</th>
@@ -37,7 +36,7 @@
                         </thead>
                         <tbody>
                         <?php if (empty($rows)): ?>
-                            <tr><td colspan="8" class="text-center py-5">
+                            <tr><td colspan="7" class="text-center py-5">
                                 <div class="empty-state"><i class="fas fa-microchip fa-3x text-muted mb-3"></i><h4>No process data</h4><p class="text-muted">Data will appear here once extracted</p></div>
                             </td></tr>
                         <?php else: foreach ($rows as $r): ?>
@@ -49,8 +48,7 @@
                                 $svcCount = count($services);
                             ?>
                             <tr>
-                                <td><code><?= $r['id'] ?? '—' ?></code></td>
-                                <td>
+                                                                <td>
                                     <div class="font-weight-bold">Snapshot</div>
                                     <small class="text-muted">Device: <?= htmlspecialchars(mb_substr($r['device_id'] ?? '—', 0, 12)) ?>…</small>
                                 </td>
@@ -81,7 +79,7 @@
                                 </td>
                             </tr>
                             <tr class="collapse" id="proc-detail-<?= $r['id'] ?>">
-                                <td colspan="8" class="p-0">
+                                <td colspan="7" class="p-0">
                                     <div class="table-responsive">
                                         <table class="table table-sm table-borderless mb-0 bg-light">
                                             <thead><tr class="text-muted small">
@@ -105,7 +103,7 @@
                                 </td>
                             </tr>
                             <tr class="collapse" id="svc-detail-<?= $r['id'] ?>">
-                                <td colspan="8" class="p-0">
+                                <td colspan="7" class="p-0">
                                     <div class="table-responsive">
                                         <table class="table table-sm table-borderless mb-0 bg-light">
                                             <thead><tr class="text-muted small">

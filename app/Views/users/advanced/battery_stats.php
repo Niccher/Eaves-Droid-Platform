@@ -25,7 +25,6 @@
                     <table class="table table-hover table-striped mb-0">
                         <thead class="thead-light">
                         <tr>
-                            <th><i class="fas fa-hashtag text-muted mr-1"></i> ID</th>
                             <th><i class="fas fa-battery-three-quarters text-warning mr-1"></i> Capacity</th>
                             <th><i class="fas fa-bolt text-danger mr-1"></i> Charge (µAh)</th>
                             <th><i class="fas fa-tachometer-alt text-info mr-1"></i> Current (µA)</th>
@@ -38,7 +37,7 @@
                         </thead>
                         <tbody>
                         <?php if (empty($rows)): ?>
-                            <tr><td colspan="9" class="text-center py-5">
+                            <tr><td colspan="8" class="text-center py-5">
                                 <div class="empty-state"><i class="fas fa-battery-empty fa-3x text-muted mb-3"></i><h4>No battery data</h4><p class="text-muted">Data will appear here once extracted</p></div>
                             </td></tr>
                         <?php else: foreach ($rows as $r): ?>
@@ -48,8 +47,7 @@
                                 $healthClass = $healthMap[$r['health'] ?? ''] ?? 'secondary';
                             ?>
                             <tr>
-                                <td><code><?= $r['id'] ?? '—' ?></code></td>
-                                <td>
+                                                                <td>
                                     <div class="d-flex align-items-center">
                                         <div class="progress flex-grow-1 mr-2" style="height: 8px;">
                                             <div class="bg-<?= $healthClass === 'success' ? 'success' : 'warning' ?>" role="progressbar" style="width: <?= min(100, max(0, (int)($r['capacity_percent'] ?? 0))) ?>%"></div>

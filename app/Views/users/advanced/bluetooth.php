@@ -58,6 +58,12 @@
                             <td><span class="badge badge-warning"><?= $pairedCount ?></span></td>
                             <td><?= !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—' ?></td>
                             <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary details-row"
+                                        data-data='<?= htmlspecialchars(json_encode($r), ENT_QUOTES) ?>'
+                                        data-title="Bluetooth Adapter Details"
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
                                 <button class="btn btn-sm btn-outline-danger delete-row"
                                         data-id="<?= $r['id'] ?? '' ?>"
                                         data-url="<?= base_url('advanced/bluetooth/delete') ?>"

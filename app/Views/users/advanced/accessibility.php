@@ -25,12 +25,12 @@
                     <table class="table table-hover table-striped mb-0">
                         <thead class="thead-light">
                         <tr>
-                            <th><i class="fas fa-hashtag text-muted mr-1"></i> ID</th>
                             <th><i class="fas fa-cogs text-primary mr-1"></i> Service ID</th>
                             <th><i class="fas fa-box text-success mr-1"></i> Package</th>
                             <th><i class="fas fa-comment-dots text-warning mr-1"></i> Description</th>
                             <th><i class="fas fa-layer-group text-secondary mr-1"></i> Capabilities</th>
                             <th><i class="fas fa-flag text-danger mr-1"></i> Flags</th>
+                            <th><i class="fas fa-eye text-info mr-1"></i> Window Content</th>
                             <th><i class="fas fa-clock text-muted mr-1"></i> Extracted</th>
                             <th class="text-center"><i class="fas fa-cogs mr-1"></i> Actions</th>
                         </tr>
@@ -46,7 +46,6 @@
                                 $canRetrieve = $r['can_retrieve_window_content'] ?? 0;
                             ?>
                             <tr>
-                                <td><code><?= $r['id'] ?? '—' ?></code></td>
                                 <td><code><?= htmlspecialchars($r['service_id'] ?? '—') ?></code></td>
                                 <td><code><?= htmlspecialchars($r['package_name'] ?? '—') ?></code></td>
                                 <td><?= htmlspecialchars($r['description'] ?? '—') ?></td>
@@ -59,6 +58,9 @@
                                     <span class="badge badge-<?= $r['flags'] ? 'warning' : 'light' ?>">
                                         <i class="fas fa-<?= $r['flags'] ? 'flag' : 'times' ?> mr-1"></i><?= $r['flags'] ? 'Has Flags' : 'None' ?>
                                     </span>
+                                </td>
+                                <td class="text-center">
+                                    <?= isset($r['can_retrieve_window_content']) && $r['can_retrieve_window_content'] ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>' ?>
                                 </td>
                                 <td><?= $ts ?></td>
                                 <td class="text-center">

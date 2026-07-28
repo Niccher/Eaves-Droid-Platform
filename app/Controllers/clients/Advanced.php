@@ -27,8 +27,8 @@ class Advanced extends BaseClientController
      */
     private function getAdvancedNavUrls(string $activeView, array $counts = []): string
     {
-        $hardware_tabs = ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info'];
-        $software_tabs = ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'accessibility', 'input_methods', 'remote_media'];
+        $hardware_tabs = ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc'];
+        $software_tabs = ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'accessibility', 'input_methods', 'remote_media', 'data_usage', 'saved_wifi', 'default_apps', 'alarms'];
 
         $is_hardware = in_array($activeView, $hardware_tabs) || $activeView === 'hardware_landing';
         $is_software = in_array($activeView, $software_tabs) || $activeView === 'software_landing';
@@ -178,7 +178,7 @@ class Advanced extends BaseClientController
             'summary' => $summary,
             'app_detail' => $appDetail,
             'sessions' => $sessions,
-            'back_url' => base_url('advanced/app-usage'),
+            'back_url' => base_url('advanced/software/app-usage'),
             'encoded_pkg' => $encodedPkg,
             'nav_urls' => '',
         ]);
@@ -232,7 +232,7 @@ class Advanced extends BaseClientController
             'group_key' => $groupKey,
             'summary' => $summary,
             'app_detail' => $appDetail,
-            'back_url' => base_url('advanced/notifications'),
+            'back_url' => base_url('advanced/software/notifications'),
             'encoded_pkg' => $encodedPkg,
             'nav_urls' => '',
         ]);
@@ -593,14 +593,14 @@ class Advanced extends BaseClientController
         if (!$packageName) {
             // Set flash error and redirect back
             $this->session->setFlashdata('error', 'Invalid package name');
-            return redirect()->to(base_url('advanced/notifications'));
+            return redirect()->to(base_url('advanced/software/notifications'));
         }
         if ($this->finderModel->delete_notifications_by_app($this->userId, $packageName)) {
             $this->session->setFlashdata('success', 'All notifications for the app have been deleted');
-            return redirect()->to(base_url('advanced/notifications'));
+            return redirect()->to(base_url('advanced/software/notifications'));
         }
         $this->session->setFlashdata('error', 'Failed to delete notifications for the app');
-        return redirect()->to(base_url('advanced/notifications'));
+        return redirect()->to(base_url('advanced/software/notifications'));
     }
 
     /** POST /advanced/device/delete/(:num) */
@@ -860,4 +860,216 @@ class Advanced extends BaseClientController
             'counts' => $counts,
         ]);
     }
+
+    // ── NEW EXTRACTORS: Hardware ──
+
+    /** GET /advanced/hardware/cell_towers */
+    public function cell_towers()
+    {
+        $data = array_merge($this->commonData('cell_towers', 'Cell Towers'), [
+            'rows' => $this->finderModel->get_cell_towers($this->userId),
+            'total' => $this->finderModel->get_count_CellTowers($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/cell_towers', $data);
+    }
+
+    /** POST /advanced/hardware/cell_towers/delete/(:num) */
+    public function delete_cell_towers($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_cell_towers_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/display_info */
+    public function display_info()
+    {
+        $data = array_merge($this->commonData('display_info', 'Display Info'), [
+            'rows' => $this->finderModel->get_display_info($this->userId),
+            'total' => $this->finderModel->get_count_DisplayInfo($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/display_info', $data);
+    }
+
+    /** POST /advanced/hardware/display_info/delete/(:num) */
+    public function delete_display_info($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_display_info_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/storage */
+    public function storage()
+    {
+        $data = array_merge($this->commonData('storage', 'Storage'), [
+            'rows' => $this->finderModel->get_storage($this->userId),
+            'total' => $this->finderModel->get_count_Storage($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/storage', $data);
+    }
+
+    /** POST /advanced/hardware/storage/delete/(:num) */
+    public function delete_storage($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_storage_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/thermal */
+    public function thermal()
+    {
+        $data = array_merge($this->commonData('thermal', 'Thermal'), [
+            'rows' => $this->finderModel->get_thermal($this->userId),
+            'total' => $this->finderModel->get_count_Thermal($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/thermal', $data);
+    }
+
+    /** POST /advanced/hardware/thermal/delete/(:num) */
+    public function delete_thermal($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_thermal_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/nfc */
+    public function nfc()
+    {
+        $data = array_merge($this->commonData('nfc', 'NFC'), [
+            'rows' => $this->finderModel->get_nfc($this->userId),
+            'total' => $this->finderModel->get_count_Nfc($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/nfc', $data);
+    }
+
+    /** POST /advanced/hardware/nfc/delete/(:num) */
+    public function delete_nfc($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_nfc_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    // ── NEW EXTRACTORS: Software ──
+
+    /** GET /advanced/software/data_usage */
+    public function data_usage()
+    {
+        $data = array_merge($this->commonData('data_usage', 'Data Usage'), [
+            'rows' => $this->finderModel->get_data_usage($this->userId),
+            'total' => $this->finderModel->get_count_DataUsage($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/data_usage', $data);
+    }
+
+    /** POST /advanced/software/data_usage/delete/(:num) */
+    public function delete_data_usage($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_data_usage_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/saved_wifi */
+    public function saved_wifi()
+    {
+        $data = array_merge($this->commonData('saved_wifi', 'Saved WiFi'), [
+            'rows' => $this->finderModel->get_saved_wifi($this->userId),
+            'total' => $this->finderModel->get_count_SavedWifi($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/saved_wifi', $data);
+    }
+
+    /** POST /advanced/software/saved_wifi/delete/(:num) */
+    public function delete_saved_wifi($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_saved_wifi_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/default_apps */
+    public function default_apps()
+    {
+        $data = array_merge($this->commonData('default_apps', 'Default Apps'), [
+            'rows' => $this->finderModel->get_default_apps($this->userId),
+            'total' => $this->finderModel->get_count_DefaultApps($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/default_apps', $data);
+    }
+
+    /** POST /advanced/software/default_apps/delete/(:num) */
+    public function delete_default_apps($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_default_apps_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/alarms */
+    public function alarms()
+    {
+        $data = array_merge($this->commonData('alarms', 'Alarms & Jobs'), [
+            'rows' => $this->finderModel->get_alarms($this->userId),
+            'total' => $this->finderModel->get_count_Alarms($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/alarms', $data);
+    }
+
+    /** POST /advanced/software/alarms/delete/(:num) */
+    public function delete_alarms($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_alarms_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
 }

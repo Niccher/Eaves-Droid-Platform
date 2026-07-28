@@ -25,7 +25,6 @@
                     <table class="table table-hover table-striped mb-0">
                         <thead class="thead-light">
                         <tr>
-                            <th><i class="fas fa-hashtag text-muted mr-1"></i> ID</th>
                             <th><i class="fas fa-keyboard text-primary mr-1"></i> IME ID</th>
                             <th><i class="fas fa-box text-success mr-1"></i> Package</th>
                             <th><i class="fas fa-tag text-info mr-1"></i> Label</th>
@@ -36,7 +35,7 @@
                         </thead>
                         <tbody>
                         <?php if (empty($rows)): ?>
-                            <tr><td colspan="7" class="text-center py-5">
+                            <tr><td colspan="6" class="text-center py-5">
                                 <div class="empty-state"><i class="fas fa-keyboard fa-3x text-muted mb-3"></i><h4>No IME data</h4><p class="text-muted">Data will appear here once extracted</p></div>
                             </td></tr>
                         <?php else: foreach ($rows as $r): ?>
@@ -47,8 +46,7 @@
                                 $isAux = $r['is_auxiliary'] ?? 0;
                             ?>
                             <tr>
-                                <td><code><?= $r['id'] ?? '—' ?></code></td>
-                                <td><code><?= htmlspecialchars($r['ime_id'] ?? '—') ?></code></td>
+                                                                <td><code><?= htmlspecialchars($r['ime_id'] ?? '—') ?></code></td>
                                 <td><code><?= htmlspecialchars($r['package_name'] ?? '—') ?></code></td>
                                 <td><?= htmlspecialchars($r['label'] ?? '—') ?></td>
                                 <td>

@@ -240,7 +240,7 @@
 <!-- Hardware Button -->
                         <li class="nav-item">
                             <a href="<?php echo base_url('advanced/hardware'); ?>"
-                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'sim_configs', 'hardware_landing'])) ? 'active' : ''; ?>">
+                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'sim_configs', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'hardware_landing'])) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-microchip"></i>
                                 <p>HARDWARE</p>
                             </a>
@@ -249,7 +249,7 @@
                         <!-- Software Button -->
                         <li class="nav-item">
                             <a href="<?php echo base_url('advanced/software'); ?>"
-                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'remote_media', 'accessibility', 'input_methods', 'software_landing'])) ? 'active' : ''; ?>">
+                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'remote_media', 'accessibility', 'input_methods', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'software_landing'])) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-laptop-code"></i>
                                 <p>SOFTWARE</p>
                             </a>

@@ -25,7 +25,6 @@
                     <table class="table table-hover table-striped mb-0">
                         <thead class="thead-light">
                         <tr>
-                            <th><i class="fas fa-hashtag text-muted mr-1"></i> ID</th>
                             <th><i class="fas fa-linux text-info mr-1"></i> Kernel</th>
                             <th><i class="fas fa-clock text-muted mr-1"></i> Uptime</th>
                             <th><i class="fas fa-memory text-success mr-1"></i> Memory</th>
@@ -37,7 +36,7 @@
                         </thead>
                         <tbody>
                         <?php if (empty($rows)): ?>
-                            <tr><td colspan="8" class="text-center py-5">
+                            <tr><td colspan="7" class="text-center py-5">
                                 <div class="empty-state"><i class="fas fa-microchip fa-3x text-muted mb-3"></i><h4>No proc data</h4><p class="text-muted">Data will appear here once extracted</p></div>
                             </td></tr>
                         <?php else: foreach ($rows as $r):
@@ -60,8 +59,7 @@
                             $ifaceCount = is_array($interfaces) ? count($interfaces) : 0;
                         ?>
                             <tr>
-                                <td><code><?= $r['id'] ?? '—' ?></code></td>
-                                <td><span class="text-muted small" title="<?= htmlspecialchars($r['version'] ?? '') ?>"><?= htmlspecialchars(mb_substr($r['version'] ?? '—', 0, 40)) ?><?= strlen($r['version'] ?? '') > 40 ? '…' : '' ?></span></td>
+                                                                <td><span class="text-muted small" title="<?= htmlspecialchars($r['version'] ?? '') ?>"><?= htmlspecialchars(mb_substr($r['version'] ?? '—', 0, 40)) ?><?= strlen($r['version'] ?? '') > 40 ? '…' : '' ?></span></td>
                                 <td><?= $uptimeStr ?></td>
                                 <td>
                                     <div class="d-flex align-items-center">

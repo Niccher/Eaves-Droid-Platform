@@ -25,7 +25,6 @@
                     <table class="table table-hover table-striped mb-0">
                         <thead class="thead-light">
                         <tr>
-                            <th><i class="fas fa-hashtag text-muted mr-1"></i> ID</th>
                             <th><i class="fas fa-camera text-primary mr-1"></i> Facing</th>
                             <th><i class="fas fa-expand-arrows-alt text-info mr-1"></i> Sensor Size</th>
                             <th><i class="fas fa-project-diagram text-warning mr-1"></i> Focal Lengths</th>
@@ -38,20 +37,23 @@
                         </thead>
                         <tbody>
                         <?php if (empty($rows)): ?>
-                            <tr><td colspan="10" class="text-center py-5">
+                            <tr><td colspan="9" class="text-center py-5">
                                 <div class="empty-state"><i class="fas fa-camera fa-3x text-muted mb-3"></i><h4>No camera data</h4><p class="text-muted">Data will appear here once extracted</p></div>
                             </td></tr>
-                        <?php else: foreach ($rows as $r): ?>
-                            <?php
+                        <?php else:
+                            $seenCameras = [];
+                            foreach ($rows as $r):
+                                $cameraKey = ($r['lens_facing'] ?? '') . '|' . ($r['physical_width_mm'] ?? 0);
+                                if (in_array($cameraKey, $seenCameras)) continue;
+                                $seenCameras[] = $cameraKey;
                                 $ts = !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—';
                                 $flash = $r['flash_available'] ?? 0;
                                 $effects = $r['available_effects'] ?? [];
                                 $focal = $r['available_focal_lengths'] ?? [];
                             ?>
-                            <tr>
-                                <td><code><?= $r['id'] ?? '—' ?></code></td>
-                                <td>
-                                    <span class="badge badge-<?= ($r['lens_facing'] ?? '') === 'front' ? 'info' : (($r['lens_facing'] ?? '') === 'back' ? 'success' : 'secondary') ?>">
+                             <tr>
+                                 <td>
+                                     <span class="badge badge-<?= ($r['lens_facing'] ?? '') === 'front' ? 'info' : (($r['lens_facing'] ?? '') === 'back' ? 'success' : 'secondary') ?>">
                                         <i class="fas fa-<?= ($r['lens_facing'] ?? '') === 'front' ? 'user' : (($r['lens_facing'] ?? '') === 'back' ? 'camera' : 'question') ?> mr-1"></i>
                                         <?= ucfirst($r['lens_facing'] ?? 'unknown') ?>
                                     </span>

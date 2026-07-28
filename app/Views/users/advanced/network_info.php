@@ -71,7 +71,7 @@
                                             <small class="d-block text-muted"><i class="fas fa-broadcast-tower mr-1"></i><?= htmlspecialchars($ap['ssid'] ?? '?') ?> (<?= $ap['level'] ?> dBm)</small>
                                         <?php endforeach; ?>
                                         <?php if (count($nearby) > 3): ?>
-                                            <button class="btn btn-sm btn-link p-0 mt-1" data-toggle="modal" data-target="#nearbyModal" onclick="showNearbyAPs(<?= htmlspecialchars(json_encode($nearby)) ?>)">
+                                            <button class="btn btn-sm btn-link p-0 mt-1" data-toggle="modal" data-target="#nearbyModal" onclick="showNearbyAPs(<?= htmlspecialchars(json_encode($nearby), ENT_QUOTES) ?>)">
                                                 <i class="fas fa-eye mr-1"></i>View all <?= count($nearby) ?> APs
                                             </button>
                                         <?php endif; ?>

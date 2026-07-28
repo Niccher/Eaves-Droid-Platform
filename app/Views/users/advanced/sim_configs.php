@@ -77,7 +77,6 @@
                                 <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                     <thead class="thead-light">
                                     <tr>
-                                        <th>Device</th>
                                         <th>SIM Serial</th>
                                         <th>Subscriber ID</th>
                                         <th>Operator</th>
@@ -91,7 +90,7 @@
                                     <tbody>
                                     <?php if (empty($data)): ?>
                                         <tr>
-                                            <td colspan="9" class="text-center py-5">
+                                            <td colspan="8" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-sim-card fa-3x text-muted mb-3"></i>
                                                     <h4>No SIM config data</h4>
@@ -101,7 +100,6 @@
                                         </tr>
                                     <?php else: foreach ($data as $r): ?>
                                         <tr>
-                                            <td class="align-middle"><code><?= htmlspecialchars($r['device_id'] ?? '—') ?></code></td>
                                             <td class="align-middle"><?= htmlspecialchars($r['sim_serial'] ?? '—') ?></td>
                                             <td class="align-middle"><?= htmlspecialchars($r['subscriber_id'] ?? '—') ?></td>
                                             <td class="align-middle"><?= htmlspecialchars($r['sim_operator_name'] ?? '—') ?></td>
@@ -126,8 +124,8 @@
                                                 <?php endif; ?>
                                             </td>
                                             <td class="align-middle"><?= !empty($r['captured_at']) ? format_timestamp_display((int)$r['captured_at']) : '—' ?></td>
-                                            <td class="text-center align-middle">
-                                                <button type="button" class="btn btn-sm btn-outline-danger delete-sim-config"
+                                             <td class="text-center align-middle">
+                                                 <button type="button" class="btn btn-sm btn-outline-danger delete-sim-config"
                                                         data-id="<?= $r['id'] ?>"
                                                         title="Delete SIM record">
                                                     <i class="fas fa-trash"></i>
@@ -230,3 +228,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<?php include __DIR__ . '/_adv_style.php'; ?>
+<?php include __DIR__ . '/_adv_delete_script.php'; ?>

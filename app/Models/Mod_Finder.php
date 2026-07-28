@@ -1143,7 +1143,21 @@ class Mod_Finder extends Model
     }
     public function get_count_Sensors(int $user_id): int
     {
-        return $this->getCount('tbl_sensor_profile', $user_id);
+        try {
+            $sub = $this->db->table('tbl_sensor_profile')
+                ->select('sensor_name, type_id')
+                ->where('owner_id', $user_id);
+            if (!empty($this->deviceId) && $this->deviceId !== 'all') {
+                $sub->where('device_id', $this->deviceId);
+            }
+            $sub->groupBy('sensor_name, type_id');
+            $sql = 'SELECT COUNT(*) AS cnt FROM ('.$sub->getCompiledSelect().') AS unique_sensors';
+            $query = $this->db->query($sql);
+            return (int)($query->getRow()->cnt ?? 0);
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_Sensors: '.$e->getMessage());
+            return 0;
+        }
     }
     public function get_count_SecurityAudit(int $user_id): int
     {
@@ -1739,25 +1753,31 @@ class Mod_Finder extends Model
         }
     }
 
-    public function get_sensor_profile(int $user_id, int $perPage = 50): array
-    {
-        try {
-            $total = $this->get_count_Sensors($user_id);
-            $page = service('request')->getGet('page') ?? 1;
-            $offset = ($page - 1) * $perPage;
-            $results = $this->fq('tbl_sensor_profile', $user_id)
-                ->orderBy('type_id', 'ASC')
-                ->limit($perPage, $offset)->get()->getResultArray();
-            $this->pager = \Config\Services::pager();
-            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
-            return $results;
-        } catch (\Exception $e) {
-            log_message('error', 'get_sensor_profile: ' . $e->getMessage());
-            return [];
-        }
-    }
+     public function get_sensor_profile(int $user_id, int $perPage = 25): array
+     {
+         try {
+             $total = $this->get_count_Sensors($user_id);
+             $page = service('request')->getGet('page') ?? 1;
+             $offset = ($page - 1) * $perPage;
+             $sub = $this->db->table('tbl_sensor_profile t1')
+                 ->select('t1.*')
+                 ->where('t1.owner_id', $user_id)
+                 ->join('(SELECT sensor_name, type_id, MAX(extracted_at) AS max_at FROM tbl_sensor_profile t2 WHERE t2.owner_id = '.$user_id.($this->deviceId && $this->deviceId !== 'all' ? ' AND t2.device_id = '.$this->db->escape($this->deviceId) : '').' GROUP BY sensor_name, type_id) t3', 't1.sensor_name = t3.sensor_name AND t1.type_id = t3.type_id AND t1.extracted_at = t3.max_at', 'inner')
+                 ->orderBy('type_id', 'ASC');
+             if (!empty($this->deviceId) && $this->deviceId !== 'all') {
+                 $sub->where('t1.device_id', $this->deviceId);
+             }
+             $results = $sub->limit($perPage, $offset)->get()->getResultArray();
+             $this->pager = \Config\Services::pager();
+             $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+             return $results;
+         } catch (\Exception $e) {
+             log_message('error', 'get_sensor_profile: '.$e->getMessage());
+          return [];
+          }
+      }
 
-    public function get_security_audit(int $user_id, int $perPage = 25): array
+      public function get_security_audit(int $user_id, int $perPage = 25): array
     {
         try {
             $total = $this->get_count_SecurityAudit($user_id);
@@ -1938,6 +1958,619 @@ class Mod_Finder extends Model
             log_message('error', 'get_processes: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Cell Towers - groups by extracted_at to rebuild towers JSON
+     */
+    public function get_cell_towers(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_CellTowers($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $timestamps = $this->fq('tbl_cell_towers', $user_id)
+                ->select('extracted_at, network_operator, network_operator_name, phone_type, sim_state')
+                ->groupBy('extracted_at')
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+
+            $results = [];
+            foreach ($timestamps as $ts) {
+                $extractedAt = $ts['extracted_at'];
+                $towers = $this->fq('tbl_cell_towers', $user_id)
+                    ->where('extracted_at', $extractedAt)
+                    ->get()->getResultArray();
+
+                $towerList = [];
+                foreach ($towers as $tower) {
+                    $towerList[] = [
+                        'type' => $tower['tower_type'] ?? '',
+                        'cid' => $tower['cid'] ?? '',
+                        'lac' => $tower['lac'] ?? '',
+                        'mcc' => $tower['mcc'] ?? '',
+                        'mnc' => $tower['mnc'] ?? '',
+                        'pci' => $tower['pci'] ?? '',
+                        'nci' => $tower['nci'] ?? '',
+                        'tac' => $tower['tac'] ?? '',
+                        'nrarfcn' => $tower['nrarfcn'] ?? '',
+                        'bandwidth' => $tower['bandwidth'] ?? '',
+                        'psc' => $tower['psc'] ?? '',
+                        'system_id' => $tower['system_id'] ?? '',
+                        'rssi' => $tower['rssi'] ?? '',
+                        'rsrp' => $tower['rsrp'] ?? '',
+                        'rsrq' => $tower['rsrq'] ?? '',
+                        'rssnr' => $tower['rssnr'] ?? '',
+                        'cqi' => $tower['cqi'] ?? '',
+                        'asu_level' => $tower['asu_level'] ?? '',
+                        'csi_rsrp' => $tower['csi_rsrp'] ?? '',
+                        'csi_rsrq' => $tower['csi_rsrq'] ?? '',
+                        'csi_sinr' => $tower['csi_sinr'] ?? '',
+                        'is_registered' => $tower['is_registered'] ?? 0,
+                    ];
+                }
+
+                $results[] = [
+                    'id' => $towers[0]['id'] ?? 0,
+                    'owner_id' => $user_id,
+                    'device_id' => $towers[0]['device_id'] ?? '',
+                    'towers_json' => json_encode($towerList),
+                    'network_operator' => $ts['network_operator'] ?? '',
+                    'network_operator_name' => $ts['network_operator_name'] ?? '',
+                    'phone_type' => $ts['phone_type'] ?? 0,
+                    'sim_state' => $ts['sim_state'] ?? 0,
+                    'extracted_at' => $extractedAt,
+                    'created_at' => $towers[0]['created_at'] ?? '',
+                    'updated_at' => $towers[0]['updated_at'] ?? '',
+                ];
+            }
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_cell_towers: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_CellTowers(int $user_id): int
+    {
+        return $this->getCount('tbl_cell_towers', $user_id);
+    }
+
+    /**
+     * Display Info
+     */
+    public function get_display_info(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_DisplayInfo($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_display_info', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            foreach ($results as &$r) {
+                if (isset($r['displays_json']) && is_string($r['displays_json'])) {
+                    $r['displays'] = json_decode($r['displays_json'], true) ?? [];
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_display_info: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_DisplayInfo(int $user_id): int
+    {
+        return $this->getCount('tbl_display_info', $user_id);
+    }
+
+    /**
+     * Storage - groups by extracted_at to rebuild volumes JSON
+     */
+    public function get_storage(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Storage($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $timestamps = $this->fq('tbl_storage', $user_id)
+                ->select('extracted_at')
+                ->groupBy('extracted_at')
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+
+            $results = [];
+            foreach ($timestamps as $ts) {
+                $extractedAt = $ts['extracted_at'];
+                $volumes = $this->fq('tbl_storage', $user_id)
+                    ->where('extracted_at', $extractedAt)
+                    ->get()->getResultArray();
+
+                $volumeList = [];
+                $appCache = null;
+                $appData = null;
+
+                foreach ($volumes as $vol) {
+                    $path = $vol['volume_path'] ?? '';
+                    if ($path === 'app_cache') {
+                        $appCache = [
+                            'total_bytes' => $vol['total_bytes'] ?? 0,
+                            'available_bytes' => $vol['available_bytes'] ?? 0,
+                            'free_bytes' => $vol['free_bytes'] ?? 0,
+                            'used_bytes' => $vol['used_bytes'] ?? 0,
+                            'total_formatted' => $vol['total_formatted'] ?? '',
+                            'available_formatted' => $vol['available_formatted'] ?? '',
+                            'used_formatted' => $vol['used_formatted'] ?? '',
+                        ];
+                    } elseif ($path === 'app_data') {
+                        $appData = [
+                            'total_bytes' => $vol['total_bytes'] ?? 0,
+                            'available_bytes' => $vol['available_bytes'] ?? 0,
+                            'free_bytes' => $vol['free_bytes'] ?? 0,
+                            'used_bytes' => $vol['used_bytes'] ?? 0,
+                            'total_formatted' => $vol['total_formatted'] ?? '',
+                            'available_formatted' => $vol['available_formatted'] ?? '',
+                            'used_formatted' => $vol['used_formatted'] ?? '',
+                        ];
+                    } else {
+                        $volumeList[] = [
+                            'path' => $path,
+                            'description' => $vol['description'] ?? '',
+                            'is_removable' => $vol['is_removable'] ?? 0,
+                            'state' => $vol['state'] ?? '',
+                            'info' => [
+                                'total_bytes' => $vol['total_bytes'] ?? 0,
+                                'available_bytes' => $vol['available_bytes'] ?? 0,
+                                'free_bytes' => $vol['free_bytes'] ?? 0,
+                                'used_bytes' => $vol['used_bytes'] ?? 0,
+                                'total_formatted' => $vol['total_formatted'] ?? '',
+                                'available_formatted' => $vol['available_formatted'] ?? '',
+                                'used_formatted' => $vol['used_formatted'] ?? '',
+                            ],
+                        ];
+                    }
+                }
+
+                $results[] = [
+                    'id' => $volumes[0]['id'] ?? 0,
+                    'owner_id' => $user_id,
+                    'device_id' => $volumes[0]['device_id'] ?? '',
+                    'volumes_json' => json_encode($volumeList),
+                    'app_cache_json' => $appCache ? json_encode($appCache) : null,
+                    'app_data_json' => $appData ? json_encode($appData) : null,
+                    'extracted_at' => $extractedAt,
+                    'created_at' => $volumes[0]['created_at'] ?? '',
+                    'updated_at' => $volumes[0]['updated_at'] ?? '',
+                ];
+            }
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_storage: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_Storage(int $user_id): int
+    {
+        return $this->getCount('tbl_storage', $user_id);
+    }
+
+    /**
+     * Thermal - groups by extracted_at to rebuild JSON structures
+     */
+    public function get_thermal(int $user_id, int $perPage = 25): array
+    {
+        try {
+            // First get unique extracted_at timestamps with pagination
+            $total = $this->get_count_Thermal($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $timestamps = $this->fq('tbl_thermal', $user_id)
+                ->select('extracted_at')
+                ->groupBy('extracted_at')
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+
+            $results = [];
+            foreach ($timestamps as $ts) {
+                $extractedAt = $ts['extracted_at'];
+                $rows = $this->fq('tbl_thermal', $user_id)
+                    ->where('extracted_at', $extractedAt)
+                    ->get()->getResultArray();
+
+                $thermalZones = [];
+                $cpuThrottle = [];
+                $cpuFreqs = [];
+
+                foreach ($rows as $row) {
+                    $dt = $row['data_type'] ?? '';
+                    if ($dt === 'thermal_zone') {
+                        $thermalZones[] = [
+                            'zone' => $row['zone_name'] ?? '',
+                            'type' => $row['zone_type'] ?? '',
+                            'temp_raw' => $row['temp_raw'] ?? '',
+                            'temp_celsius' => $row['temp_celsius'] ?? '',
+                            'policy' => $row['policy'] ?? '',
+                        ];
+                    } elseif ($dt === 'cpu_throttle') {
+                        $cpuThrottle[] = [
+                            'cpu' => $row['cpu_name'] ?? '',
+                            'core_limit_max' => $row['core_limit_max'] ?? '',
+                            'package_limit_max' => $row['package_limit_max'] ?? '',
+                            'throttle_count' => $row['throttle_count'] ?? '',
+                        ];
+                    } elseif ($dt === 'cpu_frequency') {
+                        $cpuFreqs[] = [
+                            'cpu' => $row['cpu_name'] ?? '',
+                            'scaling_min_freq' => $row['scaling_min_freq'] ?? '',
+                            'scaling_max_freq' => $row['scaling_max_freq'] ?? '',
+                            'scaling_cur_freq' => $row['scaling_cur_freq'] ?? '',
+                            'scaling_governor' => $row['scaling_governor'] ?? '',
+                        ];
+                    }
+                }
+
+                $results[] = [
+                    'id' => $rows[0]['id'] ?? 0,
+                    'owner_id' => $user_id,
+                    'device_id' => $rows[0]['device_id'] ?? '',
+                    'thermal_zones_json' => json_encode($thermalZones),
+                    'cpu_throttle_json' => json_encode($cpuThrottle),
+                    'cpu_frequencies_json' => json_encode($cpuFreqs),
+                    'extracted_at' => $extractedAt,
+                    'created_at' => $rows[0]['created_at'] ?? '',
+                    'updated_at' => $rows[0]['updated_at'] ?? '',
+                ];
+            }
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_thermal: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_Thermal(int $user_id): int
+    {
+        return $this->getCount('tbl_thermal', $user_id);
+    }
+
+    /**
+     * NFC
+     */
+    public function get_nfc(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Nfc($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_nfc', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+            foreach ($results as &$r) {
+                if (isset($r['features_json']) && is_string($r['features_json'])) {
+                    $r['features'] = json_decode($r['features_json'], true) ?? [];
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_nfc: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_Nfc(int $user_id): int
+    {
+        return $this->getCount('tbl_nfc', $user_id);
+    }
+
+    /**
+     * Data Usage - groups by extracted_at to rebuild usage records JSON
+     */
+    public function get_data_usage(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_DataUsage($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $timestamps = $this->fq('tbl_data_usage', $user_id)
+                ->select('extracted_at')
+                ->groupBy('extracted_at')
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+
+            $results = [];
+            foreach ($timestamps as $ts) {
+                $extractedAt = $ts['extracted_at'];
+                $records = $this->fq('tbl_data_usage', $user_id)
+                    ->where('extracted_at', $extractedAt)
+                    ->get()->getResultArray();
+
+                $usageRecords = [];
+                $totals = null;
+
+                foreach ($records as $rec) {
+                    if ($rec['network_type'] === 'total') {
+                        $totals = [
+                            'total_rx' => $rec['rx_bytes'] ?? 0,
+                            'total_tx' => $rec['tx_bytes'] ?? 0,
+                            'total_rx_formatted' => $rec['rx_formatted'] ?? '',
+                            'total_tx_formatted' => $rec['tx_formatted'] ?? '',
+                        ];
+                    } else {
+                        $usageRecords[] = [
+                            'network_type' => $rec['network_type'] ?? '',
+                            'sub_id' => $rec['sub_id'] ?? 0,
+                            'is_wifi' => $rec['is_wifi'] ?? 0,
+                            'rx_bytes' => $rec['rx_bytes'] ?? 0,
+                            'tx_bytes' => $rec['tx_bytes'] ?? 0,
+                            'total_bytes' => $rec['total_bytes'] ?? 0,
+                            'rx_formatted' => $rec['rx_formatted'] ?? '',
+                            'tx_formatted' => $rec['tx_formatted'] ?? '',
+                            'bucket_start' => $rec['bucket_start'] ?? 0,
+                            'bucket_end' => $rec['bucket_end'] ?? 0,
+                        ];
+                    }
+                }
+
+                $results[] = [
+                    'id' => $records[0]['id'] ?? 0,
+                    'owner_id' => $user_id,
+                    'device_id' => $records[0]['device_id'] ?? '',
+                    'usage_records_json' => json_encode($usageRecords),
+                    'totals_json' => $totals ? json_encode($totals) : null,
+                    'extracted_at' => $extractedAt,
+                    'created_at' => $records[0]['created_at'] ?? '',
+                    'updated_at' => $records[0]['updated_at'] ?? '',
+                ];
+            }
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_data_usage: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_DataUsage(int $user_id): int
+    {
+        return $this->getCount('tbl_data_usage', $user_id);
+    }
+
+    /**
+     * Saved WiFi - groups by extracted_at to rebuild networks JSON
+     */
+    public function get_saved_wifi(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_SavedWifi($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $timestamps = $this->fq('tbl_saved_wifi', $user_id)
+                ->select('extracted_at')
+                ->groupBy('extracted_at')
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+
+            $results = [];
+            foreach ($timestamps as $ts) {
+                $extractedAt = $ts['extracted_at'];
+                $networks = $this->fq('tbl_saved_wifi', $user_id)
+                    ->where('extracted_at', $extractedAt)
+                    ->get()->getResultArray();
+
+                $networkList = [];
+                foreach ($networks as $net) {
+                    $networkList[] = [
+                        'ssid' => $net['ssid'] ?? '',
+                        'bssid' => $net['bssid'] ?? '',
+                        'network_id' => $net['network_id'] ?? 0,
+                        'priority' => $net['priority'] ?? 0,
+                        'status' => $net['status'] ?? 0,
+                        'is_hidden' => $net['is_hidden'] ?? 0,
+                        'security' => $net['security'] ?? '',
+                        'protocols' => json_decode($net['protocols_json'] ?? '[]', true) ?? [],
+                        'auth_algorithms' => json_decode($net['auth_algorithms_json'] ?? '[]', true) ?? [],
+                    ];
+                }
+
+                $results[] = [
+                    'id' => $networks[0]['id'] ?? 0,
+                    'owner_id' => $user_id,
+                    'device_id' => $networks[0]['device_id'] ?? '',
+                    'networks_json' => json_encode($networkList),
+                    'network_count' => count($networkList),
+                    'extracted_at' => $extractedAt,
+                    'created_at' => $networks[0]['created_at'] ?? '',
+                    'updated_at' => $networks[0]['updated_at'] ?? '',
+                ];
+            }
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_saved_wifi: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_SavedWifi(int $user_id): int
+    {
+        return $this->getCount('tbl_saved_wifi', $user_id);
+    }
+
+    /**
+     * Default Apps - groups by extracted_at to rebuild handler JSON
+     */
+    public function get_default_apps(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_DefaultApps($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $timestamps = $this->fq('tbl_default_apps', $user_id)
+                ->select('extracted_at')
+                ->groupBy('extracted_at')
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+
+            $results = [];
+            foreach ($timestamps as $ts) {
+                $extractedAt = $ts['extracted_at'];
+                $handlers = $this->fq('tbl_default_apps', $user_id)
+                    ->where('extracted_at', $extractedAt)
+                    ->get()->getResultArray();
+
+                $handlerMap = [];
+                foreach ($handlers as $h) {
+                    $handlerMap[$h['handler_type']] = [
+                        'package_name' => $h['package_name'] ?? '',
+                        'app_name' => $h['app_name'] ?? '',
+                        'is_system' => $h['is_system'] ?? 0,
+                    ];
+                }
+
+                $results[] = [
+                    'id' => $handlers[0]['id'] ?? 0,
+                    'owner_id' => $user_id,
+                    'device_id' => $handlers[0]['device_id'] ?? '',
+                    'default_browser_json' => json_encode($handlerMap['browser'] ?? []),
+                    'default_dialer_json' => json_encode($handlerMap['dialer'] ?? []),
+                    'default_sms_json' => json_encode($handlerMap['sms'] ?? []),
+                    'default_launcher_json' => json_encode($handlerMap['launcher'] ?? []),
+                    'default_email_json' => json_encode($handlerMap['email'] ?? []),
+                    'default_maps_json' => json_encode($handlerMap['maps'] ?? []),
+                    'default_music_json' => json_encode($handlerMap['music'] ?? []),
+                    'default_gallery_json' => json_encode($handlerMap['gallery'] ?? []),
+                    'default_sms_package' => $handlerMap['sms_package']['package_name'] ?? null,
+                    'extracted_at' => $extractedAt,
+                    'created_at' => $handlers[0]['created_at'] ?? '',
+                    'updated_at' => $handlers[0]['updated_at'] ?? '',
+                ];
+            }
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_default_apps: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_DefaultApps(int $user_id): int
+    {
+        return $this->getCount('tbl_default_apps', $user_id);
+    }
+
+    /**
+     * Alarms - groups by extracted_at to rebuild jobs/alarms JSON
+     */
+    public function get_alarms(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Alarms($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+
+            $timestamps = $this->fq('tbl_alarms', $user_id)
+                ->select('extracted_at')
+                ->groupBy('extracted_at')
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+
+            $results = [];
+            foreach ($timestamps as $ts) {
+                $extractedAt = $ts['extracted_at'];
+                $alarms = $this->fq('tbl_alarms', $user_id)
+                    ->where('extracted_at', $extractedAt)
+                    ->get()->getResultArray();
+
+                $scheduledJobs = [];
+                $alarmClocks = [];
+
+                foreach ($alarms as $a) {
+                    if ($a['alarm_type'] === 'job') {
+                        $scheduledJobs[] = [
+                            'job_id' => $a['job_id'] ?? 0,
+                            'service' => $a['service_class'] ?? '',
+                            'package' => $a['package_name'] ?? '',
+                            'is_periodic' => $a['is_periodic'] ?? 0,
+                            'interval_millis' => $a['interval_millis'] ?? null,
+                            'min_flex_millis' => $a['min_flex_millis'] ?? null,
+                            'requires_charging' => $a['requires_charging'] ?? 0,
+                            'requires_idle' => $a['requires_idle'] ?? 0,
+                            'network_type' => $a['network_type'] ?? '',
+                            'persisted' => $a['persisted'] ?? 0,
+                            'initial_delay_millis' => $a['initial_delay_millis'] ?? null,
+                            'minimum_latency_millis' => $a['minimum_latency_millis'] ?? null,
+                            'important_while_foreground' => $a['important_foreground'] ?? 0,
+                        ];
+                    } else {
+                        $alarmClocks[] = [
+                            'trigger_time_millis' => $a['trigger_time'] ?? 0,
+                            'trigger_time_formatted' => $a['trigger_time_formatted'] ?? '',
+                            'package' => $a['package_name'] ?? '',
+                        ];
+                    }
+                }
+
+                $results[] = [
+                    'id' => $alarms[0]['id'] ?? 0,
+                    'owner_id' => $user_id,
+                    'device_id' => $alarms[0]['device_id'] ?? '',
+                    'scheduled_jobs_json' => json_encode($scheduledJobs),
+                    'alarm_clocks_json' => json_encode($alarmClocks),
+                    'job_count' => count($scheduledJobs),
+                    'extracted_at' => $extractedAt,
+                    'created_at' => $alarms[0]['created_at'] ?? '',
+                    'updated_at' => $alarms[0]['updated_at'] ?? '',
+                ];
+            }
+
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_alarms: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_Alarms(int $user_id): int
+    {
+        return $this->getCount('tbl_alarms', $user_id);
     }
 
     public function get_categorized_sms_counts(int $userId): array
@@ -4084,6 +4717,125 @@ class Mod_Finder extends Model
                 ->delete();
         } catch (\Exception $e) {
             log_message('error', 'delete_app_usage_by_package error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ── Delete methods for new extractors ───────────────────────────────────
+
+    public function delete_cell_towers_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_cell_towers')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_cell_towers_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_display_info_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_display_info')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_display_info_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_storage_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_storage')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_storage_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_thermal_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_thermal')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_thermal_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_nfc_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_nfc')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_nfc_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_data_usage_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_data_usage')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_data_usage_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_saved_wifi_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_saved_wifi')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_saved_wifi_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_default_apps_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_default_apps')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_default_apps_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_alarms_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_alarms')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_alarms_row error: ' . $e->getMessage());
             return false;
         }
     }

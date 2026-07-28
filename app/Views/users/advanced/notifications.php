@@ -209,10 +209,10 @@ if (!empty($detail_mode)) {
                                 </td>
                                 <td><small class="text-muted"><?= htmlspecialchars($preview) ?></small></td>
                                 <td class="text-center">
-						<a href="<?= base_url('advanced/notifications/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-warning mr-1" title="View all notifications">
+						<a href="<?= base_url('advanced/software/notifications/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-warning mr-1" title="View all notifications">
 							<i class="fas fa-eye"></i>
 						</a>
-						<form method="post" action="<?= base_url('advanced/notifications/delete/' . $pkgEnc) ?>" style="display:inline;" onsubmit="return confirm('Delete all notifications for this app?');">
+						<form method="post" action="<?= base_url('advanced/software/notifications/delete/' . $pkgEnc) ?>" style="display:inline;" onsubmit="return confirm('Delete all notifications for this app?');">
 							<button type="submit" class="btn btn-sm btn-outline-danger" title="Delete all notifications">
 								<i class="fas fa-trash-alt"></i>
 							</button>
@@ -232,3 +232,4 @@ if (!empty($detail_mode)) {
 }
 ?>
 <?php include __DIR__ . '/_adv_style.php'; ?>
+<?php include __DIR__ . '/_adv_delete_script.php'; ?>

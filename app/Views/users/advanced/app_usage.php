@@ -259,7 +259,7 @@ if (!empty($detail_mode)) {
                                 <td><span class="badge badge-info"><?= (int) ($r['snapshot_count'] ?? 0) ?></span></td>
                                 <td><span class="badge badge-<?= $r['is_system_app'] ? 'secondary' : 'primary' ?>"><?= $r['is_system_app'] ? 'System' : 'User' ?></span></td>
                                 <td class="text-center">
-                                    <a href="<?= base_url('advanced/app-usage/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-info" title="View details"><i class="fas fa-eye"></i></a>
+                                    <a href="<?= base_url('advanced/software/app-usage/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-info mr-1" title="View all details"><i class="fas fa-eye"></i></a>
                                     <button class="btn btn-sm btn-outline-danger delete-app-usage-pkg"
                                             data-pkg="<?= $pkgEnc ?? '' ?>"
                                             data-name="<?= esc($r['app_name'] ?? '') ?>"
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmButtonText: '<i class="fas fa-trash"></i> Delete All'
                 }).then(function(result) {
                     if (result.isConfirmed) {
-                        fetch('<?= base_url('advanced/app-usage/delete-package') ?>/' + pkg, {
+                        fetch('<?= base_url('advanced/software/app-usage/delete-package') ?>/' + pkg, {
                             method: 'POST',
                             headers: { 'X-Requested-With': 'XMLHttpRequest' }
                         }).then(function(r) { return r.json(); }).then(function(response) {
@@ -320,3 +320,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <?php include __DIR__ . '/_adv_style.php'; ?>
+<?php include __DIR__ . '/_adv_delete_script.php'; ?>
