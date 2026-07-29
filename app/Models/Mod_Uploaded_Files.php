@@ -46,7 +46,7 @@ class Mod_Uploaded_Files extends Model
         'file_size_bytes' => 'required|is_natural',
         'token_used' => 'required|max_length[255]',
         'device_checksum' => 'required|max_length[100]',
-        'file_category' => 'required|in_list[apps,sms,contacts,logs,files,location,device,device_context,context,network,network_info,accounts,calendar,app,app_usage,usage,notifications,bluetooth,sensors,sensor]'
+        'file_category' => 'required|in_list[apps,sms,contacts,logs,files,location,device,device_context,context,network,network_info,accounts,calendar,app,app_usage,usage,notifications,bluetooth,sensors,sensor,cell_towers,display_info,storage,thermal,nfc,data_usage,saved_wifi,default_apps,alarms,hardware_graphics,hardware_network,app_security,network_security,telephony_network,system_locale,camera_info,battery_stats,accessibility,input_methods,proc_info,processes,misc_software,misc_hardware,apps_notifications,audio,image,deviceinfo,device_info,security_audit,securityaudit,sim_configs,sim_config,live_locations,live_location]'
 
     ];
 

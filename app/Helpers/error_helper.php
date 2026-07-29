@@ -31,6 +31,27 @@ if (!function_exists('error_page')) {
     }
 }
 
+if (!function_exists('get_notification_sender')) {
+    /**
+     * Returns the notification sender email and name from admin settings.
+     *
+     * @return array{email: string, name: string}
+     */
+    function get_notification_sender(): array
+    {
+        $db = \Config\Database::connect();
+        $settings = [];
+        $rows = $db->table('settings')->where('class', 'notification')->get()->getResultArray();
+        foreach ($rows as $r) {
+            $settings[$r['key']] = $r['value'];
+        }
+        return [
+            'email' => $settings['smtp_from_email'] ?? config('Email')->fromEmail ?? 'prjs4@chegecache.co.ke',
+            'name'  => $settings['smtp_from_name'] ?? config('Email')->fromName ?? 'Eaves Droid',
+        ];
+    }
+}
+
 if (!function_exists('throw_custom_error')) {
     /**
      * Throws a custom HTTP exception with error page.

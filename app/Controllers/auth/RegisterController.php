@@ -287,12 +287,22 @@ class RegisterController extends Controller
 <p style="margin:0;color:#856404;font-size:13px;"><strong>🔒 Security Tip:</strong> Never share your password or API tokens with anyone. Enable two-factor authentication in your security settings for added protection.</p>
 </div>
 <p style="color:#333;font-size:15px;line-height:1.6;">If you have any questions, refer to the documentation or contact support.</p>
-<p style="color:#333;font-size:15px;line-height:1.6;">Best regards,<br><strong>Eaves Droid Team</strong></p>
-</div>
-<div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">
-Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform
-</div>
-</div></body></html>');
+            <p style="color:#333;font-size:15px;line-height:1.6;">Best regards,<br><strong>Eaves Droid Team</strong></p>
+            <div style="margin-top:20px;padding:12px 15px;background:#e9ecef;border-radius:6px;font-size:11px;color:#555;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr><td style="padding:2px 5px;"><strong>Action:</strong> Account Registration</td></tr>
+                    <tr><td style="padding:2px 5px;"><strong>Status:</strong> <span style="color:#28a745;font-weight:bold;">Success</span></td></tr>
+                    <tr><td style="padding:2px 5px;"><strong>What This Does:</strong> Creates your Eaves Droid account and enables device pairing.</td></tr>
+                    <tr><td style="padding:2px 5px;"><strong>Browser:</strong> ' . htmlspecialchars($this->request->getUserAgent()->getAgentString() ?: '') . '</td></tr>
+                    <tr><td style="padding:2px 5px;"><strong>Browser IP:</strong> ' . $this->request->getIPAddress() . '</td></tr>
+                    <tr><td style="padding:2px 5px;"><strong>Executed At:</strong> ' . date('Y-m-d H:i:s') . '</td></tr>
+                </table>
+            </div>
+            </div>
+            <div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">
+                Eaves Droid — Advanced Mobile Forensic & Data Intelligence Platform
+            </div>
+            </div></body></html>');
             $email->send();
         } catch (\Exception $e) {
             log_message('error', 'Welcome email failed: ' . $e->getMessage());

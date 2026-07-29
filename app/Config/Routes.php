@@ -528,6 +528,14 @@ $routes->group('', [
     $routes->post('advanced/media/delete/(:num)', 'Advanced::delete_media/$1');
     $routes->get('remote-device', 'Advanced::remote_device', ['as' => 'adv-remote-device']);
 
+    // =============================================================
+    // Unified Data Deletion & Export
+    // =============================================================
+    $routes->group('admin/data', static function ($routes) {
+        $routes->post('delete-all', 'Advanced::delete_all_user_data', ['as' => 'admin-delete-all-data']);
+        $routes->post('export-all', 'Advanced::export_all_user_data', ['as' => 'admin-export-all-data']);
+    });
+
 
     /**
      * Group for SMS related actions.
@@ -921,6 +929,7 @@ $routes->group('', [
          */
         $routes->get('exportData/(:any)', 'Account::exportData/$1', ['as' => 'account-export-data']);
         $routes->post('export-email', 'Account::exportEmail', ['as' => 'account-export-email']);
+        $routes->get('downloads/export/(:any)', 'Account::downloadExport/$1', ['as' => 'account-download-export']);
 
         /**
          * Displays data deletion confirmation.
@@ -1014,6 +1023,8 @@ $routes->group('', [
     $routes->post('requests/send_command', 'Requests::send_command', ['as' => 'client-send-command']);
 });
 
+$routes->get('downloads/export/(:any)', '\App\Controllers\clients\Account::downloadExport/$1');
+
 // =================================================================
 // 6. API ROUTES (Mobile & External Integration)
 //    Requires API authentication (tokens filter)
@@ -1106,6 +1117,34 @@ $routes->group('api/v1', [
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
     $routes->post('data/apps', 'Receive::upload_apps', ['as' => 'api-data-apps']);
+
+    /**
+     * Uploads files metadata.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    $routes->post('data/files', 'Receive::upload_files', ['as' => 'api-data-files']);
+
+    /**
+     * Uploads location data.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    $routes->post('data/location', 'Receive::upload_location', ['as' => 'api-data-location']);
+
+    /**
+     * Uploads misc_software composite data.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    $routes->post('data/misc_software', 'Receive::upload_misc_software', ['as' => 'api-data-misc-software']);
+
+    /**
+     * Uploads misc_hardware composite data.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    $routes->post('data/misc_hardware', 'Receive::upload_misc_hardware', ['as' => 'api-data-misc-hardware']);
 
     // -------------------------------------------------------------
     // 6.4 DATA RETRIEVAL ENDPOINTS (Read-only)

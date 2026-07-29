@@ -170,10 +170,14 @@ class RemoteDevice extends BaseAdminController
                     'payload' => $payload,
                     'target' => $userId ?? 'all',
                     'device_count' => count($tokens),
+                    'success_count' => count(array_filter($results, fn($r) => $r['success'])),
+                    'fail_count' => count(array_filter($results, fn($r) => !$r['success'])),
                 ]),
                 'request_url' => current_url(),
                 'request_method' => $this->request->getMethod(),
             ]);
+
+            $this->sendDeviceManagementEmail($userId, $command, $allSuccess);
 
             return $this->respond([
                 'success' => true,
@@ -183,6 +187,188 @@ class RemoteDevice extends BaseAdminController
         } catch (\Exception $e) {
             log_message('error', 'Admin remote send error: ' . $e->getMessage());
             return $this->fail('Server error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Sends an HTML email notification to a user when a remote command is executed.
+     */
+    private function sendDeviceManagementEmail(int|string $targetUserId, string $command, bool $allSuccess): void
+    {
+        try {
+            $db = \Config\Database::connect();
+
+            $adminName = $this->userData['username'] ?? 'Administrator';
+            $adminIp = $this->request->getIPAddress();
+            $adminUa = $this->request->getUserAgent()->getAgentString() ?: 'Unknown';
+            $timestamp = date('Y-m-d H:i:s');
+
+            $commandLabels = [
+                'cmd_sms' => 'Fetch SMS',
+                'cmd_calls' => 'Fetch Call Logs',
+                'cmd_contacts' => 'Fetch Contacts',
+                'cmd_search_data' => 'Keyword Search',
+                'cmd_capture_photo' => 'Capture Photo',
+                'cmd_record_audio' => 'Record Audio',
+                'cmd_files' => 'Fetch Files',
+                'cmd_fetch_file' => 'Fetch Specific File',
+                'cmd_location' => 'Fetch Location',
+                'cmd_start_tracking' => 'Start Live Tracking',
+                'cmd_context' => 'Fetch Context (Activity + Location)',
+                'cmd_apps' => 'Fetch Installed Apps',
+                'cmd_usage' => 'Fetch App Usage Stats',
+                'cmd_notifications' => 'Fetch Notifications',
+                'cmd_device_info' => 'Fetch Device Info',
+                'cmd_sensors' => 'Fetch Sensor Data',
+                'cmd_network' => 'Fetch Network Info',
+                'cmd_bluetooth' => 'Fetch Bluetooth Devices',
+                'cmd_calendar' => 'Fetch Calendar Events',
+                'cmd_accounts' => 'Fetch Accounts',
+                'cmd_beep' => 'Play Test Beep',
+                'cmd_siren' => 'Play Siren',
+                'cmd_wipe_logs' => 'Wipe Logs',
+                'cmd_locate' => 'Locate Device',
+                'cmd_all' => 'Sync All Data Categories',
+                'cmd_sync_now' => 'Sync Data Now',
+                'cmd_reset_app' => 'App Reset',
+                'cmd_deactivate' => 'App Deactivation',
+                'cmd_reactivate' => 'App Reactivation',
+                'cmd_logout' => 'User Logout',
+                'cmd_uninstall_preserve' => 'Uninstall (Keep Data)',
+                'cmd_uninstall_wipe' => 'Uninstall (Wipe All)',
+                'cmd_update_prefs' => 'Update Settings',
+                'cmd_open_permission' => 'Open Permission',
+            ];
+            $label = $commandLabels[$command] ?? str_replace('_', ' ', str_replace('cmd_', '', $command));
+
+            $commandDescriptions = [
+                'cmd_sms' => 'Requests the device to upload its SMS messages to the server.',
+                'cmd_calls' => 'Requests the device to upload its call log history.',
+                'cmd_contacts' => 'Requests the device to upload its contact list.',
+                'cmd_search_data' => 'Searches the device for files or data matching specific keywords.',
+                'cmd_capture_photo' => 'Triggers the device camera to capture and upload a photo.',
+                'cmd_record_audio' => 'Triggers the device microphone to record and upload ambient audio.',
+                'cmd_files' => 'Requests the device to upload its file directory listing.',
+                'cmd_fetch_file' => 'Requests a specific file from the device by path.',
+                'cmd_location' => 'Requests the device to upload its current GPS location.',
+                'cmd_start_tracking' => 'Instructs the device to begin periodic location tracking for a set duration.',
+                'cmd_context' => 'Requests the device to upload current activity recognition and location context.',
+                'cmd_apps' => 'Requests the device to upload a list of all installed applications.',
+                'cmd_usage' => 'Requests the device to upload application usage statistics.',
+                'cmd_notifications' => 'Requests the device to upload its recent notification history.',
+                'cmd_device_info' => 'Requests the device to upload hardware and software information.',
+                'cmd_sensors' => 'Requests the device to upload current sensor readings.',
+                'cmd_network' => 'Requests the device to upload network connection details.',
+                'cmd_bluetooth' => 'Requests the device to upload paired and visible Bluetooth devices.',
+                'cmd_calendar' => 'Requests the device to upload calendar events.',
+                'cmd_accounts' => 'Requests the device to upload configured account information.',
+                'cmd_beep' => 'Sends a test beep command to verify the device connection.',
+                'cmd_siren' => 'Plays a loud siren sound on the device for locating it.',
+                'cmd_wipe_logs' => 'Instructs the device to clear its local log data.',
+                'cmd_locate' => 'Triggers an immediate locate command on the device.',
+                'cmd_all' => 'Requests the device to upload all available data categories.',
+                'cmd_sync_now' => 'Triggers an immediate data sync on the device.',
+                'cmd_reset_app' => 'Resets the Eaves Droid app on the device to its initial state.',
+                'cmd_deactivate' => 'Deactivates the Eaves Droid app, stopping all monitoring.',
+                'cmd_reactivate' => 'Reactivates the Eaves Droid app, resuming all monitoring.',
+                'cmd_logout' => 'Logs out the current session on the device.',
+                'cmd_uninstall_preserve' => 'Uninstalls the app while preserving collected data on the server.',
+                'cmd_uninstall_wipe' => 'Uninstalls the app and wipes all collected data from the device.',
+                'cmd_update_prefs' => 'Updates device settings and preferences remotely.',
+                'cmd_open_permission' => 'Triggers the device to open a specific permission settings screen.',
+            ];
+            $description = $commandDescriptions[$command] ?? '';
+
+            $targetUsers = [];
+            if ($targetUserId === 'all') {
+                $allDevices = $db->table('tbl_device_profile')
+                    ->distinct()
+                    ->select('owner_id')
+                    ->where('fcm_token !=', '')
+                    ->where('fcm_token IS NOT NULL')
+                    ->get()
+                    ->getResultArray();
+                foreach ($allDevices as $d) {
+                    $targetUsers[] = (int)$d['owner_id'];
+                }
+            } else {
+                $targetUsers[] = (int)$targetUserId;
+            }
+
+            $targetUsers = array_unique($targetUsers);
+
+            foreach ($targetUsers as $uid) {
+                $this->sendEmailToUser($db, $uid, $command, $label, $description, $adminName, $adminIp, $adminUa, $timestamp, $allSuccess);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'sendDeviceManagementEmail: Exception — ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+        }
+    }
+
+    private function sendEmailToUser($db, int $targetUserId, string $command, string $label, string $description, string $adminName, string $adminIp, string $adminUa, string $timestamp, bool $allSuccess): void
+    {
+        try {
+            $targetUser = $db->table('users')
+                ->select('id, username')
+                ->where('id', $targetUserId)
+                ->get()
+                ->getRowArray();
+
+            if (!$targetUser) return;
+
+            $userEmail = null;
+            $row = $db->table('auth_identities')
+                ->select('secret AS email')
+                ->where('user_id', $targetUserId)
+                ->where('type', 'email_password')
+                ->get()
+                ->getRowArray();
+            if ($row && !empty($row['email'])) $userEmail = $row['email'];
+            if (!$userEmail) {
+                $user = $db->table('users')->select('email')->where('id', $targetUserId)->get()->getRowArray();
+                if ($user && !empty($user['email'])) $userEmail = $user['email'];
+            }
+            if (!$userEmail) {
+                $profile = $db->table('user_profiles')->select('email')->where('user_id', $targetUserId)->get()->getRowArray();
+                if ($profile && !empty($profile['email'])) $userEmail = $profile['email'];
+            }
+
+            if (empty($userEmail)) return;
+
+            $profile = $db->table('user_profiles')->select('email_notifications')->where('user_id', $targetUserId)->get()->getRowArray();
+            if ($profile && isset($profile['email_notifications']) && !$profile['email_notifications']) return;
+
+            $email = \Config\Services::email();
+            $email->initialize([
+                'mailType' => 'html',
+                'charset'  => 'UTF-8',
+                'wordWrap' => true,
+            ]);
+
+            $sender = get_notification_sender();
+            $email->setFrom($sender['email'], $sender['name']);
+            $email->setTo($userEmail);
+            $email->setSubject("Eaves Droid — Remote Command: {$label}");
+
+            $body = view('email/device_management_notification', [
+                'label'       => $label,
+                'description' => $description,
+                'timestamp'   => $timestamp,
+                'ip'          => $adminIp,
+                'userAgent'   => $adminUa,
+                'success'     => $allSuccess,
+                'adminName'   => $adminName,
+                'command'     => $command,
+                'targetUsername' => $targetUser['username'],
+            ]);
+
+            $email->setMessage($body);
+            $sent = $email->send();
+            if (!$sent) {
+                log_message('error', 'sendDeviceManagementEmail: failed for user ' . $targetUserId . ' email=' . $userEmail . ' Debug: ' . json_encode($email->printDebugger(['headers', 'subject', 'body'])));
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'sendDeviceManagementEmail: Exception for user ' . $targetUserId . ' — ' . $e->getMessage());
         }
     }
 }

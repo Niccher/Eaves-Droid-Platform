@@ -2522,4 +2522,200 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
             return false;
         }
     }
+
+/**
+ * Parse misc_software composite JSON - splits into individual parsers
+ */
+public function parse_misc_software(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+{
+    try {
+        $cryptModel = new Mod_Crypt();
+        $content = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+        if ($content === false) {
+            log_message('error', '[parse_misc_software] Cannot read file: ' . $file_name);
+            return false;
+        }
+
+        $decrypted = $cryptModel->decode_content($content);
+        if ($decrypted === false) {
+            log_message('error', '[parse_misc_software] Decryption failed: ' . $file_name);
+            return false;
+        }
+
+        $json = json_decode($decrypted, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            log_message('error', '[parse_misc_software] JSON decode failed: ' . json_last_error_msg());
+            return false;
+        }
+
+        $data = $json['data'] ?? $json;
+        $extractedAt = $json['timestamp'] ?? time() * 1000;
+
+        $parserMap = [
+            'calendar'         => 'parse_calendar',
+            'accounts'         => 'parse_accounts',
+            'security_audit'   => 'parse_security_audit',
+            'accessibility'    => 'parse_accessibility',
+            'input_methods'    => 'parse_input_methods',
+            'data_usage'       => 'parse_data_usage',
+            'saved_wifi'       => 'parse_saved_wifi',
+            'default_apps'     => 'parse_default_apps',
+            'alarms'           => 'parse_alarms',
+            'app_security'     => 'parse_app_security',
+            'network_security' => 'parse_network_security',
+            'telephony_network'=> 'parse_telephony_network',
+            'system_locale'    => 'parse_system_locale',
+            'device_context'   => 'parse_device_context',
+            'sim_configs'      => 'parse_sim_configs',
+            'proc_info'        => 'parse_proc_info',
+            'app_usage'        => 'parse_app_usage',
+            'notifications'    => 'parse_notifications',
+        ];
+
+        foreach ($data as $subType => $subData) {
+            if (isset($parserMap[$subType]) && method_exists($this, $parserMap[$subType])) {
+                $tempFile = WRITEPATH . 'uploads/temp_' . $subType . '_' . time() . '.json';
+                file_put_contents($tempFile, json_encode([
+                    'timestamp' => $extractedAt,
+                    $subType => $subData
+                ]));
+                $this->{$parserMap[$subType]}($tempFile, $owner_id, $device_id, $fileRecordId);
+                @unlink($tempFile);
+            }
+        }
+
+        return true;
+    } catch (Exception $e) {
+        log_message('error', '[parse_misc_software] Exception: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Parse misc_hardware composite JSON - splits into individual parsers
+ */
+public function parse_misc_hardware(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+{
+    try {
+        $cryptModel = new Mod_Crypt();
+        $content = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+        if ($content === false) {
+            log_message('error', '[parse_misc_hardware] Cannot read file: ' . $file_name);
+            return false;
+        }
+
+        $decrypted = $cryptModel->decode_content($content);
+        if ($decrypted === false) {
+            log_message('error', '[parse_misc_hardware] Decryption failed: ' . $file_name);
+            return false;
+        }
+
+        $json = json_decode($decrypted, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            log_message('error', '[parse_misc_hardware] JSON decode failed: ' . json_last_error_msg());
+            return false;
+        }
+
+        $data = $json['data'] ?? $json;
+        $extractedAt = $json['timestamp'] ?? time() * 1000;
+
+        $parserMap = [
+            'hardware_graphics' => 'parse_hardware_graphics',
+            'hardware_network'  => 'parse_hardware_network',
+            'camera_info'       => 'parse_camera_info',
+            'battery_stats'     => 'parse_battery_stats',
+            'sensors'           => 'parse_sensors',
+            'bluetooth'         => 'parse_bluetooth',
+            'network_info'      => 'parse_network_info',
+            'cell_towers'       => 'parse_cell_towers',
+            'display_info'      => 'parse_display_info',
+            'storage'           => 'parse_storage',
+            'thermal'           => 'parse_thermal',
+            'nfc'               => 'parse_nfc',
+            'processes'         => 'parse_processes',
+        ];
+
+        foreach ($data as $subType => $subData) {
+            if (isset($parserMap[$subType]) && method_exists($this, $parserMap[$subType])) {
+                $tempFile = WRITEPATH . 'uploads/temp_' . $subType . '_' . time() . '.json';
+                file_put_contents($tempFile, json_encode([
+                    'timestamp' => $extractedAt,
+                    $subType => $subData
+                ]));
+                $this->{$parserMap[$subType]}($tempFile, $owner_id, $device_id, $fileRecordId);
+                @unlink($tempFile);
+            }
+        }
+
+        return true;
+    } catch (Exception $e) {
+        log_message('error', '[parse_misc_hardware] Exception: ' . $e->getMessage());
+        return false;
+    }
+    }
+
+    /**
+     * parse_apps_notifications - Composite splitter for AppsAndNotificationsComposite
+     * Splits the composite JSON into app_usage and notifications sub-parsers
+     */
+    public function parse_apps_notifications(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $cryptModel = new Mod_Crypt();
+            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            if ($raw === false) {
+                log_message('error', '[parse_apps_notifications] Cannot read file: ' . $file_name);
+                return false;
+            }
+
+            $decrypted = $cryptModel->decode_content($raw);
+            if ($decrypted === false) {
+                log_message('error', '[parse_apps_notifications] Decryption failed: ' . $file_name);
+                return false;
+            }
+
+            $json = json_decode($decrypted, true);
+            if ($json === null) {
+                log_message('error', '[parse_apps_notifications] JSON decode failed: ' . json_last_error_msg());
+                return false;
+            }
+
+            $allData = $json['data'] ?? $json;
+
+            // Route app_usage sub-data
+            if (isset($allData['app_usage']) && is_array($allData['app_usage'])) {
+                $subFile = WRITEPATH . 'uploads/text_dump/' . $file_name . '.app_usage.json';
+                file_put_contents($subFile, json_encode($allData['app_usage']));
+                $this->parse_app_usage($file_name . '.app_usage.json', $owner_id, $device_id, $fileRecordId);
+                @unlink($subFile);
+            }
+
+            // Route notifications sub-data
+            if (isset($allData['notifications']) && is_array($allData['notifications'])) {
+                $subFile = WRITEPATH . 'uploads/text_dump/' . $file_name . '.notifications.json';
+                file_put_contents($subFile, json_encode($allData['notifications']));
+                $this->parse_notifications($file_name . '.notifications.json', $owner_id, $device_id, $fileRecordId);
+                @unlink($subFile);
+            }
+
+            log_message('info', '[parse_apps_notifications] Completed composite split for ' . $file_name);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_apps_notifications] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+private function decryptIfEncrypted(string $content): ?string
+{
+    if (strlen($content) > 100 && preg_match('/^[A-Za-z0-9+\/=]+$/', $content)) {
+        try {
+            $dataProcessor = new \App\Libraries\DataProcessingService();
+            return $dataProcessor->decryptData($content);
+        } catch (Exception $e) {
+        }
+    }
+    return $content;
+}
 }

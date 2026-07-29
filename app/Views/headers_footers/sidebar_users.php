@@ -157,7 +157,7 @@
 
                         <!-- Data Section (Collapsible) -->
                         <?php 
-                            $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'remote_device'];
+                            $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity'];
                             $data_sub_pages = [];
                             $is_data_open   = (isset($pag) && in_array($pag, $data_pages))
                                            || (isset($sub_pag) && in_array($sub_pag, $data_sub_pages));
@@ -220,21 +220,21 @@
                                     <a href="<?php echo base_url('location'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'location') ? 'active' : ''; ?>">
                                         <i class="fas fa-map-pin nav-icon"></i>
-                                        <p>Locations</p>
-                                        <span class="badge badge-success float-right"><?php echo isset($total_locations) ? $total_locations : 0; ?></span>
-                                    </a>
-                                </li>
-
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('activities'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && ($pag == 'activities' || $pag == 'activity')) ? 'active' : ''; ?>">
-                                        <i class="fas fa-running nav-icon"></i>
-                                        <p>Activities</p>
-                                        <span class="badge badge-success float-right"><?php echo isset($total_activities) ? $total_activities : 0; ?></span>
+                                        <p>Location &amp; Activity</p>
+                                        <span class="badge badge-success float-right"><?php echo isset($total_locations) ? ($total_locations + ($total_activities ?? 0)) : 0; ?></span>
                                     </a>
                                 </li>
 
 </ul>
+                        </li>
+
+<!-- Remote Device Button -->
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('remote-device'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'remote_device') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-mobile-alt"></i>
+                                <p>Remote Device</p>
+                            </a>
                         </li>
 
 <!-- Hardware Button -->

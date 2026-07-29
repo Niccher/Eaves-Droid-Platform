@@ -233,14 +233,49 @@
 
                                     <div class="row">
                                         <?php
+                                        $miscSoftwareCount = ($total_device + $total_network + $total_accounts + $total_calendar + $total_app_usage + $total_notifications + $total_accessibility + $total_input_methods + $total_security_audit + $total_proc_info + $total_data_usage + $total_saved_wifi + $total_default_apps + $total_alarms + $total_app_security + $total_network_security + $total_telephony_network + $total_system_locale);
+                                        $miscHardwareCount = ($total_hardware_graphics + $total_hardware_network + $total_camera_info + $total_battery_stats + $total_sensors + $total_bluetooth + $total_cell_towers + $total_display_info + $total_storage + $total_thermal + $total_nfc + $total_processes);
                                         $exportTypes = [
-                                            'apps'      => ['icon' => 'fa-mobile-alt', 'color' => 'primary', 'label' => 'Applications', 'count' => $total_apps],
-                                            'contacts'  => ['icon' => 'fa-address-book', 'color' => 'success', 'label' => 'Contacts', 'count' => $total_contacts],
-                                            'sms'       => ['icon' => 'fa-sms', 'color' => 'info', 'label' => 'SMS Messages', 'count' => $total_sms],
-                                            'calls'     => ['icon' => 'fa-phone', 'color' => 'warning', 'label' => 'Call Logs', 'count' => $total_calls],
-                                            'files'     => ['icon' => 'fa-file-alt', 'color' => 'secondary', 'label' => 'Files Metadata', 'count' => $total_files],
-                                            'locations' => ['icon' => 'fa-map-marked-alt', 'color' => 'danger', 'label' => 'Location History', 'count' => $total_locations],
-                                            'advanced'  => ['icon' => 'fa-microchip', 'color' => 'primary', 'label' => 'Advanced Data', 'count' => ($total_device + $total_network + $total_accounts + $total_calendar + $total_app_usage + $total_notifications + $total_bluetooth + $total_sensors + $total_media + $total_security_audit + $total_sim_configs)],
+                                            'apps'           => ['icon' => 'fa-mobile-alt', 'color' => 'primary', 'label' => 'Applications', 'count' => $total_apps],
+                                            'contacts'       => ['icon' => 'fa-address-book', 'color' => 'success', 'label' => 'Contacts', 'count' => $total_contacts],
+                                            'sms'            => ['icon' => 'fa-sms', 'color' => 'info', 'label' => 'SMS Messages', 'count' => $total_sms],
+                                            'calls'          => ['icon' => 'fa-phone', 'color' => 'warning', 'label' => 'Call Logs', 'count' => $total_calls],
+                                            'files'          => ['icon' => 'fa-file-alt', 'color' => 'secondary', 'label' => 'Files Metadata', 'count' => $total_files],
+                                            'locations'      => ['icon' => 'fa-map-marked-alt', 'color' => 'danger', 'label' => 'Location History', 'count' => $total_locations],
+                                            'misc_software'  => ['icon' => 'fa-laptop-code', 'color' => 'info', 'label' => 'Misc Software', 'count' => $miscSoftwareCount, 'subs' => [
+                                                ['icon' => 'fa-user', 'label' => 'Accounts', 'count' => $total_accounts],
+                                                ['icon' => 'fa-calendar-alt', 'label' => 'Calendar', 'count' => $total_calendar],
+                                                ['icon' => 'fa-chart-bar', 'label' => 'App Usage', 'count' => $total_app_usage],
+                                                ['icon' => 'fa-bell', 'label' => 'Notifications', 'count' => $total_notifications],
+                                                ['icon' => 'fa-info-circle', 'label' => 'Device Context', 'count' => $total_device],
+                                                ['icon' => 'fa-network-wired', 'label' => 'Network Info', 'count' => $total_network],
+                                                ['icon' => 'fa-universal-access', 'label' => 'Accessibility', 'count' => $total_accessibility],
+                                                ['icon' => 'fa-keyboard', 'label' => 'Input Methods', 'count' => $total_input_methods],
+                                                ['icon' => 'fa-shield-alt', 'label' => 'Security Audit', 'count' => $total_security_audit],
+                                                ['icon' => 'fa-microchip', 'label' => 'Proc Info', 'count' => $total_proc_info],
+                                                ['icon' => 'fa-chart-line', 'label' => 'Data Usage', 'count' => $total_data_usage],
+                                                ['icon' => 'fa-wifi', 'label' => 'Saved WiFi', 'count' => $total_saved_wifi],
+                                                ['icon' => 'fa-th-list', 'label' => 'Default Apps', 'count' => $total_default_apps],
+                                                ['icon' => 'fa-clock', 'label' => 'Alarms', 'count' => $total_alarms],
+                                                ['icon' => 'fa-lock', 'label' => 'App Security', 'count' => $total_app_security],
+                                                ['icon' => 'fa-shield-virus', 'label' => 'Network Security', 'count' => $total_network_security],
+                                                ['icon' => 'fa-sim-card', 'label' => 'Telephony Network', 'count' => $total_telephony_network],
+                                                ['icon' => 'fa-language', 'label' => 'System Locale', 'count' => $total_system_locale],
+                                            ]],
+                                            'misc_hardware'  => ['icon' => 'fa-microchip', 'color' => 'primary', 'label' => 'Misc Hardware', 'count' => $miscHardwareCount, 'subs' => [
+                                                ['icon' => 'fa-palette', 'label' => 'Hardware Graphics', 'count' => $total_hardware_graphics],
+                                                ['icon' => 'fa-network-wired', 'label' => 'Hardware Network', 'count' => $total_hardware_network],
+                                                ['icon' => 'fa-camera', 'label' => 'Camera Info', 'count' => $total_camera_info],
+                                                ['icon' => 'fa-battery-full', 'label' => 'Battery Stats', 'count' => $total_battery_stats],
+                                                ['icon' => 'fa-ruler', 'label' => 'Sensors', 'count' => $total_sensors],
+                                                ['icon' => 'fa-bluetooth-b', 'label' => 'Bluetooth', 'count' => $total_bluetooth],
+                                                ['icon' => 'fa-broadcast-tower', 'label' => 'Cell Towers', 'count' => $total_cell_towers],
+                                                ['icon' => 'fa-tv', 'label' => 'Display Info', 'count' => $total_display_info],
+                                                ['icon' => 'fa-hdd', 'label' => 'Storage', 'count' => $total_storage],
+                                                ['icon' => 'fa-thermometer-half', 'label' => 'Thermal', 'count' => $total_thermal],
+                                                ['icon' => 'fa-credit-card', 'label' => 'NFC', 'count' => $total_nfc],
+                                                ['icon' => 'fa-tasks', 'label' => 'Processes', 'count' => $total_processes],
+                                            ]],
                                         ];
                                         foreach ($exportTypes as $key => $et):
                                         ?>
@@ -252,13 +287,16 @@
                                                     </div>
                                                     <h5 class="card-title"><?php echo $et['label']; ?></h5>
                                                     <p class="card-text"><?php echo $et['count']; ?> records</p>
-                                                    <button class="btn btn-outline-<?php echo $et['color']; ?> btn-block export-btn"
-                                                            data-type="<?php echo $key; ?>">
+                                                    <?php if (!empty($et['subs'])): ?>
+                                                        <button class="btn btn-outline-<?php echo $et['color']; ?> btn-sm btn-block mb-1 view-subs-btn"
+                                                                data-key="<?php echo $key; ?>">
+                                                            <i class="fas fa-list mr-1"></i> View Breakdown
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <button class="btn btn-outline-<?php echo $et['color']; ?> btn-block export-trigger-btn"
+                                                            data-type="<?php echo $key; ?>"
+                                                            data-label="<?php echo $et['label']; ?>">
                                                         <i class="fas fa-download mr-1"></i> Export
-                                                    </button>
-                                                    <button class="btn btn-outline-<?php echo $et['color']; ?> btn-sm btn-block mt-1 email-export-btn"
-                                                            data-type="<?php echo $key; ?>">
-                                                        <i class="fas fa-envelope mr-1"></i> Email
                                                     </button>
                                                 </div>
                                             </div>
@@ -282,13 +320,11 @@
                                                     <li>All SMS messages</li>
                                                     <li>All call logs</li>
                                                     <li>Location history and activities</li>
-                                                    <li>All advanced extracted data (device, network, accounts, calendar, app usage, notifications, bluetooth, sensors)</li>
+                                                    <li>All misc software data (accounts, calendar, app usage, notifications, device, network, accessibility, security, locale, and more)</li>
+                                                    <li>All misc hardware data (graphics, network, camera, battery, sensors, bluetooth, storage, thermal, NFC, processes)</li>
                                                 </ul>
-                                                <button class="btn btn-primary btn-lg btn-block export-btn" data-type="all">
+                                                <button class="btn btn-primary btn-lg btn-block export-trigger-btn" data-type="all" data-label="All Data">
                                                     <i class="fas fa-file-archive mr-2"></i> Export All Data
-                                                </button>
-                                                <button class="btn btn-primary btn-sm btn-block mt-2 email-export-btn" data-type="all">
-                                                    <i class="fas fa-envelope mr-1"></i> Email All Data
                                                 </button>
                                             </div>
                                         </div>
@@ -307,13 +343,14 @@
                                     <div class="row">
                                         <?php
                                         $deleteTypes = [
-                                            'apps'      => ['icon' => 'fa-mobile-alt', 'label' => 'Applications', 'count' => $total_apps],
-                                            'contacts'  => ['icon' => 'fa-address-book', 'label' => 'Contacts', 'count' => $total_contacts],
-                                            'sms'       => ['icon' => 'fa-sms', 'label' => 'SMS Messages', 'count' => $total_sms],
-                                            'calls'     => ['icon' => 'fa-phone', 'label' => 'Call Logs', 'count' => $total_calls],
-                                            'files'     => ['icon' => 'fa-file-excel', 'label' => 'Files Metadata', 'count' => $total_files],
-                                            'locations' => ['icon' => 'fa-map-marker-alt', 'label' => 'Locations & Activities', 'count' => $total_locations + $total_activities],
-                                            'advanced'  => ['icon' => 'fa-database', 'label' => 'Advanced Data', 'count' => ($total_device + $total_network + $total_accounts + $total_calendar + $total_app_usage + $total_notifications + $total_bluetooth + $total_sensors + $total_media + $total_security_audit + $total_sim_configs)],
+                                            'apps'           => ['icon' => 'fa-mobile-alt', 'label' => 'Applications', 'count' => $total_apps],
+                                            'contacts'       => ['icon' => 'fa-address-book', 'label' => 'Contacts', 'count' => $total_contacts],
+                                            'sms'            => ['icon' => 'fa-sms', 'label' => 'SMS Messages', 'count' => $total_sms],
+                                            'calls'          => ['icon' => 'fa-phone', 'label' => 'Call Logs', 'count' => $total_calls],
+                                            'files'          => ['icon' => 'fa-file-excel', 'label' => 'Files Metadata', 'count' => $total_files],
+                                            'locations'      => ['icon' => 'fa-map-marker-alt', 'label' => 'Locations & Activities', 'count' => $total_locations + $total_activities],
+                                            'misc_software'  => ['icon' => 'fa-laptop-code', 'label' => 'Misc Software', 'count' => $miscSoftwareCount, 'subs' => $exportTypes['misc_software']['subs']],
+                                            'misc_hardware'  => ['icon' => 'fa-microchip', 'label' => 'Misc Hardware', 'count' => $miscHardwareCount, 'subs' => $exportTypes['misc_hardware']['subs']],
                                         ];
                                         foreach ($deleteTypes as $key => $dt):
                                         ?>
@@ -325,6 +362,12 @@
                                                     </div>
                                                     <h5 class="card-title text-danger">Delete <?php echo $dt['label']; ?></h5>
                                                     <p class="card-text"><?php echo $dt['count']; ?> records will be removed</p>
+                                                    <?php if (!empty($dt['subs'])): ?>
+                                                        <button class="btn btn-outline-danger btn-sm btn-block mb-1 view-subs-btn"
+                                                                data-key="<?php echo $key; ?>">
+                                                            <i class="fas fa-list mr-1"></i> View Breakdown
+                                                        </button>
+                                                    <?php endif; ?>
                                                     <button class="btn btn-outline-danger btn-block delete-btn"
                                                             data-type="<?php echo $key; ?>"
                                                             data-label="<?php echo $dt['label']; ?>">
@@ -352,7 +395,8 @@
                                                     <li>All SMS messages</li>
                                                     <li>All call logs</li>
                                                     <li>All file metadata and location history</li>
-                                                    <li>All advanced extracted data</li>
+                                                    <li>All misc software data (accounts, calendar, app usage, notifications, device, network, accessibility, security, locale, and more)</li>
+                                                    <li>All misc hardware data (graphics, network, camera, battery, sensors, bluetooth, storage, thermal, NFC, processes)</li>
                                                 </ul>
                                                 <p><strong>This action cannot be undone!</strong></p>
                                                 <button class="btn btn-danger btn-lg btn-block delete-btn" data-type="all" data-label="ALL">
@@ -521,6 +565,76 @@
     </section>
 </div>
 
+<div class="modal fade" id="exportModal" tabindex="-1" role="dialog" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Export Data</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" id="exportModalDesc">Choose how you want to export your data.</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-primary export-option" data-method="download" style="cursor:pointer;">
+                            <div class="card-body text-center py-4">
+                                <i class="fas fa-download fa-3x text-primary mb-3"></i>
+                                <h5>Direct Download</h5>
+                                <p class="text-muted small mb-0">Download the file immediately</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-info export-option" data-method="email" style="cursor:pointer;">
+                            <div class="card-body text-center py-4">
+                                <i class="fas fa-envelope fa-3x text-info mb-3"></i>
+                                <h5>Email</h5>
+                                <p class="text-muted small mb-0">Get the export sent to your inbox</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="exportEmailSection" style="display:none;" class="mt-3">
+                    <label class="text-muted small"><i class="fas fa-envelope mr-1"></i> Email Address</label>
+                    <input type="email" class="form-control" id="exportEmailInput"
+                           value="<?= htmlspecialchars($user_info['email'] ?? '') ?>"
+                           placeholder="your@email.com">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="exportModalConfirmBtn" disabled>
+                    <i class="fas fa-download mr-1"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="subsModal" tabindex="-1" role="dialog" aria-labelledby="subsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="subsModalLabel">Data Breakdown</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="subsModalBody">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>Sub-Type</th><th class="text-right">Records</th></tr></thead>
+                    <tbody id="subsModalTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .nav-tabs .nav-link {
         border-radius: 0;
@@ -625,69 +739,88 @@
         });
 
         // ========================
-        // EXPORT DATA
+        // EXPORT MODAL
         // ========================
-        $('.export-btn').on('click', function() {
-            const type = $(this).data('type');
-            const format = $('input[name="export-format"]:checked').val() || 'json';
-            const dateFrom = $('#export-date-from').val();
-            const dateTo = $('#export-date-to').val();
-            const btn = $(this);
-            const originalText = btn.html();
+        var exportType = '';
+        var exportLabel = '';
 
-            btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Exporting...');
-            btn.prop('disabled', true);
-
-            let url = '<?php echo base_url("account/exportData"); ?>/' + type + '?format=' + format;
-            if (dateFrom) url += '&date_from=' + dateFrom;
-            if (dateTo) url += '&date_to=' + dateTo;
-
-            window.location.href = url;
-
-            setTimeout(function() {
-                btn.html(originalText);
-                btn.prop('disabled', false);
-            }, 3000);
+        $('.export-trigger-btn').on('click', function() {
+            exportType = $(this).data('type');
+            exportLabel = $(this).data('label');
+            $('#exportModalLabel').text('Export ' + exportLabel);
+            $('#exportModalDesc').text('Choose how you want to export your ' + exportLabel.toLowerCase() + ' data.');
+            $('#exportEmailSection').hide();
+            $('#exportEmailInput').val('<?= htmlspecialchars($user_info['email'] ?? '') ?>');
+            $('.export-option').removeClass('border-primary border-info').addClass('border');
+            $('#exportModalConfirmBtn').prop('disabled', true).html('<i class="fas fa-download mr-1"></i> Download');
+            $('#exportModal').modal('show');
         });
 
-        // ========================
-        // EXPORT VIA EMAIL
-        // ========================
-        $('.email-export-btn').on('click', function() {
-            const type = $(this).data('type');
-            const format = $('input[name="export-format"]:checked').val() || 'json';
-            const userEmail = '<?= htmlspecialchars($user_info['email'] ?? '') ?>';
+        $('.export-option').on('click', function() {
+            var method = $(this).data('method');
+            $('.export-option').removeClass('border-primary border-info').addClass('border');
+            if (method === 'download') {
+                $(this).removeClass('border').addClass('border-primary');
+                $('#exportEmailSection').hide();
+                $('#exportModalConfirmBtn').prop('disabled', false).html('<i class="fas fa-download mr-1"></i> Download');
+            } else {
+                $(this).removeClass('border').addClass('border-info');
+                $('#exportEmailSection').show();
+                var email = $('#exportEmailInput').val().trim();
+                $('#exportModalConfirmBtn').prop('disabled', !email).html('<i class="fas fa-envelope mr-1"></i> Send Email');
+            }
+        });
 
-            Swal.fire({
-                title: 'Email Export',
-                input: 'email',
-                inputValue: userEmail,
-                text: 'Enter the email address to send the export to:',
-                showCancelButton: true,
-                confirmButtonText: 'Send',
-                cancelButtonText: 'Cancel',
-                showLoaderOnConfirm: true,
-                preConfirm: (email) => {
-                    return $.ajax({
-                        url: '<?= base_url("account/export-email") ?>',
-                        method: 'POST',
-                        data: {
-                            type: type,
-                            format: format,
-                            email: email
-                        }
-                    }).then(r => {
-                        if (!r.success) throw new Error(r.message);
-                        return r;
-                    }).catch(err => {
-                        Swal.showValidationMessage(err.responseJSON?.message || err.message || 'Request failed');
-                    });
-                }
-            }).then(r => {
-                if (r.isConfirmed) {
-                    Swal.fire({ icon: 'success', title: 'Sent', text: r.value.message, timer: 4000, showConfirmButton: false });
-                }
-            });
+        $('#exportEmailInput').on('input', function() {
+            var method = $('.export-option.border-primary, .export-option.border-info').data('method');
+            if (method === 'email') {
+                var email = $(this).val().trim();
+                $('#exportModalConfirmBtn').prop('disabled', !email);
+            }
+        });
+
+        $('#exportModalConfirmBtn').on('click', function() {
+            var method = $('.export-option.border-primary, .export-option.border-info').data('method');
+            if (!method) return;
+
+            var format = $('input[name="export-format"]:checked').val() || 'json';
+            var dateFrom = $('#export-date-from').val();
+            var dateTo = $('#export-date-to').val();
+
+            if (method === 'download') {
+                let url = '<?php echo base_url("account/exportData"); ?>/' + exportType + '?format=' + format;
+                if (dateFrom) url += '&date_from=' + dateFrom;
+                if (dateTo) url += '&date_to=' + dateTo;
+                $('#exportModal').modal('hide');
+                window.location.href = url;
+            } else {
+                var email = $('#exportEmailInput').val().trim();
+                if (!email) return;
+                var btn = $(this);
+                btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending...');
+                btn.prop('disabled', true);
+
+                $.ajax({
+                    url: '<?= base_url("account/export-email") ?>',
+                    method: 'POST',
+                    data: { type: exportType, format: format, email: email },
+                    dataType: 'json'
+                }).done(function(r) {
+                    if (r.success) {
+                        $('#exportModal').modal('hide');
+                        Swal.fire({ icon: 'success', title: 'Sent', text: r.message, timer: 4000, showConfirmButton: false });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: r.message });
+                    }
+                }).fail(function(xhr) {
+                    var msg = 'Request failed';
+                    try { var r = JSON.parse(xhr.responseText); msg = r.message || msg; } catch(e) {}
+                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                }).always(function() {
+                    btn.html('<i class="fas fa-envelope mr-1"></i> Send Email');
+                    btn.prop('disabled', false);
+                });
+            }
         });
 
         // ========================
@@ -770,6 +903,32 @@
                     });
                 }
             });
+        });
+
+        // ========================
+        // VIEW BREAKDOWN MODALS
+        // ========================
+        var subsData = <?php echo json_encode([
+            'misc_software' => $exportTypes['misc_software']['subs'],
+            'misc_hardware' => $exportTypes['misc_hardware']['subs'],
+        ]); ?>;
+
+        $('.view-subs-btn').on('click', function() {
+            var key = $(this).data('key');
+            var items = subsData[key] || [];
+            var label = $(this).closest('.card-body').find('.card-title').text().replace('Delete ', '');
+            $('#subsModalLabel').text(label + ' - Breakdown');
+            var tbody = $('#subsModalTableBody');
+            tbody.empty();
+            if (items.length === 0) {
+                tbody.append('<tr><td colspan="2" class="text-center text-muted">No sub-categories</td></tr>');
+            } else {
+                items.forEach(function(item) {
+                    var iconHtml = item.icon ? '<i class="fas ' + item.icon + ' mr-2"></i>' : '';
+                    tbody.append('<tr><td>' + iconHtml + item.label + '</td><td class="text-right">' + item.count + '</td></tr>');
+                });
+            }
+            $('#subsModal').modal('show');
         });
 
         // ========================

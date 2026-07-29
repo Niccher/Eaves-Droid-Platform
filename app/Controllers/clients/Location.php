@@ -9,46 +9,65 @@ class Location extends BaseClientController
     use ResponseTrait;
 
     /**
-     * Display all locations history.
+     * Display merged location + activity timeline.
      * Route: /location
      */
     public function index()
     {
         $hasCoords = $this->request->getGet('has_coords') === '1';
+
         $locations = $this->finderModel->get_locations($this->userId, $this->perPage, $hasCoords);
+        $activities = $this->finderModel->get_activities($this->userId, $this->perPage);
+
+        $timeline = $this->mergeTimeline($locations, $activities);
+
         $commonData = $this->getLocationCommonData('location');
 
         $data = array_merge($commonData, [
-            'location_dump' => $locations,
-            'pager' => $this->finderModel->getPager(),
-            'totalLocations' => $this->finderModel->get_count_Location($this->userId, $hasCoords),
-            'current_type' => 'location',
-            'has_coords_filter' => $hasCoords,
+            'timeline'           => $timeline,
+            'pager'              => $this->finderModel->getPager(),
+            'totalLocations'     => $this->finderModel->get_count_Location($this->userId, $hasCoords),
+            'totalActivities'    => $this->finderModel->get_count_Activity($this->userId),
+            'current_type'       => 'location',
+            'has_coords_filter'  => $hasCoords,
         ]);
 
         return $this->renderAppView('users/location_all', $data);
     }
 
     /**
-     * Display all device activities history.
+     * Legacy route - redirect to merged view.
      * Route: /activities
      */
     public function activities()
     {
-        $activities = $this->finderModel->get_activities($this->userId, $this->perPage);
-        $commonData = $this->getLocationCommonData('activity');
-        $activityStats = $this->finderModel->get_activity_stats($this->userId);
+        return redirect()->to(base_url('location'));
+    }
 
-        $data = array_merge($commonData, [
-            'activity_dump' => $activities,
-            'pager' => $this->finderModel->getPager(),
-            'totalActivities' => $activityStats['total'],
-            'activity_stats' => $activityStats,
-            'current_type' => 'activity',
-            'current_type_filter' => $this->request->getGet('type'),
-        ]);
+    /**
+     * Merge locations and activities into a single time-sorted array.
+     */
+    private function mergeTimeline(array $locations, array $activities): array
+    {
+        $locs = array_map(function ($loc) {
+            $loc['_type'] = 'location';
+            $loc['_sort_time'] = (int)($loc['activity_time'] ?? $loc['extracted_at'] ?? $loc['location_time'] ?? 0);
+            return $loc;
+        }, $locations);
 
-        return $this->renderAppView('users/activity_all', $data);
+        $acts = array_map(function ($act) {
+            $act['_type'] = 'activity';
+            $act['_sort_time'] = (int)($act['activity_time'] ?? $act['extracted_at'] ?? 0);
+            return $act;
+        }, $activities);
+
+        $merged = array_merge($locs, $acts);
+
+        usort($merged, function ($a, $b) {
+            return $b['_sort_time'] - $a['_sort_time'];
+        });
+
+        return $merged;
     }
 
     /**
@@ -58,7 +77,7 @@ class Location extends BaseClientController
     {
         return array_merge($this->getUserDataCounts(), [
             'pag' => $type === 'location' ? 'location' : 'activities',
-            'title' => $type === 'location' ? 'Location History' : 'Device Activity',
+            'title' => $type === 'location' ? 'Location & Activity' : 'Device Activity',
         ]);
     }
 

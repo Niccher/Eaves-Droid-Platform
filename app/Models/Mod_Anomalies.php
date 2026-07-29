@@ -2708,6 +2708,45 @@ class Mod_Anomalies extends Model
     }
 
     /**
+     * Get user email from multiple sources (auth_identities, users table, user_profiles)
+     */
+    private function getUserEmail(int $userId): ?string
+    {
+        // Try auth_identities (email_password)
+        $emailRow = $this->db->table('auth_identities')
+            ->select('secret AS email')
+            ->where('user_id', $userId)
+            ->where('type', 'email_password')
+            ->get()
+            ->getRowArray();
+        if ($emailRow && !empty($emailRow['email'])) {
+            return $emailRow['email'];
+        }
+
+        // Try users table
+        $user = $this->db->table('users')
+            ->select('email')
+            ->where('id', $userId)
+            ->get()
+            ->getRowArray();
+        if ($user && !empty($user['email'])) {
+            return $user['email'];
+        }
+
+        // Try user_profiles
+        $profile = $this->db->table('user_profiles')
+            ->select('email')
+            ->where('user_id', $userId)
+            ->get()
+            ->getRowArray();
+        if ($profile && !empty($profile['email'])) {
+            return $profile['email'];
+        }
+
+        return null;
+    }
+
+    /**
      * Fetch the last completed ml_jobs row for a given user.
      */
     public function getUserLastCompletedJob(int $userId): ?array
@@ -2918,22 +2957,23 @@ class Mod_Anomalies extends Model
                 }
             }
         } catch (\Throwable $e) {
-            // Ignore
+            log_message('error', 'completeJob failed for job #' . $jobId . ': ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
         }
     }
 
     public function sendAnalysisCompleteEmail(int $userId, int $jobId, int $totalAlgs): void
     {
-        $emailRow = $this->db->table('auth_identities')
-            ->select('secret AS email, name AS display_name')
-            ->where('user_id', $userId)
-            ->where('type', 'email_password')
-            ->get()
-            ->getRowArray();
-        if (!$emailRow || empty($emailRow['email'])) return;
+        $userEmail = $this->getUserEmail($userId);
+        if (!$userEmail) {
+            log_message('warning', 'sendAnalysisCompleteEmail: No email found for user ' . $userId);
+            return;
+        }
 
-        $userName = $emailRow['display_name'] ?: 'User';
-        $userEmail = $emailRow['email'];
+        $userName = 'User';
+        $user = $this->db->table('users')->select('username')->where('id', $userId)->get()->getRowArray();
+        if ($user && !empty($user['username'])) {
+            $userName = $user['username'];
+        }
 
         $job = $this->getJob($jobId);
         if (!$job) return;
@@ -2945,86 +2985,98 @@ class Mod_Anomalies extends Model
             ->get()
             ->getResultArray();
 
-        $severityIcons = ['High' => '🔴', 'Medium' => '🟡', 'Low' => '🟢'];
+        $algorithms = [];
+        $algIds = json_decode($job['algorithms'] ?? '[]', true);
+        if (is_array($algIds)) {
+            foreach ($algIds as $algId) {
+                $info = $this->getAlgorithmInfo((string)$algId);
+                if ($info) {
+                    $algorithms[] = [
+                        'name'        => $info['name'] ?? $algId,
+                        'category_key' => $info['category_key'] ?? 'other',
+                        'compat'      => $info['compat'] ?? 'both',
+                    ];
+                }
+            }
+        }
+
+        $startedAt = $job['started_at'] ?? $job['created_at'] ?? null;
+        $completedAt = $job['completed_at'] ?? 'N/A';
+        $timeTaken = 'N/A';
+        if ($startedAt && $completedAt && $completedAt !== 'N/A') {
+            $startTs = strtotime($startedAt);
+            $endTs = strtotime($completedAt);
+            $diffSecs = max(0, $endTs - $startTs);
+            if ($diffSecs < 60) {
+                $timeTaken = $diffSecs . ' seconds';
+            } elseif ($diffSecs < 3600) {
+                $timeTaken = round($diffSecs / 60, 1) . ' minutes';
+            } else {
+                $timeTaken = round($diffSecs / 3600, 2) . ' hours';
+            }
+        }
 
         $categorySummary = [];
+        $topFindings = [];
         foreach ($results as $r) {
             $cat = $r['category'] ?? 'Other';
             if (!isset($categorySummary[$cat])) {
-                $categorySummary[$cat] = ['High' => 0, 'Medium' => 0, 'Low' => 0, 'total' => 0, 'items' => []];
+                $categorySummary[$cat] = ['High' => 0, 'Medium' => 0, 'Low' => 0, 'total' => 0];
             }
             $sev = $r['severity'] ?? 'Low';
             $categorySummary[$cat][$sev]++;
             $categorySummary[$cat]['total']++;
-            if (count($categorySummary[$cat]['items']) < 5) {
-                $categorySummary[$cat]['items'][] = sprintf(
-                    "  - %s %s (score: %.4f) — %s",
-                    $severityIcons[$sev] ?? '',
-                    $r['algorithm'] ?? $r['algorithm_id'] ?? 'Unknown',
-                    (float)($r['score'] ?? 0),
-                    substr($r['anomaly'] ?? '', 0, 120)
-                );
-            }
+            $topFindings[] = [
+                'algorithm' => $r['algorithm'] ?? $r['algorithm_id'] ?? 'Unknown',
+                'anomaly'   => $r['anomaly'] ?? 'No details',
+                'severity'  => $sev,
+                'score'     => (float)($r['score'] ?? 0),
+                'category'  => $cat,
+            ];
         }
+
+        usort($topFindings, function ($a, $b) {
+            $sevOrder = ['High' => 0, 'Medium' => 1, 'Low' => 2];
+            return ($sevOrder[$a['severity']] ?? 9) <=> ($sevOrder[$b['severity']] ?? 9);
+        });
+        $topFindings = array_slice($topFindings, 0, 10);
 
         $emailService = \Config\Services::email();
-        $mailConfig   = config('Email');
+        $emailService->initialize([
+            'mailType' => 'html',
+            'charset'  => 'UTF-8',
+            'wordWrap' => true,
+        ]);
 
+        $mailConfig = config('Email');
         $subject = 'Analysis Complete – Eaves Droid (Job #' . $jobId . ')';
-        $message = "Hi {$userName},\n\n";
-        $message .= "Your anomaly detection analysis has completed.\n";
-        $message .= str_repeat('=', 50) . "\n\n";
+        $resultsUrl = site_url("analysis/results/{$jobId}");
 
-        $message .= "📋  SUMMARY\n";
-        $message .= "  Job ID:        {$jobId}\n";
-        $message .= "  Status:        {$job['status']}\n";
-        if (!empty($job['engine'])) {
-            $message .= "  Engine:        {$job['engine']}\n";
-        }
-        $message .= "  Algorithms:    {$totalAlgs}\n";
-        $message .= "  Findings:      " . count($results) . " anomaly(s) detected\n";
-        $message .= "  Completed At:  {$job['completed_at']}\n\n";
+        $body = view('email/anomaly_analysis_complete', [
+            'userName'        => $userName,
+            'jobId'           => $jobId,
+            'engine'          => $job['engine'] ?? 'unknown',
+            'timeTaken'       => $timeTaken,
+            'totalAlgs'       => $totalAlgs,
+            'totalFindings'   => count($results),
+            'completedAt'     => $completedAt,
+            'algorithms'      => $algorithms,
+            'categorySummary' => $categorySummary,
+            'topFindings'     => $topFindings,
+            'resultsUrl'      => $resultsUrl,
+        ]);
 
-        if (!empty($job['error_message'])) {
-            $message .= "❌  ERROR: {$job['error_message']}\n\n";
-        }
+        $sender = get_notification_sender();
+        $emailService->setFrom($sender['email'], $sender['name']);
+        $emailService->setTo($userEmail);
+        $emailService->setSubject($subject);
+        $emailService->setMessage($body);
+        $sent = $emailService->send();
 
-        if (!empty($categorySummary)) {
-            $message .= str_repeat('-', 50) . "\n";
-            $message .= "📊  BREAKDOWN BY CATEGORY\n\n";
-            foreach ($categorySummary as $cat => $info) {
-                $icon = match (strtolower($cat)) {
-                    'sms' => '💬', 'contacts' => '👤', 'call_logs' => '📞',
-                    'locations' => '📍', 'apps' => '📱', 'files' => '📁',
-                    'activity' => '📊', 'device_info' => '🔧',
-                    default => '📌'
-                };
-                $message .= "{$icon}  " . ucfirst(str_replace('_', ' ', $cat)) . " ({$info['total']} findings)\n";
-                $message .= "     High: {$info['High']}  |  Medium: {$info['Medium']}  |  Low: {$info['Low']}\n";
-                foreach ($info['items'] as $item) {
-                    $message .= "{$item}\n";
-                }
-                $message .= "\n";
-            }
-        }
-
-        $message .= str_repeat('=', 50) . "\n";
-        $message .= "View full results at: " . site_url("analysis/results/{$jobId}") . "\n";
-        $message .= "\n— Eaves Droid Anomaly Detection System\n";
-
-        try {
-            $emailService->setFrom($mailConfig->fromEmail ?? 'no-reply@eavesdroid.local', $mailConfig->fromName ?? 'Eaves Droid');
-            $emailService->setTo($userEmail);
-            $emailService->setSubject($subject);
-            $emailService->setMessage($message);
-            $sent = $emailService->send();
-            if (!$sent) {
-                log_message('error', 'sendAnalysisCompleteEmail: failed to send to ' . $userEmail . ' for job #' . $jobId . '. Debug: ' . json_encode($emailService->printDebugger(['headers'])));
-            } else {
-                log_message('info', 'sendAnalysisCompleteEmail: sent to ' . $userEmail . ' for job #' . $jobId);
-            }
-        } catch (\Throwable $e) {
-            log_message('error', 'sendAnalysisCompleteEmail exception for job #' . $jobId . ': ' . $e->getMessage());
+        if (!$sent) {
+            log_message('error', 'sendAnalysisCompleteEmail: failed to send to ' . $userEmail . ' for job #' . $jobId . '. Debug: ' . json_encode($emailService->printDebugger(['headers'])));
+        } else {
+            log_message('info', 'sendAnalysisCompleteEmail: sent to ' . $userEmail . ' for job #' . $jobId);
         }
     }
 }
