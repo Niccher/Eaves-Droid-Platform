@@ -1542,6 +1542,33 @@ $routes->group('admin', [
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->get('backup/delete/(:any)', 'Settings::delete_backup/$1', ['as' => 'admin-delete-backup']);
+
+        /**
+         * Displays storage monitor settings.
+         *
+         * @return string
+         */
+        $routes->get('storage', 'Settings::storage', ['as' => 'admin-settings-storage']);
+        $routes->post('storage/check-now', 'Settings::storage_check_now', ['as' => 'admin-storage-check-now']);
+
+        /**
+         * Displays email triggers settings.
+         *
+         * @return string
+         */
+        $routes->get('email-triggers', 'Settings::email_triggers', ['as' => 'admin-settings-email-triggers']);
+
+        /**
+         * Displays cron jobs management.
+         *
+         * @return string
+         */
+        $routes->get('cron', 'Settings::cron', ['as' => 'admin-settings-cron']);
+        $routes->post('cron/save', 'Settings::cron_save', ['as' => 'admin-cron-save']);
+        $routes->post('cron/toggle', 'Settings::cron_toggle', ['as' => 'admin-cron-toggle']);
+        $routes->post('cron/run/(:num)', 'Settings::cron_run/$1', ['as' => 'admin-cron-run']);
+        $routes->get('cron/get/(:num)', 'Settings::cron_get/$1', ['as' => 'admin-cron-get']);
+        $routes->post('cron/delete/(:num)', 'Settings::cron_delete/$1', ['as' => 'admin-cron-delete']);
     });
 
     // -------------------------------------------------------------
@@ -1592,6 +1619,8 @@ $routes->group('admin', [
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->post('export', 'Reports::export', ['as' => 'admin-reports-export']);
+        $routes->get('view-report/(:num)', 'Reports::viewReport/$1');
+        $routes->get('download-report/(:num)', 'Reports::downloadReport/$1');
     });
 
     // -------------------------------------------------------------

@@ -810,6 +810,9 @@ class Account extends BaseClientController
 
             $this->logUserAction('token_create', 'security', 'medium', 1);
 
+            // Send email notification for API token created
+            $this->sendTokenCreatedEmail($newToken, $tokenName);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Token created successfully!',
@@ -824,6 +827,63 @@ class Account extends BaseClientController
                 'success' => false,
                 'message' => 'Token creation failed: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    // =================================================================
+    // TOKEN REVOCATION
+    // =================================================================
+    
+    /**
+     * POST /account/revokeToken
+     * Revokes a user's API token.
+     */
+    public function revokeToken()
+    {
+        if ($this->request->getMethod() !== 'post') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Method not allowed. Use POST.'
+            ]);
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Revoke all active tokens for this user
+            $db->table('tbl_tokens')
+                ->where('owner_id', $this->userId)
+                ->where('status', '00')
+                ->set('status', '11')
+                ->set('last_used_at', date('Y-m-d H:i:s'))
+                ->update();
+
+            $this->logUserAction('token_revoke', 'security', 'medium', 1);
+
+            // Send email notification for API token revoked
+            $this->sendTokenRevokedEmail(substr($this->request->getPost('token_prefix') ?? 'unknown', 0, 8));
+
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Token revoked successfully!'
+                ]);
+            } else {
+                session()->setFlashdata('success', 'Token revoked successfully!');
+                return redirect()->to('account/setting');
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Token revocation failed: ' . $e->getMessage());
+
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Token revocation failed: ' . $e->getMessage()
+                ]);
+            } else {
+                session()->setFlashdata('error', 'Token revocation failed: ' . $e->getMessage());
+                return redirect()->to('account/setting');
+            }
         }
     }
 
@@ -1619,7 +1679,7 @@ class Account extends BaseClientController
 
             $content = json_encode($data, JSON_PRETTY_PRINT);
             $filename = $type . '_export_' . date('Y-m-d_H-i-s') . '.json';
-            $tmpPath = WRITEPATH . 'uploads/' . $filename;
+            $tmpPath = WRITEPATH . 'exports/' . $filename;
             file_put_contents($tmpPath, $content);
 
             // Build breakdown HTML for misc types before data is unset
@@ -1786,9 +1846,13 @@ class Account extends BaseClientController
      */
     public function downloadExport(string $filename)
     {
-        $tmpPath = WRITEPATH . 'uploads/' . basename($filename);
+        $tmpPath = WRITEPATH . 'exports/' . basename($filename);
         if (!file_exists($tmpPath)) {
-            return $this->fail('File not found or expired.', 404);
+            // Fallback to old uploads/ path for backward compat
+            $tmpPath = WRITEPATH . 'uploads/' . basename($filename);
+            if (!file_exists($tmpPath)) {
+                return $this->fail('File not found or expired.', 404);
+            }
         }
 
         // Auto-clean files older than 24 hours
@@ -2544,6 +2608,185 @@ class Account extends BaseClientController
         }
     }
 
+    // =================================================================
+    // SECURITY SETTINGS UPDATE
+    // =================================================================
+
+    /**
+     * POST /account/updateSecurity
+     * Updates user security settings (password, email, 2FA).
+     */
+    public function updateSecurity()
+    {
+        if ($this->request->getMethod() !== 'post') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Method not allowed. Use POST.'
+            ]);
+        }
+
+        // Validate CSRF token
+        $csrfToken = $this->request->getPost('csrf_token');
+        if (!$csrfToken || !csrf_hash($csrfToken)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Invalid or expired CSRF token. Please refresh the page.'
+            ]);
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            $user = auth()->user();
+            $oldEmail = $user->getEmail();
+            $username = $user->username ?? '';
+
+            // Handle password change
+            if ($this->request->getPost('current_password') && $this->request->getPost('new_password')) {
+                $currentPassword = $this->request->getPost('current_password');
+                $newPassword = $this->request->getPost('new_password');
+                $confirmPassword = $this->request->getPost('confirm_password');
+
+                if ($newPassword !== $confirmPassword) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'New passwords do not match.'
+                    ]);
+                }
+
+                // Verify current password
+                $identities = model(\CodeIgniter\Shield\Models\UserIdentityModel::class);
+                $emailIdentity = $identities->where('user_id', $this->userId)
+                    ->where('type', 'email_password')
+                    ->first();
+
+                if (!$emailIdentity || !service('passwords')->verify($currentPassword, $emailIdentity->secret2)) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Current password is incorrect.'
+                    ]);
+                }
+
+                // Update password
+                $newHash = service('passwords')->hash($newPassword);
+                $identities->update($emailIdentity->id, ['secret2' => $newHash]);
+
+                // Invalidate all session tokens (force logout everywhere)
+                $identities->where('user_id', $this->userId)
+                    ->where('type', 'session')
+                    ->delete();
+
+                // Send password changed email
+                $this->sendPasswordChangedEmail();
+
+                $this->logUserAction('password_change', 'security', 'high', 1);
+            }
+
+            // Handle email change
+            if ($this->request->getPost('new_email') && $this->request->getPost('new_email') !== $oldEmail) {
+                $newEmail = $this->request->getPost('new_email');
+
+                // Check if email already exists
+                $existing = $db->table('auth_identities')
+                    ->where('secret', $newEmail)
+                    ->where('type', 'email_password')
+                    ->get()
+                    ->getRow();
+                if ($existing) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'This email is already registered.'
+                    ]);
+                }
+
+                // Update email in auth_identities
+                $identities = model(\CodeIgniter\Shield\Models\UserIdentityModel::class);
+                $emailIdentity = $identities->where('user_id', $this->userId)
+                    ->where('type', 'email_password')
+                    ->first();
+                if ($emailIdentity) {
+                    $identities->update($emailIdentity->id, ['secret' => $newEmail]);
+                }
+
+                // Also update in user_profiles if present
+                $db->table('user_profiles')
+                    ->where('user_id', $this->userId)
+                    ->update(['email' => $newEmail]);
+
+                // Send email changed notification to both old and new email
+                $this->sendEmailChangedEmail($oldEmail, $newEmail);
+
+                $this->logUserAction('email_change', 'security', 'high', 1);
+            }
+
+            // Handle 2FA enable/disable
+            if ($this->request->getPost('totp_action')) {
+                $action = $this->request->getPost('totp_action'); // 'enable' or 'disable'
+                $totpCode = $this->request->getPost('totp_code');
+
+                $user = auth()->user();
+
+                if ($action === 'enable') {
+                    if (!$totpCode) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'TOTP code is required to enable 2FA.'
+                        ]);
+                    }
+                    // Verify TOTP code
+                    if (!$user->verifyTOTP($totpCode)) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Invalid authenticator code.'
+                        ]);
+                    }
+                    $user->enableTOTP();
+                    $backupCodes = $user->getBackupCodes();
+                    $this->send2faEnabledEmail($backupCodes);
+                    $this->logUserAction('2fa_enable', 'security', 'high', 1);
+                } elseif ($action === 'disable') {
+                    if (!$totpCode) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'TOTP code is required to disable 2FA.'
+                        ]);
+                    }
+                    // Verify TOTP code
+                    if (!$user->verifyTOTP($totpCode)) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Invalid authenticator code.'
+                        ]);
+                    }
+                    $user->disableTOTP();
+                    $this->send2faDisabledEmail();
+                    $this->logUserAction('2fa_disable', 'security', 'high', 1);
+                }
+            }
+
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Security settings updated successfully!'
+                ]);
+            } else {
+                session()->setFlashdata('success', 'Security settings updated successfully!');
+                return redirect()->to('account/security');
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Security update failed: ' . $e->getMessage());
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to update security settings: ' . $e->getMessage()
+                ]);
+            } else {
+                session()->setFlashdata('error', 'Failed to update security settings: ' . $e->getMessage());
+                return redirect()->back();
+            }
+        }
+    }
+
     /**
      * Devices management page.
      *
@@ -2631,5 +2874,188 @@ class Account extends BaseClientController
             session()->setFlashdata('error', 'Failed to load statistics');
             return redirect()->back();
         }
+    }
+
+    // =================================================================
+    // EMAIL TRIGGER HELPER METHODS
+    // =================================================================
+
+    /**
+     * Send email for API token creation
+     */
+    private function sendApiTokenCreatedEmail(string $tokenName, string $tokenPrefix): void
+    {
+        if (!$this->isTriggerEnabled('on_api_token_created')) return;
+        $this->sendUserTriggerEmail('api_token_created', [
+            'tokenName' => $tokenName,
+            'tokenPrefix' => $tokenPrefix,
+            'createdAt' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Send email for API token revocation
+     */
+    private function sendApiTokenRevokedEmail(string $tokenPrefix): void
+    {
+        if (!$this->isTriggerEnabled('on_api_token_revoked')) return;
+        $this->sendUserTriggerEmail('api_token_revoked', [
+            'tokenPrefix' => $tokenPrefix,
+            'revokedAt' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Send email for password change
+     */
+    private function sendPasswordChangedEmail(): void
+    {
+        if (!$this->isTriggerEnabled('on_password_changed')) return;
+        $this->sendUserTriggerEmail('password_changed', [
+            'changedAt' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Send email for email change
+     */
+    private function sendEmailChangedEmail(string $oldEmail, string $newEmail): void
+    {
+        if (!$this->isTriggerEnabled('on_email_changed')) return;
+        $this->sendUserTriggerEmail('email_changed', [
+            'oldEmail' => $oldEmail,
+            'newEmail' => $newEmail,
+            'changedAt' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Send email for 2FA enabled
+     */
+    private function send2faEnabledEmail(array $backupCodes = []): void
+    {
+        if (!$this->isTriggerEnabled('on_2fa_enabled')) return;
+        $this->sendUserTriggerEmail('2fa_enabled', [
+            'backupCodes' => $backupCodes,
+            'enabledAt' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Send email for 2FA disabled
+     */
+    private function send2faDisabledEmail(): void
+    {
+        if (!$this->isTriggerEnabled('on_2fa_disabled')) return;
+        $this->sendUserTriggerEmail('2fa_disabled', [
+            'disabledAt' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Check if an email trigger is enabled
+     */
+    private function isTriggerEnabled(string $key): bool
+    {
+        $db = \Config\Database::connect();
+        $row = $db->table('settings')
+            ->where('class', 'email_triggers')
+            ->where('key', $key)
+            ->get()
+            ->getRowArray();
+        return $row && $row['value'] === '1';
+    }
+
+    /**
+     * Send user-facing trigger email
+     */
+    private function sendUserTriggerEmail(string $template, array $data = []): void
+    {
+        try {
+            $userEmail = auth()->user()->getEmail();
+            $username = auth()->user()->username ?? 'User';
+
+            if (!$userEmail) return;
+
+            // Check user email notifications preference
+            $db = \Config\Database::connect();
+            $profile = $db->table('user_profiles')
+                ->select('email_notifications')
+                ->where('user_id', $this->userId)
+                ->get()
+                ->getRowArray();
+            if ($profile && isset($profile['email_notifications']) && !$profile['email_notifications']) {
+                return;
+            }
+
+            $securityData = [
+                'securityAction' => ucfirst(str_replace('_', ' ', $template)),
+                'securityDescription' => $this->getTriggerDescription($template),
+                'securityStatus' => 'success',
+                'securityInitiatedBy' => $username,
+                'securityBrowser' => $this->request->getUserAgent()->getAgentString() ?: 'Unknown',
+                'securityBrowserIp' => $this->request->getIPAddress(),
+                'securityExecutedAt' => date('Y-m-d H:i:s'),
+            ];
+
+            helper('email');
+            send_templated_email(
+                $userEmail,
+                'Eaves Droid — ' . ucfirst(str_replace('_', ' ', $template)),
+                'email/user/' . $template,
+                array_merge($data, $securityData)
+            );
+        } catch (\Throwable $e) {
+            log_message('error', "User trigger email failed ($template): " . $e->getMessage());
+        }
+    }
+
+    private function getTriggerDescription(string $template): string
+    {
+        $descriptions = [
+            'api_token_created' => 'A new API token was generated for your account.',
+            'api_token_revoked' => 'An API token was revoked from your account.',
+            'password_changed' => 'Your account password was successfully changed.',
+            'email_changed' => 'Your account email address was updated.',
+            '2fa_enabled' => 'Two-factor authentication was enabled on your account.',
+            '2fa_disabled' => 'Two-factor authentication was disabled on your account.',
+            'device_paired' => 'A new Android device was paired with your account.',
+            'device_unpaired' => 'A device was removed from your account.',
+        ];
+        return $descriptions[$template] ?? 'An action was performed on your account.';
+    }
+
+    /**
+     * Send API token created email
+     */
+    private function sendTokenCreatedEmail(string $token, string $name): void
+    {
+        $this->sendUserTriggerEmail('api_token_created', [
+            'token' => $token,
+            'token_name' => $name ?: 'Unnamed Token',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Send API token revoked email
+     */
+    private function sendTokenRevokedEmail(string $tokenPrefix): void
+    {
+        $this->sendUserTriggerEmail('api_token_revoked', [
+            'token_prefix' => $tokenPrefix,
+            'revoked_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Send device unpaired email
+     */
+    private function sendDeviceUnpairedEmail(string $deviceName): void
+    {
+        $this->sendUserTriggerEmail('device_unpaired', [
+            'device_name' => $deviceName,
+            'unpaired_at' => date('Y-m-d H:i:s'),
+        ]);
     }
 }

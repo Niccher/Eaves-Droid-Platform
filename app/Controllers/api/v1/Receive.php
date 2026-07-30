@@ -155,9 +155,9 @@ class Receive extends BaseController
             'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
         ]);
 
-        // Trigger queue processing in background after successful enqueue
+        // Trigger immediate processing of this specific queue ID in background
         if ($queueId !== null) {
-            $this->triggerQueueProcessing();
+            $this->triggerImmediateProcessing($queueId);
         }
 
         if ($queueId !== null) {
@@ -289,7 +289,7 @@ class Receive extends BaseController
         ]);
 
         if ($queueId !== null) {
-            $this->triggerQueueProcessing();
+            $this->triggerImmediateProcessing($queueId);
             return $this->respondCreated([
                 'status' => 'queued',
                 'message' => 'File uploaded and queued for processing',
@@ -845,18 +845,17 @@ class Receive extends BaseController
     }
 
     /**
-     * Trigger queue processing in background after successful upload.
-     * Runs php spark queue:process asynchronously so it doesn't block the upload response.
+     * Trigger immediate processing of a specific queue ID in background.
      */
-    private function triggerQueueProcessing(): void
+    private function triggerImmediateProcessing(int $queueId): void
     {
         $sparkPath = FCPATH . 'spark';
         if (!is_file($sparkPath)) {
-            log_message('warning', 'triggerQueueProcessing: spark not found at ' . $sparkPath);
+            log_message('warning', 'triggerImmediateProcessing: spark not found at ' . $sparkPath);
             return;
         }
-        $cmd = "nohup php {$sparkPath} queue:process 5 > " . WRITEPATH . "logs/queue_auto.log 2>&1 &";
+        $cmd = "nohup php {$sparkPath} queue:process one {$queueId} > " . WRITEPATH . "logs/queue_one_{$queueId}.log 2>&1 &";
         exec($cmd, $output, $returnVar);
-        log_message('info', "triggerQueueProcessing: background queue:process triggered (return={$returnVar})");
+        log_message('info', "triggerImmediateProcessing: background queue:process one {$queueId} triggered (return={$returnVar})");
     }
 }

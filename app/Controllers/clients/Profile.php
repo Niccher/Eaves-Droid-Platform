@@ -85,11 +85,14 @@ class Profile extends BaseController
 			$this->model_user->update_profile_bio($person_id, $new_bio);
 		}
 
-//		if(($_POST['ed_email']) != "") {
-//			$new_email = base64_encode($this->model_cryption->Enc_String($_POST['ed_email']));
-//			$this->model_user->update_profile_mail($person_id, $new_email);
-//
-//		}
+if(($_POST['ed_email']) != "") {
+			$oldEmail = $this->userData['email'] ?? '';
+			$new_email = base64_encode($this->model_cryption->Enc_String($_POST['ed_email']));
+			$this->model_user->update_profile_mail($person_id, $new_email);
+			
+			// Send email changed notification
+			$this->sendEmailChangedEmail($oldEmail, $_POST['ed_email']);
+		}
 
         // Log action
         $lognow = new Mod_Access_Logs();

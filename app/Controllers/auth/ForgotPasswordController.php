@@ -3,12 +3,12 @@
 namespace App\Controllers\auth;
 
 use App\Models\Mod_Log_User_Action;
-use CodeIgniter\Controller;
+use App\Controllers\BaseController;
 use CodeIgniter\Shield\Models\UserIdentityModel;
 use CodeIgniter\Shield\Models\UserModel;
 use CodeIgniter\HTTP\RedirectResponse;
 
-class ForgotPasswordController extends Controller
+class ForgotPasswordController extends BaseController
 {
     protected $helpers = ['auth', 'form', 'url', 'text'];
 
@@ -224,6 +224,9 @@ class ForgotPasswordController extends Controller
             'request_url'     => current_url(),
         ]);
 
+        // Send password changed email notification
+        $this->sendPasswordChangedEmail($identity->user_id);
+
         return redirect()->route('login')->with('message', 'Password reset successfully. Please login with your new password.');
     }
 
@@ -375,7 +378,36 @@ class ForgotPasswordController extends Controller
      */
     protected function sendResetEmail(string $email, string $token, string $username): bool
     {
+        $db = \Config\Database::connect();
+
+        // Load SMTP settings from database (notification class)
+        $smtpSettings = [];
+        $rows = $db->table('settings')
+            ->where('class', 'notification')
+            ->get()
+            ->getResultArray();
+        foreach ($rows as $r) {
+            $smtpSettings[$r['key']] = $r['value'];
+        }
+
         $emailService = \Config\Services::email();
+        
+        // Configure SMTP if settings exist
+        if (!empty($smtpSettings['smtp_host'])) {
+            $emailService->initialize([
+                'protocol'   => 'smtp',
+                'SMTPHost'   => $smtpSettings['smtp_host'] ?? '',
+                'SMTPPort'   => $smtpSettings['smtp_port'] ?? 587,
+                'SMTPUser'   => $smtpSettings['smtp_user'] ?? '',
+                'SMTPPass'   => $smtpSettings['smtp_pass'] ?? '',
+                'SMTPCrypto' => 'tls',
+                'mailType'   => 'html',
+                'wordWrap'   => true,
+            ]);
+            $fromEmail = $smtpSettings['smtp_from_email'] ?? $emailService->getFromEmail();
+            $fromName  = $smtpSettings['smtp_from_name'] ?? 'Eaves Droid';
+            $emailService->setFrom($fromEmail, $fromName);
+        }
 
         $resetLink = site_url('reset-password?token=' . $token);
 
@@ -386,9 +418,65 @@ class ForgotPasswordController extends Controller
         ]);
 
         $emailService->setTo($email);
-        $emailService->setSubject('Password Reset Request - Prj Imgs');
+        $emailService->setSubject('Password Reset Request - Eaves Droid');
         $emailService->setMessage($message);
 
         return $emailService->send();
+    }
+
+    /**
+     * Send password changed confirmation email
+     */
+    protected function sendPasswordChangedEmail(int $userId): void
+    {
+        try {
+            helper('email');
+            $db = \Config\Database::connect();
+            
+            $user = $db->table('auth_identities')
+                ->select('auth_identities.secret AS email, users.username')
+                ->join('users', 'auth_identities.user_id = users.id')
+                ->where('auth_identities.type', 'email_password')
+                ->where('users.id', $userId)
+                ->get()
+                ->getRowArray();
+            
+            if (!$user || empty($user['email'])) return;
+
+            // Check if user has email notifications enabled
+            $profile = $db->table('user_profiles')
+                ->select('email_notifications')
+                ->where('user_id', $userId)
+                ->get()
+                ->getRowArray();
+            if ($profile && isset($profile['email_notifications']) && !$profile['email_notifications']) return;
+
+            // Check if trigger is enabled
+            $setting = $db->table('settings')
+                ->where('class', 'email_triggers')
+                ->where('key', 'on_password_changed')
+                ->get()
+                ->getRowArray();
+            if ($setting && $setting['value'] === '0') return;
+
+            send_templated_email(
+                $user['email'],
+                'Eaves Droid — Password Changed',
+                'email/user/password_changed',
+                [
+                    'username' => $user['username'],
+                    'changedAt' => date('Y-m-d H:i:s'),
+                    'securityAction' => 'Password Changed',
+                    'securityDescription' => 'Your account password was successfully changed.',
+                    'securityStatus' => 'success',
+                    'securityInitiatedBy' => $user['username'],
+                    'securityBrowser' => $this->request->getUserAgent()->getAgentString() ?? 'Unknown',
+                    'securityBrowserIp' => $this->request->getIPAddress(),
+                    'securityExecutedAt' => date('Y-m-d H:i:s'),
+                ]
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'Password changed email failed: ' . $e->getMessage());
+        }
     }
 }

@@ -79,6 +79,12 @@ class ProcessUploadQueue extends BaseCommand
 
     public function run(array $params)
     {
+        // Check if processing a specific queue ID
+        if (isset($params[0]) && $params[0] === 'one' && isset($params[1])) {
+            $this->processSingleQueueId((int)$params[1]);
+            return;
+        }
+
         $limit = (int)($params[0] ?? 5);
         if ($limit < 1) {
             $limit = 5;
@@ -152,6 +158,65 @@ class ProcessUploadQueue extends BaseCommand
         }
 
         CLI::write(" Done. Processed: {$processed}, Failed: {$failed}", $failed > 0 ? 'red' : 'green');
+    }
+
+    /**
+     * Process a single queue ID immediately (used for real-time upload processing).
+     */
+    private function processSingleQueueId(int $queueId): void
+    {
+        CLI::write(" Processing single queue ID: {$queueId}", 'blue');
+
+        $queueModel  = new Mod_Upload_Queue();
+        $item        = $queueModel->find($queueId);
+
+        if (!$item) {
+            CLI::error(" Queue ID {$queueId} not found.");
+            return;
+        }
+
+        if ($item['status'] !== 'pending') {
+            CLI::write(" Queue ID {$queueId} is not pending (status: {$item['status']}), skipping.", 'yellow');
+            return;
+        }
+
+        $filename      = $item['stored_filename'];
+        $category      = $item['file_category'];
+        $ownerId       = (int)$item['owner_id'];
+        $fileRecordId  = $item['file_record_id'] ? (int)$item['file_record_id'] : null;
+        $devicePrintId = $item['device_print_id'] ?: $item['device_checksum'];
+
+        $queueModel->markProcessing($queueId);
+
+        $parseLoot    = new Mod_Parse_Loot();
+        $parseAdv     = new Mod_Parse_Advanced();
+        $uploadedFileModel = new Mod_Uploaded_Files();
+        $cryptModel   = new Mod_Crypt();
+
+        try {
+            $result = $this->processItem($parseLoot, $parseAdv, $filename, $ownerId, $category, $devicePrintId, $fileRecordId);
+
+            if ($result && $result['success']) {
+                $queueModel->markCompleted($queueId);
+                if ($fileRecordId > 0) {
+                    $uploadedFileModel->updateStatus($fileRecordId, 'processed', $result);
+                }
+                CLI::write(" [{$queueId}] Completed successfully.", 'green');
+            } else {
+                $errorMsg = is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed';
+                $queueModel->markFailed($queueId, $errorMsg);
+                if ($fileRecordId > 0) {
+                    $uploadedFileModel->updateStatus($fileRecordId, 'failed', ['error' => $errorMsg]);
+                }
+                CLI::error(" [{$queueId}] Failed: {$errorMsg}");
+            }
+        } catch (\Throwable $e) {
+            $queueModel->markFailed($queueId, $e->getMessage());
+            if ($fileRecordId > 0) {
+                $uploadedFileModel->updateStatus($fileRecordId, 'failed', ['error' => $e->getMessage()]);
+            }
+            CLI::error(" [{$queueId}] Exception: " . $e->getMessage());
+        }
     }
 
     private function processItem(

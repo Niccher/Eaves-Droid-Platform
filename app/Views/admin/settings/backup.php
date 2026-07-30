@@ -52,24 +52,103 @@
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/security') ?>" class="nav-link"><i class="fas fa-shield-alt mr-1"></i> Security</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/notifications') ?>" class="nav-link"><i class="fas fa-bell mr-1"></i> Notifications</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/maintenance') ?>" class="nav-link"><i class="fas fa-tools mr-1"></i> Maintenance</a></li>
+                                <li class="nav-item"><a href="<?= base_url('admin/settings/storage') ?>" class="nav-link"><i class="fas fa-hdd mr-1"></i> Storage Monitor</a></li>
+                                <li class="nav-item"><a href="<?= base_url('admin/settings/email-triggers') ?>" class="nav-link"><i class="fas fa-envelope mr-1"></i> Email Triggers</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/backup') ?>" class="nav-link active"><i class="fas fa-hdd mr-1"></i> Backup</a></li>
+                                <li class="nav-item"><a href="<?= base_url('admin/settings/cron') ?>" class="nav-link"><i class="fas fa-clock mr-1"></i> Cron Jobs</a></li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-9">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Database Backups</h3>
-                            <div class="card-tools">
-                                <form method="post" action="<?= base_url('admin/settings/backup/create') ?>" style="display:inline">
-                                    <?= csrf_field() ?>
-                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Create Backup</button>
-                                </form>
+                    <form method="post" action="<?= base_url('admin/settings/update') ?>">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="section" value="backup">
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Backup Schedule & Retention</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="schedule_cron"><strong>Schedule (Cron Expression)</strong></label>
+                                            <input type="text" class="form-control" name="schedule_cron" id="schedule_cron" value="<?= esc($settings['schedule_cron'] ?? '0 2 * * *') ?>" placeholder="0 2 * * * (daily at 2 AM)">
+                                            <small class="form-text text-muted">Standard cron expression. Examples: <code>0 2 * * *</code> = daily 2 AM, <code>0 */6 * * *</code> = every 6 hours, <code>0 3 * * 0</code> = weekly Sunday 3 AM.</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="retention_days"><strong>Retention (Days)</strong></label>
+                                            <input type="number" class="form-control" name="retention_days" id="retention_days" min="0" max="365" value="<?= esc($settings['retention_days'] ?? 30) ?>">
+                                            <small class="form-text text-muted">Delete backups older than this many days. Set to 0 to keep forever.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="storage_path"><strong>Backup Storage Path</strong></label>
+                                            <input type="text" class="form-control" name="storage_path" id="storage_path" value="<?= esc($settings['storage_path'] ?? WRITEPATH . 'backups') ?>">
+                                            <small class="form-text text-muted">Directory where backup files are stored. Must be writable by web server.</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="custom-control custom-switch">
+                                                <input type="checkbox" class="custom-control-input" name="compress" id="compress" value="1" <?= !empty($settings['compress']) ? 'checked' : '' ?>>
+                                                <label class="custom-control-label" for="compress">Compress backups (gzip)</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h3 class="card-title">Notification Settings</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="custom-control custom-switch mb-3">
+                                            <input type="checkbox" class="custom-control-input" name="notify_on_success" id="notify_on_success" value="1" <?= !empty($settings['notify_on_success']) ? 'checked' : '' ?>>
+                                            <label class="custom-control-label" for="notify_on_success">Email admins on successful backup</label>
+                                        </div>
+                                        <div class="custom-control custom-switch mb-3">
+                                            <input type="checkbox" class="custom-control-input" name="notify_on_failure" id="notify_on_failure" value="1" <?= !empty($settings['notify_on_failure']) ? 'checked' : '' ?>>
+                                            <label class="custom-control-label" for="notify_on_failure">Email admins on backup failure</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save Settings</button>
+                        </div>
+                    </form>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">Manual Backup</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="<?= base_url('admin/settings/backup/create') ?>">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-plus mr-1"></i> Create Backup Now</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">Database Backups</h3>
+                        </div>
                         <div class="card-body p-0">
-                            <table class="table table-striped">
+                            <table class="table table-striped mb-0">
                                 <thead>
                                     <tr>
                                         <th>Filename</th>

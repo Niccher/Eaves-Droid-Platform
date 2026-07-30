@@ -52,7 +52,10 @@
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/security') ?>" class="nav-link"><i class="fas fa-shield-alt mr-1"></i> Security</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/notifications') ?>" class="nav-link"><i class="fas fa-bell mr-1"></i> Notifications</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/maintenance') ?>" class="nav-link active"><i class="fas fa-tools mr-1"></i> Maintenance</a></li>
+                                <li class="nav-item"><a href="<?= base_url('admin/settings/storage') ?>" class="nav-link"><i class="fas fa-hdd mr-1"></i> Storage Monitor</a></li>
+                                <li class="nav-item"><a href="<?= base_url('admin/settings/email-triggers') ?>" class="nav-link"><i class="fas fa-envelope mr-1"></i> Email Triggers</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/backup') ?>" class="nav-link"><i class="fas fa-hdd mr-1"></i> Backup</a></li>
+                                <li class="nav-item"><a href="<?= base_url('admin/settings/cron') ?>" class="nav-link"><i class="fas fa-clock mr-1"></i> Cron Jobs</a></li>
                             </ul>
                         </div>
                     </div>
@@ -67,7 +70,7 @@
 
                                 <!-- ==================== MAINTENANCE MODE TAB ==================== -->
                                 <div class="tab-pane fade show active" id="tab-mode" role="tabpanel">
-                                    <div class="card card-outline card-<?= ($settings['maintenance_mode'] ?? '0') === '1' ? 'danger' : 'success' ?> shadow-sm mb-0">
+                                        <div class="card card-outline card-<?= ($settings['maintenance_mode'] ?? '0') === '1' ? 'danger' : 'success' ?> shadow-sm mb-0">
                                         <div class="card-header">
                                             <h3 class="card-title">
                                                 <i class="fas fa-<?= ($settings['maintenance_mode'] ?? '0') === '1' ? 'exclamation-triangle text-danger' : 'check-circle text-success' ?> mr-1"></i>
@@ -79,6 +82,26 @@
                                                 <?php endif; ?>
                                             </h3>
                                         </div>
+                                        <?php
+                                        $maintenanceMode = $settings['maintenance_mode'] ?? '0';
+                                        $maintenanceType = $settings['maintenance_type'] ?? 'now_until_unknown';
+                                        $startTime = $settings['maintenance_start'] ?? null;
+                                        $endTime = $settings['maintenance_end'] ?? null;
+                                        $now = date('Y-m-d\TH:i:s');
+                                        ?>
+                                        <?php if ($maintenanceMode === '1' && $maintenanceType === 'now_until' && $endTime): ?>
+                                        <div class="card-footer bg-light py-2">
+                                            <small class="text-muted"><i class="fas fa-hourglass-half mr-1"></i>Maintenance ends in: <strong><span class="countdown-timer" data-target="<?= date('Y-m-d\TH:i:s', strtotime($endTime)) ?>">--</span></strong></small>
+                                        </div>
+                                        <?php elseif ($maintenanceMode === '1' && $maintenanceType === 'scheduled' && $endTime): ?>
+                                        <div class="card-footer bg-light py-2">
+                                            <small class="text-muted"><i class="fas fa-hourglass-half mr-1"></i>Maintenance ends in: <strong><span class="countdown-timer" data-target="<?= date('Y-m-d\TH:i:s', strtotime($endTime)) ?>">--</span></strong></small>
+                                        </div>
+                                        <?php elseif ($maintenanceMode === '0' && $maintenanceType === 'scheduled' && $startTime && $now < $startTime): ?>
+                                        <div class="card-footer bg-info py-2">
+                                            <small class="text-white"><i class="fas fa-clock mr-1"></i>Maintenance starts in: <strong><span class="countdown-timer" data-target="<?= date('Y-m-d\TH:i:s', strtotime($startTime)) ?>">--</span></strong></small>
+                                        </div>
+                                        <?php endif; ?>
                                         <form action="<?= base_url('admin/settings/update') ?>" method="post">
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="section" value="app">
@@ -133,6 +156,10 @@
                                                 <div class="callout callout-warning bg-light py-2 px-3 mb-0 small">
                                                     <i class="fas fa-clock text-warning mr-1"></i>
                                                     Server time: <strong id="server-time"><?= date('Y-m-d H:i:s') ?></strong> (<?= date_default_timezone_get() ?>).
+                                                </div>
+                                                <div class="callout callout-info bg-light py-2 px-3 mb-0 small mt-1">
+                                                    <i class="fas fa-info-circle text-info mr-1"></i>
+                                                    <strong>Scheduled maintenance</strong> requires the cron job <code>maintenance:check</code> to be running. Add it from the <a href="<?= base_url('admin/settings/cron') ?>">Cron Jobs</a> page with schedule <code>* * * * *</code> (every minute).
                                                 </div>
                                             </div>
                                             <div class="card-footer">
@@ -189,5 +216,24 @@ $(document).ready(function() {
                     pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
         $('#server-time').text(str);
     }, 1000);
+
+    function updateCountdowns() {
+        $('.countdown-timer').each(function() {
+            const target = new Date($(this).data('target')).getTime();
+            const now = new Date().getTime();
+            const diff = target - now;
+            if (diff <= 0) { $(this).text('NOW'); return; }
+            const days = Math.floor(diff / (1000*60*60*24));
+            const hrs = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+            const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+            const secs = Math.floor((diff % (1000*60)) / 1000);
+            let s = '';
+            if (days > 0) s += days + 'd ';
+            s += String(hrs).padStart(2,'0') + ':' + String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+            $(this).text(s);
+        });
+    }
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
 });
 </script>

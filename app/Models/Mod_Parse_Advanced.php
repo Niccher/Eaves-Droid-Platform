@@ -2574,7 +2574,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
 
         foreach ($data as $subType => $subData) {
             if (isset($parserMap[$subType]) && method_exists($this, $parserMap[$subType])) {
-                $tempFile = WRITEPATH . 'uploads/temp_' . $subType . '_' . time() . '.json';
+                $tempFile = WRITEPATH . 'temp/' . $subType . '_' . time() . '.json';
                 file_put_contents($tempFile, json_encode([
                     'timestamp' => $extractedAt,
                     $subType => $subData
@@ -2637,7 +2637,7 @@ public function parse_misc_hardware(string $file_name, int $owner_id, string $de
 
         foreach ($data as $subType => $subData) {
             if (isset($parserMap[$subType]) && method_exists($this, $parserMap[$subType])) {
-                $tempFile = WRITEPATH . 'uploads/temp_' . $subType . '_' . time() . '.json';
+                $tempFile = WRITEPATH . 'temp/' . $subType . '_' . time() . '.json';
                 file_put_contents($tempFile, json_encode([
                     'timestamp' => $extractedAt,
                     $subType => $subData

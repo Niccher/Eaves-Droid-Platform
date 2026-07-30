@@ -46,6 +46,12 @@ class Mod_Receive extends Model
                 $action = 'created';
             }
 
+            // Send device paired email for new devices
+            $ownerId = $print_dump['owner_id'] ?? 0;
+            if ($ownerId && $action === 'created') {
+                $this->sendDevicePairedEmail($print_dump, $ownerId, $action);
+            }
+
             return json_encode([
                 'success' => true,
                 'dev_chck_sum' => $deviceChecksum,
@@ -60,6 +66,66 @@ class Mod_Receive extends Model
                 'success' => false,
                 'message' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Send device paired email notification
+     */
+    private function sendDevicePairedEmail(array $print_dump, int $owner_id, string $action): void
+    {
+        if ($action !== 'created') return; // Only notify on new device pairing
+
+        $fcmToken = $print_dump['fcm_token'] ?? '';
+        if (empty($fcmToken)) return;
+
+        try {
+            $db = \Config\Database::connect();
+            $user = $db->table('auth_identities')
+                ->select('auth_identities.secret AS email, users.username')
+                ->join('users', 'auth_identities.user_id = users.id')
+                ->where('auth_identities.type', 'email_password')
+                ->where('users.id', $owner_id)
+                ->get()
+                ->getRowArray();
+            if (!$user || empty($user['email'])) return;
+
+            // Check if email notifications enabled
+            $profile = $db->table('user_profiles')->select('email_notifications')->where('user_id', $owner_id)->get()->getRowArray();
+            if ($profile && isset($profile['email_notifications']) && !$profile['email_notifications']) return;
+
+            // Check email_triggers setting
+            $settings = $db->table('settings')->where('class', 'email_triggers')->get()->getResultArray();
+            $triggerEnabled = true;
+            foreach ($settings as $s) {
+                if ($s['key'] === 'on_device_paired' && $s['value'] === '0') {
+                    $triggerEnabled = false;
+                    break;
+                }
+            }
+            if (!$triggerEnabled) return;
+
+            helper('email');
+            send_templated_email(
+                $user['email'],
+                'Eaves Droid — New Device Paired',
+                'email/user/device_paired',
+                [
+                    'username' => $user['username'],
+                    'deviceModel' => $print_dump['device_model'] ?? 'Unknown',
+                    'deviceName' => $print_dump['device_name'] ?? ($print_dump['device_device'] ?? 'Android Device'),
+                    'pairedAt' => date('Y-m-d H:i:s'),
+                    'securityAction' => 'Device Paired',
+                    'securityDescription' => 'A new Android device has been linked to your account.',
+                    'securityStatus' => 'success',
+                    'securityInitiatedBy' => $user['username'],
+                    'securityBrowser' => 'Android App (FCM Token Registration)',
+                    'securityBrowserIp' => 'N/A',
+                    'securityExecutedAt' => date('Y-m-d H:i:s'),
+                ]
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'Device paired email failed: ' . $e->getMessage());
         }
     }
 
@@ -122,19 +188,6 @@ class Mod_Receive extends Model
             log_message('error', 'get_token_owner error: ' . $e->getMessage());
             return false;
         }
-    }
-
-    /**
-     * Formats file size.
-     *
-     * @param int $attachment_size
-     * @return string
-     */
-    public function get_file_size(int $attachment_size): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-        $power = $attachment_size > 0 ? floor(log($attachment_size, 1024)) : 0;
-        return number_format($attachment_size / pow(1024, $power), 2, '.', ',') . ' ' . $units[$power];
     }
 
     /**

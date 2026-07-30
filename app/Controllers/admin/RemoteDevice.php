@@ -324,49 +324,28 @@ class RemoteDevice extends BaseAdminController
                 ->get()
                 ->getRowArray();
             if ($row && !empty($row['email'])) $userEmail = $row['email'];
-            if (!$userEmail) {
-                $user = $db->table('users')->select('email')->where('id', $targetUserId)->get()->getRowArray();
-                if ($user && !empty($user['email'])) $userEmail = $user['email'];
-            }
-            if (!$userEmail) {
-                $profile = $db->table('user_profiles')->select('email')->where('user_id', $targetUserId)->get()->getRowArray();
-                if ($profile && !empty($profile['email'])) $userEmail = $profile['email'];
-            }
 
             if (empty($userEmail)) return;
 
             $profile = $db->table('user_profiles')->select('email_notifications')->where('user_id', $targetUserId)->get()->getRowArray();
             if ($profile && isset($profile['email_notifications']) && !$profile['email_notifications']) return;
 
-            $email = \Config\Services::email();
-            $email->initialize([
-                'mailType' => 'html',
-                'charset'  => 'UTF-8',
-                'wordWrap' => true,
-            ]);
-
-            $sender = get_notification_sender();
-            $email->setFrom($sender['email'], $sender['name']);
-            $email->setTo($userEmail);
-            $email->setSubject("Eaves Droid — Remote Command: {$label}");
-
-            $body = view('email/device_management_notification', [
-                'label'       => $label,
-                'description' => $description,
-                'timestamp'   => $timestamp,
-                'ip'          => $adminIp,
-                'userAgent'   => $adminUa,
-                'success'     => $allSuccess,
-                'adminName'   => $adminName,
-                'command'     => $command,
-                'targetUsername' => $targetUser['username'],
-            ]);
-
-            $email->setMessage($body);
-            $sent = $email->send();
-            if (!$sent) {
-                log_message('error', 'sendDeviceManagementEmail: failed for user ' . $targetUserId . ' email=' . $userEmail . ' Debug: ' . json_encode($email->printDebugger(['headers', 'subject', 'body'])));
-            }
+            send_templated_email(
+                $userEmail,
+                "Eaves Droid — Remote Command: {$label}",
+                'email/device_management_notification',
+                [
+                    'label'       => $label,
+                    'description' => $description,
+                    'timestamp'   => $timestamp,
+                    'ip'          => $adminIp,
+                    'userAgent'   => $adminUa,
+                    'success'     => $allSuccess,
+                    'adminName'   => $adminName,
+                    'command'     => $command,
+                    'targetUsername' => $targetUser['username'],
+                ]
+            );
         } catch (\Exception $e) {
             log_message('error', 'sendDeviceManagementEmail: Exception for user ' . $targetUserId . ' — ' . $e->getMessage());
         }

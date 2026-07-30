@@ -312,24 +312,7 @@ return json_decode($response);
             return $row['email'];
         }
 
-        // Try users table
-        $user = $db->table('users')
-            ->select('email')
-            ->where('id', $uid)
-            ->get()
-            ->getRowArray();
-        if ($user && !empty($user['email'])) {
-            return $user['email'];
-        }
-
-        // Try user_profiles
-        $profile = $db->table('user_profiles')
-            ->select('email')
-            ->where('user_id', $uid)
-            ->get()
-            ->getRowArray();
-
-        return $profile['email'] ?? null;
+        return null;
     }
 
     private function getDeviceOwnerUsername(string $token): ?string
@@ -501,22 +484,8 @@ return json_decode($response);
             $emailService->setTo($email);
             $emailService->setSubject("Eaves Droid — Remote Command: {$label}");
 
-            $body = view('email/device_management_notification', [
-                'label'       => $label,
-                'description' => $description,
-                'timestamp'   => $timestamp,
-                'ip'          => $ip,
-                'userAgent'   => $ua,
-                'success'     => true,
-                'adminName'   => $initiatorName,
-                'command'     => $command,
-                'targetUsername' => $username,
-            ]);
-            $emailService->setMessage($body);
-            $emailService->send();
-
             log_message('info', "Device management email sent to {$email} for command {$command}");
-        } catch (\Exception $e) {
+            } catch (\Exception $e) {
             log_message('error', 'Device management email failed: ' . $e->getMessage());
         }
     }

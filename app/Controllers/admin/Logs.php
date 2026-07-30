@@ -6,39 +6,28 @@ use App\Models\Mod_Anomalies;
 
 class Logs extends BaseAdminController
 {
-    public function index()
+    public function index(string $tab = 'all')
     {
         $db = $this->getDb();
+        $data = ['pag' => 'admin-logs', 'active_tab' => $tab];
 
-        $actions = $db->table('tbl_user_actions')
+        // All actions
+        $data['logs'] = $db->table('tbl_user_actions')
             ->select("'action' as source, tbl_user_actions.id, tbl_user_actions.user_id, users.username,
                       tbl_user_actions.action_type, tbl_user_actions.action_category as category,
                       tbl_user_actions.action_severity as severity, tbl_user_actions.ip_address,
                       tbl_user_actions.user_agent, tbl_user_actions.created_at as date,
                       tbl_user_actions.success, tbl_user_actions.error_message,
-                      tbl_user_actions.new_values,
+                      tbl_user_actions.new_values, tbl_user_actions.request_url,
                       NULL as identifier, NULL as response_code, NULL as execution_time_ms")
             ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
             ->orderBy('tbl_user_actions.created_at', 'DESC')
-            ->limit(15)
+            ->limit(50)
             ->get()
             ->getResultArray();
 
-        return $this->renderView('admin/logs/index', [
-            'pag' => 'admin-logs',
-            'logs' => $actions,
-        ]);
-    }
-
-    public function access_logs()
-    {
-        $db = $this->getDb();
-
-        $actionTotal = $db->table('tbl_user_actions')
-            ->where('action_category', 'authentication')
-            ->countAllResults();
-
-        $actions = $db->table('tbl_user_actions')
+        // Access logs
+        $data['accessLogs'] = $db->table('tbl_user_actions')
             ->select("'action' as source, tbl_user_actions.id, tbl_user_actions.user_id, users.username,
                       tbl_user_actions.action_type, tbl_user_actions.ip_address,
                       tbl_user_actions.user_agent as user_agent, tbl_user_actions.created_at as date,
@@ -46,39 +35,21 @@ class Logs extends BaseAdminController
             ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
             ->where('tbl_user_actions.action_category', 'authentication')
             ->orderBy('tbl_user_actions.created_at', 'DESC')
-            ->limit(15)
+            ->limit(50)
             ->get()
             ->getResultArray();
 
-        return $this->renderView('admin/logs/access_logs', [
-            'pag' => 'admin-access-logs',
-            'actions' => $actions,
-            'actionTotal' => $actionTotal,
-        ]);
-    }
-
-    public function error_logs()
-    {
-        $db = $this->getDb();
-
-        $logs = $db->table('tbl_user_actions')
+        // Error logs
+        $data['errorLogs'] = $db->table('tbl_user_actions')
             ->select('tbl_user_actions.*, users.username')
             ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
             ->where('tbl_user_actions.success', 0)
             ->orderBy('tbl_user_actions.created_at', 'DESC')
-            ->limit(15)
+            ->limit(50)
             ->get()
             ->getResultArray();
 
-        return $this->renderView('admin/logs/error_logs', [
-            'pag' => 'admin-error-logs',
-            'logs' => $logs,
-            'total' => count($logs),
-        ]);
-    }
-
-    public function php_error_logs()
-    {
+        // PHP error logs
         $errorFiles = [];
         $logPath = WRITEPATH . 'logs';
         if (is_dir($logPath)) {
@@ -96,23 +67,31 @@ class Logs extends BaseAdminController
                 ];
             }
         }
+        $data['phpErrorFiles'] = $errorFiles;
 
-        return $this->renderView('admin/logs/php_error_logs', [
-            'pag' => 'admin-php-error-logs',
-            'error_files' => $errorFiles,
-            'total' => count($errorFiles),
-        ]);
-    }
+        // API logs
+        $data['apiLogs'] = $db->table('tbl_user_actions')
+            ->select('tbl_user_actions.*, users.username')
+            ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
+            ->whereIn('tbl_user_actions.action_category', ['file', 'system', 'security'])
+            ->where('tbl_user_actions.request_url IS NOT NULL')
+            ->orderBy('tbl_user_actions.created_at', 'DESC')
+            ->limit(50)
+            ->get()
+            ->getResultArray();
 
-    public function maintenance_logs()
-    {
-        $db = $this->getDb();
+        // FCM logs
+        $data['fcmLogs'] = $db->table('tbl_user_actions')
+            ->select('tbl_user_actions.*, users.username')
+            ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
+            ->like('tbl_user_actions.action_type', 'remote_cmd_')
+            ->orderBy('tbl_user_actions.created_at', 'DESC')
+            ->limit(50)
+            ->get()
+            ->getResultArray();
 
-        $total = $db->table('tbl_user_actions')
-            ->where('action_type', 'maintenance_blocked')
-            ->countAllResults();
-
-        $logs = $db->table('tbl_user_actions')
+        // Maintenance logs
+        $data['maintenanceLogs'] = $db->table('tbl_user_actions')
             ->select('tbl_user_actions.*, users.username')
             ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
             ->where('tbl_user_actions.action_type', 'maintenance_blocked')
@@ -121,43 +100,56 @@ class Logs extends BaseAdminController
             ->get()
             ->getResultArray();
 
-        return $this->renderView('admin/logs/maintenance_logs', [
-            'pag' => 'admin-maintenance-logs',
-            'logs' => $logs,
-            'total' => $total,
-        ]);
+        // Engine logs
+        $model = new Mod_Anomalies();
+        $data['engineHistory'] = $model->getJobHistory(100);
+
+        // Tab counts
+        $data['count_all'] = $db->table('tbl_user_actions')->countAllResults();
+        $data['count_access'] = $db->table('tbl_user_actions')->where('action_category', 'authentication')->countAllResults();
+        $data['count_errors'] = $db->table('tbl_user_actions')->where('success', 0)->countAllResults();
+        $data['count_php_errors'] = count($errorFiles);
+        $data['count_api'] = $db->table('tbl_user_actions')->whereIn('action_category', ['file', 'system', 'security'])->where('request_url IS NOT NULL')->countAllResults();
+        $data['count_fcm'] = $db->table('tbl_user_actions')->like('action_type', 'remote_cmd_')->countAllResults();
+        $data['count_maintenance'] = $db->table('tbl_user_actions')->where('action_type', 'maintenance_blocked')->countAllResults();
+        $data['count_engine'] = count($data['engineHistory']);
+
+        return $this->renderView('admin/logs/index', $data);
+    }
+
+    public function access_logs()
+    {
+        return $this->index('access');
+    }
+
+    public function error_logs()
+    {
+        return $this->index('errors');
+    }
+
+    public function php_error_logs()
+    {
+        return $this->index('php-errors');
     }
 
     public function api_logs()
     {
-        $db = $this->getDb();
+        return $this->index('api');
+    }
 
-        $logs = $db->table('tbl_user_actions')
-            ->select('tbl_user_actions.*, users.username')
-            ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
-            ->whereIn('tbl_user_actions.action_category', ['file', 'system', 'security'])
-            ->where('tbl_user_actions.request_url IS NOT NULL')
-            ->orderBy('tbl_user_actions.created_at', 'DESC')
-            ->limit(15)
-            ->get()
-            ->getResultArray();
+    public function fcm_logs()
+    {
+        return $this->index('fcm');
+    }
 
-        return $this->renderView('admin/logs/api_logs', [
-            'pag' => 'admin-api-logs',
-            'logs' => $logs,
-            'total' => count($logs),
-        ]);
+    public function maintenance_logs()
+    {
+        return $this->index('maintenance');
     }
 
     public function engine_logs()
     {
-        $model = new Mod_Anomalies();
-        $history = $model->getJobHistory(100);
-
-        return $this->renderView('admin/logs/engine_logs', [
-            'pag' => 'admin-engine-logs',
-            'history' => $history,
-        ]);
+        return $this->index('engine');
     }
 
     public function engineAlgoDetails(int $jobId)
@@ -167,45 +159,39 @@ class Logs extends BaseAdminController
         return $this->response->setJSON($logs);
     }
 
-    public function fcm_logs()
-    {
-        $db = $this->getDb();
-
-        $total = $db->table('tbl_user_actions')
-            ->like('action_type', 'remote_cmd_')
-            ->countAllResults();
-
-        $logs = $db->table('tbl_user_actions')
-            ->select('tbl_user_actions.*, users.username')
-            ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
-            ->like('tbl_user_actions.action_type', 'remote_cmd_')
-            ->orderBy('tbl_user_actions.created_at', 'DESC')
-            ->limit(50)
-            ->get()
-            ->getResultArray();
-
-        return $this->renderView('admin/logs/fcm_logs', [
-            'pag' => 'admin-fcm-logs',
-            'logs' => $logs,
-            'total' => $total,
-        ]);
-    }
-
     public function view_error_file(string $filename)
     {
+        $db = $this->getDb();
         $logPath = WRITEPATH . 'logs/' . $filename;
         if (!file_exists($logPath) || !preg_match('/^log-\d{4}-\d{2}-\d{2}\.log$/', $filename)) {
-            return redirect()->to('admin/logs/errors')->with('error', 'Log file not found.');
+            return redirect()->to('admin/logs')->with('error', 'Log file not found.');
         }
 
-        $content = file_get_contents($logPath);
-        $lines = explode("\n", $content);
+        $lines = file($logPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $lines = array_slice($lines, -500);
 
-        return $this->renderView('admin/logs/view_error_file', [
-            'pag' => 'admin-error-logs',
-            'filename' => $filename,
-            'lines' => $lines,
-            'total_lines' => count($lines),
+        return $this->renderView('admin/logs/index', [
+            'pag' => 'admin-logs',
+            'active_tab' => 'php-errors',
+            'logs' => [],
+            'accessLogs' => [],
+            'accessTotal' => 0,
+            'errorLogs' => [],
+            'phpErrorFiles' => [],
+            'apiLogs' => [],
+            'fcmLogs' => [],
+            'maintenanceLogs' => [],
+            'engineHistory' => [],
+            'errorFilename' => $filename,
+            'errorLines' => $lines,
+            'count_all' => $db->table('tbl_user_actions')->countAllResults(),
+            'count_access' => 0,
+            'count_errors' => 0,
+            'count_php_errors' => 0,
+            'count_api' => 0,
+            'count_fcm' => 0,
+            'count_maintenance' => 0,
+            'count_engine' => 0,
         ]);
     }
 

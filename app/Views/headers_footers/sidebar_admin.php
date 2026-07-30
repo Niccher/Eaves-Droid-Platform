@@ -116,166 +116,30 @@
                             </a>
                         </li>
 
-                        <?php
-                            $reportPages = ['admin-reports', 'admin-reports-user-activity', 'admin-reports-data-usage', 'admin-reports-performance', 'admin-reports-generate'];
-                            $isReportOpen = isset($pag) && in_array($pag, $reportPages);
-                        ?>
-                        <li class="nav-item has-treeview <?php echo $isReportOpen ? 'menu-open' : ''; ?>">
-                            <a href="#" class="nav-link <?php echo $isReportOpen ? 'active' : ''; ?>">
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/reports'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-reports') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-chart-bar"></i>
-                                <p>
-                                    Reports
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
+                                <p>Reports</p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/reports'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-reports') ? 'active' : ''; ?>">
-                                        <i class="fas fa-tachometer-alt nav-icon"></i>
-                                        <p>Dashboard</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/reports/user-activity'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-reports-user-activity') ? 'active' : ''; ?>">
-                                        <i class="fas fa-user nav-icon"></i>
-                                        <p>User Activity</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/reports/data-usage'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-reports-data-usage') ? 'active' : ''; ?>">
-                                        <i class="fas fa-database nav-icon"></i>
-                                        <p>Data Usage</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/reports/performance'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-reports-performance') ? 'active' : ''; ?>">
-                                        <i class="fas fa-tachometer-alt nav-icon"></i>
-                                        <p>Performance</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/reports/generate'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-reports-generate') ? 'active' : ''; ?>">
-                                        <i class="fas fa-file-export nav-icon"></i>
-                                        <p>Generate Report</p>
-                                    </a>
-                                </li>
-                            </ul>
                         </li>
 
-                        <?php
-                            $tokenPages = ['admin-tokens', 'admin-tokens-expired', 'admin-tokens-analytics'];
-                            $isTokenOpen = isset($pag) && in_array($pag, $tokenPages);
-                        ?>
-                        <li class="nav-item has-treeview <?php echo $isTokenOpen ? 'menu-open' : ''; ?>">
-                            <a href="#" class="nav-link <?php echo $isTokenOpen ? 'active' : ''; ?>">
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/tokens'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-tokens') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-key"></i>
-                                <p>
-                                    Tokens
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
+                                <p>API Tokens</p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/tokens'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-tokens') ? 'active' : ''; ?>">
-                                        <i class="fas fa-list nav-icon"></i>
-                                        <p>All Tokens</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/tokens/expired'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-tokens-expired') ? 'active' : ''; ?>">
-                                        <i class="fas fa-clock nav-icon"></i>
-                                        <p>Expired</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/tokens/analytics'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-tokens-analytics') ? 'active' : ''; ?>">
-                                        <i class="fas fa-chart-pie nav-icon"></i>
-                                        <p>Analytics</p>
-                                    </a>
-                                </li>
-                            </ul>
                         </li>
 
                         <li class="nav-header">SYSTEM</li>
 
-<?php
-    $logPages = ['admin-logs', 'admin-access-logs', 'admin-error-logs', 'admin-php-error-logs', 'admin-api-logs', 'admin-fcm-logs', 'admin-maintenance-logs', 'admin-engine-logs'];
-                            $isLogOpen = isset($pag) && in_array($pag, $logPages);
-                        ?>
-                        <li class="nav-item has-treeview <?php echo $isLogOpen ? 'menu-open' : ''; ?>">
-                            <a href="#" class="nav-link <?php echo $isLogOpen ? 'active' : ''; ?>">
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/logs'); ?>"
+                               class="nav-link <?php echo (isset($pag) && str_starts_with($pag, 'admin-log')) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-clipboard-list"></i>
-                                <p>
-                                    System Logs
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
+                                <p>System Logs</p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/logs'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-list nav-icon"></i>
-                                        <p>All Logs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/logs/access'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-access-logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-sign-in-alt nav-icon"></i>
-                                        <p>Access Logs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/logs/errors'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-error-logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-exclamation-triangle nav-icon"></i>
-                                        <p>Error Logs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/logs/php-errors'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-php-error-logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-file-alt nav-icon"></i>
-                                        <p>PHP Errors</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/logs/api'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-api-logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-code nav-icon"></i>
-                                        <p>API Logs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/logs/fcm'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-fcm-logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-fire nav-icon"></i>
-                                        <p>FCM Logs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/logs/maintenance'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-maintenance-logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-shield-alt nav-icon"></i>
-                                        <p>Maintenance Logs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/logs/engine'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-engine-logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-robot nav-icon"></i>
-                                        <p>Engine Logs</p>
-                                    </a>
-                                </li>
-                            </ul>
                         </li>
 
                         <li class="nav-item">
@@ -295,61 +159,15 @@
                         </li>
 
                         <?php
-                            $settingsPages = ['admin-settings', 'admin-settings-api', 'admin-settings-security', 'admin-settings-notifications', 'admin-maintenance', 'admin-backup'];
-                            $isSettingsOpen = isset($pag) && in_array($pag, $settingsPages);
+                            $settingsPages = ['admin-settings', 'admin-settings-api', 'admin-settings-security', 'admin-settings-notifications', 'admin-maintenance', 'admin-backup', 'admin-settings-storage', 'admin-settings-email-triggers', 'admin-settings-cron'];
+                            $isSettingsActive = isset($pag) && in_array($pag, $settingsPages);
                         ?>
-                        <li class="nav-item has-treeview <?php echo $isSettingsOpen ? 'menu-open' : ''; ?>">
-                            <a href="#" class="nav-link <?php echo $isSettingsOpen ? 'active' : ''; ?>">
+                        <li class="nav-item <?php echo $isSettingsActive ? 'active' : ''; ?>">
+                            <a href="<?php echo base_url('admin/settings'); ?>"
+                               class="nav-link <?php echo $isSettingsActive ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-cogs"></i>
-                                <p>
-                                    Settings
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
+                                <p>Settings</p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/settings'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-settings') ? 'active' : ''; ?>">
-                                        <i class="fas fa-cog nav-icon"></i>
-                                        <p>General</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/settings/api'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-settings-api') ? 'active' : ''; ?>">
-                                        <i class="fas fa-plug nav-icon"></i>
-                                        <p>API</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/settings/security'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-settings-security') ? 'active' : ''; ?>">
-                                        <i class="fas fa-shield-alt nav-icon"></i>
-                                        <p>Security</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/settings/notifications'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-settings-notifications') ? 'active' : ''; ?>">
-                                        <i class="fas fa-bell nav-icon"></i>
-                                        <p>Notifications</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/settings/maintenance'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-maintenance') ? 'active' : ''; ?>">
-                                        <i class="nav-icon fas fa-tools"></i>
-                                        <p>Maintenance</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('admin/settings/backup'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag === 'admin-backup') ? 'active' : ''; ?>">
-                                        <i class="fas fa-hdd nav-icon"></i>
-                                        <p>Backup</p>
-                                    </a>
-                                </li>
-                            </ul>
                         </li>
 
                         <li class="nav-header">LINKS</li>

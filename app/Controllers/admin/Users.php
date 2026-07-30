@@ -67,6 +67,7 @@ class Users extends BaseAdminController
                 'username' => $this->request->getPost('username'),
                 'email' => $this->request->getPost('email'),
                 'password' => $this->request->getPost('password'),
+                'active' => 1,
             ]);
 
             if (!$users->save($user)) {
@@ -254,13 +255,125 @@ class Users extends BaseAdminController
         }
 
         $db = $this->getDb();
-        $db->table('users')->where('id', $id)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+        $db->transStart();
 
-        $this->logAdminAction('admin_user_delete', 'high', true, [
-            'resource_id' => (string) $id,
-        ]);
+        try {
+            // Get user info before deletion for logging
+            $user = $db->table('auth_identities')
+                ->select('auth_identities.secret AS email, users.username')
+                ->join('users', 'auth_identities.user_id = users.id')
+                ->where('auth_identities.type', 'email_password')
+                ->where('users.id', $id)
+                ->get()
+                ->getRowArray();
 
-        return redirect()->to('admin/users')->with('message', 'User deleted successfully.');
+            // Delete from auth_identities (Shield auth - email/password, etc.)
+            $db->table('auth_identities')->where('user_id', $id)->delete();
+
+            // Delete from auth_groups_users (Shield auth - group memberships)
+            $db->table('auth_groups_users')->where('user_id', $id)->delete();
+
+            // Delete from auth_permissions_users (Shield auth - direct permissions)
+            $db->table('auth_permissions_users')->where('user_id', $id)->delete();
+
+            // Delete from auth_remember_tokens (Shield auth - remember me tokens)
+            $db->table('auth_remember_tokens')->where('user_id', $id)->delete();
+
+            // Delete from auth_logins (Shield auth - login history)
+            $db->table('auth_logins')->where('user_id', $id)->delete();
+
+            // Delete from auth_token_logins (Shield auth - token-based logins)
+            $db->table('auth_token_logins')->where('user_id', $id)->delete();
+
+            // Delete user's personal access tokens (if using Shield's token system)
+            $db->table('auth_tokens')->where('user_id', $id)->delete();
+
+            // Delete user profiles
+            $db->table('user_profiles')->where('user_id', $id)->delete();
+
+            // Delete user's data from all data tables
+            $dataTables = [
+                ['table' => 'tbl_sms', 'column' => 'owner_id'],
+                ['table' => 'tbl_logs', 'column' => 'owner_id'],
+                ['table' => 'tbl_contacts', 'column' => 'owner_id'],
+                ['table' => 'tbl_apps', 'column' => 'owner_id'],
+                ['table' => 'tbl_location', 'column' => 'owner_id'],
+                ['table' => 'tbl_activity', 'column' => 'owner_id'],
+                ['table' => 'tbl_device_files', 'column' => 'owner_id'],
+                ['table' => 'tbl_device_context', 'column' => 'owner_id'],
+                ['table' => 'tbl_network_info', 'column' => 'owner_id'],
+                ['table' => 'tbl_accounts', 'column' => 'owner_id'],
+                ['table' => 'tbl_calendar_events', 'column' => 'owner_id'],
+                ['table' => 'tbl_app_usage', 'column' => 'owner_id'],
+                ['table' => 'tbl_notifications', 'column' => 'owner_id'],
+                ['table' => 'tbl_bluetooth', 'column' => 'owner_id'],
+                ['table' => 'tbl_sensor_profile', 'column' => 'owner_id'],
+                ['table' => 'tbl_security_audit', 'column' => 'owner_id'],
+                ['table' => 'tbl_captured_media', 'column' => 'owner_id'],
+                ['table' => 'tbl_sim_configs', 'column' => 'owner_id'],
+                ['table' => 'uploaded_files', 'column' => 'token_owner_id'],
+                // Advanced Hardware tables
+                ['table' => 'tbl_device_profile', 'column' => 'owner_id'],
+                ['table' => 'tbl_proc_info', 'column' => 'owner_id'],
+                ['table' => 'tbl_running_processes', 'column' => 'owner_id'],
+                ['table' => 'tbl_running_process_details', 'column' => 'owner_id'],
+                ['table' => 'tbl_running_services', 'column' => 'owner_id'],
+                ['table' => 'tbl_camera_info', 'column' => 'owner_id'],
+                ['table' => 'tbl_battery_stats', 'column' => 'owner_id'],
+                ['table' => 'tbl_accessibility_services', 'column' => 'owner_id'],
+                ['table' => 'tbl_input_methods', 'column' => 'owner_id'],
+                ['table' => 'tbl_input_method_subtypes', 'column' => 'owner_id'],
+                ['table' => 'tbl_cell_towers', 'column' => 'owner_id'],
+                ['table' => 'tbl_display_info', 'column' => 'owner_id'],
+                ['table' => 'tbl_storage', 'column' => 'owner_id'],
+                ['table' => 'tbl_thermal', 'column' => 'owner_id'],
+                ['table' => 'tbl_nfc', 'column' => 'owner_id'],
+                ['table' => 'tbl_hardware_graphics', 'column' => 'owner_id'],
+                ['table' => 'tbl_hardware_network', 'column' => 'owner_id'],
+                ['table' => 'tbl_app_security', 'column' => 'owner_id'],
+                ['table' => 'tbl_network_security', 'column' => 'owner_id'],
+                ['table' => 'tbl_telephony_network', 'column' => 'owner_id'],
+                ['table' => 'tbl_system_locale', 'column' => 'owner_id'],
+                ['table' => 'tbl_app_usage_sessions', 'column' => 'owner_id'],
+                ['table' => 'tbl_data_usage', 'column' => 'owner_id'],
+                ['table' => 'tbl_saved_wifi', 'column' => 'owner_id'],
+                ['table' => 'tbl_default_apps', 'column' => 'owner_id'],
+                ['table' => 'tbl_alarms', 'column' => 'owner_id'],
+                ['table' => 'tbl_nearby_wifi', 'column' => 'owner_id'],
+                ['table' => 'tbl_bluetooth_paired', 'column' => 'owner_id'],
+            ];
+
+            foreach ($dataTables as $info) {
+                $db->table($info['table'])->where($info['column'], $id)->delete();
+            }
+
+            // Delete token-related data
+            $db->table('tbl_tokens')->where('owner_id', $id)->delete();
+            $db->table('tbl_user_actions')->where('user_id', $id)->delete();
+
+            // Finally, soft delete the user record
+            $db->table('users')->where('id', $id)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Transaction failed');
+            }
+
+            $this->logAdminAction('admin_user_delete', 'high', true, [
+                'resource_id' => (string) $id,
+                'new_values' => json_encode([
+                    'username' => $user['username'] ?? 'unknown',
+                    'email' => $user['email'] ?? 'unknown',
+                ]),
+            ]);
+
+            return redirect()->to('admin/users')->with('message', 'User and all associated data deleted successfully.');
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return redirect()->to('admin/users')->with('error', 'Failed to delete user: ' . $e->getMessage());
+        }
     }
 
     public function suspend(int $id)
@@ -327,21 +440,34 @@ class Users extends BaseAdminController
         }
 
         $tables = [
-            'tbl_sms', 'tbl_logs', 'tbl_contacts', 'tbl_apps',
-            'tbl_location', 'tbl_activity', 'tbl_device_files',
-            'tbl_device_context', 'tbl_network_info', 'tbl_accounts',
-            'tbl_calendar_events', 'tbl_app_usage', 'tbl_notifications',
-            'tbl_bluetooth', 'tbl_sensor_profile', 'tbl_security_audit',
-            'tbl_captured_media', 'tbl_sim_configs', 'uploaded_files',
+            ['table' => 'tbl_sms', 'column' => 'owner_id'],
+            ['table' => 'tbl_logs', 'column' => 'owner_id'],
+            ['table' => 'tbl_contacts', 'column' => 'owner_id'],
+            ['table' => 'tbl_apps', 'column' => 'owner_id'],
+            ['table' => 'tbl_location', 'column' => 'owner_id'],
+            ['table' => 'tbl_activity', 'column' => 'owner_id'],
+            ['table' => 'tbl_device_files', 'column' => 'owner_id'],
+            ['table' => 'tbl_device_context', 'column' => 'owner_id'],
+            ['table' => 'tbl_network_info', 'column' => 'owner_id'],
+            ['table' => 'tbl_accounts', 'column' => 'owner_id'],
+            ['table' => 'tbl_calendar_events', 'column' => 'owner_id'],
+            ['table' => 'tbl_app_usage', 'column' => 'owner_id'],
+            ['table' => 'tbl_notifications', 'column' => 'owner_id'],
+            ['table' => 'tbl_bluetooth', 'column' => 'owner_id'],
+            ['table' => 'tbl_sensor_profile', 'column' => 'owner_id'],
+            ['table' => 'tbl_security_audit', 'column' => 'owner_id'],
+            ['table' => 'tbl_captured_media', 'column' => 'owner_id'],
+            ['table' => 'tbl_sim_configs', 'column' => 'owner_id'],
+            ['table' => 'uploaded_files', 'column' => 'token_owner_id'],
         ];
 
         $db = $this->getDb();
         $totalDeleted = 0;
 
-        foreach ($tables as $table) {
-            $count = $db->table($table)->where('owner_id', $id)->countAllResults();
+        foreach ($tables as $info) {
+            $count = $db->table($info['table'])->where($info['column'], $id)->countAllResults();
             if ($count > 0) {
-                $db->table($table)->where('owner_id', $id)->delete();
+                $db->table($info['table'])->where($info['column'], $id)->delete();
                 $totalDeleted += $count;
             }
         }
@@ -361,15 +487,25 @@ class Users extends BaseAdminController
     public function delete_data_type(int $id, string $type)
     {
         $tableMap = [
-            'sms' => 'tbl_sms', 'calls' => 'tbl_logs', 'contacts' => 'tbl_contacts',
-            'apps' => 'tbl_apps', 'locations' => 'tbl_location', 'activities' => 'tbl_activity',
-            'files' => 'tbl_device_files', 'uploads' => 'uploaded_files',
-            'device' => 'tbl_device_context', 'network' => 'tbl_network_info',
-            'accounts' => 'tbl_accounts', 'calendar' => 'tbl_calendar_events',
-            'app_usage' => 'tbl_app_usage', 'notifications' => 'tbl_notifications',
-            'bluetooth' => 'tbl_bluetooth', 'sensors' => 'tbl_sensor_profile',
-            'security' => 'tbl_security_audit', 'media' => 'tbl_captured_media',
-            'sim' => 'tbl_sim_configs',
+            'sms' => ['table' => 'tbl_sms', 'column' => 'owner_id'],
+            'calls' => ['table' => 'tbl_logs', 'column' => 'owner_id'],
+            'contacts' => ['table' => 'tbl_contacts', 'column' => 'owner_id'],
+            'apps' => ['table' => 'tbl_apps', 'column' => 'owner_id'],
+            'locations' => ['table' => 'tbl_location', 'column' => 'owner_id'],
+            'activities' => ['table' => 'tbl_activity', 'column' => 'owner_id'],
+            'files' => ['table' => 'tbl_device_files', 'column' => 'owner_id'],
+            'uploads' => ['table' => 'uploaded_files', 'column' => 'token_owner_id'],
+            'device' => ['table' => 'tbl_device_context', 'column' => 'owner_id'],
+            'network' => ['table' => 'tbl_network_info', 'column' => 'owner_id'],
+            'accounts' => ['table' => 'tbl_accounts', 'column' => 'owner_id'],
+            'calendar' => ['table' => 'tbl_calendar_events', 'column' => 'owner_id'],
+            'app_usage' => ['table' => 'tbl_app_usage', 'column' => 'owner_id'],
+            'notifications' => ['table' => 'tbl_notifications', 'column' => 'owner_id'],
+            'bluetooth' => ['table' => 'tbl_bluetooth', 'column' => 'owner_id'],
+            'sensors' => ['table' => 'tbl_sensor_profile', 'column' => 'owner_id'],
+            'security' => ['table' => 'tbl_security_audit', 'column' => 'owner_id'],
+            'media' => ['table' => 'tbl_captured_media', 'column' => 'owner_id'],
+            'sim' => ['table' => 'tbl_sim_configs', 'column' => 'owner_id'],
         ];
 
         if (!isset($tableMap[$type])) {
@@ -377,9 +513,10 @@ class Users extends BaseAdminController
         }
 
         $db = $this->getDb();
-        $count = $db->table($tableMap[$type])->where('owner_id', $id)->countAllResults();
+        $info = $tableMap[$type];
+        $count = $db->table($info['table'])->where($info['column'], $id)->countAllResults();
         if ($count > 0) {
-            $db->table($tableMap[$type])->where('owner_id', $id)->delete();
+            $db->table($info['table'])->where($info['column'], $id)->delete();
         }
 
         $this->logAdminAction('admin_delete_data_type', 'high', true, [
@@ -395,30 +532,31 @@ class Users extends BaseAdminController
     {
         $db = $this->getDb();
         $tables = [
-            'sms' => ['table' => 'tbl_sms', 'label' => 'SMS Messages'],
-            'calls' => ['table' => 'tbl_logs', 'label' => 'Call Logs'],
-            'contacts' => ['table' => 'tbl_contacts', 'label' => 'Contacts'],
-            'apps' => ['table' => 'tbl_apps', 'label' => 'Installed Apps'],
-            'locations' => ['table' => 'tbl_location', 'label' => 'Locations'],
-            'activities' => ['table' => 'tbl_activity', 'label' => 'Activities'],
-            'files' => ['table' => 'tbl_device_files', 'label' => 'Device Files'],
-            'uploads' => ['table' => 'uploaded_files', 'label' => 'Uploaded Files'],
-            'device' => ['table' => 'tbl_device_context', 'label' => 'Device Context'],
-            'network' => ['table' => 'tbl_network_info', 'label' => 'Network Info'],
-            'accounts' => ['table' => 'tbl_accounts', 'label' => 'Accounts'],
-            'calendar' => ['table' => 'tbl_calendar_events', 'label' => 'Calendar Events'],
-            'app_usage' => ['table' => 'tbl_app_usage', 'label' => 'App Usage'],
-            'notifications' => ['table' => 'tbl_notifications', 'label' => 'Notifications'],
-            'bluetooth' => ['table' => 'tbl_bluetooth', 'label' => 'Bluetooth'],
-            'sensors' => ['table' => 'tbl_sensor_profile', 'label' => 'Sensor Profiles'],
-            'security' => ['table' => 'tbl_security_audit', 'label' => 'Security Audit'],
-            'media' => ['table' => 'tbl_captured_media', 'label' => 'Captured Media'],
-            'sim' => ['table' => 'tbl_sim_configs', 'label' => 'SIM Configs'],
+            'sms' => ['table' => 'tbl_sms', 'label' => 'SMS Messages', 'column' => 'owner_id'],
+            'calls' => ['table' => 'tbl_logs', 'label' => 'Call Logs', 'column' => 'owner_id'],
+            'contacts' => ['table' => 'tbl_contacts', 'label' => 'Contacts', 'column' => 'owner_id'],
+            'apps' => ['table' => 'tbl_apps', 'label' => 'Installed Apps', 'column' => 'owner_id'],
+            'locations' => ['table' => 'tbl_location', 'label' => 'Locations', 'column' => 'owner_id'],
+            'activities' => ['table' => 'tbl_activity', 'label' => 'Activities', 'column' => 'owner_id'],
+            'files' => ['table' => 'tbl_device_files', 'label' => 'Device Files', 'column' => 'owner_id'],
+            'uploads' => ['table' => 'uploaded_files', 'label' => 'Uploaded Files', 'column' => 'token_owner_id'],
+            'device' => ['table' => 'tbl_device_context', 'label' => 'Device Context', 'column' => 'owner_id'],
+            'network' => ['table' => 'tbl_network_info', 'label' => 'Network Info', 'column' => 'owner_id'],
+            'accounts' => ['table' => 'tbl_accounts', 'label' => 'Accounts', 'column' => 'owner_id'],
+            'calendar' => ['table' => 'tbl_calendar_events', 'label' => 'Calendar Events', 'column' => 'owner_id'],
+            'app_usage' => ['table' => 'tbl_app_usage', 'label' => 'App Usage', 'column' => 'owner_id'],
+            'notifications' => ['table' => 'tbl_notifications', 'label' => 'Notifications', 'column' => 'owner_id'],
+            'bluetooth' => ['table' => 'tbl_bluetooth', 'label' => 'Bluetooth', 'column' => 'owner_id'],
+            'sensors' => ['table' => 'tbl_sensor_profile', 'label' => 'Sensor Profiles', 'column' => 'owner_id'],
+            'security' => ['table' => 'tbl_security_audit', 'label' => 'Security Audit', 'column' => 'owner_id'],
+            'media' => ['table' => 'tbl_captured_media', 'label' => 'Captured Media', 'column' => 'owner_id'],
+            'sim' => ['table' => 'tbl_sim_configs', 'label' => 'SIM Configs', 'column' => 'owner_id'],
         ];
 
         $counts = [];
         foreach ($tables as $key => $info) {
-            $count = $db->table($info['table'])->where('owner_id', $userId)->countAllResults();
+            $column = $info['column'] ?? 'owner_id';
+            $count = $db->table($info['table'])->where($column, $userId)->countAllResults();
             $counts[] = [
                 'key' => $key,
                 'table' => $info['table'],

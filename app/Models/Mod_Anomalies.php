@@ -2643,6 +2643,7 @@ class Mod_Anomalies extends Model
     {
         try {
             $batch = [];
+            $hasHighSeverity = false;
             foreach ($results as $r) {
                 $batch[] = [
                     'job_id'          => $jobId,
@@ -2660,9 +2661,17 @@ class Mod_Anomalies extends Model
                     ]),
                     'created_at'      => date('Y-m-d H:i:s'),
                 ];
+                if (($r['severity'] ?? 'Low') === 'High') {
+                    $hasHighSeverity = true;
+                }
             }
             if (!empty($batch)) {
                 $this->db->table('ml_results')->insertBatch($batch);
+            }
+
+            // Send high severity anomaly alert to admins
+            if ($hasHighSeverity) {
+                $this->sendHighSeverityAnomalyAlert($jobId, $userId, $results);
             }
         } catch (\Throwable $e) {
             log_message('error', 'saveResults failed: ' . $e->getMessage());
@@ -2721,26 +2730,6 @@ class Mod_Anomalies extends Model
             ->getRowArray();
         if ($emailRow && !empty($emailRow['email'])) {
             return $emailRow['email'];
-        }
-
-        // Try users table
-        $user = $this->db->table('users')
-            ->select('email')
-            ->where('id', $userId)
-            ->get()
-            ->getRowArray();
-        if ($user && !empty($user['email'])) {
-            return $user['email'];
-        }
-
-        // Try user_profiles
-        $profile = $this->db->table('user_profiles')
-            ->select('email')
-            ->where('user_id', $userId)
-            ->get()
-            ->getRowArray();
-        if ($profile && !empty($profile['email'])) {
-            return $profile['email'];
         }
 
         return null;
@@ -2992,9 +2981,9 @@ class Mod_Anomalies extends Model
                 $info = $this->getAlgorithmInfo((string)$algId);
                 if ($info) {
                     $algorithms[] = [
-                        'name'        => $info['name'] ?? $algId,
+                        'name'         => $info['name'] ?? $algId,
                         'category_key' => $info['category_key'] ?? 'other',
-                        'compat'      => $info['compat'] ?? 'both',
+                        'compat'       => $info['compat'] ?? 'both',
                     ];
                 }
             }
@@ -3041,42 +3030,63 @@ class Mod_Anomalies extends Model
         });
         $topFindings = array_slice($topFindings, 0, 10);
 
-        $emailService = \Config\Services::email();
-        $emailService->initialize([
-            'mailType' => 'html',
-            'charset'  => 'UTF-8',
-            'wordWrap' => true,
-        ]);
-
-        $mailConfig = config('Email');
-        $subject = 'Analysis Complete – Eaves Droid (Job #' . $jobId . ')';
         $resultsUrl = site_url("analysis/results/{$jobId}");
 
-        $body = view('email/anomaly_analysis_complete', [
-            'userName'        => $userName,
-            'jobId'           => $jobId,
-            'engine'          => $job['engine'] ?? 'unknown',
-            'timeTaken'       => $timeTaken,
-            'totalAlgs'       => $totalAlgs,
-            'totalFindings'   => count($results),
-            'completedAt'     => $completedAt,
-            'algorithms'      => $algorithms,
-            'categorySummary' => $categorySummary,
-            'topFindings'     => $topFindings,
-            'resultsUrl'      => $resultsUrl,
-        ]);
-
-        $sender = get_notification_sender();
-        $emailService->setFrom($sender['email'], $sender['name']);
-        $emailService->setTo($userEmail);
-        $emailService->setSubject($subject);
-        $emailService->setMessage($body);
-        $sent = $emailService->send();
+        $sent = send_templated_email(
+            $userEmail,
+            'Eaves Droid — Anomaly Analysis Complete (Job #' . $jobId . ')',
+            'email/anomaly_analysis_complete',
+            [
+                'userName'        => $userName,
+                'jobId'           => $jobId,
+                'engine'          => $job['engine'] ?? 'unknown',
+                'timeTaken'       => $timeTaken,
+                'totalAlgs'       => $totalAlgs,
+                'totalFindings'   => count($results),
+                'completedAt'     => $completedAt,
+                'algorithms'      => $algorithms,
+                'categorySummary' => $categorySummary,
+                'topFindings'     => $topFindings,
+                'resultsUrl'      => $resultsUrl,
+                'securityAction'        => 'Anomaly Analysis Complete',
+                'securityDescription'   => 'Scheduled ML anomaly detection job finished. Results available for review.',
+                'securityStatus'        => 'success',
+                'securityInitiatedBy'   => 'System (Scheduled Job #' . $jobId . ')',
+                'securityBrowser'       => 'CLI (Background Worker)',
+                'securityBrowserIp'     => 'N/A',
+                'securityExecutedAt'    => date('Y-m-d H:i:s'),
+            ]
+        );
 
         if (!$sent) {
-            log_message('error', 'sendAnalysisCompleteEmail: failed to send to ' . $userEmail . ' for job #' . $jobId . '. Debug: ' . json_encode($emailService->printDebugger(['headers'])));
+            log_message('error', 'sendAnalysisCompleteEmail: failed to send to ' . $userEmail . ' for job #' . $jobId);
         } else {
             log_message('info', 'sendAnalysisCompleteEmail: sent to ' . $userEmail . ' for job #' . $jobId);
+        }
+    }
+
+    private function sendHighSeverityAnomalyAlert(int $jobId, int $userId, array $results): void
+    {
+        try {
+            $admins = send_admin_notification(
+                'Eaves Droid — High Severity Anomaly Alert (Job #' . $jobId . ')',
+                'email/admin/anomaly_high',
+                [
+                    'jobId'         => $jobId,
+                    'highCount'     => count(array_filter($results, fn($r) => ($r['severity'] ?? 'Low') === 'High')),
+                    'highFindings'  => array_filter($results, fn($r) => ($r['severity'] ?? 'Low') === 'High'),
+                    'resultsUrl'    => site_url("analysis/results/{$jobId}"),
+                    'securityAction'        => 'High Severity Anomaly Detected',
+                    'securityDescription'   => 'ML anomaly detection job #' . $jobId . ' found high severity anomalies.',
+                    'securityStatus'        => 'warning',
+                    'securityInitiatedBy'   => 'System (ML Engine)',
+                    'securityBrowser'       => 'CLI (ML Worker)',
+                    'securityBrowserIp'     => 'N/A',
+                    'securityExecutedAt'    => date('Y-m-d H:i:s'),
+                ]
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'sendHighSeverityAnomalyAlert failed: ' . $e->getMessage());
         }
     }
 }

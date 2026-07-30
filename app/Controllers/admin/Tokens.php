@@ -4,7 +4,7 @@ namespace App\Controllers\admin;
 
 class Tokens extends BaseAdminController
 {
-    public function index()
+    public function index(string $tab = 'all')
     {
         $db = $this->getDb();
 
@@ -17,11 +17,69 @@ class Tokens extends BaseAdminController
             ->get()
             ->getResultArray();
 
+        $expiredTokens = $db->table('tbl_tokens')
+            ->select('tbl_tokens.*, users.username')
+            ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
+            ->where('tbl_tokens.expires_at <', date('Y-m-d H:i:s'))
+            ->where('tbl_tokens.expires_at IS NOT NULL')
+            ->where('tbl_tokens.status !=', '99')
+            ->orderBy('tbl_tokens.expires_at', 'DESC')
+            ->limit(15)
+            ->get()
+            ->getResultArray();
+
+        $total = $db->table('tbl_tokens')->countAllResults();
+        $active = $db->table('tbl_tokens')->where('status', '00')->countAllResults();
+        $used = $db->table('tbl_tokens')->where('status', '11')->countAllResults();
+        $expiredCount = $db->table('tbl_tokens')
+            ->where('expires_at <', date('Y-m-d H:i:s'))
+            ->where('status !=', '99')
+            ->countAllResults();
+        $deleted = $db->table('tbl_tokens')->where('status', '99')->countAllResults();
+
+        $perUser = $db->table('tbl_tokens')
+            ->select('tbl_tokens.owner_id, users.username, COUNT(*) as token_count')
+            ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
+            ->where('tbl_tokens.status !=', '99')
+            ->groupBy('tbl_tokens.owner_id')
+            ->orderBy('token_count', 'DESC')
+            ->limit(10)
+            ->get()
+            ->getResultArray();
+
+        $usageByDay = $db->table('tbl_tokens')
+            ->select("DATE(created_at) as date, COUNT(*) as count")
+            ->where('created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)')
+            ->groupBy('DATE(created_at)')
+            ->get()
+            ->getResultArray();
+
+        $countAll = $db->table('tbl_tokens')->where('status !=', '99')->countAllResults();
+
         return $this->renderView('admin/tokens/index', [
             'pag' => 'admin-tokens',
+            'active_tab' => $tab,
             'tokens' => $tokens,
-            'total' => count($tokens),
+            'expired_tokens' => $expiredTokens,
+            'count_all' => $countAll,
+            'total' => $total,
+            'active' => $active,
+            'used' => $used,
+            'expired_count' => $expiredCount,
+            'deleted' => $deleted,
+            'per_user' => $perUser,
+            'usage_by_day' => $usageByDay,
         ]);
+    }
+
+    public function expired()
+    {
+        return $this->index('expired');
+    }
+
+    public function analytics()
+    {
+        return $this->index('analytics');
     }
 
     public function revoke(int $tokenId)
@@ -79,69 +137,5 @@ class Tokens extends BaseAdminController
         ]);
 
         return redirect()->to('admin/tokens')->with('message', 'Token deleted.');
-    }
-
-    public function analytics()
-    {
-        $db = $this->getDb();
-
-        $total = $db->table('tbl_tokens')->countAllResults();
-        $active = $db->table('tbl_tokens')->where('status', '00')->countAllResults();
-        $used = $db->table('tbl_tokens')->where('status', '11')->countAllResults();
-        $expired = $db->table('tbl_tokens')
-            ->where('expires_at <', date('Y-m-d H:i:s'))
-            ->where('status !=', '99')
-            ->countAllResults();
-        $deleted = $db->table('tbl_tokens')->where('status', '99')->countAllResults();
-
-        $perUser = $db->table('tbl_tokens')
-            ->select('tbl_tokens.owner_id, users.username, COUNT(*) as token_count')
-            ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
-            ->where('tbl_tokens.status !=', '99')
-            ->groupBy('tbl_tokens.owner_id')
-            ->orderBy('token_count', 'DESC')
-            ->limit(10)
-            ->get()
-            ->getResultArray();
-
-        $usageByDay = $db->table('tbl_tokens')
-            ->select("DATE(created_at) as date, COUNT(*) as count")
-            ->where('created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)')
-            ->groupBy('DATE(created_at)')
-            ->get()
-            ->getResultArray();
-
-        return $this->renderView('admin/tokens/analytics', [
-            'pag' => 'admin-tokens-analytics',
-            'total' => $total,
-            'active' => $active,
-            'used' => $used,
-            'expired' => $expired,
-            'deleted' => $deleted,
-            'per_user' => $perUser,
-            'usage_by_day' => $usageByDay,
-        ]);
-    }
-
-    public function expired()
-    {
-        $db = $this->getDb();
-
-        $tokens = $db->table('tbl_tokens')
-            ->select('tbl_tokens.*, users.username')
-            ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
-            ->where('tbl_tokens.expires_at <', date('Y-m-d H:i:s'))
-            ->where('tbl_tokens.expires_at IS NOT NULL')
-            ->where('tbl_tokens.status !=', '99')
-            ->orderBy('tbl_tokens.expires_at', 'DESC')
-            ->limit(15)
-            ->get()
-            ->getResultArray();
-
-        return $this->renderView('admin/tokens/expired', [
-            'pag' => 'admin-tokens-expired',
-            'tokens' => $tokens,
-            'total' => count($tokens),
-        ]);
     }
 }
