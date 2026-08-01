@@ -79,85 +79,141 @@ class ProcessUploadQueue extends BaseCommand
 
     public function run(array $params)
     {
-        // Check if processing a specific queue ID
-        if (isset($params[0]) && $params[0] === 'one' && isset($params[1])) {
-            $this->processSingleQueueId((int)$params[1]);
-            return;
-        }
+        ini_set('memory_limit', '512M');
 
-        $limit = (int)($params[0] ?? 5);
-        if ($limit < 1) {
-            $limit = 5;
-        }
+        $db = \Config\Database::connect();
+        $startTime = microtime(true);
+        $command = 'queue:process';
+        $output = '';
 
-        CLI::write(" Checking for pending uploads (limit: {$limit})...", 'yellow');
+        $logId = $db->table('cron_execution_logs')->insert([
+            'job_id' => 0,
+            'command' => $command,
+            'started_at' => date('Y-m-d H:i:s'),
+            'status' => 'running',
+        ]);
+        $logId = $db->insertID();
 
-        $queueModel  = new Mod_Upload_Queue();
-        $pending     = $queueModel->getPendingBatch($limit);
+        try {
+            // Check if processing a specific queue ID
+            if (isset($params[0]) && $params[0] === 'one' && isset($params[1])) {
+                $this->processSingleQueueId((int)$params[1]);
+                $output .= 'Processed single queue ID ' . (int)$params[1] . '.' . PHP_EOL;
+                $duration = (int)((microtime(true) - $startTime) * 1000);
+                $db->table('cron_execution_logs')->where('id', $logId)->update([
+                    'finished_at' => date('Y-m-d H:i:s'),
+                    'status' => 'success',
+                    'output' => trim($output),
+                    'duration_ms' => $duration,
+                ]);
+                return;
+            }
 
-        if (empty($pending)) {
-            CLI::write(' No pending uploads found.', 'green');
-            return;
-        }
+            $limit = (int)($params[0] ?? 5);
+            if ($limit < 1) {
+                $limit = 5;
+            }
 
-        CLI::write(' Found ' . count($pending) . ' pending upload(s).', 'yellow');
+            CLI::write(" Checking for pending uploads (limit: {$limit})...", 'yellow');
+            $output .= "Checking for pending uploads (limit: {$limit})..." . PHP_EOL;
 
-        $parseLoot    = new Mod_Parse_Loot();
-        $parseAdv     = new Mod_Parse_Advanced();
-        $uploadedFileModel = new Mod_Uploaded_Files();
-        $cryptModel   = new Mod_Crypt();
+            $queueModel  = new Mod_Upload_Queue();
+            $pending     = $queueModel->getPendingBatch($limit);
 
-        $processed = 0;
-        $failed    = 0;
+            if (empty($pending)) {
+                CLI::write(' No pending uploads found.', 'green');
+                $output .= 'No pending uploads found.' . PHP_EOL;
+                $duration = (int)((microtime(true) - $startTime) * 1000);
+                $db->table('cron_execution_logs')->where('id', $logId)->update([
+                    'finished_at' => date('Y-m-d H:i:s'),
+                    'status' => 'success',
+                    'output' => trim($output),
+                    'duration_ms' => $duration,
+                ]);
+                return;
+            }
 
-        foreach ($pending as $item) {
-            $queueId       = (int)$item['id'];
-            $filename      = $item['stored_filename'];
-            $category      = $item['file_category'];
-            $ownerId       = (int)$item['owner_id'];
-            $fileRecordId  = $item['file_record_id'] ? (int)$item['file_record_id'] : null;
-            $devicePrintId = $item['device_print_id'] ?: $item['device_checksum'];
+            CLI::write(' Found ' . count($pending) . ' pending upload(s).', 'yellow');
+            $output .= 'Found ' . count($pending) . ' pending upload(s).' . PHP_EOL;
 
-            CLI::write(" [{$queueId}] Processing: {$filename} (category: {$category})", 'blue');
+            $parseLoot    = new Mod_Parse_Loot();
+            $parseAdv     = new Mod_Parse_Advanced();
+            $uploadedFileModel = new Mod_Uploaded_Files();
+            $cryptModel   = new Mod_Crypt();
 
-            $queueModel->markProcessing($queueId);
+            $processed = 0;
+            $failed    = 0;
 
-            try {
-                $result = $this->processItem($parseLoot, $parseAdv, $filename, $ownerId, $category, $devicePrintId, $fileRecordId);
+            foreach ($pending as $item) {
+                $queueId       = (int)$item['id'];
+                $filename      = $item['stored_filename'];
+                $category      = $item['file_category'];
+                $ownerId       = (int)$item['owner_id'];
+                $fileRecordId  = $item['file_record_id'] ? (int)$item['file_record_id'] : null;
+                $devicePrintId = $item['device_print_id'] ?: $item['device_checksum'];
 
-                if ($result && $result['success']) {
-                    $queueModel->markCompleted($queueId);
+                CLI::write(" [{$queueId}] Processing: {$filename} (category: {$category})", 'blue');
+                $output .= "[$queueId] Processing: {$filename} (category: {$category})" . PHP_EOL;
+
+                $queueModel->markProcessing($queueId);
+
+                try {
+                    $result = $this->processItem($parseLoot, $parseAdv, $filename, $ownerId, $category, $devicePrintId, $fileRecordId);
+
+                    if ($result && $result['success']) {
+                        $queueModel->markCompleted($queueId);
+
+                        if ($fileRecordId > 0) {
+                            $uploadedFileModel->updateStatus($fileRecordId, 'processed', $result);
+                        }
+
+                        CLI::write(" [{$queueId}] Completed successfully.", 'green');
+                        $output .= "[$queueId] Completed successfully." . PHP_EOL;
+                        $processed++;
+                    } else {
+                        $errorMsg = is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed';
+                        $queueModel->markFailed($queueId, $errorMsg);
+
+                        if ($fileRecordId > 0) {
+                            $uploadedFileModel->updateStatus($fileRecordId, 'failed', ['error' => $errorMsg]);
+                        }
+
+                        CLI::error(" [{$queueId}] Failed: {$errorMsg}");
+                        $output .= "[$queueId] Failed: {$errorMsg}" . PHP_EOL;
+                        $failed++;
+                    }
+                } catch (\Throwable $e) {
+                    $queueModel->markFailed($queueId, $e->getMessage());
 
                     if ($fileRecordId > 0) {
-                        $uploadedFileModel->updateStatus($fileRecordId, 'processed', $result);
+                        $uploadedFileModel->updateStatus($fileRecordId, 'failed', ['error' => $e->getMessage()]);
                     }
 
-                    CLI::write(" [{$queueId}] Completed successfully.", 'green');
-                    $processed++;
-                } else {
-                    $errorMsg = is_array($result) ? ($result['error'] ?? 'Processing failed') : 'Processing failed';
-                    $queueModel->markFailed($queueId, $errorMsg);
-
-                    if ($fileRecordId > 0) {
-                        $uploadedFileModel->updateStatus($fileRecordId, 'failed', ['error' => $errorMsg]);
-                    }
-
-                    CLI::error(" [{$queueId}] Failed: {$errorMsg}");
+                    CLI::error(" [{$queueId}] Exception: " . $e->getMessage());
+                    $output .= "[$queueId] Exception: " . $e->getMessage() . PHP_EOL;
                     $failed++;
                 }
-            } catch (\Throwable $e) {
-                $queueModel->markFailed($queueId, $e->getMessage());
-
-                if ($fileRecordId > 0) {
-                    $uploadedFileModel->updateStatus($fileRecordId, 'failed', ['error' => $e->getMessage()]);
-                }
-
-                CLI::error(" [{$queueId}] Exception: " . $e->getMessage());
-                $failed++;
             }
-        }
 
-        CLI::write(" Done. Processed: {$processed}, Failed: {$failed}", $failed > 0 ? 'red' : 'green');
+            CLI::write(" Done. Processed: {$processed}, Failed: {$failed}", $failed > 0 ? 'red' : 'green');
+            $output .= "Done. Processed: {$processed}, Failed: {$failed}" . PHP_EOL;
+
+            $duration = (int)((microtime(true) - $startTime) * 1000);
+            $db->table('cron_execution_logs')->where('id', $logId)->update([
+                'finished_at' => date('Y-m-d H:i:s'),
+                'status' => 'success',
+                'output' => trim($output),
+                'duration_ms' => $duration,
+            ]);
+        } catch (\Throwable $e) {
+            $duration = (int)((microtime(true) - $startTime) * 1000);
+            $db->table('cron_execution_logs')->where('id', $logId)->update([
+                'finished_at' => date('Y-m-d H:i:s'),
+                'status' => 'failed',
+                'output' => trim($output) . PHP_EOL . $e->getMessage(),
+                'duration_ms' => $duration,
+            ]);
+        }
     }
 
     /**

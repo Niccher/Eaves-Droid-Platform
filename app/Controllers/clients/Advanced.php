@@ -27,8 +27,8 @@ class Advanced extends BaseClientController
      */
     private function getAdvancedNavUrls(string $activeView, array $counts = []): string
     {
-        $hardware_tabs = ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network'];
-        $software_tabs = ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'accessibility', 'input_methods', 'remote_media', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale'];
+        $hardware_tabs = ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network', 'audio_devices', 'biometric', 'gnss_hardware', 'power_rails', 'usb_devices', 'vibration'];
+        $software_tabs = ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'accessibility', 'input_methods', 'remote_media', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale', 'app_permissions', 'browser_history', 'clipboard', 'content_providers', 'crash_logs', 'digital_wellbeing', 'doze_standby', 'email', 'health_data', 'keyboard_input', 'keyguard', 'screenshots', 'screen_state', 'vpn_config', 'running_processes'];
 
         $is_hardware = in_array($activeView, $hardware_tabs) || $activeView === 'hardware_landing';
         $is_software = in_array($activeView, $software_tabs) || $activeView === 'software_landing';
@@ -1117,6 +1117,140 @@ class Advanced extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
+    // ── Misc Hardware Detail Extractors ──
+
+    /** GET /advanced/hardware/audio_devices */
+    public function audio_devices()
+    {
+        $data = array_merge($this->commonData('audio_devices', 'Audio Devices'), [
+            'rows' => $this->finderModel->get_audio_devices($this->userId),
+            'total' => $this->finderModel->get_count_AudioDevices($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/audio_devices', $data);
+    }
+
+    public function delete_audio_devices($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_audio_devices_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/biometric */
+    public function biometric()
+    {
+        $data = array_merge($this->commonData('biometric', 'Biometric'), [
+            'rows' => $this->finderModel->get_biometric($this->userId),
+            'total' => $this->finderModel->get_count_Biometric($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/biometric', $data);
+    }
+
+    public function delete_biometric($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_biometric_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/gnss_hardware */
+    public function gnss_hardware()
+    {
+        $data = array_merge($this->commonData('gnss_hardware', 'GNSS Hardware'), [
+            'rows' => $this->finderModel->get_gnss_hardware($this->userId),
+            'total' => $this->finderModel->get_count_GnssHardware($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/gnss_hardware', $data);
+    }
+
+    public function delete_gnss_hardware($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_gnss_hardware_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/power_rails */
+    public function power_rails()
+    {
+        $data = array_merge($this->commonData('power_rails', 'Power Rails'), [
+            'rows' => $this->finderModel->get_power_rails($this->userId),
+            'total' => $this->finderModel->get_count_PowerRails($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/power_rails', $data);
+    }
+
+    public function delete_power_rails($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_power_rails_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/usb_devices */
+    public function usb_devices()
+    {
+        $data = array_merge($this->commonData('usb_devices', 'USB Devices'), [
+            'rows' => $this->finderModel->get_usb_devices($this->userId),
+            'total' => $this->finderModel->get_count_UsbDevices($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/usb_devices', $data);
+    }
+
+    public function delete_usb_devices($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_usb_devices_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/hardware/vibration */
+    public function vibration()
+    {
+        $data = array_merge($this->commonData('vibration', 'Vibration'), [
+            'rows' => $this->finderModel->get_vibration($this->userId),
+            'total' => $this->finderModel->get_count_Vibration($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/vibration', $data);
+    }
+
+    public function delete_vibration($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_vibration_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
     // ── App Security ──
     public function app_security()
     {
@@ -1200,6 +1334,338 @@ class Advanced extends BaseClientController
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
         }
         if ($this->finderModel->delete_system_locale_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    // ── Misc Software Detail Extractors ──
+
+    /** GET /advanced/software/app_permissions */
+    public function app_permissions()
+    {
+        $data = array_merge($this->commonData('app_permissions', 'App Permissions'), [
+            'rows' => $this->finderModel->get_app_permissions($this->userId),
+            'total' => $this->finderModel->get_count_AppPermissions($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/app_permissions', $data);
+    }
+
+    public function delete_app_permissions($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_app_permissions_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/browser_history */
+    public function browser_history()
+    {
+        $data = array_merge($this->commonData('browser_history', 'Browser History'), [
+            'rows' => $this->finderModel->get_browser_history($this->userId),
+            'total' => $this->finderModel->get_count_BrowserHistory($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/browser_history', $data);
+    }
+
+    public function delete_browser_history($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_browser_history_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/clipboard */
+    public function clipboard()
+    {
+        $data = array_merge($this->commonData('clipboard', 'Clipboard'), [
+            'rows' => $this->finderModel->get_clipboard($this->userId),
+            'total' => $this->finderModel->get_count_Clipboard($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/clipboard', $data);
+    }
+
+    public function delete_clipboard($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_clipboard_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/content_providers */
+    public function content_providers()
+    {
+        $data = array_merge($this->commonData('content_providers', 'Content Providers'), [
+            'rows' => $this->finderModel->get_content_providers($this->userId),
+            'total' => $this->finderModel->get_count_ContentProviders($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/content_providers', $data);
+    }
+
+    public function delete_content_providers($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_content_providers_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/crash_logs */
+    public function crash_logs()
+    {
+        $data = array_merge($this->commonData('crash_logs', 'Crash Logs'), [
+            'rows' => $this->finderModel->get_crash_logs($this->userId),
+            'total' => $this->finderModel->get_count_CrashLogs($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/crash_logs', $data);
+    }
+
+    public function delete_crash_logs($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_crash_logs_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/digital_wellbeing */
+    public function digital_wellbeing()
+    {
+        $data = array_merge($this->commonData('digital_wellbeing', 'Digital Wellbeing'), [
+            'rows' => $this->finderModel->get_digital_wellbeing($this->userId),
+            'total' => $this->finderModel->get_count_DigitalWellbeing($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/digital_wellbeing', $data);
+    }
+
+    public function delete_digital_wellbeing($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_digital_wellbeing_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/doze_standby */
+    public function doze_standby()
+    {
+        $data = array_merge($this->commonData('doze_standby', 'Doze & Standby'), [
+            'rows' => $this->finderModel->get_doze_standby($this->userId),
+            'total' => $this->finderModel->get_count_DozeStandby($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/doze_standby', $data);
+    }
+
+    public function delete_doze_standby($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_doze_standby_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/email */
+    public function email()
+    {
+        $data = array_merge($this->commonData('email', 'Email Accounts'), [
+            'rows' => $this->finderModel->get_email_accounts($this->userId),
+            'total' => $this->finderModel->get_count_EmailAccounts($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/email', $data);
+    }
+
+    public function delete_email($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_email_accounts_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/health_data */
+    public function health_data()
+    {
+        $data = array_merge($this->commonData('health_data', 'Health Data'), [
+            'rows' => $this->finderModel->get_health_data($this->userId),
+            'total' => $this->finderModel->get_count_HealthData($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/health_data', $data);
+    }
+
+    public function delete_health_data($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_health_data_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/keyboard_input */
+    public function keyboard_input()
+    {
+        $data = array_merge($this->commonData('keyboard_input', 'Keyboard Input'), [
+            'rows' => $this->finderModel->get_keyboard_input($this->userId),
+            'total' => $this->finderModel->get_count_KeyboardInput($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/keyboard_input', $data);
+    }
+
+    public function delete_keyboard_input($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_keyboard_input_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/keyguard */
+    public function keyguard()
+    {
+        $data = array_merge($this->commonData('keyguard', 'Keyguard Events'), [
+            'rows' => $this->finderModel->get_keyguard_events($this->userId),
+            'total' => $this->finderModel->get_count_KeyguardEvents($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/keyguard', $data);
+    }
+
+    public function delete_keyguard($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_keyguard_events_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/screenshots */
+    public function screenshots()
+    {
+        $data = array_merge($this->commonData('screenshots', 'Screenshots'), [
+            'rows' => $this->finderModel->get_screenshots($this->userId),
+            'total' => $this->finderModel->get_count_Screenshots($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/screenshots', $data);
+    }
+
+    public function delete_screenshots($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_screenshots_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/screen_state */
+    public function screen_state()
+    {
+        $data = array_merge($this->commonData('screen_state', 'Screen State'), [
+            'rows' => $this->finderModel->get_screen_state($this->userId),
+            'total' => $this->finderModel->get_count_ScreenState($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/screen_state', $data);
+    }
+
+    public function delete_screen_state($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_screen_state_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/vpn_config */
+    public function vpn_config()
+    {
+        $data = array_merge($this->commonData('vpn_config', 'VPN Configuration'), [
+            'rows' => $this->finderModel->get_vpn_config($this->userId),
+            'total' => $this->finderModel->get_count_VpnConfig($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/vpn_config', $data);
+    }
+
+    public function delete_vpn_config($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_vpn_config_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** GET /advanced/software/running_processes */
+    public function running_processes()
+    {
+        $data = array_merge($this->commonData('running_processes', 'Running Processes'), [
+            'rows' => $this->finderModel->get_running_processes_detailed($this->userId),
+            'total' => $this->finderModel->get_count_RunningProcessesDetailed($this->userId),
+            'pager' => $this->finderModel->getPager(),
+        ]);
+        return $this->renderAppView('users/advanced/running_processes', $data);
+    }
+
+    public function delete_running_processes($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_running_processes_detailed_row((int) $id, $this->userId)) {
             return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
         }
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
@@ -1375,6 +1841,30 @@ class Advanced extends BaseClientController
                 'tbl_user_actions' => 'User Actions',
                 'tbl_device_config' => 'Device Config',
                 'tbl_app_defaults' => 'App Defaults',
+                'tbl_app_permissions' => 'App Permissions',
+                'tbl_browser_history' => 'Browser History',
+                'tbl_clipboard' => 'Clipboard Data',
+                'tbl_content_providers' => 'Content Providers',
+                'tbl_crash_logs' => 'Crash Logs',
+                'tbl_digital_wellbeing' => 'Digital Wellbeing',
+                'tbl_digital_wellbeing_apps' => 'Wellbeing App Timers',
+                'tbl_doze_standby' => 'Doze & Standby',
+                'tbl_doze_standby_apps' => 'Standby Buckets',
+                'tbl_email_accounts' => 'Email Accounts',
+                'tbl_health_data' => 'Health Data',
+                'tbl_keyboard_input' => 'Keyboard Input',
+                'tbl_keyguard_events' => 'Keyguard Events',
+                'tbl_screenshots' => 'Screenshots',
+                'tbl_screen_state' => 'Screen State',
+                'tbl_vpn_config' => 'VPN Configuration',
+                'tbl_running_processes_detailed' => 'Running Processes',
+                'tbl_audio_devices' => 'Audio Devices',
+                'tbl_audio_volumes' => 'Audio Volume Profiles',
+                'tbl_biometric' => 'Biometric',
+                'tbl_gnss_hardware' => 'GNSS Hardware',
+                'tbl_power_rails' => 'Power Rails',
+                'tbl_usb_devices' => 'USB Devices',
+                'tbl_vibration' => 'Vibration',
             ];
 
             // Build detailed category data from deleted array
@@ -1536,6 +2026,30 @@ class Advanced extends BaseClientController
                 'tbl_user_actions' => 'User Actions',
                 'tbl_device_config' => 'Device Config',
                 'tbl_app_defaults' => 'App Defaults',
+                'tbl_app_permissions' => 'App Permissions',
+                'tbl_browser_history' => 'Browser History',
+                'tbl_clipboard' => 'Clipboard Data',
+                'tbl_content_providers' => 'Content Providers',
+                'tbl_crash_logs' => 'Crash Logs',
+                'tbl_digital_wellbeing' => 'Digital Wellbeing',
+                'tbl_digital_wellbeing_apps' => 'Wellbeing App Timers',
+                'tbl_doze_standby' => 'Doze & Standby',
+                'tbl_doze_standby_apps' => 'Standby Buckets',
+                'tbl_email_accounts' => 'Email Accounts',
+                'tbl_health_data' => 'Health Data',
+                'tbl_keyboard_input' => 'Keyboard Input',
+                'tbl_keyguard_events' => 'Keyguard Events',
+                'tbl_screenshots' => 'Screenshots',
+                'tbl_screen_state' => 'Screen State',
+                'tbl_vpn_config' => 'VPN Configuration',
+                'tbl_running_processes_detailed' => 'Running Processes',
+                'tbl_audio_devices' => 'Audio Devices',
+                'tbl_audio_volumes' => 'Audio Volume Profiles',
+                'tbl_biometric' => 'Biometric',
+                'tbl_gnss_hardware' => 'GNSS Hardware',
+                'tbl_power_rails' => 'Power Rails',
+                'tbl_usb_devices' => 'USB Devices',
+                'tbl_vibration' => 'Vibration',
             ];
 
             $categoriesWithTables = [];

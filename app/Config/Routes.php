@@ -455,6 +455,12 @@ $routes->group('', [
             $routes->get('nfc', 'Advanced::nfc', ['as' => 'adv-nfc']);
             $routes->get('hardware_graphics', 'Advanced::hardware_graphics', ['as' => 'adv-hardware-graphics']);
             $routes->get('hardware_network', 'Advanced::hardware_network', ['as' => 'adv-hardware-network']);
+            $routes->get('audio_devices', 'Advanced::audio_devices', ['as' => 'adv-audio-devices']);
+            $routes->get('biometric', 'Advanced::biometric', ['as' => 'adv-biometric']);
+            $routes->get('gnss_hardware', 'Advanced::gnss_hardware', ['as' => 'adv-gnss-hardware']);
+            $routes->get('power_rails', 'Advanced::power_rails', ['as' => 'adv-power-rails']);
+            $routes->get('usb_devices', 'Advanced::usb_devices', ['as' => 'adv-usb-devices']);
+            $routes->get('vibration', 'Advanced::vibration', ['as' => 'adv-vibration']);
 
             // Delete routes - hardware pages
             $routes->post('device/delete/(:num)', 'Advanced::delete_device_context/$1');
@@ -472,6 +478,12 @@ $routes->group('', [
             $routes->post('nfc/delete/(:num)', 'Advanced::delete_nfc/$1');
             $routes->post('hardware_graphics/delete/(:num)', 'Advanced::delete_hardware_graphics/$1');
             $routes->post('hardware_network/delete/(:num)', 'Advanced::delete_hardware_network/$1');
+            $routes->post('audio_devices/delete/(:num)', 'Advanced::delete_audio_devices/$1');
+            $routes->post('biometric/delete/(:num)', 'Advanced::delete_biometric/$1');
+            $routes->post('gnss_hardware/delete/(:num)', 'Advanced::delete_gnss_hardware/$1');
+            $routes->post('power_rails/delete/(:num)', 'Advanced::delete_power_rails/$1');
+            $routes->post('usb_devices/delete/(:num)', 'Advanced::delete_usb_devices/$1');
+            $routes->post('vibration/delete/(:num)', 'Advanced::delete_vibration/$1');
 
             // SIM Configs (kept in hardware group)
             $routes->get('sim-configs', 'SimConfig::index', ['as' => 'sim-configs']);
@@ -500,6 +512,21 @@ $routes->group('', [
             $routes->get('network_security', 'Advanced::network_security', ['as' => 'adv-network-security']);
             $routes->get('telephony_network', 'Advanced::telephony_network', ['as' => 'adv-telephony-network']);
             $routes->get('system_locale', 'Advanced::system_locale', ['as' => 'adv-system-locale']);
+            $routes->get('app_permissions', 'Advanced::app_permissions', ['as' => 'adv-app-permissions']);
+            $routes->get('browser_history', 'Advanced::browser_history', ['as' => 'adv-browser-history']);
+            $routes->get('clipboard', 'Advanced::clipboard', ['as' => 'adv-clipboard']);
+            $routes->get('content_providers', 'Advanced::content_providers', ['as' => 'adv-content-providers']);
+            $routes->get('crash_logs', 'Advanced::crash_logs', ['as' => 'adv-crash-logs']);
+            $routes->get('digital_wellbeing', 'Advanced::digital_wellbeing', ['as' => 'adv-digital-wellbeing']);
+            $routes->get('doze_standby', 'Advanced::doze_standby', ['as' => 'adv-doze-standby']);
+            $routes->get('email', 'Advanced::email', ['as' => 'adv-email']);
+            $routes->get('health_data', 'Advanced::health_data', ['as' => 'adv-health-data']);
+            $routes->get('keyboard_input', 'Advanced::keyboard_input', ['as' => 'adv-keyboard-input']);
+            $routes->get('keyguard', 'Advanced::keyguard', ['as' => 'adv-keyguard']);
+            $routes->get('screenshots', 'Advanced::screenshots', ['as' => 'adv-screenshots']);
+            $routes->get('screen_state', 'Advanced::screen_state', ['as' => 'adv-screen-state']);
+            $routes->get('vpn_config', 'Advanced::vpn_config', ['as' => 'adv-vpn-config']);
+            $routes->get('running_processes', 'Advanced::running_processes', ['as' => 'adv-running-processes']);
 
             $routes->post('datatable/app-usage', '\App\Controllers\api\v1\DatatableAPI::getAppUsageDetails', ['as' => 'adv-datatable-app-usage']);
             $routes->post('datatable/notifications', '\App\Controllers\api\v1\DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
@@ -520,6 +547,21 @@ $routes->group('', [
             $routes->post('network_security/delete/(:num)', 'Advanced::delete_network_security/$1');
             $routes->post('telephony_network/delete/(:num)', 'Advanced::delete_telephony_network/$1');
             $routes->post('system_locale/delete/(:num)', 'Advanced::delete_system_locale/$1');
+            $routes->post('app_permissions/delete/(:num)', 'Advanced::delete_app_permissions/$1');
+            $routes->post('browser_history/delete/(:num)', 'Advanced::delete_browser_history/$1');
+            $routes->post('clipboard/delete/(:num)', 'Advanced::delete_clipboard/$1');
+            $routes->post('content_providers/delete/(:num)', 'Advanced::delete_content_providers/$1');
+            $routes->post('crash_logs/delete/(:num)', 'Advanced::delete_crash_logs/$1');
+            $routes->post('digital_wellbeing/delete/(:num)', 'Advanced::delete_digital_wellbeing/$1');
+            $routes->post('doze_standby/delete/(:num)', 'Advanced::delete_doze_standby/$1');
+            $routes->post('email/delete/(:num)', 'Advanced::delete_email/$1');
+            $routes->post('health_data/delete/(:num)', 'Advanced::delete_health_data/$1');
+            $routes->post('keyboard_input/delete/(:num)', 'Advanced::delete_keyboard_input/$1');
+            $routes->post('keyguard/delete/(:num)', 'Advanced::delete_keyguard/$1');
+            $routes->post('screenshots/delete/(:num)', 'Advanced::delete_screenshots/$1');
+            $routes->post('screen_state/delete/(:num)', 'Advanced::delete_screen_state/$1');
+            $routes->post('vpn_config/delete/(:num)', 'Advanced::delete_vpn_config/$1');
+            $routes->post('running_processes/delete/(:num)', 'Advanced::delete_running_processes/$1');
         });
     });
 
@@ -1552,6 +1594,13 @@ $routes->group('admin', [
         $routes->post('storage/check-now', 'Settings::storage_check_now', ['as' => 'admin-storage-check-now']);
 
         /**
+         * Displays storage cleanup settings.
+         *
+         * @return string
+         */
+        $routes->get('storage-cleanup', 'Settings::storage_cleanup', ['as' => 'admin-settings-storage-cleanup']);
+
+        /**
          * Displays email triggers settings.
          *
          * @return string
@@ -1614,11 +1663,18 @@ $routes->group('admin', [
         $routes->match(['get', 'post'], 'generate', 'Reports::generate', ['as' => 'admin-reports-generate']);
 
         /**
-         * Exports reports.
+         * Exports reports data (CSV, PDF).
          *
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->post('export', 'Reports::export', ['as' => 'admin-reports-export']);
+
+        /**
+         * Generates and exports report data.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->match(['get', 'post'], 'generatedata', 'Reports::generateData', ['as' => 'admin-reports-generate-data']);
         $routes->get('view-report/(:num)', 'Reports::viewReport/$1');
         $routes->get('download-report/(:num)', 'Reports::downloadReport/$1');
     });

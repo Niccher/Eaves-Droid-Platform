@@ -197,6 +197,48 @@ class Account extends BaseClientController
             'total_media'    => 2048,
             'total_security_audit' => 512,
             'total_sim_configs'    => 256,
+            'total_camera_info'   => 1024,
+            'total_battery_stats' => 512,
+            'total_accessibility' => 512,
+            'total_input_methods' => 256,
+            'total_processes'     => 512,
+            'total_proc_info'     => 1024,
+            'total_cell_towers'   => 256,
+            'total_display_info'  => 512,
+            'total_storage'       => 1024,
+            'total_thermal'       => 512,
+            'total_nfc'           => 256,
+            'total_hardware_graphics' => 1024,
+            'total_hardware_network'  => 1024,
+            'total_data_usage'    => 1024,
+            'total_saved_wifi'    => 512,
+            'total_default_apps'  => 512,
+            'total_alarms'        => 256,
+            'total_app_security'  => 512,
+            'total_network_security' => 512,
+            'total_telephony_network' => 512,
+            'total_system_locale' => 256,
+            'total_app_permissions' => 256,
+            'total_browser_history' => 512,
+            'total_clipboard'     => 1024,
+            'total_content_providers' => 512,
+            'total_crash_logs'    => 2048,
+            'total_digital_wellbeing' => 512,
+            'total_doze_standby'  => 512,
+            'total_email_accounts' => 1024,
+            'total_health_data'   => 1024,
+            'total_keyboard_input' => 256,
+            'total_keyguard_events' => 256,
+            'total_screenshots'   => 512,
+            'total_screen_state'  => 256,
+            'total_vpn_config'    => 512,
+            'total_running_processes_detailed' => 512,
+            'total_audio_devices' => 512,
+            'total_biometric'     => 512,
+            'total_gnss_hardware' => 1024,
+            'total_power_rails'   => 512,
+            'total_usb_devices'   => 512,
+            'total_vibration'     => 512,
         ];
 
         $totalBytes = 0;
@@ -1370,6 +1412,21 @@ class Account extends BaseClientController
                         'network_security' => $this->finderModel->export_network_security($this->userId),
                         'telephony_network' => $this->finderModel->export_telephony_network($this->userId),
                         'system_locale' => $this->finderModel->export_system_locale($this->userId),
+                        'app_permissions' => $this->finderModel->export_app_permissions($this->userId),
+                        'browser_history' => $this->finderModel->export_browser_history($this->userId),
+                        'clipboard' => $this->finderModel->export_clipboard($this->userId),
+                        'content_providers' => $this->finderModel->export_content_providers($this->userId),
+                        'crash_logs' => $this->finderModel->export_crash_logs($this->userId),
+                        'digital_wellbeing' => $this->finderModel->export_digital_wellbeing($this->userId),
+                        'doze_standby' => $this->finderModel->export_doze_standby($this->userId),
+                        'email_accounts' => $this->finderModel->export_email_accounts($this->userId),
+                        'health_data' => $this->finderModel->export_health_data($this->userId),
+                        'keyboard_input' => $this->finderModel->export_keyboard_input($this->userId),
+                        'keyguard_events' => $this->finderModel->export_keyguard_events($this->userId),
+                        'screenshots' => $this->finderModel->export_screenshots($this->userId),
+                        'screen_state' => $this->finderModel->export_screen_state($this->userId),
+                        'vpn_config' => $this->finderModel->export_vpn_config($this->userId),
+                        'running_processes' => $this->finderModel->export_running_processes_detailed($this->userId),
                     ];
                     $filename = 'misc_software_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
@@ -1387,6 +1444,12 @@ class Account extends BaseClientController
                         'thermal' => $this->finderModel->export_thermal($this->userId),
                         'nfc' => $this->finderModel->export_nfc($this->userId),
                         'processes' => $this->finderModel->export_processes($this->userId),
+                        'audio_devices' => $this->finderModel->export_audio_devices($this->userId),
+                        'biometric' => $this->finderModel->export_biometric($this->userId),
+                        'gnss_hardware' => $this->finderModel->export_gnss_hardware($this->userId),
+                        'power_rails' => $this->finderModel->export_power_rails($this->userId),
+                        'usb_devices' => $this->finderModel->export_usb_devices($this->userId),
+                        'vibration' => $this->finderModel->export_vibration($this->userId),
                     ];
                     $filename = 'misc_hardware_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
@@ -1650,6 +1713,21 @@ class Account extends BaseClientController
                         'network_security' => $this->finderModel->export_network_security($this->userId),
                         'telephony_network' => $this->finderModel->export_telephony_network($this->userId),
                         'system_locale' => $this->finderModel->export_system_locale($this->userId),
+                        'app_permissions' => $this->finderModel->export_app_permissions($this->userId),
+                        'browser_history' => $this->finderModel->export_browser_history($this->userId),
+                        'clipboard' => $this->finderModel->export_clipboard($this->userId),
+                        'content_providers' => $this->finderModel->export_content_providers($this->userId),
+                        'crash_logs' => $this->finderModel->export_crash_logs($this->userId),
+                        'digital_wellbeing' => $this->finderModel->export_digital_wellbeing($this->userId),
+                        'doze_standby' => $this->finderModel->export_doze_standby($this->userId),
+                        'email_accounts' => $this->finderModel->export_email_accounts($this->userId),
+                        'health_data' => $this->finderModel->export_health_data($this->userId),
+                        'keyboard_input' => $this->finderModel->export_keyboard_input($this->userId),
+                        'keyguard_events' => $this->finderModel->export_keyguard_events($this->userId),
+                        'screenshots' => $this->finderModel->export_screenshots($this->userId),
+                        'screen_state' => $this->finderModel->export_screen_state($this->userId),
+                        'vpn_config' => $this->finderModel->export_vpn_config($this->userId),
+                        'running_processes' => $this->finderModel->export_running_processes_detailed($this->userId),
                     ];
                     break;
                 case 'misc_hardware':
@@ -1666,6 +1744,12 @@ class Account extends BaseClientController
                         'thermal' => $this->finderModel->export_thermal($this->userId),
                         'nfc' => $this->finderModel->export_nfc($this->userId),
                         'processes' => $this->finderModel->export_processes($this->userId),
+                        'audio_devices' => $this->finderModel->export_audio_devices($this->userId),
+                        'biometric' => $this->finderModel->export_biometric($this->userId),
+                        'gnss_hardware' => $this->finderModel->export_gnss_hardware($this->userId),
+                        'power_rails' => $this->finderModel->export_power_rails($this->userId),
+                        'usb_devices' => $this->finderModel->export_usb_devices($this->userId),
+                        'vibration' => $this->finderModel->export_vibration($this->userId),
                     ];
                     break;
                 case 'advanced':
@@ -2023,7 +2107,7 @@ class Account extends BaseClientController
                     $message = 'All location and activity history deleted successfully';
                     break;
                 case 'misc_software':
-                    $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_input_methods', $this->userId) + $this->finderModel->cq('tbl_security_audit', $this->userId) + $this->finderModel->cq('tbl_proc_info', $this->userId) + $this->finderModel->cq('tbl_data_usage', $this->userId) + $this->finderModel->cq('tbl_saved_wifi', $this->userId) + $this->finderModel->cq('tbl_default_apps', $this->userId) + $this->finderModel->cq('tbl_alarms', $this->userId) + $this->finderModel->cq('tbl_app_security', $this->userId) + $this->finderModel->cq('tbl_network_security', $this->userId) + $this->finderModel->cq('tbl_telephony_network', $this->userId) + $this->finderModel->cq('tbl_system_locale', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_input_methods', $this->userId) + $this->finderModel->cq('tbl_security_audit', $this->userId) + $this->finderModel->cq('tbl_proc_info', $this->userId) + $this->finderModel->cq('tbl_data_usage', $this->userId) + $this->finderModel->cq('tbl_saved_wifi', $this->userId) + $this->finderModel->cq('tbl_default_apps', $this->userId) + $this->finderModel->cq('tbl_alarms', $this->userId) + $this->finderModel->cq('tbl_app_security', $this->userId) + $this->finderModel->cq('tbl_network_security', $this->userId) + $this->finderModel->cq('tbl_telephony_network', $this->userId) + $this->finderModel->cq('tbl_system_locale', $this->userId) + $this->finderModel->cq('tbl_app_permissions', $this->userId) + $this->finderModel->cq('tbl_browser_history', $this->userId) + $this->finderModel->cq('tbl_clipboard', $this->userId) + $this->finderModel->cq('tbl_content_providers', $this->userId) + $this->finderModel->cq('tbl_crash_logs', $this->userId) + $this->finderModel->cq('tbl_digital_wellbeing', $this->userId) + $this->finderModel->cq('tbl_doze_standby', $this->userId) + $this->finderModel->cq('tbl_email_accounts', $this->userId) + $this->finderModel->cq('tbl_health_data', $this->userId) + $this->finderModel->cq('tbl_keyboard_input', $this->userId) + $this->finderModel->cq('tbl_keyguard_events', $this->userId) + $this->finderModel->cq('tbl_screenshots', $this->userId) + $this->finderModel->cq('tbl_screen_state', $this->userId) + $this->finderModel->cq('tbl_vpn_config', $this->userId) + $this->finderModel->cq('tbl_running_processes_detailed', $this->userId);
                     $success = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
                                $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
                                $this->finderModel->deleteAccountsByUser($this->userId) &&
@@ -2041,11 +2125,26 @@ class Account extends BaseClientController
                                $this->finderModel->deleteAppSecurityByUser($this->userId) &&
                                $this->finderModel->deleteNetworkSecurityByUser($this->userId) &&
                                $this->finderModel->deleteTelephonyNetworkByUser($this->userId) &&
-                               $this->finderModel->deleteSystemLocaleByUser($this->userId);
+                               $this->finderModel->deleteSystemLocaleByUser($this->userId) &&
+                               $this->finderModel->deleteAppPermissionsByUser($this->userId) &&
+                               $this->finderModel->deleteBrowserHistoryByUser($this->userId) &&
+                               $this->finderModel->deleteClipboardByUser($this->userId) &&
+                               $this->finderModel->deleteContentProvidersByUser($this->userId) &&
+                               $this->finderModel->deleteCrashLogsByUser($this->userId) &&
+                               $this->finderModel->deleteDigitalWellbeingByUser($this->userId) &&
+                               $this->finderModel->deleteDozeStandbyByUser($this->userId) &&
+                               $this->finderModel->deleteEmailAccountsByUser($this->userId) &&
+                               $this->finderModel->deleteHealthDataByUser($this->userId) &&
+                               $this->finderModel->deleteKeyboardInputByUser($this->userId) &&
+                               $this->finderModel->deleteKeyguardEventsByUser($this->userId) &&
+                               $this->finderModel->deleteScreenshotsByUser($this->userId) &&
+                               $this->finderModel->deleteScreenStateByUser($this->userId) &&
+                               $this->finderModel->deleteVpnConfigByUser($this->userId) &&
+                               $this->finderModel->deleteRunningProcessesDetailedByUser($this->userId);
                     $message = 'All misc software data deleted successfully';
                     break;
                 case 'misc_hardware':
-                    $deletedCount = $this->finderModel->cq('tbl_hardware_graphics', $this->userId) + $this->finderModel->cq('tbl_hardware_network', $this->userId) + $this->finderModel->cq('tbl_camera_info', $this->userId) + $this->finderModel->cq('tbl_battery_stats', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_cell_towers', $this->userId) + $this->finderModel->cq('tbl_display_info', $this->userId) + $this->finderModel->cq('tbl_storage', $this->userId) + $this->finderModel->cq('tbl_thermal', $this->userId) + $this->finderModel->cq('tbl_nfc', $this->userId) + $this->finderModel->cq('tbl_running_processes', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_hardware_graphics', $this->userId) + $this->finderModel->cq('tbl_hardware_network', $this->userId) + $this->finderModel->cq('tbl_camera_info', $this->userId) + $this->finderModel->cq('tbl_battery_stats', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_cell_towers', $this->userId) + $this->finderModel->cq('tbl_display_info', $this->userId) + $this->finderModel->cq('tbl_storage', $this->userId) + $this->finderModel->cq('tbl_thermal', $this->userId) + $this->finderModel->cq('tbl_nfc', $this->userId) + $this->finderModel->cq('tbl_running_processes', $this->userId) + $this->finderModel->cq('tbl_audio_devices', $this->userId) + $this->finderModel->cq('tbl_biometric', $this->userId) + $this->finderModel->cq('tbl_gnss_hardware', $this->userId) + $this->finderModel->cq('tbl_power_rails', $this->userId) + $this->finderModel->cq('tbl_usb_devices', $this->userId) + $this->finderModel->cq('tbl_vibration', $this->userId);
                     $success = $this->finderModel->deleteHardwareGraphicsByUser($this->userId) &&
                                $this->finderModel->deleteHardwareNetworkByUser($this->userId) &&
                                $this->finderModel->deleteCameraInfoByUser($this->userId) &&
@@ -2057,11 +2156,17 @@ class Account extends BaseClientController
                                $this->finderModel->deleteStorageByUser($this->userId) &&
                                $this->finderModel->deleteThermalByUser($this->userId) &&
                                $this->finderModel->deleteNfcByUser($this->userId) &&
-                               $this->finderModel->deleteProcessesByUser($this->userId);
+                               $this->finderModel->deleteProcessesByUser($this->userId) &&
+                               $this->finderModel->deleteAudioDevicesByUser($this->userId) &&
+                               $this->finderModel->deleteBiometricByUser($this->userId) &&
+                               $this->finderModel->deleteGnssHardwareByUser($this->userId) &&
+                               $this->finderModel->deletePowerRailsByUser($this->userId) &&
+                               $this->finderModel->deleteUsbDevicesByUser($this->userId) &&
+                               $this->finderModel->deleteVibrationByUser($this->userId);
                     $message = 'All misc hardware data deleted successfully';
                     break;
                 case 'advanced':
-                    $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId) + $this->finderModel->cq('tbl_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_input_methods', $this->userId);
                     $success = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
                                $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
                                $this->finderModel->deleteAccountsByUser($this->userId) &&
@@ -2069,53 +2174,26 @@ class Account extends BaseClientController
                                $this->finderModel->deleteAppUsageByUser($this->userId) &&
                                $this->finderModel->deleteNotificationsByUser($this->userId) &&
                                $this->finderModel->deleteBluetoothByUser($this->userId) &&
-                               $this->finderModel->deleteSensorsByUser($this->userId);
+                               $this->finderModel->deleteSensorsByUser($this->userId) &&
+                               $this->finderModel->deleteAccessibilityByUser($this->userId) &&
+                               $this->finderModel->deleteInputMethodsByUser($this->userId);
                     $message = 'All advanced extracted data deleted successfully';
                     break;
-                case 'all':
-                    $deletedCount = $this->finderModel->cq('tbl_apps', $this->userId) + $this->finderModel->cq('tbl_logs', $this->userId) + $this->finderModel->cq('tbl_contacts', $this->userId) + $this->finderModel->cq('tbl_sms', $this->userId) + $this->finderModel->cq('tbl_device_files', $this->userId) + $this->finderModel->cq('tbl_location', $this->userId) + $this->finderModel->cq('tbl_activity', $this->userId) + $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId) + $this->finderModel->cq('tbl_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_input_methods', $this->userId) + $this->finderModel->cq('tbl_security_audit', $this->userId) + $this->finderModel->cq('tbl_proc_info', $this->userId) + $this->finderModel->cq('tbl_data_usage', $this->userId) + $this->finderModel->cq('tbl_saved_wifi', $this->userId) + $this->finderModel->cq('tbl_default_apps', $this->userId) + $this->finderModel->cq('tbl_alarms', $this->userId) + $this->finderModel->cq('tbl_app_security', $this->userId) + $this->finderModel->cq('tbl_network_security', $this->userId) + $this->finderModel->cq('tbl_telephony_network', $this->userId) + $this->finderModel->cq('tbl_system_locale', $this->userId) + $this->finderModel->cq('tbl_hardware_graphics', $this->userId) + $this->finderModel->cq('tbl_hardware_network', $this->userId) + $this->finderModel->cq('tbl_camera_info', $this->userId) + $this->finderModel->cq('tbl_battery_stats', $this->userId) + $this->finderModel->cq('tbl_cell_towers', $this->userId) + $this->finderModel->cq('tbl_display_info', $this->userId) + $this->finderModel->cq('tbl_storage', $this->userId) + $this->finderModel->cq('tbl_thermal', $this->userId) + $this->finderModel->cq('tbl_nfc', $this->userId) + $this->finderModel->cq('tbl_running_processes', $this->userId);
-                    $apps = $this->finderModel->deleteAppsByUser($this->userId);
-                    $calls = $this->finderModel->deleteCallsByUser($this->userId);
-                    $contacts = $this->finderModel->deleteContactsByUser($this->userId);
-                    $sms = $this->finderModel->deleteSmsByUser($this->userId);
-                    $files = $this->finderModel->deleteDeviceFilesByUser($this->userId);
-                    $locations = $this->finderModel->deleteLocationByUser($this->userId);
-                    $activities = $this->finderModel->deleteActivityByUser($this->userId);
-                    $advanced = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
-                                $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
-                                $this->finderModel->deleteAccountsByUser($this->userId) &&
-                                $this->finderModel->deleteCalendarByUser($this->userId) &&
-                                $this->finderModel->deleteAppUsageByUser($this->userId) &&
-                                $this->finderModel->deleteNotificationsByUser($this->userId) &&
-                                $this->finderModel->deleteBluetoothByUser($this->userId) &&
-                                $this->finderModel->deleteSensorsByUser($this->userId) &&
-                                $this->finderModel->deleteAccessibilityByUser($this->userId) &&
-                                $this->finderModel->deleteInputMethodsByUser($this->userId) &&
-                                $this->finderModel->deleteSecurityAuditByUser($this->userId) &&
-                                $this->finderModel->deleteProcInfoByUser($this->userId) &&
-                                $this->finderModel->deleteDataUsageByUser($this->userId) &&
-                                $this->finderModel->deleteSavedWifiByUser($this->userId) &&
-                                $this->finderModel->deleteDefaultAppsByUser($this->userId) &&
-                                $this->finderModel->deleteAlarmsByUser($this->userId) &&
-                                $this->finderModel->deleteAppSecurityByUser($this->userId) &&
-                                $this->finderModel->deleteNetworkSecurityByUser($this->userId) &&
-                                $this->finderModel->deleteTelephonyNetworkByUser($this->userId) &&
-                                $this->finderModel->deleteSystemLocaleByUser($this->userId) &&
-                                $this->finderModel->deleteHardwareGraphicsByUser($this->userId) &&
-                                $this->finderModel->deleteHardwareNetworkByUser($this->userId) &&
-                                $this->finderModel->deleteCameraInfoByUser($this->userId) &&
-                                $this->finderModel->deleteBatteryStatsByUser($this->userId) &&
-                                $this->finderModel->deleteCellTowersByUser($this->userId) &&
-                                $this->finderModel->deleteDisplayInfoByUser($this->userId) &&
-                                $this->finderModel->deleteStorageByUser($this->userId) &&
-                                $this->finderModel->deleteThermalByUser($this->userId) &&
-                                $this->finderModel->deleteNfcByUser($this->userId) &&
-                                $this->finderModel->deleteProcessesByUser($this->userId) &&
-                                $this->finderModel->deleteBlocklistByUser($this->userId) &&
-                                $this->finderModel->deleteMlJobsByUser($this->userId) &&
-                                $this->finderModel->deleteMlResultsByUser($this->userId) &&
-                                $this->finderModel->deleteMlAnalysisTrackingByUser($this->userId);
-                    $success = ($apps && $calls && $contacts && $sms && $files && $locations && $activities && $advanced);
+case 'all':
+                    $result = $this->finderModel->deleteAllUserData($this->userId);
+                    $deletedCount = $result['total_deleted'] ?? 0;
+                    $allOk = $this->finderModel->deleteAppsByUser($this->userId) &&
+                             $this->finderModel->deleteCallsByUser($this->userId) &&
+                             $this->finderModel->deleteContactsByUser($this->userId) &&
+                             $this->finderModel->deleteSmsByUser($this->userId) &&
+                             $this->finderModel->deleteDeviceFilesByUser($this->userId) &&
+                             $this->finderModel->deleteLocationByUser($this->userId) &&
+                             $this->finderModel->deleteActivityByUser($this->userId) &&
+                             $this->finderModel->deleteBlocklistByUser($this->userId) &&
+                             $this->finderModel->deleteMlJobsByUser($this->userId) &&
+                             $this->finderModel->deleteMlResultsByUser($this->userId) &&
+                             $this->finderModel->deleteMlAnalysisTrackingByUser($this->userId);
+                    $success = $allOk;
                     $message = 'All your data has been completely wiped successfully';
                     break;
                 default:

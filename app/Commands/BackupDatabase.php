@@ -13,66 +13,100 @@ class BackupDatabase extends BaseCommand
 
     public function run(array $params)
     {
-        CLI::write(' Starting database backup...', 'yellow');
-
-        $settings = $this->getBackupSettings();
-        $backupPath = $settings['storage_path'] ?? WRITEPATH . 'backups';
-
-        if (!is_dir($backupPath)) {
-            mkdir($backupPath, 0755, true);
-        }
-
         $db = \Config\Database::connect();
-        $tables = $db->listTables();
+        $startTime = microtime(true);
+        $command = 'backup:create';
+        $output = '';
 
-        $filename = 'db-backup-' . date('Y-m-d_H-i-s') . '.sql';
-        if ($settings['compress']) {
-            $filename .= '.gz';
-        }
-        $filepath = $backupPath . '/' . $filename;
+        $logId = $db->table('cron_execution_logs')->insert([
+            'job_id' => 0,
+            'command' => $command,
+            'started_at' => date('Y-m-d H:i:s'),
+            'status' => 'running',
+        ]);
+        $logId = $db->insertID();
 
-        $sql = '';
-        foreach ($tables as $table) {
-            $create = $db->query("SHOW CREATE TABLE `{$table}`")->getRow()->{'Create Table'};
-            $sql .= "DROP TABLE IF EXISTS `{$table}`;\n{$create};\n\n";
+        try {
+            CLI::write(' Starting database backup...', 'yellow');
+            $output .= 'Starting database backup...' . PHP_EOL;
 
-            $rows = $db->table($table)->get()->getResultArray();
-            if (!empty($rows)) {
-                $columns = array_keys($rows[0]);
-                $sql .= "INSERT INTO `{$table}` (`" . implode('`, `', $columns) . "`) VALUES\n";
-                $vals = [];
-                foreach ($rows as $row) {
-                    $escaped = array_map(function ($v) use ($db) {
-                        return $v === null ? 'NULL' : "'" . $db->escapeString($v) . "'";
-                    }, array_values($row));
-                    $vals[] = '(' . implode(', ', $escaped) . ')';
-                }
-                $sql .= implode(",\n", $vals) . ";\n\n";
+            $settings = $this->getBackupSettings();
+            $backupPath = $settings['storage_path'] ?? WRITEPATH . 'backups';
+
+            if (!is_dir($backupPath)) {
+                mkdir($backupPath, 0755, true);
             }
+
+            $dbConn = \Config\Database::connect();
+            $tables = $dbConn->listTables();
+
+            $filename = 'db-backup-' . date('Y-m-d_H-i-s') . '.sql';
+            if ($settings['compress']) {
+                $filename .= '.gz';
+            }
+            $filepath = $backupPath . '/' . $filename;
+
+            $sql = '';
+            foreach ($tables as $table) {
+                $create = $dbConn->query("SHOW CREATE TABLE `{$table}`")->getRow()->{'Create Table'};
+                $sql .= "DROP TABLE IF EXISTS `{$table}`;\n{$create};\n\n";
+
+                $rows = $dbConn->table($table)->get()->getResultArray();
+                if (!empty($rows)) {
+                    $columns = array_keys($rows[0]);
+                    $sql .= "INSERT INTO `{$table}` (`" . implode('`, `', $columns) . "`) VALUES\n";
+                    $vals = [];
+                    foreach ($rows as $row) {
+                        $escaped = array_map(function ($v) use ($dbConn) {
+                            return $v === null ? 'NULL' : "'" . $dbConn->escapeString($v) . "'";
+                        }, array_values($row));
+                        $vals[] = '(' . implode(', ', $escaped) . ')';
+                    }
+                    $sql .= implode(",\n", $vals) . ";\n\n";
+                }
+            }
+
+            if ($settings['compress']) {
+                $gz = gzencode($sql, 9);
+                file_put_contents($filepath, $gz);
+            } else {
+                file_put_contents($filepath, $sql);
+            }
+
+            $size = filesize($filepath);
+            CLI::write(" Backup created: {$filename} (" . $this->formatBytes($size) . ")", 'green');
+            $output .= "Backup created: {$filename} (" . $this->formatBytes($size) . ")" . PHP_EOL;
+
+            // Cleanup old backups
+            $retention = $settings['retention_days'] ?? 30;
+            if ($retention > 0) {
+                $this->cleanupOldBackups($backupPath, $retention);
+            }
+
+            // Send notification email
+            if ($settings['notify_on_success']) {
+                $this->sendNotificationEmail('success', $filename, $size, $settings);
+            }
+
+            CLI::write(' Backup completed successfully.', 'green');
+            $output .= 'Backup completed successfully.' . PHP_EOL;
+
+            $duration = (int)((microtime(true) - $startTime) * 1000);
+            $db->table('cron_execution_logs')->where('id', $logId)->update([
+                'finished_at' => date('Y-m-d H:i:s'),
+                'status' => 'success',
+                'output' => trim($output),
+                'duration_ms' => $duration,
+            ]);
+        } catch (\Throwable $e) {
+            $duration = (int)((microtime(true) - $startTime) * 1000);
+            $db->table('cron_execution_logs')->where('id', $logId)->update([
+                'finished_at' => date('Y-m-d H:i:s'),
+                'status' => 'failed',
+                'output' => trim($output) . PHP_EOL . $e->getMessage(),
+                'duration_ms' => $duration,
+            ]);
         }
-
-        if ($settings['compress']) {
-            $gz = gzencode($sql, 9);
-            file_put_contents($filepath, $gz);
-        } else {
-            file_put_contents($filepath, $sql);
-        }
-
-        $size = filesize($filepath);
-        CLI::write(" Backup created: {$filename} (" . $this->formatBytes($size) . ")", 'green');
-
-        // Cleanup old backups
-        $retention = $settings['retention_days'] ?? 30;
-        if ($retention > 0) {
-            $this->cleanupOldBackups($backupPath, $retention);
-        }
-
-        // Send notification email
-        if ($settings['notify_on_success']) {
-            $this->sendNotificationEmail('success', $filename, $size, $settings);
-        }
-
-        CLI::write(' Backup completed successfully.', 'green');
     }
 
     private function getBackupSettings(): array

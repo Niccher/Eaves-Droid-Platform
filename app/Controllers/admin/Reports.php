@@ -170,6 +170,10 @@ class Reports extends BaseAdminController
         $userId    = $this->request->getPost('user_id');
         $format    = $this->request->getPost('format') ?? 'html';
 
+        if (empty($dataTypes)) {
+            return redirect()->to('admin/reports/generate')->with('error', 'Please select at least one data type to generate a report.');
+        }
+
         $results = [];
         $grandTotal = 0;
         foreach ($dataTypes as $type) {
@@ -187,6 +191,10 @@ class Reports extends BaseAdminController
             $count = $query->countAllResults();
             $results[] = ['type' => $type, 'label' => $info['label'], 'icon' => $info['icon'], 'count' => $count];
             $grandTotal += $count;
+        }
+
+        if (empty($results)) {
+            return redirect()->to('admin/reports/generate')->with('error', 'No data types matched your selection. Please check the data types and try again.');
         }
 
         $selectedUser = null;
@@ -550,5 +558,121 @@ class Reports extends BaseAdminController
         }
 
         return redirect()->back()->with('error', 'Unsupported export format.');
+    }
+
+    public function generateData()
+    {
+        if ($this->request->getMethod() !== 'post') {
+            return redirect()->to('admin/reports/generate');
+        }
+
+        $db = $this->getDb();
+        $allTypes = $this->getDataTypeMap();
+
+        $dateFrom  = $this->request->getPost('date_from');
+        $dateTo    = $this->request->getPost('date_to');
+        $dataTypes = $this->request->getPost('data_types') ?? [];
+        $userId    = $this->request->getPost('user_id');
+        $format    = $this->request->getPost('format') ?? 'csv';
+
+        if (empty($dataTypes)) {
+            return redirect()->to('admin/reports/generate')->with('error', 'Please select at least one data type.');
+        }
+
+        $tableMap = $this->getDataTypeMap();
+        $rows = [];
+        $grandTotal = 0;
+        $sourceKeys = $dataTypes;
+
+        foreach ($sourceKeys as $type) {
+            if (!isset($tableMap[$type])) continue;
+            $info = $tableMap[$type];
+            $table = $info['table'];
+            $dateCol = $type === 'uploads' ? 'uploaded_at' : 'created_at';
+            $query = $db->table($table)
+                ->where("{$dateCol} >=", $dateFrom ?: '1970-01-01')
+                ->where("{$dateCol} <=", $dateTo ?: date('Y-m-d'));
+            if ($userId && $userId !== 'all') {
+                $ownerCol = ($table === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
+                $query->where($ownerCol, $userId);
+            }
+            $count = $query->countAllResults();
+            $rows[] = ['label' => $info['label'], 'type' => $type, 'count' => $count];
+            $grandTotal += $count;
+        }
+
+        if ($format === 'csv') {
+            $csv = "Data Type,Records Count\n";
+            foreach ($rows as $r) {
+                $csv .= '"' . $r['label'] . '",' . $r['count'] . "\n";
+            }
+            $csv .= "Total,{$grandTotal}\n";
+            return $this->response
+                ->setHeader('Content-Type', 'text/csv')
+                ->setHeader('Content-Disposition', 'attachment; filename="report_data_' . date('Y-m-d') . '.csv"')
+                ->setBody($csv);
+        }
+
+        if ($format === 'html') {
+            $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Report Data</title>';
+            $html .= '<style>body{font-family:DejaVu Sans,sans-serif;font-size:13px;color:#333;margin:24px;}';
+            $html .= 'h1{font-size:18px;color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:8px;}';
+            $html .= 'table{width:100%;border-collapse:collapse;margin-top:16px;}';
+            $html .= 'th{background:#1a56db;color:#fff;padding:10px 12px;text-align:left;font-size:12px;}';
+            $html .= 'td{padding:8px 12px;border-bottom:1px solid #e2e8f0;}';
+            $html .= 'tr:nth-child(even){background:#f8fafc;}';
+            $html .= '.total{font-weight:bold;background:#e2e8f0!important;}';
+            $html .= '.meta{margin-top:8px;font-size:12px;color:#64748b;}</style></head><body>';
+            $html .= '<h1>Eaves Droid — Report Data Export</h1>';
+            $html .= '<div class="meta">Period: ' . ($dateFrom ?: 'All time') . ' to ' . ($dateTo ?: 'Today') . ' | Format: HTML | Generated: ' . date('Y-m-d H:i:s') . '</div>';
+            $html .= '<table><thead><tr><th>Data Type</th><th>Records</th></tr></thead><tbody>';
+            foreach ($rows as $r) {
+                $html .= '<tr><td>' . $r['label'] . '</td><td>' . number_format($r['count']) . '</td></tr>';
+            }
+            $html .= '<tr class="total"><td>Total</td><td>' . number_format($grandTotal) . '</td></tr>';
+            $html .= '</tbody></table></body></html>';
+
+            return $this->response
+                ->setHeader('Content-Type', 'text/html')
+                ->setHeader('Content-Disposition', 'attachment; filename="report_data_' . date('Y-m-d') . '.html"')
+                ->setBody($html);
+        }
+
+        if ($format === 'pdf') {
+            $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Report Data PDF</title>';
+            $html .= '<style>body{font-family:DejaVu Sans,sans-serif;font-size:12px;color:#333;margin:24px;}';
+            $html .= 'h1{font-size:18px;color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:8px;}';
+            $html .= 'table{width:100%;border-collapse:collapse;margin-top:16px;}';
+            $html .= 'th{background:#1a56db;color:#fff;padding:8px 12px;text-align:left;font-size:11px;}';
+            $html .= 'td{padding:8px 12px;border-bottom:1px solid #e2e8f0;}';
+            $html .= 'tr:nth-child(even){background:#f8fafc;}';
+            $html .= '.total{font-weight:bold;background:#e2e8f0!important;}</style></head><body>';
+            $html .= '<h1>Eaves Droid — Report Data Export</h1>';
+            $html .= '<p>Period: ' . ($dateFrom ?: 'All time') . ' to ' . ($dateTo ?: 'Today') . '</p>';
+            $html .= '<table><thead><tr><th>Data Type</th><th>Records</th></tr></thead><tbody>';
+            foreach ($rows as $r) {
+                $html .= '<tr><td>' . $r['label'] . '</td><td>' . number_format($r['count']) . '</td></tr>';
+            }
+            $html .= '<tr class="total"><td>Total</td><td>' . number_format($grandTotal) . '</td></tr>';
+            $html .= '</tbody></table></body></html>';
+
+            if (class_exists('\Dompdf\Dompdf')) {
+                $dompdf = new \Dompdf\Dompdf();
+                $dompdf->loadHtml($html);
+                $dompdf->setPaper('A4', 'landscape');
+                $dompdf->render();
+                return $this->response
+                    ->setHeader('Content-Type', 'application/pdf')
+                    ->setHeader('Content-Disposition', 'attachment; filename="report_data_' . date('Y-m-d') . '.pdf"')
+                    ->setBody($dompdf->output());
+            }
+
+            return $this->response
+                ->setHeader('Content-Type', 'text/html')
+                ->setHeader('Content-Disposition', 'attachment; filename="report_data_' . date('Y-m-d') . '.html"')
+                ->setBody($html);
+        }
+
+        return redirect()->to('admin/reports/generate')->with('error', 'Unsupported export format.');
     }
 }

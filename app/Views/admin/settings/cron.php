@@ -53,6 +53,7 @@
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/notifications') ?>" class="nav-link"><i class="fas fa-bell mr-1"></i> Notifications</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/maintenance') ?>" class="nav-link"><i class="fas fa-tools mr-1"></i> Maintenance</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/storage') ?>" class="nav-link"><i class="fas fa-hdd mr-1"></i> Storage Monitor</a></li>
+                                <li class="nav-item"><a href="<?= base_url('admin/settings/storage-cleanup') ?>" class="nav-link"><i class="fas fa-broom mr-1"></i> Storage Cleanup</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/email-triggers') ?>" class="nav-link"><i class="fas fa-envelope mr-1"></i> Email Triggers</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/backup') ?>" class="nav-link"><i class="fas fa-hdd mr-1"></i> Backup</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/cron') ?>" class="nav-link active"><i class="fas fa-clock mr-1"></i> Cron Jobs</a></li>
@@ -149,7 +150,7 @@
                                             </td>
                                             <td>
                                                 <?php if (!empty($log['output'])): ?>
-                                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="showOutput('<?= esc(addslashes($log['output'])) ?>')"><i class="fas fa-terminal"></i> View</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info" onclick='showOutput(<?= json_encode($log["output"]) ?>)'><i class="fas fa-terminal"></i> View</button>
                                                 <?php else: ?>
                                                     <span class="text-muted">No output</span>
                                                 <?php endif; ?>
@@ -203,8 +204,13 @@
                                         <option value="anomalies:run-job">anomalies:run-job — Run ML anomaly detection job</option>
                                         </optgroup>
                                         <optgroup label="Housekeeping">
-                                        <option value="logs:clear">logs:clear — Clear all log files</option>
-                                        <option value="cache:clear">cache:clear — Clear system caches</option>
+                                        <option value="logs:clear">logs:clear — Clear old log files</option>
+                                        <option value="cache:clear">cache:clear — Clear system cache files</option>
+                                        <option value="queue:cleanup">queue:cleanup — Reset stuck upload queue items</option>
+                                        <option value="tokens:cleanup">tokens:cleanup — Purge expired tokens</option>
+                                        <option value="ml:cleanup">ml:cleanup — Mark stale ML jobs as failed</option>
+                                        <option value="storage:pollution">storage:pollution — Remove orphaned file records</option>
+                                        <option value="notifications:digest">notifications:digest — Send batch notification digest</option>
                                         </optgroup>
                                         <optgroup label="Database">
                                         <option value="migrate">migrate — Run all new migrations</option>
@@ -276,24 +282,33 @@ document.getElementById('cronCommand').addEventListener('change', function() {
     document.getElementById('customCommand').disabled = this.value !== 'custom';
 });
 
+function showToast(message, type) {
+    const iconMap = {success: 'check-circle', error: 'times-circle', warning: 'exclamation-circle', info: 'info-circle'};
+    Swal.fire({toast: true, position: 'top-end', icon: type || 'success', title: message, showConfirmButton: false, timer: 3000, timerProgressBar: true});
+}
+
 function saveCron(event) {
     event.preventDefault();
     var form = document.getElementById('cronForm');
     var data = new URLSearchParams(new FormData(form));
     data.set('<?= csrf_token() ?>', document.getElementById('csrfHash').value);
+    Swal.fire({title: 'Saving...', allowOutsideClick: false, didOpen: () => {Swal.showLoading()}});
     fetch('<?= base_url('admin/settings/cron/save') ?>', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
         body: data.toString()
     }).then(function(r) { return r.json(); }).then(function(result) {
+        Swal.close();
         if (result.success) {
             $('#cronModal').modal('hide');
+            showToast(result.message || 'Cron job saved successfully.', 'success');
             location.reload();
         } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+            showToast(result.message || 'Failed to save cron job.', 'error');
         }
     }).catch(function() {
-        alert('Request failed. Please try again.');
+        Swal.close();
+        showToast('Request failed. Please try again.', 'error');
     });
     return false;
 }
@@ -321,35 +336,50 @@ function editCron(id) {
 }
 
 function toggleCron(id, enabled) {
-    fetch('<?= base_url('admin/settings/cron/toggle') ?>', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-        body: 'id=' + id + '&enabled=' + enabled + '&<?= csrf_token() ?>=<?= csrf_hash() ?>'
-    }).then(r => r.json()).then(data => {
-        if (data.success) location.reload();
-        else alert('Error: ' + data.message);
+    Swal.fire({title: 'Confirm', text: 'Are you sure you want to ' + (enabled ? 'enable' : 'disable') + ' this cron job?', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes', cancelButtonText: 'Cancel'}).then((result) => {
+        if (!result.isConfirmed) return;
+        fetch('<?= base_url('admin/settings/cron/toggle') ?>', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+            body: 'id=' + id + '&enabled=' + enabled + '&<?= csrf_token() ?>=<?= csrf_hash() ?>'
+        }).then(r => r.json()).then(data => {
+            if (data.success) { showToast('Cron job ' + (enabled ? 'enabled' : 'disabled') + '.', 'success'); location.reload(); }
+            else showToast(data.message || 'Failed to toggle cron job.', 'error');
+        }).catch(function() { showToast('Request failed.', 'error'); });
     });
 }
 
 function runCronNow(id) {
-    if (!confirm('Run this cron job now?')) return;
-    fetch('<?= base_url('admin/settings/cron/run') ?>/' + id, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    }).then(r => r.json()).then(data => {
-        alert(data.message);
-        if (data.success) location.reload();
+    Swal.fire({title: 'Run now?', text: 'This will execute the cron job immediately.', icon: 'question', showCancelButton: true, confirmButtonText: 'Run', cancelButtonText: 'Cancel'}).then((result) => {
+        if (!result.isConfirmed) return;
+        Swal.fire({title: 'Running...', allowOutsideClick: false, didOpen: () => {Swal.showLoading()}});
+        fetch('<?= base_url('admin/settings/cron/run') ?>/' + id, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        }).then(r => r.json()).then(data => {
+            Swal.close();
+            if (data.success) {
+                showToast(data.message || 'Job executed successfully.', 'success');
+                if (data.output) showOutput(data.output);
+                location.reload();
+            } else {
+                showToast(data.message || 'Job failed.', 'error');
+                if (data.output) showOutput(data.output);
+            }
+        }).catch(function() { Swal.close(); showToast('Request failed.', 'error'); });
     });
 }
 
 function deleteCron(id) {
-    if (!confirm('Delete this cron job permanently?')) return;
-    fetch('<?= base_url('admin/settings/cron/delete') ?>/' + id, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    }).then(r => r.json()).then(data => {
-        if (data.success) location.reload();
-        else alert('Error: ' + data.message);
+    Swal.fire({title: 'Delete?', text: 'This cron job will be permanently removed.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', cancelButtonText: 'Cancel', confirmButtonColor: '#dc3545'}).then((result) => {
+        if (!result.isConfirmed) return;
+        fetch('<?= base_url('admin/settings/cron/delete') ?>/' + id, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        }).then(r => r.json()).then(data => {
+            if (data.success) { showToast('Cron job deleted.', 'success'); location.reload(); }
+            else showToast(data.message || 'Failed to delete cron job.', 'error');
+        }).catch(function() { showToast('Request failed.', 'error'); });
     });
 }
 

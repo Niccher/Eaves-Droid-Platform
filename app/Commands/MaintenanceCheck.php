@@ -15,46 +15,79 @@ class MaintenanceCheck extends BaseCommand
     public function run(array $params)
     {
         $db = \Config\Database::connect();
+        $startTime = microtime(true);
+        $command = 'maintenance:check';
+        $output = '';
 
-        $settings = [];
-        foreach ($db->table('settings')->where('class', 'app')->get()->getResultArray() as $r) {
-            $settings[$r['key']] = $r['value'];
-        }
+        $logId = $db->table('cron_execution_logs')->insert([
+            'job_id' => 0,
+            'command' => $command,
+            'started_at' => date('Y-m-d H:i:s'),
+            'status' => 'running',
+        ]);
+        $logId = $db->insertID();
 
-        $currentMode = $settings['maintenance_mode'] ?? '0';
-        $type = $settings['maintenance_type'] ?? 'now_until_unknown';
-        $startTime = $settings['maintenance_start'] ?? null;
-        $endTime = $settings['maintenance_end'] ?? null;
-        $now = date('Y-m-d H:i:s');
-
-        $activated = false;
-        $deactivated = false;
-
-        if ($type === 'scheduled') {
-            if ($currentMode === '0' && $startTime && $now >= $startTime) {
-                $this->setMaintenanceMode($db, '1');
-                $this->notifyUsers($db, 'enabled', $startTime, $endTime, 'Scheduled maintenance is in progress.');
-                CLI::write(' Maintenance activated (scheduled start reached).', 'green');
-                $activated = true;
+        try {
+            $settings = [];
+            foreach ($db->table('settings')->where('class', 'app')->get()->getResultArray() as $r) {
+                $settings[$r['key']] = $r['value'];
             }
 
-            if ($currentMode === '1' && $endTime && $now >= $endTime) {
-                $this->setMaintenanceMode($db, '0');
-                $this->notifyUsers($db, 'disabled', $startTime, $endTime, 'Maintenance has been completed. All services are now operational.');
-                CLI::write(' Maintenance deactivated (scheduled end reached).', 'green');
-                $deactivated = true;
-            }
-        } elseif ($type === 'now_until') {
-            if ($currentMode === '1' && $endTime && $now >= $endTime) {
-                $this->setMaintenanceMode($db, '0');
-                $this->notifyUsers($db, 'disabled', $startTime, $endTime, 'Maintenance has been completed. All services are now operational.');
-                CLI::write(' Maintenance deactivated (end time reached).', 'green');
-                $deactivated = true;
-            }
-        }
+            $currentMode = $settings['maintenance_mode'] ?? '0';
+            $type = $settings['maintenance_type'] ?? 'now_until_unknown';
+            $startTimeVal = $settings['maintenance_start'] ?? null;
+            $endTime = $settings['maintenance_end'] ?? null;
+            $now = date('Y-m-d H:i:s');
 
-        if (!$activated && !$deactivated) {
-            CLI::write(' No maintenance state change needed.', 'yellow');
+            $activated = false;
+            $deactivated = false;
+
+            if ($type === 'scheduled') {
+                if ($currentMode === '0' && $startTimeVal && $now >= $startTimeVal) {
+                    $this->setMaintenanceMode($db, '1');
+                    $this->notifyUsers($db, 'enabled', $startTimeVal, $endTime, 'Scheduled maintenance is in progress.');
+                    CLI::write(' Maintenance activated (scheduled start reached).', 'green');
+                    $output .= 'Maintenance activated (scheduled start reached).' . PHP_EOL;
+                    $activated = true;
+                }
+
+                if ($currentMode === '1' && $endTime && $now >= $endTime) {
+                    $this->setMaintenanceMode($db, '0');
+                    $this->notifyUsers($db, 'disabled', $startTimeVal, $endTime, 'Maintenance has been completed. All services are now operational.');
+                    CLI::write(' Maintenance deactivated (scheduled end reached).', 'green');
+                    $output .= 'Maintenance deactivated (scheduled end reached).' . PHP_EOL;
+                    $deactivated = true;
+                }
+            } elseif ($type === 'now_until') {
+                if ($currentMode === '1' && $endTime && $now >= $endTime) {
+                    $this->setMaintenanceMode($db, '0');
+                    $this->notifyUsers($db, 'disabled', $startTimeVal, $endTime, 'Maintenance has been completed. All services are now operational.');
+                    CLI::write(' Maintenance deactivated (end time reached).', 'green');
+                    $output .= 'Maintenance deactivated (end time reached).' . PHP_EOL;
+                    $deactivated = true;
+                }
+            }
+
+            if (!$activated && !$deactivated) {
+                CLI::write(' No maintenance state change needed.', 'yellow');
+                $output .= 'No maintenance state change needed.' . PHP_EOL;
+            }
+
+            $duration = (int)((microtime(true) - $startTime) * 1000);
+            $db->table('cron_execution_logs')->where('id', $logId)->update([
+                'finished_at' => date('Y-m-d H:i:s'),
+                'status' => 'success',
+                'output' => trim($output),
+                'duration_ms' => $duration,
+            ]);
+        } catch (\Throwable $e) {
+            $duration = (int)((microtime(true) - $startTime) * 1000);
+            $db->table('cron_execution_logs')->where('id', $logId)->update([
+                'finished_at' => date('Y-m-d H:i:s'),
+                'status' => 'failed',
+                'output' => trim($output) . PHP_EOL . $e->getMessage(),
+                'duration_ms' => $duration,
+            ]);
         }
     }
 

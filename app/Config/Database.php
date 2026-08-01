@@ -27,7 +27,7 @@ class Database extends Config
     public array $default = [
         'DSN'          => '',
         'hostname'     => 'localhost',
-        'username'     => 'chegecac_prj_imgs',
+        'username'     => 'db_eaves_droid',
         'password'     => 'R6rQhag3qcWQ2Yi',
         'database'     => 'db_eaves_droid',
         'DBDriver'     => 'MySQLi',

@@ -41,15 +41,15 @@
             <!-- Header -->
             <thead>
             <tr>
-                <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:32px 24px;text-align:center;">
+                <td style="background:#ffffff;border-bottom:1px solid #e2e8f0;padding:32px 24px;text-align:center;">
                     <div style="display:inline-block;width:56px;height:56px;background:linear-gradient(135deg,#00d4aa 0%,#00b894 100%);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,212,170,0.3);">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                             <polyline points="22,6 12,13 2,6"></polyline>
                         </svg>
                     </div>
-                    <h1 class="header-title" style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Eaves Droid</h1>
-                    <p style="margin:8px 0 0;color:#94a3b8;font-size:13px;font-weight:500;">Advanced Mobile Forensic & Data Intelligence</p>
+                    <h1 class="header-title" style="margin:0;color:#0f172a;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Eaves Droid</h1>
+                    <p style="margin:8px 0 0;color:#64748b;font-size:13px;font-weight:500;">Advanced Mobile Forensic & Data Intelligence</p>
                 </td>
             </tr>
             </thead>

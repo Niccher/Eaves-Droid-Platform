@@ -44,7 +44,7 @@ $allowedMap = [
                 'on_storage_warning', 'on_storage_critical', 'on_queue_stalled', 'on_ssl_expiring',
             ],
             'backup' => ['schedule_cron', 'retention_days', 'storage_path', 'compress', 'notify_on_success', 'notify_on_failure'],
-            'storage' => ['threshold_warning', 'threshold_critical', 'check_interval_minutes', 'notify_admins'],
+            'storage' => ['threshold_warning', 'threshold_critical', 'notify_admins', 'logs_retention_days', 'queue_cleanup_timeout_hours', 'queue_cleanup_max_attempts', 'ml_cleanup_timeout_hours', 'cleanup_backups_days', 'cleanup_cache_days', 'cleanup_exports_days'],
             'ml' => ['ml_enabled', 'ml_anomaly_enabled', 'ml_schedule_interval', 'ml_phpml_kmeans_k', 'ml_phpml_dbscan_epsilon', 'ml_phpml_dbscan_minpoints', 'ml_phpml_isolationforest_trees', 'ml_phpml_isolationforest_samples', 'ml_python_enabled', 'ml_python_host', 'ml_python_port', 'ml_python_endpoint', 'ml_python_url', 'ml_python_autoencoder_latent', 'ml_python_autoencoder_epochs', 'ml_python_autoencoder_threshold', 'ml_python_lstm_sequence', 'ml_python_lstm_units', 'ml_python_oneclass_nu', 'ml_python_oneclass_gamma', 'ml_python_iforest_trees', 'ml_python_iforest_samples', 'ml_python_iforest_contamination'],
         ];
 
@@ -156,6 +156,10 @@ $allowedMap = [
         ];
 
         $redirectUrl = $redirectMap[$section] ?? 'admin/settings';
+        $returnUrl = $this->request->getPost('return_url');
+        if ($returnUrl && filter_var($returnUrl, FILTER_VALIDATE_URL)) {
+            $redirectUrl = parse_url($returnUrl, PHP_URL_PATH);
+        }
         return redirect()->to($redirectUrl)->with('message', "Updated {$updated} setting(s) for section '{$section}'.");
     }
 
@@ -639,10 +643,69 @@ $allowedMap = [
 
         $disks = $this->getDiskUsage();
 
+        $allFilesSize = 0;
+        $fileRows = $db->table('uploaded_files')->select('SUM(file_size_bytes) AS total_size')->get()->getRowArray();
+        $allFilesSize = (int)($fileRows['total_size'] ?? 0);
+
+        $dbSize = 0;
+        foreach ($db->listTables() as $table) {
+            $status = $db->query("SHOW TABLE STATUS LIKE '{$table}'")->getRow();
+            $dbSize += ($status->Data_length ?? 0) + ($status->Index_length ?? 0);
+        }
+
         return $this->renderView('admin/settings/storage', [
             'pag' => 'admin-settings-storage',
             'settings' => $saved,
             'disks' => $disks,
+            'all_files_size' => $allFilesSize,
+            'all_files_size_formatted' => $this->formatBytes($allFilesSize),
+            'db_size' => $dbSize,
+            'db_size_formatted' => $this->formatBytes($dbSize),
+            'total_used_size' => $allFilesSize + $dbSize,
+            'total_used_size_formatted' => $this->formatBytes($allFilesSize + $dbSize),
+            'total_disk_size' => array_sum(array_column($disks, 'total')),
+            'total_disk_size_formatted' => $this->formatBytes(array_sum(array_column($disks, 'total'))),
+        ]);
+    }
+
+    /**
+     * Storage Cleanup Settings Page
+     * Shows storage usage breakdown and cleanup thresholds for automated cron jobs.
+     */
+    public function storage_cleanup()
+    {
+        $db = $this->getDb();
+
+        $saved = [];
+        $rows = $db->table('settings')->where('class', 'storage')->get()->getResultArray();
+        foreach ($rows as $r) {
+            $saved[$r['key']] = $r['value'];
+        }
+
+        $disks = $this->getDiskUsage();
+
+        $allFilesSize = 0;
+        $fileRows = $db->table('uploaded_files')->select('SUM(file_size_bytes) AS total_size')->get()->getRowArray();
+        $allFilesSize = (int)($fileRows['total_size'] ?? 0);
+
+        $dbSize = 0;
+        foreach ($db->listTables() as $table) {
+            $status = $db->query("SHOW TABLE STATUS LIKE '{$table}'")->getRow();
+            $dbSize += ($status->Data_length ?? 0) + ($status->Index_length ?? 0);
+        }
+
+        return $this->renderView('admin/settings/storage_cleanup', [
+            'pag' => 'admin-settings-storage-cleanup',
+            'settings' => $saved,
+            'disks' => $disks,
+            'all_files_size' => $allFilesSize,
+            'all_files_size_formatted' => $this->formatBytes($allFilesSize),
+            'db_size' => $dbSize,
+            'db_size_formatted' => $this->formatBytes($dbSize),
+            'total_used_size' => $allFilesSize + $dbSize,
+            'total_used_size_formatted' => $this->formatBytes($allFilesSize + $dbSize),
+            'total_disk_size' => array_sum(array_column($disks, 'total')),
+            'total_disk_size_formatted' => $this->formatBytes(array_sum(array_column($disks, 'total'))),
         ]);
     }
 
@@ -900,7 +963,8 @@ $allowedMap = [
             $args .= " --{$key}={$value}";
         }
 
-        $fullCommand = "spark {$command}{$args}";
+        $sparkPath = defined('ROOTPATH') ? ROOTPATH . 'spark' : FCPATH . '../spark';
+        $fullCommand = "php {$sparkPath} {$command}{$args}";
         $logId = $this->logCronStart($job['id'], $fullCommand);
 
         $output = [];

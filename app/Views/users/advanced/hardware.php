@@ -222,6 +222,84 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-headphones fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Audio Devices</h6>
+                            <p class="text-muted small mb-2">Audio I/O devices, streams, and volume profiles</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_audio_devices'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/hardware/audio_devices'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-fingerprint fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Biometric</h6>
+                            <p class="text-muted small mb-2">Fingerprint/face sensors and enrollment status</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_biometric'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/hardware/biometric'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-satellite fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">GNSS Hardware</h6>
+                            <p class="text-muted small mb-2">GPS receiver capabilities and constellations</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_gnss_hardware'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/hardware/gnss_hardware'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-bolt fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Power Rails</h6>
+                            <p class="text-muted small mb-2">Regulator rails, voltage/current, power draw</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_power_rails'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/hardware/power_rails'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-usb fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">USB Devices</h6>
+                            <p class="text-muted small mb-2">Connected USB peripherals and descriptors</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_usb_devices'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/hardware/usb_devices'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="card card-outline card-secondary shadow-sm h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                <i class="fas fa-mobile-alt fa-2x text-white"></i>
+                            </div>
+                            <h6 class="card-title mb-1">Vibration</h6>
+                            <p class="text-muted small mb-2">Haptic motor capabilities and waveform support</p>
+                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_vibration'] ?? 0; ?> records</span>
+                            <a href="<?php echo base_url('advanced/hardware/vibration'); ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

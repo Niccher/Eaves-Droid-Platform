@@ -195,7 +195,40 @@ class Mod_Crypt extends Model
      */
     public function decode_content(string $value)
     {
+        // Plaintext passthrough: composite dispatchers write unencrypted JSON
+        // sub-files (e.g. parse_apps_notifications). If the input is already
+        // valid JSON, return it unchanged instead of attempting decryption.
+        if ($value !== '' && json_decode($value, true) !== null) {
+            return $value;
+        }
+
         return $this->Dec_File($value); // Reuses Dec_File
+    }
+
+    /**
+     * Encodes content with AES-128-CBC, matching the raw-mode format used by Dec_File.
+     *
+     * @param string $value
+     * @return string|false
+     */
+    public function encode_content(string $value)
+    {
+        try {
+            $cipher_algo = "AES-128-CBC";
+            $crypt_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW';
+            $crypt_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f=";
+
+            $enc_val = openssl_encrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
+            if ($enc_val !== false) {
+                return $enc_val;
+            }
+
+            log_message('error', 'encode_content: encryption failed');
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'encode_content error: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**

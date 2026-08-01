@@ -13,38 +13,73 @@ class CheckStorage extends BaseCommand
 
     public function run(array $params)
     {
-        $settings = $this->getStorageSettings();
+        $db = \Config\Database::connect();
+        $startTime = microtime(true);
+        $command = 'storage:check';
+        $output = '';
 
-        CLI::write(' Checking disk usage...', 'yellow');
+        $logId = $db->table('cron_execution_logs')->insert([
+            'job_id' => 0,
+            'command' => $command,
+            'started_at' => date('Y-m-d H:i:s'),
+            'status' => 'running',
+        ]);
+        $logId = $db->insertID();
 
-        $disks = $this->getDiskUsage();
-        $alerts = [];
+        try {
+            $settings = $this->getStorageSettings();
 
-        foreach ($disks as $disk) {
-            $pct = $disk['usage_percent'];
-            $level = 'ok';
+            CLI::write(' Checking disk usage...', 'yellow');
+            $output .= 'Checking disk usage...' . PHP_EOL;
 
-            if ($pct >= ($settings['threshold_critical'] ?? 90)) {
-                $level = 'CRITICAL';
-            } elseif ($pct >= ($settings['threshold_warning'] ?? 80)) {
-                $level = 'WARNING';
+            $disks = $this->getDiskUsage();
+            $alerts = [];
+
+            foreach ($disks as $disk) {
+                $pct = $disk['usage_percent'];
+                $level = 'ok';
+
+                if ($pct >= ($settings['threshold_critical'] ?? 90)) {
+                    $level = 'CRITICAL';
+                } elseif ($pct >= ($settings['threshold_warning'] ?? 80)) {
+                    $level = 'WARNING';
+                }
+
+                $color = $level === 'CRITICAL' ? 'red' : ($level === 'WARNING' ? 'yellow' : 'green');
+                CLI::write(" {$disk['mount']}: {$pct}% used ({$disk['used_formatted']} / {$disk['total_formatted']})", $color);
+                $output .= "{$disk['mount']}: {$pct}% used ({$disk['used_formatted']} / {$disk['total_formatted']})" . PHP_EOL;
+
+                if ($level !== 'ok' && ($settings['notify_admins'] ?? false)) {
+                    $alerts[] = ['disk' => $disk, 'level' => $level];
+                }
             }
 
-            $color = $level === 'CRITICAL' ? 'red' : ($level === 'WARNING' ? 'yellow' : 'green');
-            CLI::write(" {$disk['mount']}: {$pct}% used ({$disk['used_formatted']} / {$disk['total_formatted']})", $color);
-
-            if ($level !== 'ok' && ($settings['notify_admins'] ?? false)) {
-                $alerts[] = ['disk' => $disk, 'level' => $level];
+            if (!empty($alerts)) {
+                foreach ($alerts as $alert) {
+                    $this->sendAlertEmail($alert['disk'], $alert['level'], $settings);
+                }
+                CLI::write(' Alert emails sent to admins.', 'yellow');
+                $output .= 'Alert emails sent to admins.' . PHP_EOL;
+            } else {
+                CLI::write(' No threshold breaches.', 'green');
+                $output .= 'No threshold breaches.' . PHP_EOL;
             }
-        }
 
-        if (!empty($alerts)) {
-            foreach ($alerts as $alert) {
-                $this->sendAlertEmail($alert['disk'], $alert['level'], $settings);
-            }
-            CLI::write(' Alert emails sent to admins.', 'yellow');
-        } else {
-            CLI::write(' No threshold breaches.', 'green');
+            $duration = (int)((microtime(true) - $startTime) * 1000);
+            $db->table('cron_execution_logs')->where('id', $logId)->update([
+                'finished_at' => date('Y-m-d H:i:s'),
+                'status' => 'success',
+                'output' => trim($output),
+                'duration_ms' => $duration,
+            ]);
+        } catch (\Throwable $e) {
+            $duration = (int)((microtime(true) - $startTime) * 1000);
+            $db->table('cron_execution_logs')->where('id', $logId)->update([
+                'finished_at' => date('Y-m-d H:i:s'),
+                'status' => 'failed',
+                'output' => trim($output) . PHP_EOL . $e->getMessage(),
+                'duration_ms' => $duration,
+            ]);
         }
     }
 

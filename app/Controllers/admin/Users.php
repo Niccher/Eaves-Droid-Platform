@@ -285,9 +285,6 @@ class Users extends BaseAdminController
             // Delete from auth_token_logins (Shield auth - token-based logins)
             $db->table('auth_token_logins')->where('user_id', $id)->delete();
 
-            // Delete user's personal access tokens (if using Shield's token system)
-            $db->table('auth_tokens')->where('user_id', $id)->delete();
-
             // Delete user profiles
             $db->table('user_profiles')->where('user_id', $id)->delete();
 

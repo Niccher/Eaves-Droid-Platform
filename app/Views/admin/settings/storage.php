@@ -53,6 +53,7 @@
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/notifications') ?>" class="nav-link"><i class="fas fa-bell mr-1"></i> Notifications</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/maintenance') ?>" class="nav-link"><i class="fas fa-tools mr-1"></i> Maintenance</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/storage') ?>" class="nav-link active"><i class="fas fa-hdd mr-1"></i> Storage Monitor</a></li>
+                                <li class="nav-item"><a href="<?= base_url('admin/settings/storage-cleanup') ?>" class="nav-link"><i class="fas fa-broom mr-1"></i> Storage Cleanup</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/email-triggers') ?>" class="nav-link"><i class="fas fa-envelope mr-1"></i> Email Triggers</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/backup') ?>" class="nav-link"><i class="fas fa-hdd mr-1"></i> Backup</a></li>
                                 <li class="nav-item"><a href="<?= base_url('admin/settings/cron') ?>" class="nav-link"><i class="fas fa-clock mr-1"></i> Cron Jobs</a></li>
@@ -107,14 +108,7 @@
                                     </div>
                                 </div>
 
-<div class="row">
-                                     <div class="col-md-6">
-                                         <div class="form-group">
-                                             <label for="check_interval_minutes"><strong>Check Interval (minutes)</strong></label>
-                                             <input type="number" class="form-control" name="check_interval_minutes" id="check_interval_minutes" min="1" max="1440" value="<?= esc($settings['check_interval_minutes'] ?? 15) ?>">
-                                             <small class="form-text text-muted">How often to run the storage check (cron job). Minimum 1 minute.</small>
-                                         </div>
-                                     </div>
+                                 <div class="row">
                                      <div class="col-md-6">
                                          <div class="form-group">
                                              <label for="notify_admins"><strong>Notify Admins</strong></label>
