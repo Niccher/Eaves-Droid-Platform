@@ -78,17 +78,15 @@ $pkgName = $summary['package_name'] ?? $group_key;
                                     <thead class="thead-light">
                                     <tr>
                                         <th><i class="fas fa-clock mr-1"></i>Arrived</th>
-                                        <th><i class="fas fa-user mr-1"></i>Sender</th>
                                         <th><i class="fas fa-heading mr-1"></i>Title</th>
                                         <th><i class="fas fa-comment-alt mr-1"></i>Content</th>
-                                        <th><i class="fas fa-tv mr-1"></i>Screen</th>
                                         <th><i class="fas fa-tag mr-1"></i>Action</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <?php if (empty($rows)): ?>
-                                        <tr><td colspan="7" class="text-center py-4 text-muted">No notifications for this app.</td></tr>
+                                        <tr><td colspan="5" class="text-center py-4 text-muted">No notifications for this app.</td></tr>
                                     <?php else: foreach ($rows as $r): ?>
                                         <?php
                                             $act   = strtoupper($r['action'] ?? '');
@@ -101,21 +99,8 @@ $pkgName = $summary['package_name'] ?? $group_key;
                                                 <small class="d-block font-weight-bold"><?= esc($r['ts_rel'] ?? '—') ?></small>
                                                 <small class="text-muted"><?= esc($r['ts_abs'] ?? '—') ?></small>
                                             </td>
-                                            <td>
-                                                <small><?= htmlspecialchars($r['sender'] ?? '—') ?></small>
-                                                <?php if (!empty($r['sub_text'])): ?>
-                                                    <small class="text-muted d-block"><?= htmlspecialchars(mb_strimwidth($r['sub_text'], 0, 40, '…')) ?></small>
-                                                <?php endif; ?>
-                                            </td>
                                             <td class="font-weight-bold"><?= htmlspecialchars($r['title'] ?? '—') ?></td>
                                             <td><small class="text-muted"><?= htmlspecialchars(mb_strimwidth($r['text'] ?? '—', 0, 120, '…')) ?></small></td>
-                                            <td>
-                                                <?php if ($isScreen): ?>
-                                                    <span class="badge badge-warning"><i class="fas fa-tv mr-1"></i>Screen</span>
-                                                <?php else: ?>
-                                                    <span class="badge badge-light text-muted">—</span>
-                                                <?php endif; ?>
-                                            </td>
                                             <td><span class="badge badge-<?= $actCol ?>"><?= $act ?></span></td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-outline-danger delete-notification"
@@ -143,26 +128,37 @@ $pkgName = $summary['package_name'] ?? $group_key;
 </style>
 <script>
 var base_url = function(path) { return '<?= base_url() ?>' + path; };
+var CSRF_TOKEN_NAME = '<?= csrf_token() ?>';
+var CSRF_TOKEN_HASH = '<?= csrf_hash() ?>';
+var DELETE_SECTION = <?= json_encode($appName ?? '') ?>;
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.delete-notification').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var id = this.getAttribute('data-id');
             if (!id) return;
+            var section = this.getAttribute('data-delete-title') || DELETE_SECTION || 'this notification';
             Swal.fire({
-                title: 'Delete Notification?',
-                text: 'This action cannot be undone.',
+                title: 'Delete this Entry?',
+                html: 'This will permanently delete the <strong>"' + section + '"</strong> notification and all of its associated data.'
+                   + '<br><span class="text-danger mt-1 d-inline-block"><i class="fas fa-exclamation-triangle mr-1"></i>This action cannot be undone.</span>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
-                confirmButtonText: '<i class="fas fa-trash mr-1"></i> Delete',
+                confirmButtonText: '<i class="fas fa-trash mr-1"></i> Yes, delete it!',
                 cancelButtonText: 'Cancel'
             }).then(function(result) {
                 if (result.isConfirmed) {
-                    fetch(base_url('advanced/notifications/delete-row/' + id), { method: 'POST' })
+                    var postData = new URLSearchParams();
+                    postData.append(CSRF_TOKEN_NAME, CSRF_TOKEN_HASH);
+                    fetch(base_url('advanced/software/notifications/delete-row/' + id), {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: postData
+                    })
                         .then(function(r) { return r.json(); })
                         .then(function(resp) {
                             if (resp.success) {
-                                Swal.fire('Deleted!', resp.message, 'success').then(function() { location.reload(); });
+                                Swal.fire('Deleted!', 'The "' + section + '" notification has been deleted.', 'success').then(function() { location.reload(); });
                             } else {
                                 Swal.fire('Error', resp.message || 'Failed to delete.', 'error');
                             }

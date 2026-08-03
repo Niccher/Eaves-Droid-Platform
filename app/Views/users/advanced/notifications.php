@@ -151,9 +151,7 @@ if (!empty($detail_mode)) {
         $html = '';
         if ($pkgEnc !== '') {
             $html .= '<a href="' . base_url('advanced/software/notifications/' . $pkgEnc) . '" class="btn btn-sm btn-outline-warning mr-1" title="View all notifications"><i class="fas fa-eye"></i></a>';
-            $html .= '<form method="post" action="' . base_url('advanced/software/notifications/delete/' . $pkgEnc) . '" style="display:inline;" onsubmit="return confirm(\'Delete all notifications for this app?\');">'
-                   . '<button type="submit" class="btn btn-sm btn-outline-danger" title="Delete all notifications"><i class="fas fa-trash-alt"></i></button>'
-                   . '</form>';
+            $html .= '<button type="button" class="btn btn-sm btn-outline-danger delete-notifications-group" data-pkg="' . esc($pkgEnc) . '" data-name="' . esc($r['app_name'] ?? '') . '" title="Delete all notifications for this app"><i class="fas fa-trash-alt"></i></button>';
         }
         return $html;
     };
@@ -164,8 +162,7 @@ if (!empty($detail_mode)) {
     'icon'     => 'fas fa-bell',
     'tableId'  => 'notificationsTable',
     'columns'  => [
-        ['field' => 'app_name',          'label' => 'Source',        'format' => 'text', 'icon' => 'fas fa-mobile-alt'],
-        ['field' => 'group_key',         'label' => 'Channel',       'format' => 'text', 'truncate' => 40, 'icon' => 'fas fa-tag'],
+        ['field' => 'app_name',          'sub_field' => 'group_key', 'label' => 'Source', 'format' => 'stacked', 'icon' => 'fas fa-mobile-alt'],
         ['field' => 'notification_count','label' => 'Alerts',        'format' => 'badge', 'default' => 'warning', 'icon' => 'fas fa-bell'],
         ['field' => 'latest_ts_abs',     'label' => 'Last Arrived',  'format' => 'text', 'icon' => 'fas fa-clock'],
         ['field' => 'latest_title_short','label' => 'Latest Preview','format' => 'text', 'truncate' => 60, 'icon' => 'fas fa-comment-alt'],
@@ -183,3 +180,49 @@ if (!empty($detail_mode)) {
 ?>
 <?php include __DIR__ . '/_adv_style.php'; ?>
 <?php include __DIR__ . '/_adv_delete_script.php'; ?>
+<script>
+var CSRF_TOKEN_NAME = '<?= csrf_token() ?>';
+var CSRF_TOKEN_HASH = '<?= csrf_hash() ?>';
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.delete-notifications-group').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var pkg = this.getAttribute('data-pkg');
+            var name = this.getAttribute('data-name') || pkg;
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Delete All Notifications?',
+                    html: 'This will permanently delete <strong>ALL</strong> notifications for <strong>"' + name + '"</strong> and all of its associated data.'
+                       + '<br><span class="text-danger mt-1 d-inline-block"><i class="fas fa-exclamation-triangle mr-1"></i>This action cannot be undone.</span>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-trash-alt"></i> Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        var postData = new URLSearchParams();
+                        postData.append(CSRF_TOKEN_NAME, CSRF_TOKEN_HASH);
+                        fetch('<?= base_url('advanced/software/notifications/delete') ?>/' + pkg, {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            body: postData
+                        }).then(function(r) { return r.json(); }).then(function(response) {
+                            if (response.success) {
+                                Swal.fire('Deleted!', 'All notifications for "' + name + '" have been deleted.', 'success').then(function() {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to delete notifications.', 'error');
+                            }
+                        }).catch(function() {
+                            Swal.fire('Error!', 'Failed to delete notifications.', 'error');
+                        });
+                    }
+                });
+            }
+        });
+    });
+});
+</script>

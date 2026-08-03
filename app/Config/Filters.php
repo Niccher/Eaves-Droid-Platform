@@ -62,8 +62,25 @@ class Filters extends BaseConfig
      */
     public array $methods = [];
 
-    /**
-     * ❌ REMOVE global CSRF filters
-     */
-    public array $filters = [];
-}
+/**
+      * Apply CSRF to the software AND hardware delete endpoints (POST).
+      * Token is sent by the SweetAlert delete handlers in the advanced views.
+      */
+     public array $filters = [
+         'csrf' => [
+             'before' => [
+                 'advanced/software/*/delete/*',
+                 'advanced/software/app-usage/delete-package/*',
+                 'advanced/software/notifications/delete-row/*',
+                 'advanced/hardware/*/delete/*',
+                 'apps/delete/*',
+                 'call_logs/delete/*',
+                 'sms/delete/*',
+                 'location/delete/*',
+                 'activities/delete/*',
+                 'contacts/delete/*',
+                 'files/delete/*',
+             ],
+         ],
+     ];
+ }

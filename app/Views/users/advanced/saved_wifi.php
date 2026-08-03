@@ -17,5 +17,5 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/saved_wifi/delete'),
+    'deleteUrl' => base_url('advanced/software/saved_wifi/delete'),
 ]) ?>

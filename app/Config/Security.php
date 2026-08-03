@@ -70,8 +70,13 @@ class Security extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Regenerate CSRF Token on every submission.
+     *
+     * Disabled: keeps the token stable for the session so repeated AJAX
+     * delete requests from the same page (and back/forward cache restores)
+     * never hit a rotated token. Security is preserved: the token is
+     * random per-session and validated with hash_equals.
      */
-    public bool $regenerate = true;
+    public bool $regenerate = false;
 
     /**
      * --------------------------------------------------------------------------

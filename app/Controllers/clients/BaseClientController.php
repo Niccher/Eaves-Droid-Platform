@@ -392,6 +392,10 @@ protected function getUserDataCounts(): array
             'call_head' => $this->getCallPageTitle($viewType),
             'call_urls' => $this->getCallNavigationUrls($viewType),
             'totalCalls' => $this->finderModel->get_count_Calls($this->userId),
+            'incomingCallsCount' => $this->finderModel->get_count_Calls_by_type($this->userId, 'Incoming'),
+            'outgoingCallsCount' => $this->finderModel->get_count_Calls_by_type($this->userId, 'Outgoing'),
+            'rejectedCallsCount' => $this->finderModel->get_count_Calls_by_type($this->userId, 'Rejected'),
+            'blockedCallsCount' => $this->finderModel->get_count_Calls_by_type($this->userId, 'Blocked'),
         ], $paginationData);
     }
 
@@ -407,12 +411,16 @@ protected function getUserDataCounts(): array
 
         // Get counts for each category
         $totalApps = $this->finderModel->get_count_Apps($this->userId);
+        $systemAppsCount = $this->finderModel->get_count_Apps_category($this->userId, 1);
+        $userAppsCount = $this->finderModel->get_count_Apps_category($this->userId, 0);
 
         return array_merge([
             'pag' => 'apps',
             'apps_head' => $this->getAppPageTitle($viewType),
             'apps_urls' => $this->getAppNavigationUrls($viewType),
             'totalApps' => $totalApps,
+            'systemAppsCount' => $systemAppsCount,
+            'userAppsCount' => $userAppsCount,
         ], $paginationData);
     }
 

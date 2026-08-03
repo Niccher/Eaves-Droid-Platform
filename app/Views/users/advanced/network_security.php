@@ -1,11 +1,13 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 
 <?php
-// Extract VPN interface name and active status from JSON
+// Extract VPN interface name / active status and DNS interface name from JSON
 foreach ($rows as &$row) {
     $vpn = $row['vpn_config'] ?? [];
     $row['vpn_interface_name'] = $vpn['interface_name'] ?? ($vpn['interface'] ?? '—');
     $row['vpn_is_active'] = isset($vpn['is_active']) ? ($vpn['is_active'] ? 1 : 0) : (isset($vpn['vpn_active']) ? ($vpn['vpn_active'] ? 1 : 0) : 0);
+    $dns = $row['dns_config'] ?? [];
+    $row['dns_interface_name'] = $dns['interface_name'] ?? ($dns['interface'] ?? '—');
 }
 ?>
 <?= view('users/advanced/_card_table', [
@@ -14,6 +16,7 @@ foreach ($rows as &$row) {
     'tableId'  => 'networkSecurityTable',
     'columns'  => [
         ['field' => 'extracted_at',       'label' => 'Extracted',        'format' => 'timestamp', 'icon' => 'fas fa-clock'],
+        ['field' => 'dns_interface_name', 'label' => 'DNS Interface',    'format' => 'text', 'icon' => 'fas fa-server'],
         ['field' => 'vpn_interface_name', 'label' => 'Interface Name',   'format' => 'text', 'icon' => 'fas fa-sitemap'],
         ['field' => 'vpn_is_active',      'label' => 'VPN Config Active','format' => 'yesno', 'icon' => 'fas fa-toggle-on'],
     ],

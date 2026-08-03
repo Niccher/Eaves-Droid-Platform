@@ -10,10 +10,26 @@
                                 <i class="fas fa-phone-alt text-primary mr-2"></i>
                                 <?php echo $call_head ?? 'Call Logs' ?>
                             </h1>
-                            <div class="ml-3">
-                                <span class="badge badge-light border p-2">
+                            <div class="ml-3 d-flex align-items-center flex-wrap">
+                                <span class="badge badge-light border p-2 mr-2">
                                     <i class="fas fa-chart-bar text-primary mr-1"></i>
                                     Total: <b><?php echo $totalCalls ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2 mr-2">
+                                    <i class="fas fa-arrow-circle-down text-info mr-1"></i>
+                                    Incoming: <b><?php echo $incomingCallsCount ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2 mr-2">
+                                    <i class="fas fa-arrow-circle-up text-success mr-1"></i>
+                                    Outgoing: <b><?php echo $outgoingCallsCount ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2 mr-2">
+                                    <i class="fas fa-times-circle text-danger mr-1"></i>
+                                    Rejected: <b><?php echo $rejectedCallsCount ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-shield-alt text-warning mr-1"></i>
+                                    Blocked: <b><?php echo $blockedCallsCount ?? 0 ?></b>
                                 </span>
                             </div>
                         </div>
@@ -37,13 +53,13 @@
                     <div class="col-12">
                         <!-- Main Card -->
                         <div class="card card-secondary shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title text-white">
-                                    <i class="fas fa-history mr-2"></i>
-                                    Call History
-                                    <small class="text-white ml-2">Showing <?php echo count($call_logs_dump) ?> of <?php echo $totalCalls ?? 0 ?> calls</small>
-                                </h3>
-                                <div class="card-tools ml-auto my-2">
+                        <div class="card-header d-flex align-items-center">
+                            <h3 class="card-title text-white">
+                                <i class="fas fa-history mr-2"></i>
+                                Call History
+                                <small class="text-white ml-2">Showing <?php echo count($call_logs_dump) ?> of <?php echo $totalCalls ?? 0 ?> calls</small>
+                            </h3>
+                            <div class="card-tools ml-auto my-2">
                                     <button type="button" class="btn btn-success btn-sm" id="pdfExport" title="Export PDF">
                                         <i class="fas fa-file-pdf mr-1"></i> Export
                                     </button>
@@ -337,8 +353,9 @@
                                                         </div>
                                                 </td>
                                                 <td>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-call"
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-row"
                                                             data-id="<?php echo $call_log['ID'] ?? $call_log['counter'] ?? ''; ?>"
+                                                            data-url="<?= base_url('call_logs/delete') ?>"
                                                             data-name="<?php echo htmlspecialchars(strip_tags($name)); ?>"
                                                             title="Delete call log entry">
                                                         <i class="fas fa-trash"></i>
@@ -411,36 +428,7 @@ $(document).ready(function() {
         tbody.append(rows);
     });
 
-    $(document).on('click', '.delete-call', function() {
-        var id = $(this).data('id');
-        var name = $(this).data('name');
-        Swal.fire({
-            title: 'Delete Call Log Entry?',
-            text: 'Are you sure you want to delete the entry for "' + name + '"?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonText: 'Cancel',
-            confirmButtonText: '<i class="fas fa-trash"></i> Delete'
-        }).then(function(result) {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: base_url('call_logs/delete/' + id),
-                    type: 'POST',
-                    success: function(response) {
-                        Swal.fire('Deleted!', 'Call log entry has been deleted.', 'success').then(function() {
-                            location.reload();
-                        });
-                    },
-                    error: function() {
-                        Swal.fire('Error!', 'Failed to delete call log entry.', 'error');
-                    }
-                });
-            }
-            });
-        });
-
-        // PDF Export
+    // PDF Export
         $('#pdfExport').on('click', function () {
             var element = document.querySelector('.table-sortable');
             if (!element) return;
@@ -467,6 +455,7 @@ $(document).ready(function() {
     });
 });
 </script>
+<?php include __DIR__ . '/../partials/_delete_confirm.php'; ?>
     </div>
     <!-- /.content-wrapper -->
 

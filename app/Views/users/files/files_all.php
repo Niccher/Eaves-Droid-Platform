@@ -22,19 +22,39 @@
         <div class="container-fluid">
             <div class="row mb-4 align-items-center">
                 <div class="col-lg-8 col-md-6">
-                    <div class="d-flex align-items-center">
-                        <h1 class="h2 mb-0">
-                            <i class="fas fa-folder text-primary mr-2"></i>
-                            <?php echo $files_head ?? 'All Files' ?>
-                        </h1>
-                        <div class="ml-3">
-                            <span class="badge badge-light border p-2">
-                                <i class="fas fa-chart-bar text-primary mr-1"></i>
-                                Total: <b><?php echo $totalFiles ?? 0 ?></b>
-                            </span>
+                        <div class="d-flex align-items-center">
+                            <h1 class="h2 mb-0">
+                                <i class="fas fa-folder text-primary mr-2"></i>
+                                <?php echo $files_head ?? 'All Files' ?>
+                            </h1>
+                            <div class="ml-3 d-flex flex-wrap" style="gap: 5px;">
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-folder text-primary mr-1"></i>
+                                    Total: <b><?php echo $filesCounts['all'] ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-photo-video text-info mr-1"></i>
+                                    Media: <b><?php echo $filesCounts['media'] ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-file-alt text-success mr-1"></i>
+                                    Documents: <b><?php echo $filesCounts['documents'] ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-music text-warning mr-1"></i>
+                                    Audio: <b><?php echo $filesCounts['audio'] ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-file-archive text-purple mr-1"></i>
+                                    Archives: <b><?php echo $filesCounts['archives'] ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-ellipsis-h text-secondary mr-1"></i>
+                                    Others: <b><?php echo $filesCounts['others'] ?? 0 ?></b>
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <p class="text-white mt-2 mb-0">View and manage files on the device</p>
+                        <p class="text-muted mt-2 mb-0"><?php echo $files_desc ?? 'View and manage files on the device' ?></p>
                 </div>
                 <div class="col-lg-4 col-md-6">
                     <div class="float-right mt-2 mb-2">
@@ -54,14 +74,14 @@
                 <div class="col-12">
                     <!-- Main Card -->
                     <div class="card card-secondary shadow-sm">
-                        <div class="card-header">
+                        <div class="card-header d-flex align-items-center">
                              <h3 class="card-title">
                                  <i class="fas fa-file mr-2"></i>
                                  Files
                                  <small class="text-white ml-2">Showing <?php echo count($files_dump) ?>
                                      of <?php echo $totalFiles ?? 0 ?> files</small>
                              </h3>
-                             <div class="card-tools ml-auto my-2">
+                             <div class="card-tools ml-auto">
                                  <button type="button" class="btn btn-success btn-sm" id="pdfExport" title="Export PDF">
                                      <i class="fas fa-file-pdf mr-1"></i> Export
                                  </button>
@@ -84,8 +104,7 @@
                                 <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                     <thead class="thead-light">
                                     <tr>
-                                        <th width="20%">Name</th>
-                                        <th width="25%">Path</th>
+                                        <th width="45%">Name / Path</th>
                                         <th width="12%">Size</th>
                                         <th width="18%">Last Modified</th>
                                         <th width="12%">Category</th>
@@ -95,7 +114,7 @@
                                     <tbody>
                                     <?php if (empty($files_dump)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center py-5">
+                                            <td colspan="5" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
                                                     <h4>No files found</h4>
@@ -243,13 +262,12 @@
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <div class="text-dark"><?php echo htmlspecialchars($fileName); ?></div>
-                                                            <small class="text-muted">.<?php echo htmlspecialchars($extension); ?></small>
+                                                            <div class="font-weight-bold text-dark">
+                                                                <?php echo htmlspecialchars($fileName); ?>
+                                                            </div>
+                                                            <div class="text-muted font-italic"><?php echo htmlspecialchars($fileinfo['path']); ?></div>
                                                         </div>
                                                     </div>
-                                                </td>
-                                                <td>
-                                                    <code class="text-muted"><?php echo htmlspecialchars($fileinfo['path']); ?></code>
                                                 </td>
                                                 <td>
                                                     <?php echo htmlspecialchars($fileinfo['formatted_size']); ?>
@@ -275,11 +293,12 @@
                                                             data-toggle="modal" 
                                                             data-target="#fileDetailsModal"
                                                             onclick="showFileDetails(<?php echo htmlspecialchars(json_encode($fileinfo), ENT_QUOTES, 'UTF-8'); ?>)">
-                                                        <i class="fas fa-info-circle"></i> Details
+                                                        <i class="fas fa-info-circle"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-file ml-1"
-                                                            data-id="<?php echo $fileinfo['ID'] ?? $fileinfo['counter'] ?? ''; ?>"
-                                                            data-name="<?php echo htmlspecialchars($fileinfo['name'] ?? ''); ?>"
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-row ml-1"
+                                                            data-id="<?= $fileinfo['id'] ?? '' ?>"
+                                                            data-url="<?= base_url('files/delete') ?>"
+                                                            data-name="<?= htmlspecialchars($fileinfo['name'] ?? '') ?>"
                                                             title="Delete file entry">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
@@ -624,36 +643,7 @@ $(document).ready(function() {
             return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
         });
         tbody.append(rows);
-    });
-
-    $(document).on('click', '.delete-file', function() {
-        var id = $(this).data('id');
-        var name = $(this).data('name');
-        Swal.fire({
-            title: 'Delete File Entry?',
-            text: 'Are you sure you want to delete "' + name + '"?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonText: 'Cancel',
-            confirmButtonText: '<i class="fas fa-trash"></i> Delete'
-        }).then(function(result) {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: base_url('files/delete/' + id),
-                    type: 'POST',
-                    success: function(response) {
-                        Swal.fire('Deleted!', 'File entry has been deleted.', 'success').then(function() {
-                            location.reload();
-                        });
-                    },
-                    error: function() {
-                        Swal.fire('Error!', 'Failed to delete file entry.', 'error');
-                    }
-                });
-            }
-        });
-    });
+});
 
     // PDF Export
     $('#pdfExport').on('click', function () {
@@ -681,3 +671,4 @@ $(document).ready(function() {
     });
 });
 </script>
+<?php include __DIR__ . '/../partials/_delete_confirm.php'; ?>

@@ -44,5 +44,5 @@ foreach ($rows as &$row) {
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/default_apps/delete'),
+    'deleteUrl' => base_url('advanced/software/default_apps/delete'),
 ]) ?>

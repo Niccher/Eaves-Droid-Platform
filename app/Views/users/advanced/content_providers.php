@@ -7,8 +7,7 @@
     'columns'  => [
         ['field' => 'extracted_at',    'label' => 'Extracted',    'format' => 'timestamp', 'icon' => 'fas fa-clock'],
         ['field' => 'authority',       'label' => 'Authority',    'format' => 'code', 'icon' => 'fas fa-database'],
-        ['field' => 'package_name',    'label' => 'Package',      'format' => 'text', 'icon' => 'fas fa-code'],
-        ['field' => 'name',            'label' => 'Name',         'format' => 'text', 'icon' => 'fas fa-tag'],
+        ['field' => 'name',            'sub_field' => 'package_name', 'label' => 'Name', 'format' => 'stacked', 'icon' => 'fas fa-tag'],
         ['field' => 'is_exported',     'label' => 'Exported',     'format' => 'yesno', 'icon' => 'fas fa-globe'],
         ['field' => 'read_permission', 'label' => 'Read Perm',    'format' => 'code', 'icon' => 'fas fa-lock'],
     ],

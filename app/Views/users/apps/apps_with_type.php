@@ -60,7 +60,7 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card card-secondary">
-                        <div class="card-header">
+                        <div class="card-header d-flex align-items-center">
                             <h3 class="card-title text-white">
                                 <i class="fas fa-list mr-1"></i>
                                 Apps List
@@ -87,8 +87,7 @@
                                 <table class="table table-hover table-striped table-sortable">
                                     <thead>
                                     <tr>
-                                        <th width="30%">App Name</th>
-                                        <th width="25%">Package Name</th>
+                                        <th width="40%">App</th>
                                         <th width="15%">Version</th>
                                         <th width="10%">Permissions</th>
                                         <th width="10%">Size</th>
@@ -98,7 +97,7 @@
                                     <tbody>
                                     <?php if (empty($apps_dump)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center py-5">
+                                            <td colspan="5" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-mobile-alt fa-3x text-muted mb-3"></i>
                                                     <h4>No apps found</h4>
@@ -135,13 +134,13 @@
                                                             <?php else: ?>
                                                                 <span class="badge badge-success badge-sm ml-1">User</span>
                                                             <?php endif; ?>
+                                                            <div class="mt-1">
+                                                                <code class="text-muted small" title="Package Name">
+                                                                    <?= esc($app['Package'] ?? 'N/A') ?>
+                                                                </code>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </td>
-                                                <td>
-                                                    <code class="text-muted" title="Package Name">
-                                                        <?= esc($app['Package'] ?? 'N/A') ?>
-                                                    </code>
                                                 </td>
                                                 <td>
                                                     <?php if (!empty($app['version_name'])): ?>
@@ -173,11 +172,12 @@
                                                     <button type="button"
                                                             class="btn btn-sm btn-outline-primary view-app-details"
                                                             data-app='<?= htmlspecialchars(json_encode($app), ENT_QUOTES, 'UTF-8') ?>'>
-                                                        <i class="fas fa-eye"></i> Details
+                                                        <i class="fas fa-eye"></i>
                                                     </button>
                                                     <button type="button"
-                                                            class="btn btn-sm btn-outline-danger delete-app"
+                                                            class="btn btn-sm btn-outline-danger delete-row"
                                                             data-id="<?= $app['counter'] ?? '' ?>"
+                                                            data-url="<?= base_url('apps/delete') ?>"
                                                             data-name="<?= esc($app['Name'] ?? '') ?>"
                                                             title="Delete this app entry">
                                                         <i class="fas fa-trash"></i>
@@ -534,43 +534,6 @@
             }
         }
 
-        // Delete App
-        document.querySelectorAll('.delete-app').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                var id = this.getAttribute('data-id');
-                var name = this.getAttribute('data-name');
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        title: 'Delete App Entry?',
-                        text: 'Are you sure you want to delete "' + name + '"? This cannot be undone.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#dc3545',
-                        cancelButtonColor: '#6c757d',
-                        confirmButtonText: '<i class="fas fa-trash"></i> Delete'
-                    }).then(function(result) {
-                        if (result.isConfirmed) {
-                            fetch(base_url('apps/delete/' + id), {
-                                method: 'POST',
-                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                            }).then(function(r) { return r.json(); }).then(function(response) {
-                                if (response.success) {
-                                    Swal.fire('Deleted!', 'App entry has been deleted.', 'success').then(function() {
-                                        location.reload();
-                                    });
-                                } else {
-                                    Swal.fire('Error!', response.message || 'Failed to delete.', 'error');
-                                }
-                            }).catch(function() {
-                                Swal.fire('Error!', 'Failed to delete app entry.', 'error');
-                            });
-                        }
-                    });
-                }
-            });
-        });
-
         // PDF Export
         $('#pdfExport').on('click', function () {
             var element = document.querySelector('.table-sortable');
@@ -597,3 +560,4 @@
         });
     });
 </script>
+<?php include __DIR__ . '/../partials/_delete_confirm.php'; ?>

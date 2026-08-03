@@ -18,5 +18,5 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/alarms/delete'),
+    'deleteUrl' => base_url('advanced/software/alarms/delete'),
 ]) ?>

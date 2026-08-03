@@ -148,7 +148,7 @@ class Calls extends BaseClientController
 
     public function delete($id)
     {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+        if (!$this->request->isAJAX() || $this->request->getMethod() !== 'post') {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
         }
         if ($this->finderModel->delete_call_log((int) $id, $this->userId)) {

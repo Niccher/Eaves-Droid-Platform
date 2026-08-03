@@ -32,13 +32,13 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card card-secondary shadow-sm">
-                        <div class="card-header">
+                        <div class="card-header d-flex align-items-center">
                              <h3 class="card-title">
                                  <i class="fas fa-history mr-2"></i>
                                  Timeline
                                  <small class="text-white ml-2">Showing <?php echo count($timeline) ?> entries</small>
                              </h3>
-                             <div class="card-tools ml-auto my-2">
+                             <div class="card-tools ml-auto">
                                  <button type="button" class="btn btn-success btn-sm" id="pdfExport" title="Export PDF">
                                      <i class="fas fa-file-pdf mr-1"></i> Export
                                  </button>
@@ -54,7 +54,7 @@
                                 </div>
                                 <input type="text" class="form-control table-search" placeholder="Search entries..." data-table="table-sortable">
                             </div>
-                            <div class="custom-control custom-switch">
+                            <div class="custom-control custom-switch ml-auto">
                                 <input type="checkbox" class="custom-control-input" id="hasCoordsToggle"<?php echo !empty($has_coords_filter) ? ' checked' : ''; ?>
                                        onchange="window.location.href='<?php echo current_url(); ?>?has_coords=' + (this.checked ? '1' : '0') + (location.search.match(/[?&]page=/)?'&page=1':'');">
                                 <label class="custom-control-label" for="hasCoordsToggle">
@@ -154,7 +154,7 @@
                                                             <?php if ($hasCoords): ?>
                                                                 <a href="https://www.google.com/maps?q=<?php echo $lat; ?>,<?php echo $lng; ?>" target="_blank" class="btn btn-outline-primary" title="Open in Maps"><i class="fas fa-external-link-alt"></i></a>
                                                             <?php endif; ?>
-                                                            <button type="button" class="btn btn-outline-danger delete-entry" data-type="location" data-id="<?= $entry['counter'] ?? '' ?>"><i class="fas fa-trash"></i></button>
+                                                            <button type="button" class="btn btn-outline-danger delete-row" data-type="location" data-id="<?= $entry['counter'] ?? '' ?>" data-url="<?= base_url('location/delete') ?>"><i class="fas fa-trash"></i></button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -270,7 +270,7 @@
                                                         <small class="text-muted"><i class="fas fa-cloud-upload-alt text-info mr-1"></i> <?php echo $uplAt; ?></small>
                                                     </td>
                                                     <td class="text-center">
-                                                        <button type="button" class="btn btn-sm btn-outline-danger delete-entry" data-type="activity" data-id="<?= $entry['counter'] ?? '' ?>"><i class="fas fa-trash"></i></button>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger delete-row" data-type="activity" data-id="<?= $entry['counter'] ?? '' ?>" data-url="<?= base_url('activities/delete') ?>"><i class="fas fa-trash"></i></button>
                                                     </td>
                                                 </tr>
                                                 <tr class="expandable-content" style="display:none;">
@@ -427,36 +427,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-
-    document.querySelectorAll('.delete-entry').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var id = this.getAttribute('data-id');
-            var type = this.getAttribute('data-type');
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: 'Delete ' + type + ' entry?',
-                    text: 'Are you sure you want to delete this entry?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: '<i class="fas fa-trash"></i> Delete'
-                }).then(function(result) {
-                    if (result.isConfirmed) {
-                        var url = type === 'location' ? base_url('location/delete/' + id) : base_url('activities/delete/' + id);
-                        fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(function(r) { return r.json(); })
-                            .then(function(response) {
-                                if (response.success) { Swal.fire('Deleted!', response.message, 'success').then(function() { location.reload(); }); }
-                                else { Swal.fire('Error!', response.message || 'Failed to delete.', 'error'); }
-                            }).catch(function() { Swal.fire('Error!', 'Failed to delete entry.', 'error'); });
-                    }
-                });
-            }
-        });
-    });
-
     // PDF Export
     $('#pdfExport').on('click', function () {
         var element = document.querySelector('.table-sortable');
@@ -483,3 +453,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<?php include __DIR__ . '/partials/_delete_confirm.php'; ?>

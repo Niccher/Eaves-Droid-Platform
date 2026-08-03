@@ -106,5 +106,5 @@ $legend = '<div class="row text-muted small mt-2">
     'pager'     => $pager,
     'total'     => $total,
     'nav_urls'  => $nav_urls,
-    'deleteUrl' => base_url('advanced/proc_info/delete'),
+    'deleteUrl' => base_url('advanced/hardware/proc_info/delete'),
 ]) ?>

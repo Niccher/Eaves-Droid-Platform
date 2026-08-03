@@ -228,8 +228,9 @@
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-app"
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-row"
                                                             data-id="<?php echo $app['ID'] ?? $app['counter'] ?? ''; ?>"
+                                                            data-url="<?= base_url('apps/delete') ?>"
                                                             data-name="<?php echo htmlspecialchars($appName); ?>"
                                                             title="Delete app entry">
                                                         <i class="fas fa-trash"></i>
@@ -300,36 +301,7 @@ $(document).ready(function() {
         });
         tbody.append(rows);
     });
-
-    $(document).on('click', '.delete-app', function() {
-        var id = $(this).data('id');
-        var name = $(this).data('name');
-        Swal.fire({
-            title: 'Delete App Entry?',
-            text: 'Are you sure you want to delete "' + name + '"?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonText: 'Cancel',
-            confirmButtonText: '<i class="fas fa-trash"></i> Delete'
-        }).then(function(result) {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: base_url('apps/delete/' + id),
-                    type: 'POST',
-                    success: function(response) {
-                        Swal.fire('Deleted!', 'App entry has been deleted.', 'success').then(function() {
-                            location.reload();
-                        });
-                    },
-                    error: function() {
-                        Swal.fire('Error!', 'Failed to delete app entry.', 'error');
-                    }
-                });
-            }
-        });
-    });
 });
 </script>
+<?php include __DIR__ . '/../partials/_delete_confirm.php'; ?>
 </div>
-<!-- /.content-wrapper -->

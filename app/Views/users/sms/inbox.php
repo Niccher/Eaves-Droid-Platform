@@ -10,14 +10,22 @@
                                 <i class="fas fa-sms text-primary mr-2"></i>
                                 <?php echo $sms_head ?? 'All SMS' ?>
                             </h1>
-                            <div class="ml-3">
-                                    <span class="badge badge-light border p-2">
-                                        <i class="fas fa-chart-bar text-primary mr-1"></i>
-                                        Total: <b><?php echo $totalSmsInbox ?? 0 ?></b>
-                                    </span>
+                            <div class="ml-3 d-flex flex-wrap" style="gap: 5px;">
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-comments text-primary mr-1"></i>
+                                    Total: <b><?php echo $totalAllSMS ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-inbox text-success mr-1"></i>
+                                    Inbox: <b><?php echo $totalSmsInbox ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-paper-plane text-secondary mr-1"></i>
+                                    Sent: <b><?php echo $totalSmsSent ?? 0 ?></b>
+                                </span>
                             </div>
                         </div>
-                        <p class="text-white mt-2 mb-0">View and manage all your SMS messages</p>
+                        <p class="text-muted mt-2 mb-0">Messages received on your device, stored in your inbox</p>
                     </div>
                     <div class="col-lg-4 col-md-6">
                         <div class="float-right mt-2">
@@ -37,7 +45,7 @@
                     <div class="col-12">
                         <!-- Main Card -->
                         <div class="card card-secondary shadow-sm">
-                            <div class="card-header">
+                            <div class="card-header d-flex align-items-center">
                                 <h3 class="card-title">
                                     <i class="fas fa-comments mr-2"></i>
                                     SMS Messages
@@ -67,16 +75,15 @@
                                     <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
                                         <thead class="thead-light">
                                         <tr>
-                                            <th width="20%">Contact</th>
-                                            <th width="15%">Type</th>
-                                            <th width="22%">Time</th>
-                                            <th width="43%">Message</th>
+                                            <th width="25%">Contact</th>
+                                            <th width="25%">Time</th>
+                                            <th width="50%">Message</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <?php if (empty($sms_dump)): ?>
                                             <tr>
-                                                <td colspan="4" class="text-center py-5">
+                                                <td colspan="3" class="text-center py-5">
                                                     <div class="empty-state">
                                                         <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
                                                         <h4>No SMS messages found</h4>
@@ -126,34 +133,6 @@
                                                     $messagePreviewBorder = 'border-success';
                                                     $messagePreviewText = 'text-black'; // White text on green
                                                 }
-
-                                                $typeConfig = [
-                                                    'inbox' => [
-                                                        'icon' => 'inbox',
-                                                        'color' => 'success',
-                                                        'bg' => 'bg-success',
-                                                        'label' => 'Received',
-                                                        'pulse' => 'incoming-pulse',
-                                                        'row_color' => 'success-row'
-                                                    ],
-                                                    'sent' => [
-                                                        'icon' => 'paper-plane',
-                                                        'color' => 'dark',
-                                                        'bg' => 'bg-dark',
-                                                        'label' => 'Sent',
-                                                        'pulse' => 'outgoing-pulse',
-                                                        'row_color' => 'sent-row'
-                                                    ]
-                                                ];
-
-                                                $typeInfo = $typeConfig[$smsType] ?? [
-                                                        'icon' => 'question-circle',
-                                                        'color' => 'secondary',
-                                                        'bg' => 'bg-secondary',
-                                                        'label' => $smsinfo['sms_type'],
-                                                        'pulse' => '',
-                                                        'row_color' => ''
-                                                    ];
 
                                                 // Generate avatar from contact name/phone number
                                                 $contactName = $smsinfo['sms_number'];
@@ -257,7 +236,7 @@
                                                 ?>
 
                                                 <!-- Main Row -->
-                                                <tr class="accordion-toggle expandable-row <?php echo $rowBgClass; ?> <?php echo $typeInfo['row_color']; ?>"
+                                                <tr class="accordion-toggle expandable-row <?php echo $rowBgClass; ?>"
                                                     data-target="#sms-details-<?php echo $index; ?>">
                                                     <td>
                                                         <div class="d-flex align-items-center">
@@ -279,12 +258,6 @@
                                                                 <small class="text-muted"><?php echo $smsinfo['sms_number']; ?></small>
                                                             </div>
                                                         </div>
-                                                    </td>
-                                                    <td>
-                                                            <span class="badge <?php echo $typeInfo['bg']; ?> text-white p-2 <?php echo $typeInfo['pulse']; ?>">
-                                                                <i class="fas fa-<?php echo $typeInfo['icon']; ?> mr-1"></i>
-                                                                <?php echo $typeInfo['label']; ?>
-                                                            </span>
                                                     </td>
                                                     <td>
                                                         <div class="text-dark">
@@ -321,7 +294,7 @@
 
                                                 <!-- Expandable Details Row -->
                                                 <tr class="expandable-content" style="display: none;">
-                                                    <td colspan="4" class="p-0 border-0">
+                                                    <td colspan="3" class="p-0 border-0">
                                                         <div id="sms-details-<?php echo $index; ?>" style="display: none;">
                                                             <div class="card card-body bg-light border-0 m-0 p-3">
                                                                 <div class="row">
@@ -347,15 +320,13 @@
                                                                             </div>
                                                                             <div class="mb-1">
                                                                                 <i class="fas fa-envelope mr-2"></i>
-                                                                                <strong>Type:</strong>
-                                                                                <span class="badge <?php echo $typeInfo['bg']; ?> text-white">
-                                                                                        <?php echo $typeInfo['label']; ?>
-                                                                                    </span>
+                                                                                <strong>Type:</strong> <?php echo $smsinfo['sms_type']; ?>
                                                                             </div>
                                                                             <div class="mb-1 mt-3">
-                                                                                <button class="btn btn-sm btn-outline-danger delete-sms"
-                                                                                        data-id="<?php echo $smsinfo['id'] ?? ''; ?>"
-                                                                                        title="Delete this message">
+                                                                                 <button class="btn btn-sm btn-outline-danger delete-row"
+                                                                                         data-id="<?php echo $smsinfo['id'] ?? ''; ?>"
+                                                                                         data-url="<?= base_url('sms/delete') ?>"
+                                                                                         title="Delete this message">
                                                                                     <i class="fas fa-trash mr-1"></i> Delete
                                                                                 </button>
                                                                             </div>
@@ -529,27 +500,6 @@
         .text-pink { color: #e83e8c !important; }
         .text-teal { color: #20c997 !important; }
         .text-orange { color: #fd7e14 !important; }
-
-        /* Pulse animations for message types */
-        .incoming-pulse {
-            animation: incomingPulse 2s infinite;
-        }
-
-        .outgoing-pulse {
-            animation: outgoingPulse 2s infinite;
-        }
-
-        @keyframes incomingPulse {
-            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-        }
-
-        @keyframes outgoingPulse {
-            0% { box-shadow: 0 0 0 0 rgba(52, 58, 64, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(52, 58, 64, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(52, 58, 64, 0); }
-        }
 
         /* Hover effects */
         .message-preview:hover .badge {
@@ -746,43 +696,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
             });
             rows.forEach(function(row) { tbody.appendChild(row); });
-        });
+});
     });
-    document.querySelectorAll('.delete-sms').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var id = this.getAttribute('data-id');
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: 'Delete SMS Message?',
-                    text: 'Are you sure you want to delete this message?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: '<i class="fas fa-trash"></i> Delete'
-                }).then(function(result) {
-                    if (result.isConfirmed) {
-                        fetch(base_url('sms/delete/' + id), {
-                            method: 'POST',
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                        }).then(function(r) { return r.json(); }).then(function(response) {
-                            if (response.success) {
-                                Swal.fire('Deleted!', 'SMS message has been deleted.', 'success').then(function() {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire('Error!', response.message || 'Failed to delete SMS.', 'error');
-                            }
-                        }).catch(function() {
-                            Swal.fire('Error!', 'Failed to delete SMS.', 'error');
-                        });
-                    }
-                });
-            }
-        });
-    });
-
     // PDF Export
     $('#pdfExport').on('click', function () {
         var element = document.querySelector('.table-sortable');
@@ -809,3 +724,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<?php include __DIR__ . '/../partials/_delete_confirm.php'; ?>

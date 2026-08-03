@@ -28,5 +28,5 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/calendar/delete'),
+    'deleteUrl' => base_url('advanced/software/calendar/delete'),
 ]) ?>

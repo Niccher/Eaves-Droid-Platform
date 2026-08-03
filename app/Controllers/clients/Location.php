@@ -83,7 +83,7 @@ class Location extends BaseClientController
 
     public function delete($id)
     {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+        if (!$this->request->isAJAX() || $this->request->getMethod() !== 'post') {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
         }
         if ($this->finderModel->delete_location((int) $id, $this->userId)) {
@@ -94,7 +94,7 @@ class Location extends BaseClientController
 
     public function deleteActivity($id)
     {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+        if (!$this->request->isAJAX() || $this->request->getMethod() !== 'post') {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
         }
         if ($this->finderModel->delete_activity((int) $id, $this->userId)) {

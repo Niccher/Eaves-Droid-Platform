@@ -19,7 +19,7 @@ $ts = !empty($r['extracted_at'])
     <td class="text-center">
         <button class="btn btn-sm btn-outline-danger delete-row"
                 data-id="<?= $rid ?>"
-                data-url="<?= base_url('advanced/accounts/delete') ?>"
+                data-url="<?= base_url('advanced/software/accounts/delete') ?>"
                 title="Delete this account">
             <i class="fas fa-trash"></i>
         </button>

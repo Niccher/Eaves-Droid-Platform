@@ -78,25 +78,22 @@ $lastUsed = $summary['last_used_display'] ?? '—';
                                 <table class="table table-hover table-striped table-bordered mb-0">
                                     <thead class="thead-light">
                                     <tr>
-                                        <th>#</th>
                                         <th><i class="fas fa-stopwatch mr-1"></i>Screen Time</th>
                                         <th><i class="fas fa-history mr-1"></i>Last Used</th>
                                         <th><i class="fas fa-moon mr-1"></i>Background Time</th>
-                                        <th><i class="fas fa-mobile-alt mr-1"></i>Device</th>
                                         <th><i class="fas fa-clock mr-1"></i>Extracted</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <?php if (empty($rows)): ?>
-                                        <tr><td colspan="7" class="text-center py-4 text-muted">No snapshots for this app.</td></tr>
-                                    <?php else: foreach ($rows as $i => $r): ?>
+                                        <tr><td colspan="5" class="text-center py-4 text-muted">No snapshots for this app.</td></tr>
+                                    <?php else: foreach ($rows as $r): ?>
                                         <?php
                                             $ms  = $r['foreground_time_ms'] ?? 0;
                                             $hrs = round($ms / 3600000, 2);
                                         ?>
                                         <tr>
-                                            <td><?= $i + 1 ?></td>
                                             <td>
                                                 <span class="font-weight-bold"><?= $hrs ?> h</span>
                                                 <?php if ($hrs >= 24): ?><span class="badge badge-info ml-1"><?= round($hrs / 24, 1) ?> Days</span><?php endif; ?>
@@ -113,7 +110,6 @@ $lastUsed = $summary['last_used_display'] ?? '—';
                                                     echo round($bgMs / 1000, 1) . ' <small>s</small>';
                                                 endif;
                                             ?></td>
-                                            <td><small class="text-muted"><?= htmlspecialchars($r['device_id'] ?? '—') ?></small></td>
                                             <td><i class="fas fa-clock text-muted mr-1"></i><small><?= esc($r['extracted_display'] ?? '—') ?></small></td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-outline-danger delete-app-usage"
@@ -132,38 +128,6 @@ $lastUsed = $summary['last_used_display'] ?? '—';
                     </div>
                 </div>
             </div>
-
-            <?php if (!empty($sessions)): ?>
-            <div class="row">
-                <div class="col-12">
-                    <div class="card card-secondary shadow-sm">
-                        <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-stream mr-2"></i>Session Events <small class="text-muted ml-2">latest <?= count($sessions) ?></small></h3>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-striped table-bordered mb-0">
-                                    <thead class="thead-light">
-                                    <tr>
-                                        <th>Event</th>
-                                        <th>Timestamp</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php foreach ($sessions as $s): ?>
-                                        <tr>
-                                            <td><span class="badge badge-secondary"><?= htmlspecialchars($s['event_type'] ?? '—') ?></span></td>
-                                            <td><small><?= esc($s['timestamp_display'] ?? '—') ?></small></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
         </div>
     </section>
 </div>
@@ -173,26 +137,37 @@ $lastUsed = $summary['last_used_display'] ?? '—';
 </style>
 <script>
 var base_url = function(path) { return '<?= base_url() ?>' + path; };
+var CSRF_TOKEN_NAME = '<?= csrf_token() ?>';
+var CSRF_TOKEN_HASH = '<?= csrf_hash() ?>';
+var DELETE_SECTION = <?= json_encode($appName ?? '') ?>;
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.delete-app-usage').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var id = this.getAttribute('data-id');
             if (!id) return;
+            var section = this.getAttribute('data-delete-title') || DELETE_SECTION || 'this snapshot';
             Swal.fire({
-                title: 'Delete Snapshot?',
-                text: 'This action cannot be undone.',
+                title: 'Delete this Entry?',
+                html: 'This will permanently delete the <strong>"' + section + '"</strong> app usage snapshot and all of its associated data.'
+                   + '<br><span class="text-danger mt-1 d-inline-block"><i class="fas fa-exclamation-triangle mr-1"></i>This action cannot be undone.</span>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
-                confirmButtonText: '<i class="fas fa-trash mr-1"></i> Delete',
+                confirmButtonText: '<i class="fas fa-trash mr-1"></i> Yes, delete it!',
                 cancelButtonText: 'Cancel'
             }).then(function(result) {
                 if (result.isConfirmed) {
-                    fetch(base_url('advanced/app-usage/delete/' + id), { method: 'POST' })
+                    var postData = new URLSearchParams();
+                    postData.append(CSRF_TOKEN_NAME, CSRF_TOKEN_HASH);
+                    fetch(base_url('advanced/software/app-usage/delete/' + id), {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: postData
+                    })
                         .then(function(r) { return r.json(); })
                         .then(function(resp) {
                             if (resp.success) {
-                                Swal.fire('Deleted!', resp.message, 'success').then(function() { location.reload(); });
+                                Swal.fire('Deleted!', 'The "' + section + '" snapshot has been deleted.', 'success').then(function() { location.reload(); });
                             } else {
                                 Swal.fire('Error', resp.message || 'Failed to delete.', 'error');
                             }

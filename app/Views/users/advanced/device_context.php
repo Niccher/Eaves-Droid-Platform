@@ -28,5 +28,5 @@
     'pager'     => $pager,
     'total'     => $total,
     'nav_urls'  => $nav_urls,
-    'deleteUrl' => base_url('advanced/device/delete'),
+    'deleteUrl' => base_url('advanced/hardware/device/delete'),
 ]) ?>

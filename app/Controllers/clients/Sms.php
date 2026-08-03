@@ -126,24 +126,21 @@ class Sms extends BaseClientController
      */
     protected function getSmsCommonData(string $type = 'all'): array
     {
-        // Get total counts based on type
-        $totalSMS = 0;
-        $totalSmsInbox = 0;
-        $totalSmsSent = 0;
+        // Always compute all counters so every page can show Total / Inbox / Sent
+        $totalAllSMS = $this->finderModel->get_count_Sms($this->userId);
+        $totalSmsInbox = $this->finderModel->get_count_Sms_category($this->userId, 'inbox');
+        $totalSmsSent = $this->finderModel->get_count_Sms_category($this->userId, 'sent');
 
+        // totalSMS stays page-specific for the "Showing X of Y" pagination info
         switch ($type) {
             case 'inbox':
-                $totalSMS = $this->finderModel->get_count_Sms_category($this->userId, 'inbox');
-                $totalSmsInbox = $totalSMS;
+                $totalSMS = $totalSmsInbox;
                 break;
             case 'sent':
-                $totalSMS = $this->finderModel->get_count_Sms_category($this->userId, 'sent');
-                $totalSmsSent = $totalSMS;
+                $totalSMS = $totalSmsSent;
                 break;
             default:
-                $totalSMS = $this->finderModel->get_count_Sms($this->userId);
-                $totalSmsInbox = $this->finderModel->get_count_Sms_category($this->userId, 'inbox');
-                $totalSmsSent = $this->finderModel->get_count_Sms_category($this->userId, 'sent');
+                $totalSMS = $totalAllSMS;
                 break;
         }
 
@@ -154,6 +151,7 @@ class Sms extends BaseClientController
             'sms_head' => ucfirst($type) . ' SMS Messages',
             'sms_urls' => $this->getSmsNavigationUrls($type),
             'totalSMS' => $totalSMS,
+            'totalAllSMS' => $totalAllSMS,
             'totalSmsInbox' => $totalSmsInbox,
             'totalSmsSent' => $totalSmsSent,
         ], $this->getDeviceViewData(), $paginationData);
@@ -201,7 +199,7 @@ class Sms extends BaseClientController
 
     public function delete($id)
     {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+        if (!$this->request->isAJAX() || $this->request->getMethod() !== 'post') {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
         }
         if ($this->finderModel->delete_sms((int) $id, $this->userId)) {

@@ -27,5 +27,5 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/accounts/delete'),
+    'deleteUrl' => base_url('advanced/software/accounts/delete'),
 ]) ?>

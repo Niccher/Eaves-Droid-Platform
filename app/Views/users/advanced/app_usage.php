@@ -201,7 +201,7 @@ if (!empty($detail_mode)) {
         $name = $r['app_name'] ?? '';
         $html = '';
         if ($pkgEnc !== '') {
-            $html .= '<a href="' . base_url('advanced/software/app-usage/' . $pkgEnc) . '" class="btn btn-sm btn-outline-info mr-1" title="View all details"><i class="fas fa-eye"></i></a>';
+            $html .= '<a href="' . base_url('advanced/software/app-usage/' . $pkgEnc) . '" class="btn btn-sm btn-outline-info" title="View all details"><i class="fas fa-eye"></i></a>';
         }
         $html .= '<button class="btn btn-sm btn-outline-danger delete-app-usage-pkg" data-pkg="' . esc($pkgEnc) . '" data-name="' . esc($name) . '" title="Delete all usage data for this app"><i class="fas fa-trash"></i></button>';
         return $html;
@@ -212,8 +212,7 @@ if (!empty($detail_mode)) {
     'subtitle' => 'Foreground screen time per application',
     'tableId'  => 'appUsageTable',
     'columns'  => [
-        ['field' => 'app_name',            'label' => 'App',         'format' => 'text', 'icon' => 'fas fa-mobile-alt'],
-        ['field' => 'package_name',        'label' => 'Package',     'format' => 'text', 'icon' => 'fas fa-code'],
+        ['field' => 'app_name',            'sub_field' => 'package_name', 'label' => 'App',       'format' => 'stacked', 'icon' => 'fas fa-mobile-alt'],
         ['field' => 'foreground_time_ms',  'label' => 'Screen Time', 'format' => 'ms', 'icon' => 'fas fa-stopwatch'],
         ['field' => 'last_used_display',   'label' => 'Last Used',   'format' => 'text', 'icon' => 'fas fa-clock'],
         ['field' => 'snapshot_count',      'label' => 'Snapshots',   'format' => 'badge', 'default' => 'info', 'icon' => 'fas fa-camera'],
@@ -230,6 +229,8 @@ if (!empty($detail_mode)) {
     'actions'  => $actions,
 ]) ?>
 <script>
+var CSRF_TOKEN_NAME = '<?= csrf_token() ?>';
+var CSRF_TOKEN_HASH = '<?= csrf_hash() ?>';
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.delete-app-usage-pkg').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
@@ -238,21 +239,26 @@ document.addEventListener('DOMContentLoaded', function() {
             var name = this.getAttribute('data-name');
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: 'Delete all usage data?',
-                    text: 'This will delete ALL usage snapshots for "' + name + '". This cannot be undone.',
+                    title: 'Delete All App Usage?',
+                    html: 'This will permanently delete <strong>ALL</strong> usage snapshots for <strong>"' + name + '"</strong> and all of its associated data.'
+                       + '<br><span class="text-danger mt-1 d-inline-block"><i class="fas fa-exclamation-triangle mr-1"></i>This action cannot be undone.</span>',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
                     cancelButtonColor: '#6c757d',
-                    confirmButtonText: '<i class="fas fa-trash"></i> Delete All'
+                    confirmButtonText: '<i class="fas fa-trash"></i> Yes, delete it!',
+                    cancelButtonText: 'Cancel'
                 }).then(function(result) {
                     if (result.isConfirmed) {
+                        var postData = new URLSearchParams();
+                        postData.append(CSRF_TOKEN_NAME, CSRF_TOKEN_HASH);
                         fetch('<?= base_url('advanced/software/app-usage/delete-package') ?>/' + pkg, {
                             method: 'POST',
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            body: postData
                         }).then(function(r) { return r.json(); }).then(function(response) {
                             if (response.success) {
-                                Swal.fire('Deleted!', 'All usage data has been deleted.', 'success').then(function() {
+                                Swal.fire('Deleted!', 'All usage data for "' + name + '" has been deleted.', 'success').then(function() {
                                     location.reload();
                                 });
                             } else {

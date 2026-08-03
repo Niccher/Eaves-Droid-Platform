@@ -25,5 +25,5 @@ foreach ($rows as &$row) {
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/data_usage/delete'),
+    'deleteUrl' => base_url('advanced/software/data_usage/delete'),
 ]) ?>

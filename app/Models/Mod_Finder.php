@@ -573,14 +573,27 @@ class Mod_Finder extends Model
      * @param int $user_id
      * @return int
      */
-    public function get_count_Calls(int $user_id): int
-    {
-        $blocked = $this->getBlockedIdentifiers($user_id, 'call');
-        return $this->getCount('tbl_logs', $user_id, [], 'phone_number', $blocked);
-    }
+     public function get_count_Calls(int $user_id): int
+     {
+         $blocked = $this->getBlockedIdentifiers($user_id, 'call');
+         return $this->getCount('tbl_logs', $user_id, [], 'phone_number', $blocked);
+     }
 
-    /**
-     * Gets count of files for user.
+     /**
+      * Gets count of call logs by type.
+      *
+      * @param int $user_id
+      * @param string $callType
+      * @return int
+      */
+     public function get_count_Calls_by_type(int $user_id, string $callType): int
+     {
+         $blocked = $this->getBlockedIdentifiers($user_id, 'call');
+         return $this->getCount('tbl_logs', $user_id, ['call_type' => $callType], 'phone_number', $blocked);
+     }
+
+     /**
+      * Gets count of files for user.
      *
      * @param int $user_id
      * @return int
@@ -5433,6 +5446,19 @@ class Mod_Finder extends Model
         }
     }
 
+    public function delete_processes_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_running_processes')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_processes_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function delete_security_audit_row(int $id, int $userId): bool
     {
         try {
@@ -5442,6 +5468,32 @@ class Mod_Finder extends Model
                 ->delete();
         } catch (\Exception $e) {
             log_message('error', 'delete_security_audit_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_accessibility_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_accessibility_services')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_accessibility_row error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_input_methods_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_input_methods')
+                ->where('id', $id)
+                ->where('owner_id', $userId)
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_input_methods_row error: ' . $e->getMessage());
             return false;
         }
     }

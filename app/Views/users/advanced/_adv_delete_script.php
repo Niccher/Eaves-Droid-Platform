@@ -1,5 +1,21 @@
 <script>
+var CSRF_TOKEN_NAME = '<?= csrf_token() ?>';
+var CSRF_TOKEN_HASH = '<?= csrf_hash() ?>';
+var ADV_SECTION_TITLE = <?= json_encode($deleteSection ?? '') ?>;
 document.addEventListener('DOMContentLoaded', function() {
+    // Descriptive name for the entity being deleted (section / page title).
+    function advDeleteSection(btn) {
+        var t = btn ? btn.getAttribute('data-delete-title') : '';
+        if (!t && ADV_SECTION_TITLE) t = ADV_SECTION_TITLE;
+        if (!t) {
+            var h1 = document.querySelector('.content-header h1');
+            if (h1) {
+                var txt = (h1.textContent || '').replace(/\s+/g, ' ').trim();
+                if (txt) t = txt;
+            }
+        }
+        return t || 'this entry';
+    }
     // ============================================================
     // GLOBAL TABLE SEARCH HANDLER
     // ============================================================
@@ -73,23 +89,29 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             var id = this.getAttribute('data-id');
             var url = this.getAttribute('data-url');
+            var section = advDeleteSection(this);
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: 'Delete this entry?',
-                    text: 'This action cannot be undone.',
+                    title: 'Delete this Entry?',
+                    html: 'This will permanently delete the <strong>"' + section + '"</strong> entry and all of its associated data.'
+                       + '<br><span class="text-danger mt-1 d-inline-block"><i class="fas fa-exclamation-triangle mr-1"></i>This action cannot be undone.</span>',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
                     cancelButtonColor: '#6c757d',
-                    confirmButtonText: '<i class="fas fa-trash"></i> Delete'
+                    confirmButtonText: '<i class="fas fa-trash"></i> Yes, delete it!',
+                    cancelButtonText: 'Cancel'
                 }).then(function(result) {
                     if (result.isConfirmed) {
+                        var postData = new URLSearchParams();
+                        postData.append(CSRF_TOKEN_NAME, CSRF_TOKEN_HASH);
                         fetch(url + '/' + id, {
                             method: 'POST',
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            body: postData
                         }).then(function(r) { return r.json(); }).then(function(response) {
                             if (response.success) {
-                                Swal.fire('Deleted!', 'Entry has been deleted.', 'success').then(function() {
+                                Swal.fire('Deleted!', 'The "' + section + '" entry has been deleted.', 'success').then(function() {
                                     location.reload();
                                 });
                             } else {

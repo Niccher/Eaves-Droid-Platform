@@ -5,18 +5,34 @@
         <div class="container-fluid">
             <div class="row mb-4 align-items-center">
                 <div class="col-lg-8 col-md-6">
-                    <div class="d-flex align-items-center">
-                        <h1 class="h2 mb-0">
-                            <i class="fas fa-phone-alt text-primary mr-2"></i>
-                            <?php echo $call_head ?? 'Call Logs' ?>
-                        </h1>
-                        <div class="ml-3">
-                                <span class="badge badge-light border p-2">
+                        <div class="d-flex align-items-center">
+                            <h1 class="h2 mb-0">
+                                <i class="fas fa-phone-alt text-primary mr-2"></i>
+                                <?php echo $call_head ?? 'Call Logs' ?>
+                            </h1>
+                            <div class="ml-3 d-flex align-items-center flex-wrap">
+                                <span class="badge badge-light border p-2 mr-2">
                                     <i class="fas fa-chart-bar text-primary mr-1"></i>
                                     Total: <b><?php echo $totalCalls ?? 0 ?></b>
                                 </span>
+                                <span class="badge badge-light border p-2 mr-2">
+                                    <i class="fas fa-arrow-circle-down text-info mr-1"></i>
+                                    Incoming: <b><?php echo $incomingCallsCount ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2 mr-2">
+                                    <i class="fas fa-arrow-circle-up text-success mr-1"></i>
+                                    Outgoing: <b><?php echo $outgoingCallsCount ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2 mr-2">
+                                    <i class="fas fa-times-circle text-danger mr-1"></i>
+                                    Rejected: <b><?php echo $rejectedCallsCount ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-shield-alt text-warning mr-1"></i>
+                                    Blocked: <b><?php echo $blockedCallsCount ?? 0 ?></b>
+                                </span>
+                            </div>
                         </div>
-                    </div>
                     <p class="text-muted mt-2 mb-0">View and manage your call history</p>
                 </div>
                 <div class="col-lg-4 col-md-6">
@@ -37,7 +53,7 @@
                 <div class="col-12">
                     <!-- Main Card -->
                     <div class="card card-secondary shadow-sm">
-                        <div class="card-header">
+                        <div class="card-header d-flex align-items-center">
                             <h3 class="card-title text-white">
                                 <i class="fas fa-history mr-2"></i>
                                 Call History
@@ -64,19 +80,18 @@
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
-                                    <thead class="thead-light">
-                                        <tr>
-                                            <th width="25%">Contact</th>
-                                            <th width="13%">Type</th>
-                                            <th width="20%">Time</th>
-                                            <th width="25%">Duration</th>
-                                            <th width="17%" class="text-center">Actions</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <?php if (empty($call_logs_dump)): ?>
-                                            <tr>
-                                                <td colspan="5" class="text-center py-5">
+                                     <thead class="thead-light">
+                                         <tr>
+                                             <th width="30%">Contact</th>
+                                             <th width="35%">Time</th>
+                                             <th width="25%">Duration</th>
+                                             <th width="10%" class="text-center">Actions</th>
+                                         </tr>
+                                         </thead>
+                                         <tbody>
+                                         <?php if (empty($call_logs_dump)): ?>
+                                             <tr>
+                                                 <td colspan="4" class="text-center py-5">
                                                 <div class="empty-state">
                                                     <i class="fas fa-phone-slash fa-3x text-muted mb-3"></i>
                                                     <h4>No call logs found</h4>
@@ -242,48 +257,7 @@
                                                 $name = '<span class="text-dark font-weight-bold">' . htmlspecialchars($call_log['Saved']) . '</span>';
                                             }
 
-                                            // Call type with icons and colors
-                                            $typeConfig = [
-                                                'Incoming' => [
-                                                    'icon' => 'arrow-circle-down',
-                                                    'color' => 'info',
-                                                    'bg' => 'bg-info',
-                                                    'pulse' => 'incoming-pulse'
-                                                ],
-                                                'Outgoing' => [
-                                                    'icon' => 'arrow-circle-up',
-                                                    'color' => 'success',
-                                                    'bg' => 'bg-success',
-                                                    'pulse' => 'outgoing-pulse'
-                                                ],
-                                                'Rejected' => [
-                                                    'icon' => 'times-circle',
-                                                    'color' => 'danger',
-                                                    'bg' => 'bg-danger',
-                                                    'pulse' => 'rejected-pulse'
-                                                ],
-                                                'Missed' => [
-                                                    'icon' => 'phone-slash',
-                                                    'color' => 'danger',
-                                                    'bg' => 'bg-danger',
-                                                    'pulse' => 'missed-pulse'
-                                                ],
-                                                'Blocked' => [
-                                                    'icon' => 'shield-alt',
-                                                    'color' => 'warning',
-                                                    'bg' => 'bg-warning',
-                                                    'pulse' => 'blocked-pulse'
-                                                ]
-                                            ];
-
-                                            $callType = $call_log['Type'];
-                                            $typeInfo = $typeConfig[$callType] ?? [
-                                                    'icon' => 'question-circle',
-                                                    'color' => 'secondary',
-                                                    'bg' => 'bg-secondary',
-                                                    'pulse' => ''
-                                                ];
-                                            ?>
+                                             ?>
 
                                             <tr>
                                                 <td>
@@ -298,17 +272,11 @@
                                                             <small class="text-muted"><?php echo htmlspecialchars($call_log['Caller']); ?></small>
                                                         </div>
                                                     </div>
-                                                </td>
-                                                <td>
-                                                        <span class="badge <?php echo $typeInfo['bg']; ?> text-white p-2 <?php echo $typeInfo['pulse']; ?>">
-                                                            <i class="fas fa-<?php echo $typeInfo['icon']; ?> mr-1"></i>
-                                                            <?php echo $callType; ?>
-                                                        </span>
-                                                </td>
-                                                <td>
-                                                    <div class="text-dark">
-                                                        <i class="fas fa-calendar-day text-primary mr-1"></i>
-                                                        <?php echo $dateOnly; ?>
+                                                 </td>
+                                                 <td>
+                                                     <div class="text-dark">
+                                                         <i class="fas fa-calendar-day text-primary mr-1"></i>
+                                                         <?php echo $dateOnly; ?>
                                                     </div>
                                                     <small class="text-muted">
                                                         <i class="fas fa-clock text-secondary mr-1"></i>
@@ -337,8 +305,9 @@
                                                     </div>
                                                 </td>
                                                 <td class="text-center align-middle">
-                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-call"
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-row"
                                                             data-id="<?= $call_log['counter'] ?? '' ?>"
+                                                            data-url="<?= base_url('call_logs/delete') ?>"
                                                             data-name="<?= htmlspecialchars($call_log['Saved'] ?: $call_log['Caller']) ?>"
                                                             title="Delete call log entry">
                                                         <i class="fas fa-trash"></i>
@@ -432,58 +401,7 @@
     .text-teal { color: #20c997 !important; }
     .text-orange { color: #fd7e14 !important; }
 
-    /* Pulse animations for call types */
-    .incoming-pulse {
-        animation: incomingPulse 2s infinite;
-    }
-
-    .outgoing-pulse {
-        animation: outgoingPulse 2s infinite;
-    }
-
-    .rejected-pulse {
-        animation: rejectedPulse 2s infinite;
-    }
-
-    .missed-pulse {
-        animation: missedPulse 2s infinite;
-    }
-
-    .blocked-pulse {
-        animation: blockedPulse 2s infinite;
-    }
-
-    @keyframes incomingPulse {
-        0% { box-shadow: 0 0 0 0 rgba(23, 162, 184, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(23, 162, 184, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(23, 162, 184, 0); }
-    }
-
-    @keyframes outgoingPulse {
-        0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-    }
-
-    @keyframes rejectedPulse {
-        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
-    }
-
-    @keyframes missedPulse {
-        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
-    }
-
-    @keyframes blockedPulse {
-        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
-    }
-
-    /* Hover effects */
+     /* Hover effects */
     .duration-display:hover .badge {
         transform: scale(1.1);
         transition: transform 0.2s ease;
@@ -552,43 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
             rows.forEach(function(row) { tbody.appendChild(row); });
         });
     });
-    document.querySelectorAll('.delete-call').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var id = this.getAttribute('data-id');
-            var name = this.getAttribute('data-name');
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: 'Delete Call Log Entry?',
-                    text: 'Are you sure you want to delete the entry for "' + name + '"?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: '<i class="fas fa-trash"></i> Delete'
-                }).then(function(result) {
-                    if (result.isConfirmed) {
-                        fetch(base_url('call_logs/delete/' + id), {
-                            method: 'POST',
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                        }).then(function(r) { return r.json(); }).then(function(response) {
-                            if (response.success) {
-                                Swal.fire('Deleted!', 'Call log entry has been deleted.', 'success').then(function() {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire('Error!', response.message || 'Failed to delete call log entry.', 'error');
-                            }
-                        }).catch(function() {
-                            Swal.fire('Error!', 'Failed to delete call log entry.', 'error');
-                        });
-                    }
-                });
-            }
-            });
-        });
-
-        // PDF Export
+    // PDF Export
         $('#pdfExport').on('click', function () {
             var element = document.querySelector('.table-sortable');
             if (!element) return;
@@ -615,3 +497,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<?php include __DIR__ . '/../partials/_delete_confirm.php'; ?>

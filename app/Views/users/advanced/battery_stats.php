@@ -75,7 +75,7 @@
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-danger delete-row"
                                         data-id="<?= $rid ?>"
-                                        data-url="<?= base_url('advanced/battery_stats/delete') ?>"
+                                        data-url="<?= base_url('advanced/hardware/battery_stats/delete') ?>"
                                         title="Delete this row">
                                         <i class="fas fa-trash"></i>
                                     </button>

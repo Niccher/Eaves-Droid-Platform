@@ -60,7 +60,7 @@
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-danger delete-row"
                                         data-id="<?= $rid ?>"
-                                        data-url="<?= base_url('advanced/bluetooth/delete') ?>"
+                                        data-url="<?= base_url('advanced/hardware/bluetooth/delete') ?>"
                                         title="Delete this row">
                                         <i class="fas fa-trash"></i>
                                     </button>

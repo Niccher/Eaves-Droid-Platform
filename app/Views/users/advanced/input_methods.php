@@ -21,5 +21,5 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/input_methods/delete'),
+    'deleteUrl' => base_url('advanced/software/input_methods/delete'),
 ]) ?>

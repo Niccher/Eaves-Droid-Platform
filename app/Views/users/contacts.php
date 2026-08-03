@@ -44,7 +44,7 @@
                 <div class="col-12">
                     <!-- Main Card -->
                     <div class="card card-secondary shadow-sm">
-                        <div class="card-header">
+                        <div class="card-header d-flex align-items-center">
                              <h3 class="card-title">
                                  <i class="fas fa-users mr-2"></i>
                                  Contact List
@@ -180,11 +180,12 @@
                                                                  ]), ENT_QUOTES, 'UTF-8') ?>'>
                                                              <i class="fas fa-info-circle"></i> Details
                                                          </button>
-                                                         <button type="button"
-                                                                 class="btn btn-outline-danger delete-contact"
-                                                                 data-id="<?php echo $contact['ID'] ?? $contact['counter'] ?? ''; ?>"
-                                                                 data-name="<?php echo htmlspecialchars($contact['Name'] ?? 'Unknown'); ?>"
-                                                                 title="Delete contact">
+                                                          <button type="button"
+                                                                  class="btn btn-outline-danger delete-row"
+                                                                  data-id="<?php echo $contact['ID'] ?? $contact['counter'] ?? ''; ?>"
+                                                                  data-url="<?= base_url('contacts/delete') ?>"
+                                                                  data-name="<?php echo htmlspecialchars($contact['Name'] ?? 'Unknown'); ?>"
+                                                                  title="Delete contact">
                                                              <i class="fas fa-trash"></i>
                                                          </button>
                                                      </div>
@@ -449,49 +450,8 @@
                     return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
                 });
                 rows.forEach(function(row) { tbody.appendChild(row); });
-            });
-        });
-
-        // Delete contact buttons
-        document.querySelectorAll('.delete-contact').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                const name = this.getAttribute('data-name');
-                Swal.fire({
-                    title: 'Delete Contact?',
-                    html: `Are you sure you want to delete <strong>${name}</strong>?`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    confirmButtonText: 'Yes, delete it!',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: '<?= base_url('contacts/delete/') ?>' + id,
-                            type: 'POST',
-                            data: {
-                                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
-                            },
-                            dataType: 'json',
-                            success: function(response) {
-                                if (response.success) {
-                                    Swal.fire('Deleted!', response.message, 'success').then(() => {
-                                        location.reload();
-                                    });
-                                } else {
-                                    Swal.fire('Error', response.message || 'Could not delete contact', 'error');
-                                }
-                            },
-                            error: function() {
-                                Swal.fire('Error', 'An error occurred while processing your request', 'error');
-                            }
-                        });
-                    }
-                });
-        });
+});
     });
-
     // PDF Export
     $('#pdfExport').on('click', function () {
         var element = document.querySelector('.table-sortable');
@@ -518,3 +478,4 @@
     });
 });
 </script>
+<?php include __DIR__ . '/partials/_delete_confirm.php'; ?>

@@ -621,18 +621,25 @@ class Advanced extends BaseClientController
     {
         // Support both route segment and POST data
         if ($pkgEnc === null) {
-            // Try POST parameter first, then URI segment
-            $pkgEnc = $this->request->getPost('pkg') ?? $this->request->uri->getSegment(4);
+            $pkgEnc = $this->request->getPost('pkg') ?? $this->request->uri->getSegment(5);
         }
         $packageName = $this->decodePackageSegment($pkgEnc);
         if (!$packageName) {
-            // Set flash error and redirect back
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Invalid package name']);
+            }
             $this->session->setFlashdata('error', 'Invalid package name');
             return redirect()->to(base_url('advanced/software/notifications'));
         }
         if ($this->finderModel->delete_notifications_by_app($this->userId, $packageName)) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => true, 'message' => 'All notifications for the app have been deleted']);
+            }
             $this->session->setFlashdata('success', 'All notifications for the app have been deleted');
             return redirect()->to(base_url('advanced/software/notifications'));
+        }
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete notifications for the app']);
         }
         $this->session->setFlashdata('error', 'Failed to delete notifications for the app');
         return redirect()->to(base_url('advanced/software/notifications'));

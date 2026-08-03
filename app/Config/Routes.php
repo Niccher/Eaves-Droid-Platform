@@ -306,7 +306,7 @@ $routes->group('', [
          * @param mixed $id App counter
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
-        $routes->post('delete/(:any)', 'Apps::delete/$1');
+        $routes->post('delete/(:num)', 'Apps::delete/$1');
 
     });
 
@@ -320,7 +320,7 @@ $routes->group('', [
          *
          * @return string
          */
-        $routes->post('delete/(:any)', 'Files::delete/$1');
+        $routes->post('delete/(:num)', 'Files::delete/$1');
         $routes->get('/', 'Files::index', ['as' => 'files-all']);
 
         /**
@@ -422,7 +422,7 @@ $routes->group('', [
          */
         $routes->get('blocked', 'Calls::call_blocked', ['as' => 'call-logs-blocked']);
         $routes->get('blocked/(:num)', 'Calls::call_blocked/$1');
-        $routes->post('delete/(:any)', 'Calls::delete/$1');
+        $routes->post('delete/(:num)', 'Calls::delete/$1');
     });
 
     // =============================================================
@@ -432,14 +432,14 @@ $routes->group('', [
     $routes->group('location', static function ($routes) {
         $routes->get('/', 'Location::index', ['as' => 'location-all']);
         $routes->get('(:num)', 'Location::index/$1');
-        $routes->post('delete/(:any)', 'Location::delete/$1');
+        $routes->post('delete/(:num)', 'Location::delete/$1');
     });
 
     // Activity Routes
     $routes->group('activities', static function ($routes) {
         $routes->get('/', 'Location::activities', ['as' => 'activity-all']);
         $routes->get('(:num)', 'Location::activities/$1');
-        $routes->post('delete/(:any)', 'Location::deleteActivity/$1');
+        $routes->post('delete/(:num)', 'Location::deleteActivity/$1');
     });
 
     // Advanced Data Extractions
@@ -471,6 +471,18 @@ $routes->group('', [
             $routes->get('usb_devices', 'Advanced::usb_devices', ['as' => 'adv-usb-devices']);
             $routes->get('vibration', 'Advanced::vibration', ['as' => 'adv-vibration']);
 
+            // Additional hardware pages
+            $routes->get('hardware_dashboard', 'Advanced::hardware_dashboard', ['as' => 'adv-hardware-dashboard']);
+            $routes->get('battery_power', 'Advanced::battery_power', ['as' => 'adv-battery-power']);
+            $routes->get('system_performance', 'Advanced::system_performance', ['as' => 'adv-system-performance']);
+            $routes->get('network_connectivity', 'Advanced::network_connectivity', ['as' => 'adv-network-connectivity']);
+            $routes->get('display_graphics', 'Advanced::display_graphics', ['as' => 'adv-display-graphics']);
+            $routes->get('sensors_location', 'Advanced::sensors_location', ['as' => 'adv-sensors-location']);
+            $routes->get('media_hardware', 'Advanced::media_hardware', ['as' => 'adv-media-hardware']);
+            $routes->get('storage_peripherals', 'Advanced::storage_peripherals', ['as' => 'adv-storage-peripherals']);
+            $routes->get('shortrange_auth', 'Advanced::shortrange_auth', ['as' => 'adv-shortrange-auth']);
+            $routes->get('device_fingerprint', 'Advanced::device_fingerprint', ['as' => 'adv-device-fingerprint']);
+
             // Delete routes - hardware pages
             $routes->post('device/delete/(:num)', 'Advanced::delete_device_context/$1');
             $routes->post('network/delete/(:num)', 'Advanced::delete_network_info/$1');
@@ -493,6 +505,16 @@ $routes->group('', [
             $routes->post('power_rails/delete/(:num)', 'Advanced::delete_power_rails/$1');
             $routes->post('usb_devices/delete/(:num)', 'Advanced::delete_usb_devices/$1');
             $routes->post('vibration/delete/(:num)', 'Advanced::delete_vibration/$1');
+            $routes->post('hardware_dashboard/delete/(:num)', 'Advanced::delete_hardware_dashboard/$1');
+            $routes->post('battery_power/delete/(:num)', 'Advanced::delete_battery_power/$1');
+            $routes->post('system_performance/delete/(:num)', 'Advanced::delete_system_performance/$1');
+            $routes->post('network_connectivity/delete/(:num)', 'Advanced::delete_network_connectivity/$1');
+            $routes->post('display_graphics/delete/(:num)', 'Advanced::delete_display_graphics/$1');
+            $routes->post('sensors_location/delete/(:num)', 'Advanced::delete_sensors_location/$1');
+            $routes->post('media_hardware/delete/(:num)', 'Advanced::delete_media_hardware/$1');
+            $routes->post('storage_peripherals/delete/(:num)', 'Advanced::delete_storage_peripherals/$1');
+            $routes->post('shortrange_auth/delete/(:num)', 'Advanced::delete_shortrange_auth/$1');
+            $routes->post('device_fingerprint/delete/(:num)', 'Advanced::delete_device_fingerprint/$1');
 
             // SIM Configs (kept in hardware group)
             $routes->get('sim-configs', 'SimConfig::index', ['as' => 'sim-configs']);
@@ -542,7 +564,7 @@ $routes->group('', [
 
             // Delete routes - software pages
             $routes->post('app-usage/delete/(:num)', 'Advanced::delete_app_usage/$1');
-            $routes->post('notifications/delete/(:any)', 'Advanced::delete_notifications_by_app');
+            $routes->post('notifications/delete/(:any)', 'Advanced::delete_notifications_by_app/$1');
             $routes->post('notifications/delete-row/(:num)', 'Advanced::delete_notification_row/$1');
             $routes->post('accounts/delete/(:num)', 'Advanced::delete_accounts_row/$1');
             $routes->post('calendar/delete/(:num)', 'Advanced::delete_calendar_event/$1');
@@ -552,6 +574,8 @@ $routes->group('', [
             $routes->post('saved_wifi/delete/(:num)', 'Advanced::delete_saved_wifi/$1');
             $routes->post('default_apps/delete/(:num)', 'Advanced::delete_default_apps/$1');
             $routes->post('alarms/delete/(:num)', 'Advanced::delete_alarms/$1');
+            $routes->post('accessibility/delete/(:num)', 'Advanced::delete_accessibility/$1');
+            $routes->post('input_methods/delete/(:num)', 'Advanced::delete_input_methods/$1');
             $routes->post('app_security/delete/(:num)', 'Advanced::delete_app_security/$1');
             $routes->post('network_security/delete/(:num)', 'Advanced::delete_network_security/$1');
             $routes->post('telephony_network/delete/(:num)', 'Advanced::delete_telephony_network/$1');
@@ -618,7 +642,7 @@ $routes->group('', [
          */
         $routes->get('sent', 'Sms::sms_sent', ['as' => 'sms-sent']);
         $routes->get('sent/(:num)', 'Sms::sms_sent/$1');
-        $routes->post('delete/(:any)', 'Sms::delete/$1');
+        $routes->post('delete/(:num)', 'Sms::delete/$1');
     });
 
     // =============================================================
@@ -659,7 +683,7 @@ $routes->group('', [
          * @param string $contactId Contact identifier
          * @return string
          */
-        $routes->post('delete/(:any)', 'Contacts::delete/$1');
+        $routes->post('delete/(:num)', 'Contacts::delete/$1');
         $routes->get('view/(:any)', 'Contacts::viewContact/$1', ['as' => 'contact-view']);
 
         /**

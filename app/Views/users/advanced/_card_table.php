@@ -11,15 +11,18 @@
  *   $tableId   string   unique table id, e.g. "calendarTable"
  *   $columns   array    primary columns, one entry per visible column:
  *                       ['field' => 'db_col', 'label' => 'Header',
- *                        'format' => 'text|timestamp|code|badge|yesno|json|maps|ms|bytes',
+ *                        'format' => 'text|timestamp|code|badge|yesno|json|maps|ms|bytes|count|stacked',
  *                        'map' => ['value' => 'badge-color'], 'default' => 'secondary',
- *                        'truncate' => N, 'jsonTitle' => 'Modal title']
+ *                        'sub_field' => 'db_col' (for stacked), 'truncate' => N,
+ *                        'jsonTitle' => 'Modal title']
  *   $secondary array    columns shown inside the expanded row (same spec format)
  *   $rows      array    data rows
  *   $pager     object   CodeIgniter pager
  *   $total     int      total row count
  *   $nav_urls  string   nav buttons (usually from the controller)
  *   $deleteUrl string   base url for the delete endpoint (no trailing id)
+ *   $deleteTitle string optional descriptive label shown in the delete
+ *                       confirm dialog (defaults to the page title)
  *   $actions   callable optional closure fn($row) => html placed in the
  *                       actions cell (e.g. a "view details" link)
  *   $perPage   int      items per page (default 25)
@@ -127,6 +130,26 @@ if (!function_exists('render_adv_cell')) {
             } else {
                 return '<span class="font-weight-bold">' . $remMins . ' Minutes</span>';
             }
+
+        case 'count':
+            $n = (int) $raw;
+            return '<span class="badge badge-' . ($n > 0 ? 'info' : 'secondary') . '">' . $n . '</span>';
+
+        case 'stacked':
+            $subField = $col['sub_field'] ?? null;
+            $subVal   = $subField ? (string) ($r[$subField] ?? '') : '';
+            $mainVal  = $value;
+            if ($mainVal === '—' && $subVal === '') {
+                return '<span class="text-muted">—</span>';
+            }
+            $out = '';
+            if ($mainVal !== '—') {
+                $out .= '<span class="font-weight-bold">' . esc($mainVal) . '</span>';
+            }
+            if ($subVal !== '' && $subVal !== $mainVal) {
+                $out .= '<small class="text-muted d-block text-truncate" style="max-width:280px;" title="' . esc($subVal) . '">' . esc($subVal) . '</small>';
+            }
+            return $out;
 
         case 'text':
         default:
@@ -236,6 +259,7 @@ if (!function_exists('render_adv_cell')) {
                                                         <td><?= render_adv_cell($col, $r) ?></td>
                                                     <?php endforeach; ?>
                                                     <td class="text-center">
+                                                        <div class="action-btns">
                                                         <?php if (isset($actions) && is_callable($actions)): ?>
                                                             <?= $actions($r) ?>
                                                         <?php endif; ?>
@@ -243,10 +267,12 @@ if (!function_exists('render_adv_cell')) {
                                                             <button class="btn btn-sm btn-outline-danger delete-row"
                                                                     data-id="<?= (int)$rid ?>"
                                                                     data-url="<?= esc($deleteUrl) ?>"
+                                                                    data-delete-title="<?= esc($deleteTitle ?? '') ?>"
                                                                     title="Delete this row">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
                                                         <?php endif; ?>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             <?php else: ?>
@@ -256,6 +282,7 @@ if (!function_exists('render_adv_cell')) {
                                                         <td><?= render_adv_cell($col, $r) ?></td>
                                                     <?php endforeach; ?>
                                                     <td class="text-center">
+                                                        <div class="action-btns">
                                                         <?php if (isset($actions) && is_callable($actions)): ?>
                                                             <?= $actions($r) ?>
                                                         <?php endif; ?>
@@ -263,10 +290,12 @@ if (!function_exists('render_adv_cell')) {
                                                             <button class="btn btn-sm btn-outline-danger delete-row"
                                                                     data-id="<?= (int)$rid ?>"
                                                                     data-url="<?= esc($deleteUrl) ?>"
+                                                                    data-delete-title="<?= esc($deleteTitle ?? '') ?>"
                                                                     title="Delete this row">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
                                                         <?php endif; ?>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                                 <tr class="expandable-content" style="display:none;">

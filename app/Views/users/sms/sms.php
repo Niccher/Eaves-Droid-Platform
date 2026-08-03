@@ -10,14 +10,22 @@
                                 <i class="fas fa-sms text-primary mr-2"></i>
                                 <?php echo $sms_head ?? 'All SMS' ?>
                             </h1>
-                            <div class="ml-3">
+                            <div class="ml-3 d-flex flex-wrap" style="gap: 5px;">
                                 <span class="badge badge-light border p-2">
-                                    <i class="fas fa-chart-bar text-primary mr-1"></i>
-                                    Total: <b><?php echo $totalSMS ?? 0 ?></b>
+                                    <i class="fas fa-comments text-primary mr-1"></i>
+                                    Total: <b><?php echo $totalAllSMS ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-inbox text-success mr-1"></i>
+                                    Inbox: <b><?php echo $totalSmsInbox ?? 0 ?></b>
+                                </span>
+                                <span class="badge badge-light border p-2">
+                                    <i class="fas fa-paper-plane text-secondary mr-1"></i>
+                                    Sent: <b><?php echo $totalSmsSent ?? 0 ?></b>
                                 </span>
                             </div>
                         </div>
-                        <p class="text-white mt-2 mb-0">View and manage all your SMS messages</p>
+                        <p class="text-muted mt-2 mb-0">View and manage all your SMS messages</p>
                     </div>
                     <div class="col-lg-4 col-md-6">
                         <div class="float-right mt-2">
@@ -37,7 +45,7 @@
                     <div class="col-12">
                         <!-- Main Card -->
                         <div class="card card-secondary shadow-sm">
-                            <div class="card-header">
+                            <div class="card-header d-flex align-items-center">
                                 <h3 class="card-title">
                                     <i class="fas fa-comments mr-2"></i>
                                     SMS Messages
@@ -353,9 +361,10 @@
                                                                                 </span>
                                                                             </div>
                                                                             <div class="mb-1 mt-3">
-                                                                                <button class="btn btn-sm btn-outline-danger delete-sms"
-                                                                                        data-id="<?php echo $smsinfo['id'] ?? ''; ?>"
-                                                                                        title="Delete this message">
+                                                                                 <button class="btn btn-sm btn-outline-danger delete-row"
+                                                                                         data-id="<?php echo $smsinfo['id'] ?? ''; ?>"
+                                                                                         data-url="<?= base_url('sms/delete') ?>"
+                                                                                         title="Delete this message">
                                                                                     <i class="fas fa-trash mr-1"></i> Delete
                                                                                 </button>
                                                                             </div>
@@ -749,43 +758,8 @@
                         return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
                     });
                     rows.forEach(function(row) { tbody.appendChild(row); });
-                });
-            });
-
-            document.addEventListener('click', function (e) {
-                const deleteBtn = e.target.closest('.delete-sms');
-                if (!deleteBtn) return;
-                const id = deleteBtn.getAttribute('data-id');
-                if (!id) return;
-                Swal.fire({
-                    title: 'Delete SMS?',
-                    text: 'This action cannot be undone.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    confirmButtonText: '<i class="fas fa-trash mr-1"></i> Delete',
-                    cancelButtonText: 'Cancel'
-                }).then(function (result) {
-                    if (result.isConfirmed) {
-                        const csrfName = document.querySelector('meta[name="csrf-token"]');
-                        const csrfHash = document.querySelector('meta[name="csrf-hash"]');
-                        const formData = new FormData();
-                        if (csrfName && csrfHash) {
-                            formData.append(csrfName.getAttribute('content'), csrfHash.getAttribute('content'));
-                        }
-                        fetch(base_url('sms/delete/' + id), { method: 'POST', body: formData })
-                            .then(function (res) {
-                                if (res.ok) location.reload();
-                                else Swal.fire('Error', 'Failed to delete message.', 'error');
-                            })
-                            .catch(function () {
-                                Swal.fire('Error', 'Network error.', 'error');
-                            });
-                    }
-                });
-            });
+});
         });
-
         // PDF Export
         $('#pdfExport').on('click', function () {
             var element = document.querySelector('.table-sortable');
@@ -808,7 +782,8 @@
             }).catch(function () {
                 Swal.close();
                 Swal.fire({ icon: 'error', title: 'Export Failed', text: 'Could not generate PDF', timer: 3000, showConfirmButton: false });
-            });
-        });
+});
     });
+});
 </script>
+<?php include __DIR__ . '/../partials/_delete_confirm.php'; ?>

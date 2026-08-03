@@ -23,6 +23,8 @@ class Files extends BaseClientController
             'files_dump' => $filesData['data'] ?? [],
             'pager' => $filesData['pager'] ?? null,
             'totalFiles' => $filesData['total'] ?? 0,
+            'filesCounts' => $this->getFileCounts(),
+            'files_desc' => $this->getFileDescription($type),
             'current_type' => $type
         ]);
 
@@ -124,10 +126,116 @@ class Files extends BaseClientController
             'files_dump' => $filesData['data'] ?? [],
             'pager' => $filesData['pager'] ?? null,
             'totalFiles' => $filesData['total'] ?? 0,
+            'filesCounts' => $this->getFileCounts(),
+            'files_desc' => $this->getFileDescription($type),
             'current_type' => $type
         ]);
 
         return $this->renderAppView('users/files/files_with_type', $data);
+    }
+
+    /**
+     * Count files per category for the header counters.
+     *
+     * @return array
+     */
+    private function getFileCounts(): array
+    {
+        $empty = [
+            'all' => 0,
+            'media' => 0,
+            'documents' => 0,
+            'audio' => 0,
+            'archives' => 0,
+            'others' => 0,
+        ];
+
+        try {
+            $db = \Config\Database::connect();
+            $query = $db->table('tbl_device_files')
+                ->select('category, COUNT(*) AS total')
+                ->groupBy('category');
+            $this->applyExclusionFilters($query);
+            $rows = $query->get()->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'getFileCounts error: ' . $e->getMessage());
+            return $empty;
+        }
+
+        $counts = $empty;
+        foreach ($rows as $row) {
+            $cat = strtolower((string) ($row['category'] ?? 'Other'));
+            $total = (int) ($row['total'] ?? 0);
+            $counts['all'] += $total;
+
+            switch ($cat) {
+                case 'image':
+                case 'video':
+                    $counts['media'] += $total;
+                    break;
+                case 'document':
+                case 'spreadsheet':
+                case 'presentation':
+                case 'ebook':
+                    $counts['documents'] += $total;
+                    break;
+                case 'audio':
+                    $counts['audio'] += $total;
+                    break;
+                case 'archive':
+                    $counts['archives'] += $total;
+                    break;
+                default: // code, font, application, other, unknown
+                    $counts['others'] += $total;
+                    break;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Page-specific description shown under the page heading.
+     *
+     * @param string $type
+     * @return string
+     */
+    private function getFileDescription(string $type): string
+    {
+        $descriptions = [
+            'all' => 'View and manage all files synced from your device',
+            'images' => 'Images stored on your device',
+            'videos' => 'Videos stored on your device',
+            'media' => 'Images and videos stored on your device',
+            'documents' => 'Documents and spreadsheets stored on your device',
+            'audio' => 'Audio files stored on your device',
+            'archives' => 'Compressed archives stored on your device',
+            'others' => 'Other file types stored on your device',
+        ];
+
+        return $descriptions[$type] ?? 'Files stored on your device';
+    }
+
+    /**
+     * Apply shared exclusion filters to a query on tbl_device_files:
+     *  - skip app-internal paths under /data/user/0/
+     *  - skip hidden files/dirs (name starts with '.', e.g. .nomedia, .database_uuid)
+     *  - skip 0-byte files (directories are kept)
+     *
+     * @param \CodeIgniter\Database\BaseBuilder $query
+     * @return \CodeIgniter\Database\BaseBuilder
+     */
+    private function applyExclusionFilters($query)
+    {
+        $query->where('owner_id', $this->userId);
+        $query->where('path NOT LIKE', '/data/user/0/%');
+        $query->where('name NOT LIKE', '.%');
+        $query->groupStart()
+            ->where('size_bytes >', 0)
+            ->orWhere('is_directory', 1)
+            ->groupEnd();
+
+        return $query;
     }
 
     /**
@@ -157,7 +265,7 @@ class Files extends BaseClientController
                 created_at
             ');
             
-            $query->where('owner_id', $this->userId);
+            $this->applyExclusionFilters($query);
 
             // Filter by type
             switch ($type) {
@@ -220,7 +328,7 @@ class Files extends BaseClientController
 
     public function delete($id)
     {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+        if (!$this->request->isAJAX() || $this->request->getMethod() !== 'post') {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
         }
         if ($this->finderModel->delete_file((int) $id, $this->userId)) {
