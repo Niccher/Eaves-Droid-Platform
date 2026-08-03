@@ -2,8 +2,7 @@
 
 namespace App\Controllers\clients;
 
-use App\Controllers\BaseController;
-
+use App\Controllers\clients\BaseClientController;
 use App\Models\Mod_Finder;
 use App\Models\Mod_Android;
 use App\Models\Mod_User;
@@ -12,7 +11,7 @@ use App\Models\Mod_Access_Logs;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Model;
 
-class Profile extends BaseController
+class Profile extends BaseClientController
 {
     use ResponseTrait;
 

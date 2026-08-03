@@ -8,7 +8,7 @@
                         <h1 class="h2 mb-0 mr-3"><i class="fas fa-hdd text-secondary mr-2"></i>Storage</h1>
                         <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i> Total: <b><?= $total ?? 0 ?></b></span>
                     </div>
-                    <p class="text-muted mt-1 mb-0">Internal/external storage volumes, capacity, and usage</p>
+                    <p class="text-muted mt-1 mb-0">Volumes, capacity, available space, mount points</p>
                 </div>
                 <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
             </div>
@@ -17,93 +17,101 @@
     <section class="content"><div class="container-fluid"><div class="row"><div class="col-12">
         <div class="card card-secondary shadow-sm">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-list mr-2"></i>Storage Snapshots <small class="text-muted ml-2"><?= count($rows) ?></small></h3>
+                <h3 class="card-title"><i class="fas fa-list mr-2"></i>Storage Snapshots <small class="text-white ml-2"><?= count($rows) ?> entries</small></h3>
+                <div class="card-tools"><button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button></div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover table-striped mb-0 table-sortable" id="storageTable">
                         <thead class="thead-light">
-                            <tr>
-                                <th>Volume</th>
-                                <th>Total</th>
-                                <th>Available</th>
-                                <th>Used</th>
-                                <th>Removable</th>
-                                <th>State</th>
-                                <th>Extracted</th>
-                                <th class="text-center">Actions</th>
-                            </tr>
+                        <tr>
+                            <th style="width:40px"></th>
+                            <th><i class="fas fa-folder mr-1"></i> Volume Path</th>
+                            <th><i class="fas fa-hdd mr-1"></i> Total</th>
+                            <th><i class="fas fa-arrow-down mr-1"></i> Available</th>
+                            <th><i class="fas fa-arrow-up mr-1"></i> Used</th>
+                            <th><i class="fas fa-tag mr-1"></i> Type</th>
+                            <th><i class="fas fa-clock mr-1"></i> Extracted</th>
+                            <th class="text-center"><i class="fas fa-cogs mr-1"></i> Actions</th>
+                        </tr>
                         </thead>
                         <tbody>
-                        <?php if (!empty($rows)): foreach ($rows as $r):
-                            $volumes = json_decode($r['volumes_json'] ?? '[]', true) ?? [];
-                            $appCache = json_decode($r['app_cache_json'] ?? 'null', true);
-                            $appData = json_decode($r['app_data_json'] ?? 'null', true);
-                        ?>
-                            <?php if (!empty($volumes)): foreach ($volumes as $vol):
-                                $info = $vol['info'] ?? [];
+                        <?php if (empty($rows)): ?>
+                            <tr><td colspan="8" class="text-center py-5">
+                                <div class="empty-state"><i class="fas fa-hdd fa-3x text-muted mb-3"></i><h4>No storage data</h4><p class="text-muted">Data will appear here once extracted</p></div>
+                            </td></tr>
+                        <?php else: foreach ($rows as $r): ?>
+                            <?php
+                            $ts = !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '—';
+                            $rid = $r['id'] ?? 0;
+                            $total = $r['total_formatted'] ?? '—';
+                            $avail = $r['available_formatted'] ?? '—';
+                            $used = $r['used_formatted'] ?? '—';
+                            $pct = ($r['total_bytes'] ?? 0) > 0 ? round((($r['used_bytes'] ?? 0) / $r['total_bytes']) * 100) : 0;
+                            $pctClass = $pct > 90 ? 'danger' : ($pct > 70 ? 'warning' : 'success');
                             ?>
-                            <tr>
+                            <tr class="accordion-toggle expandable-row" data-target="#storage-details-<?= $rid ?>">
+                                <td class="text-center"><i class="fas fa-chevron-down text-muted chevron-icon"></i></td>
+                                <td><code><?= esc($r['volume_path'] ?? '—') ?></code></td>
+                                <td><?= esc($total) ?></td>
+                                <td><?= esc($avail) ?></td>
                                 <td>
-                                    <?= esc($vol['path'] ?? 'N/A') ?>
-                                    <?php if (!empty($vol['description'])): ?>
-                                        <br><small class="text-muted"><?= esc($vol['description']) ?></small>
-                                    <?php endif; ?>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 mr-2" style="height: 8px;">
+                                            <div class="bg-<?= $pctClass ?>" role="progressbar" style="width: <?= $pct ?>%"></div>
+                                        </div>
+                                        <span class="font-weight-bold"><?= $used ?></span>
+                                    </div>
                                 </td>
-                                <td><?= esc($info['total_formatted'] ?? ($info['total_bytes'] ? number_format($info['total_bytes']/1024/1024/1024, 2) . ' GB' : 'N/A')) ?></td>
-                                <td><?= esc($info['available_formatted'] ?? ($info['available_bytes'] ? number_format($info['available_bytes']/1024/1024/1024, 2) . ' GB' : 'N/A')) ?></td>
-                                <td><?= esc($info['used_formatted'] ?? ($info['used_bytes'] ? number_format($info['used_bytes']/1024/1024/1024, 2) . ' GB' : 'N/A')) ?></td>
-                                <td class="text-center"><?= isset($vol['is_removable']) && $vol['is_removable'] ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-secondary">No</span>' ?></td>
-                                <td><?= esc($vol['state'] ?? 'N/A') ?></td>
-                                <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
+                                <td>
+                                    <span class="badge badge-<?= (!empty($r['is_removable'])) ? 'warning' : 'info' ?>">
+                                        <?= (!empty($r['is_removable'])) ? 'Removable' : 'Internal' ?>
+                                    </span>
+                                </td>
+                                <td><?= $ts ?></td>
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-danger delete-row"
-                                            data-id="<?= $r['id'] ?? '' ?>"
-                                            data-url="<?= base_url('advanced/storage/delete') ?>"
-                                            title="Delete this row">
+                                        data-id="<?= $rid ?>"
+                                        data-url="<?= base_url('advanced/hardware/storage/delete') ?>"
+                                        title="Delete this row">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
                             </tr>
-                            <?php endforeach; endif; ?>
-                            <?php if ($appCache): ?>
-                            <tr>
-                                <td><span class="badge badge-info">App Cache</span></td>
-                                <td><?= esc($appCache['total_formatted'] ?? number_format($appCache['total_bytes']/1024/1024/1024, 2) . ' GB') ?></td>
-                                <td><?= esc($appCache['available_formatted'] ?? number_format($appCache['available_bytes']/1024/1024/1024, 2) . ' GB') ?></td>
-                                <td><?= esc($appCache['used_formatted'] ?? number_format($appCache['used_bytes']/1024/1024/1024, 2) . ' GB') ?></td>
-                                <td class="text-center">-</td>
-                                <td>-</td>
-                                <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-danger delete-row"
-                                            data-id="<?= $r['id'] ?? '' ?>"
-                                            data-url="<?= base_url('advanced/storage/delete') ?>"
-                                            title="Delete this row">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <?php endif; ?>
-                            <?php if ($appData): ?>
-                            <tr>
-                                <td><span class="badge badge-warning">App Data</span></td>
-                                <td><?= esc($appData['total_formatted'] ?? number_format($appData['total_bytes']/1024/1024/1024, 2) . ' GB') ?></td>
-                                <td><?= esc($appData['available_formatted'] ?? number_format($appData['available_bytes']/1024/1024/1024, 2) . ' GB') ?></td>
-                                <td><?= esc($appData['used_formatted'] ?? number_format($appData['used_bytes']/1024/1024/1024, 2) . ' GB') ?></td>
-                                <td class="text-center">-</td>
-                                <td>-</td>
-                                <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-danger delete-row"
-                                            data-id="<?= $r['id'] ?? '' ?>"
-                                            data-url="<?= base_url('advanced/storage/delete') ?>"
-                                            title="Delete this row">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <?php endif; ?>
+                            <tr class="expandable-content" style="display:none;">
+                                <td colspan="8" class="p-0 border-0">
+                                    <div id="storage-details-<?= $rid ?>">
+                                        <div class="card card-body bg-light border-0 m-0 p-3">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6><i class="fas fa-hdd mr-2"></i>Volume Details</h6>
+                                                    <table class="table table-sm table-borderless mb-0 small">
+                                                        <tr><th>Path</th><td><code><?= esc($r['volume_path'] ?? '—') ?></code></td></tr>
+                                                        <tr><th>Description</th><td><?= esc($r['description'] ?? '—') ?></td></tr>
+                                                        <tr><th>Total</th><td><?= esc($total) ?></td></tr>
+                                                        <tr><th>Available</th><td><?= esc($avail) ?></td></tr>
+                                                        <tr><th>Used</th><td><?= esc($used) ?></td></tr>
+                                                        <tr><th>Free</th><td><?= esc($r['free_formatted'] ?? '—') ?></td></tr>
+                                                        <tr><th>Usage</th><td><?= $pct ?>%</td></tr>
+                                                        <tr><th>Type</th><td><?= (!empty($r['is_removable'])) ? 'Removable' : 'Internal' ?></td></tr>
+                                                        <tr><th>State</th><td><span class="badge badge-<?= ($r['state'] ?? '') === 'mounted' ? 'success' : 'secondary' ?>"><?= ucfirst($r['state'] ?? '—') ?></span></td></tr>
+                                                        <tr><th>Bytes Total</th><td><?= number_format($r['total_bytes'] ?? 0) ?></td></tr>
+                                                        <tr><th>Bytes Available</th><td><?= number_format($r['available_bytes'] ?? 0) ?></td></tr>
+                                                        <tr><th>Bytes Free</th><td><?= number_format($r['free_bytes'] ?? 0) ?></td></tr>
+                                                        <tr><th>Bytes Used</th><td><?= number_format($r['used_bytes'] ?? 0) ?></td></tr>
+                                                    </table>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6><i class="fas fa-info-circle mr-2"></i>Snapshot Info</h6>
+                                                    <table class="table table-sm table-borderless mb-0 small">
+                                                        <tr><th>Extracted At</th><td><?= $ts ?></td></tr>
+                                                        <tr><th>Entry ID</th><td><code><?= $rid ?></code></td></tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
                     </table>

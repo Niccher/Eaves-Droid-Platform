@@ -42,6 +42,13 @@ $routes->get('pricing', 'Home::landing_prices', ['as' => 'pricing']);
 $routes->get('contactus', 'ContactController::index', ['as' => 'contact']);
 $routes->post('contactus', 'ContactController::send');
 
+// Temporary backfill route (remove after use)
+$routes->get('admin/backfill-created-at', function() {
+    $db = \Config\Database::connect();
+    $db->query("UPDATE tbl_device_profile SET created_at = extraction_timestamp WHERE created_at IS NULL;");
+    return "Updated " . $db->affectedRows() . " rows";
+});
+
 // =================================================================
 // 3. ERROR PAGES ROUTES
 //    Custom error pages accessible to all users

@@ -1,85 +1,48 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-3 align-items-center">
-                <div class="col-lg-7">
-                    <div class="d-flex align-items-center flex-wrap">
-                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-cogs text-purple mr-2"></i>Default Apps</h1>
-                        <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i> Total: <b><?= $total ?? 0 ?></b></span>
-                    </div>
-                    <p class="text-muted mt-1 mb-0">Default browser, dialer, SMS, launcher, and other intent handlers</p>
-                </div>
-                <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
-            </div>
-        </div>
-    </section>
-    <section class="content"><div class="container-fluid"><div class="row"><div class="col-12">
-        <div class="card card-secondary shadow-sm">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-list mr-2"></i>Default App Snapshots <small class="text-muted ml-2"><?= count($rows) ?></small></h3>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Handler</th>
-                                <th>Package</th>
-                                <th>App Name</th>
-                                <th>System</th>
-                                <th>Extracted</th>
-                                <th class="text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php if (!empty($rows)): foreach ($rows as $r): ?>
-                            <?php
-                            $handlers = [
-                                'browser' => ['label' => 'Browser', 'icon' => 'fas fa-globe'],
-                                'dialer' => ['label' => 'Dialer', 'icon' => 'fas fa-phone'],
-                                'sms' => ['label' => 'SMS', 'icon' => 'fas fa-sms'],
-                                'launcher' => ['label' => 'Launcher', 'icon' => 'fas fa-home'],
-                                'email' => ['label' => 'Email', 'icon' => 'fas fa-envelope'],
-                                'maps' => ['label' => 'Maps', 'icon' => 'fas fa-map-marked-alt'],
-                                'music' => ['label' => 'Music', 'icon' => 'fas fa-music'],
-                                'gallery' => ['label' => 'Gallery', 'icon' => 'fas fa-images'],
-                                'browser_app' => ['label' => 'Browser App', 'icon' => 'fas fa-globe'],
-                                'sms_package' => ['label' => 'SMS Package', 'icon' => 'fas fa-comment-sms'],
-                            ];
-                            ?>
-                            <?php foreach ($handlers as $key => $info): 
-                                $jsonCol = 'default_' . $key . '_json';
-                                $app = $r[$jsonCol] ?? null;
-                                if (is_string($app)) $app = json_decode($app, true);
-                                if (!empty($app) && isset($app['package_name'])):
-                            ?>
-                                <tr>
-                                    <td><i class="<?= $info['icon'] ?> mr-1"></i> <strong><?= $info['label'] ?></strong></td>
-                                    <td><code class="small"><?= esc($app['package_name']) ?></code></td>
-                                    <td><?= esc($app['app_name'] ?? 'N/A') ?></td>
-                                    <td class="text-center">
-                                        <?= isset($app['is_system']) && $app['is_system'] ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-secondary">No</span>' ?>
-                                    </td>
-                                    <td><?= format_timestamp_display((int)$r['extracted_at']) ?></td>
-                                    <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-danger delete-row"
-                                                data-id="<?= $r['id'] ?? '' ?>"
-                                                data-url="<?= base_url('advanced/default_apps/delete') ?>"
-                                                title="Delete this row">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endif; endforeach; ?>
-                        <?php endforeach; endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card-footer"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
-        </div>
-    </div></div></div></section>
-</div>
-<?php include __DIR__ . '/_adv_style.php'; ?>
-<?php include __DIR__ . '/_adv_delete_script.php'; ?>
+
+<?php
+// Extract app names from JSON for display
+foreach ($rows as &$row) {
+    $fields = ['default_browser_json', 'default_dialer_json', 'default_sms_json', 
+               'default_launcher_json', 'default_email_json', 'default_maps_json',
+               'default_music_json', 'default_gallery_json'];
+    foreach ($fields as $field) {
+        $data = json_decode($row[$field] ?? '{}', true);
+        $key = str_replace('_json', '', $field);
+        $row[$key] = $data['app_name'] ?? $data['package_name'] ?? '—';
+    }
+}
+?>
+<?= view('users/advanced/_card_table', [
+    'title'    => 'Default Apps',
+    'subtitle' => 'Default browser, dialer, SMS, launcher, and other intent handlers',
+    'tableId'  => 'defaultAppsTable',
+    'columns'  => [
+        ['field' => 'extracted_at', 'label' => 'Extracted', 'format' => 'timestamp', 'icon' => 'fas fa-clock'],
+        ['field' => 'default_browser', 'label' => 'Browser', 'format' => 'text', 'icon' => 'fas fa-globe'],
+        ['field' => 'default_dialer', 'label' => 'Dialer', 'format' => 'text', 'icon' => 'fas fa-phone'],
+        ['field' => 'default_sms', 'label' => 'SMS', 'format' => 'text', 'icon' => 'fas fa-sms'],
+        ['field' => 'default_launcher', 'label' => 'Launcher', 'format' => 'text', 'icon' => 'fas fa-rocket'],
+        ['field' => 'default_email', 'label' => 'Email', 'format' => 'text', 'icon' => 'fas fa-envelope'],
+        ['field' => 'default_maps', 'label' => 'Maps', 'format' => 'text', 'icon' => 'fas fa-map-marked-alt'],
+        ['field' => 'default_music', 'label' => 'Music', 'format' => 'text', 'icon' => 'fas fa-music'],
+        ['field' => 'default_gallery', 'label' => 'Gallery', 'format' => 'text', 'icon' => 'fas fa-images'],
+    ],
+    'secondary' => [
+        ['field' => 'default_browser_json',  'label' => 'Browser',    'format' => 'json', 'jsonTitle' => 'Browser', 'icon' => 'fas fa-globe'],
+        ['field' => 'default_dialer_json',   'label' => 'Dialer',     'format' => 'json', 'jsonTitle' => 'Dialer', 'icon' => 'fas fa-phone'],
+        ['field' => 'default_sms_json',      'label' => 'SMS',        'format' => 'json', 'jsonTitle' => 'SMS', 'icon' => 'fas fa-sms'],
+        ['field' => 'default_launcher_json', 'label' => 'Launcher',   'format' => 'json', 'jsonTitle' => 'Launcher', 'icon' => 'fas fa-rocket'],
+        ['field' => 'default_email_json',    'label' => 'Email',      'format' => 'json', 'jsonTitle' => 'Email', 'icon' => 'fas fa-envelope'],
+        ['field' => 'default_maps_json',     'label' => 'Maps',       'format' => 'json', 'jsonTitle' => 'Maps', 'icon' => 'fas fa-map-marked-alt'],
+        ['field' => 'default_music_json',    'label' => 'Music',      'format' => 'json', 'jsonTitle' => 'Music', 'icon' => 'fas fa-music'],
+        ['field' => 'default_gallery_json',  'label' => 'Gallery',    'format' => 'json', 'jsonTitle' => 'Gallery', 'icon' => 'fas fa-images'],
+        ['field' => 'default_sms_package',   'label' => 'SMS Package','format' => 'text', 'icon' => 'fas fa-code'],
+    ],
+    'rows'      => $rows,
+    'pager'     => $pager,
+    'total'     => $total,
+    'nav_urls'  => $nav_urls,
+    'perPage'  => 25,
+    'deleteUrl' => base_url('advanced/default_apps/delete'),
+]) ?>

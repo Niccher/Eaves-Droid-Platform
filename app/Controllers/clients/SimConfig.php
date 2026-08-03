@@ -14,6 +14,23 @@ class SimConfig extends BaseClientController
 
         $result = $model->getSimConfigs($this->userId, $deviceId, $this->perPage);
 
+        $counts = $this->getUserDataCounts();
+        $is_hardware = true; // sim_configs is a hardware page
+        $is_software = false;
+
+        $nav_html = '<div class="d-flex justify-content-end flex-wrap mb-3" style="gap: 8px;">';
+        $nav_html .= sprintf(
+            '<a class="btn btn-sm %s" href="%s"><i class="fas fa-microchip mr-1"></i> Hardware</a>',
+            $is_hardware ? 'btn-primary' : 'btn-outline-secondary',
+            base_url('advanced/hardware')
+        );
+        $nav_html .= sprintf(
+            '<a class="btn btn-sm %s" href="%s"><i class="fas fa-laptop-code mr-1"></i> Software</a>',
+            $is_software ? 'btn-primary' : 'btn-outline-secondary',
+            base_url('advanced/software')
+        );
+        $nav_html .= '</div>';
+
         $data = [
             'data'           => $result['rows'],
             'total'          => $result['total'],
@@ -24,6 +41,7 @@ class SimConfig extends BaseClientController
             'sub_pag'        => 'sim_configs',
             'active_tab'     => 'sim_configs',
             'title'          => 'SIM Configs',
+            'nav_urls'       => $nav_html,
         ];
 
         return $this->renderAppView('users/advanced/sim_configs', $data);

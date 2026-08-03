@@ -245,7 +245,7 @@ class Correlation extends BaseClientController{
         
         // Stats
         $counts = $this->getUserDataCounts();
-        $data = array_merge($data, $counts);
+        $data = array_merge($data, $counts, $this->getDeviceViewData());
 
         // Financial Intelligence data
         $transactions = $this->finderModel->get_financial_transactions($this->userId);
@@ -271,10 +271,7 @@ class Correlation extends BaseClientController{
         $data['sms_analysis'] = $this->finderModel->get_categorized_sms_counts($this->userId);
         $data['call_analysis'] = $this->finderModel->get_categorized_call_counts($this->userId);
 
-        return view('headers_footers/head_users')
-            . view('headers_footers/sidebar_users', $data)
-            . view('users/correlation/advanced_analysis', $data)
-            . view('headers_footers/footer_users');
+        return $this->renderAppView('users/correlation/advanced_analysis', $data);
     }
 
     public function refresh_ml()
@@ -589,18 +586,31 @@ class Correlation extends BaseClientController{
         $data['user_info'] = $this->finderModel->basic_user();
 
         $counts = $this->getUserDataCounts();
-        $data   = array_merge($data, $counts);
+        $data   = array_merge($data, $counts, $this->getDeviceViewData());
 
-        // ── Basic timeline: high-level communication events (SMS + Calls only)
-        $data['basic_timeline'] = $this->finderModel->get_basic_timeline($this->userId, 100);
+        $perPage = 100;
+        $filterType = $this->request->getGet('type') ?? 'all';
 
-        // ── Advanced timeline: all event types in one chronological stream
-        $data['advanced_timeline'] = $this->finderModel->get_unified_timeline($this->userId, 100);
+        // Default tab: Advanced when ?type= is a non-basic event type
+        $advTypes = ['upload', 'app_usage', 'file', 'keyguard', 'health', 'location', 'activity', 'other'];
+        $data['default_tab'] = (in_array($filterType, $advTypes, true)) ? 'advanced' : 'basic';
 
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view('users/correlation/intelligence_timeline', $data)
-            . view('headers_footers/footer_users', $data);
+        // Basic: SMS + Calls only (limit 100)
+        $data['basic_timeline'] = $this->finderModel->get_basic_timeline($this->userId, $perPage);
+
+        // Advanced: ALL events (excluding sms/call which belong to Basic tab)
+        // We fetch up to 1000 events; client-side filter pills handle the
+        // filtering without a page reload. URL ?type= only drives initial state.
+        $allAdvanced = $this->finderModel->get_unified_timeline_filtered(
+            $this->userId, 'all', 1000, ['sms', 'call']
+        );
+        $data['advanced_timeline'] = $allAdvanced;
+        $data['adv_total'] = count($allAdvanced);
+        $data['adv_filter'] = $filterType;
+        $data['adv_per_page'] = $perPage;
+        $data['adv_page'] = (int)($this->request->getGet('p') ?? 1);
+
+        return $this->renderAppView('users/correlation/intelligence_timeline', $data);
     }
 
     /**
@@ -794,7 +804,7 @@ class Correlation extends BaseClientController{
         return $data;
     }
 
-    /**
+/**
      * Digital Wellbeing & Screen Time Analytics.
      */
     public function digital_wellbeing()
@@ -802,7 +812,7 @@ class Correlation extends BaseClientController{
         $data['pag']       = 'intelligence';
         $data['sub_pag']   = 'wellbeing';
         $data['user_info'] = $this->finderModel->basic_user();
-        $data = array_merge($data, $this->getUserDataCounts());
+        $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
 
         // Raw heatmap rows → keyed by date string for JS
         $heatmapRaw = $this->finderModel->get_daily_usage_heatmap($this->userId);
@@ -835,11 +845,9 @@ class Correlation extends BaseClientController{
         $data['top_apps_values']    = json_encode($topAppsValues);
         $data['has_data']           = !empty($heatmapRaw);
 
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view('users/correlation/digital_wellbeing', $data)
-            . view('headers_footers/footer_users', $data);
+        return $this->renderAppView('users/correlation/digital_wellbeing', $data);
     }
+
     /**
      * Behavioral Anomaly & Pattern-of-Life Analysis.
      */
@@ -848,14 +856,10 @@ class Correlation extends BaseClientController{
         $data['pag']       = 'intelligence';
         $data['sub_pag']   = 'anomalies';
         $data['user_info'] = $this->finderModel->basic_user();
-        $data = array_merge($data, $this->getUserDataCounts());
+        $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
 
         $data['anomalies'] = $this->finderModel->get_behavioral_anomalies($this->userId);
 
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view('users/correlation/behavioral_anomalies', $data)
-            . view('headers_footers/footer_users', $data);
+        return $this->renderAppView('users/correlation/behavioral_anomalies', $data);
     }
-
 }

@@ -145,7 +145,8 @@
                                                     <th>OS</th>
                                                     <th>Browser</th>
                                                     <th>IP</th>
-                                                    <th>Last Active</th>
+                                                    <th>Last Active (File Upload)</th>
+                                                    <th>First Contact</th>
                                                     <th>Status</th>
                                                 </tr>
                                             </thead>
@@ -157,6 +158,7 @@
                                                     <td><?= htmlspecialchars($device['browser']) ?></td>
                                                     <td><code><?= htmlspecialchars($device['ip_address']) ?></code></td>
                                                     <td class="text-muted small"><?= $device['last_seen_formatted'] ?></td>
+                                                    <td class="text-muted small"><?= $device['first_contact_formatted'] ?></td>
                                                     <td><span class="badge badge-success">Authorized</span></td>
                                                 </tr>
                                                 <?php endforeach; ?>

@@ -42,7 +42,7 @@
                     <div class="dropdown-menu dropdown-menu-lg">
                         <span class="dropdown-item-text"><strong>Select Device</strong></span>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item <?= empty($active_device_id) ? 'active' : '' ?>" href="<?= base_url('switch-device/all') ?>">
+                        <a class="dropdown-item <?= empty($active_device_id) ? 'active' : '' ?>" href="<?= base_url('account/switch-device/all') ?>">
                             <i class="fas fa-layer-group mr-2"></i> All Devices
                         </a>
                         <div class="dropdown-divider"></div>
@@ -51,9 +51,19 @@
                             $parts = array_filter([$d['device_manufacturer'] ?? '', $d['device_model'] ?? '']);
                             $name = !empty($parts) ? implode(' ', $parts) : substr($did, 0, 20);
                             $isActive = ($did === $active_device_id);
+                            // Format device added date
+                            $addedDate = '';
+                            if (!empty($d['created_at'])) {
+                                try {
+                                    $dt = new DateTime($d['created_at']);
+                                    $addedDate = ' <span class="text-muted small ml-1">(added ' . $dt->format('D, M j, Y g:i A') . ')</span>';
+                                } catch (Exception $e) {
+                                    $addedDate = '';
+                                }
+                            }
                         ?>
-                        <a class="dropdown-item <?= $isActive ? 'active' : '' ?>" href="<?= base_url('switch-device/' . urlencode($did)) ?>">
-                            <i class="fas fa-mobile-alt mr-2"></i> <?= htmlspecialchars($name) ?>
+                        <a class="dropdown-item <?= $isActive ? 'active' : '' ?>" href="<?= base_url('account/switch-device/' . urlencode($did)) ?>">
+                            <i class="fas fa-mobile-alt mr-2"></i> <?= htmlspecialchars($name) ?><?= $addedDate ?>
                         </a>
                         <?php endforeach; ?>
                     </div>
@@ -240,9 +250,9 @@
 <!-- Hardware Button -->
                         <li class="nav-item">
                             <a href="<?php echo base_url('advanced/hardware'); ?>"
-                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'sim_configs', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network', 'hardware_landing', 'audio_devices', 'biometric', 'gnss_hardware', 'power_rails', 'usb_devices', 'vibration'])) ? 'active' : ''; ?>">
+                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'sim_configs', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network', 'hardware_landing', 'audio_devices', 'biometric', 'gnss_hardware', 'power_rails', 'usb_devices', 'vibration', 'network_connectivity', 'display_graphics', 'sensors_location', 'media_hardware', 'storage_peripherals', 'shortrange_auth', 'device_fingerprint', 'hardware_dashboard'])) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-microchip"></i>
-                                <p>HARDWARE</p>
+                                <p>Hardware</p>
                             </a>
                         </li>
 
@@ -251,7 +261,7 @@
                             <a href="<?php echo base_url('advanced/software'); ?>"
                                class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'remote_media', 'accessibility', 'input_methods', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale', 'software_landing', 'app_permissions', 'browser_history', 'clipboard', 'content_providers', 'crash_logs', 'digital_wellbeing', 'doze_standby', 'email', 'health_data', 'keyboard_input', 'keyguard', 'screenshots', 'screen_state', 'vpn_config', 'running_processes'])) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-laptop-code"></i>
-                                <p>SOFTWARE</p>
+                                <p>Software</p>
                             </a>
                         </li>
 

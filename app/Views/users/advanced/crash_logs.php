@@ -1,80 +1,35 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-3 align-items-center">
-                <div class="col-lg-7">
-                    <div class="d-flex align-items-center flex-wrap">
-                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-bug text-secondary mr-2"></i>Crash Logs</h1>
-                        <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
-                    </div>
-                    <p class="text-muted mt-1 mb-0">Application crashes, exceptions, stack traces, and ANR events</p>
-                </div>
-                <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
-            </div>
-        </div>
-    </section>
-    <section class="content"><div class="container-fluid"><div class="row"><div class="col-12">
-        <div class="card card-secondary shadow-sm">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-list mr-2"></i>Crash Entries <small class="text-muted ml-2"><?= count($rows) ?> entries</small></h3>
-                <div class="card-tools"><button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button></div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="thead-light">
-                        <tr>
-                            <th><i class="fas fa-box mr-1"></i>Package</th>
-                            <th><i class="fas fa-tag mr-1"></i>Type</th>
-                            <th><i class="fas fa-code mr-1"></i>Exception</th>
-                            <th><i class="fas fa-microchip mr-1"></i>PID</th>
-                            <th><i class="fas fa-clock mr-1"></i>Crash Time</th>
-                            <th><i class="fas fa-clock mr-1"></i>Extracted</th>
-                            <th class="text-center"><i class="fas fa-cogs mr-1"></i>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php if (empty($rows)): ?>
-                            <tr><td colspan="7" class="text-center py-5">
-                                <div class="empty-state"><i class="fas fa-bug fa-3x text-muted mb-3"></i><h4>No crash data</h4><p class="text-muted">Crashes will appear here once extracted</p></div>
-                            </td></tr>
-                        <?php else: foreach ($rows as $r): ?>
-                            <tr>
-                                <td>
-                                    <strong><?= htmlspecialchars($r['package_name'] ?? '—') ?></strong>
-                                    <?php if (!empty($r['process_name'])): ?><br><small class="text-muted"><?= htmlspecialchars($r['process_name']) ?></small><?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php $type = strtolower($r['crash_type'] ?? ''); ?>
-                                    <span class="badge badge-<?= str_contains($type, 'anr') ? 'danger' : (str_contains($type, 'native') ? 'warning' : 'info') ?> p-2">
-                                        <?= htmlspecialchars($r['crash_type'] ?? '—') ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <strong class="text-danger"><?= htmlspecialchars($r['exception_class'] ?? '—') ?></strong>
-                                    <?php if (!empty($r['exception_message'])): ?><br><small class="text-muted"><?= htmlspecialchars(mb_substr($r['exception_message'], 0, 60)) ?></small><?php endif; ?>
-                                </td>
-                                <td class="text-center"><span class="badge badge-secondary p-2"><?= (int)($r['pid'] ?? 0) ?></span></td>
-                                <td><?= !empty($r['crash_time']) ? format_timestamp_display((int)$r['crash_time']) : '<span class="text-muted">—</span>' ?></td>
-                                <td><?= !empty($r['extracted_at']) ? format_timestamp_display((int)$r['extracted_at']) : '<span class="text-muted">—</span>' ?></td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-danger delete-row"
-                                            data-id="<?= $r['id'] ?? '' ?>"
-                                            data-url="<?= base_url('advanced/software/crash_logs/delete') ?>"
-                                            title="Delete this row">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card-footer"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
-        </div>
-    </div></div></div></section>
-</div>
-<?php include __DIR__ . '/_adv_style.php'; ?>
-<?php include __DIR__ . '/_adv_delete_script.php'; ?>
+
+<?= view('users/advanced/_card_table', [
+    'title'    => 'Crash Logs',
+    'subtitle' => 'Application crashes, exceptions, stack traces, and ANR events',
+    'tableId'  => 'crashLogsTable',
+    'columns'  => [
+        ['field' => 'crash_time',       'label' => 'Crash Time', 'format' => 'timestamp', 'icon' => 'fas fa-bomb'],
+        ['field' => 'extracted_at',     'label' => 'Extracted',  'format' => 'timestamp', 'icon' => 'fas fa-clock'],
+        ['field' => 'package_name',     'label' => 'Package',    'format' => 'text', 'icon' => 'fas fa-code'],
+        ['field' => 'crash_type',       'label' => 'Type',       'format' => 'badge', 'map' => ['anr' => 'danger', 'native' => 'warning', 'crash' => 'danger', 'exception' => 'info'], 'default' => 'info', 'icon' => 'fas fa-exclamation-triangle'],
+        ['field' => 'exception_class',  'label' => 'Exception',  'format' => 'text', 'icon' => 'fas fa-bug'],
+        ['field' => 'process_name',     'label' => 'Process',    'format' => 'text', 'icon' => 'fas fa-tasks'],
+        ['field' => 'pid',              'label' => 'PID',        'format' => 'text', 'icon' => 'fas fa-hashtag'],
+    ],
+    'secondary' => [
+        ['field' => 'exception_message', 'label' => 'Exception Message', 'format' => 'text', 'truncate' => 60, 'icon' => 'fas fa-comment-alt'],
+        ['field' => 'uid',               'label' => 'UID',               'format' => 'text', 'icon' => 'fas fa-id-badge'],
+        ['field' => 'is_system_app',     'label' => 'System App',        'format' => 'yesno', 'icon' => 'fas fa-cog'],
+        ['field' => 'is_silent',         'label' => 'Silent',            'format' => 'yesno', 'icon' => 'fas fa-volume-mute'],
+        ['field' => 'build_fingerprint', 'label' => 'Build Fingerprint', 'format' => 'text', 'icon' => 'fas fa-fingerprint'],
+        ['field' => 'android_version',   'label' => 'Android Version',   'format' => 'text', 'icon' => 'fas fa-android'],
+        ['field' => 'device_model',      'label' => 'Device Model',      'format' => 'text', 'icon' => 'fas fa-mobile-alt'],
+        ['field' => 'stack_trace',       'label' => 'Stack Trace',       'format' => 'json', 'jsonTitle' => 'Stack Trace', 'icon' => 'fas fa-code'],
+        ['field' => 'logcat_tail',       'label' => 'Logcat',            'format' => 'json', 'jsonTitle' => 'Logcat', 'icon' => 'fas fa-terminal'],
+        ['field' => 'dropbox_tag',       'label' => 'Dropbox Tag',       'format' => 'text', 'icon' => 'fas fa-tag'],
+        ['field' => 'last_crash_time',   'label' => 'Last Crash',        'format' => 'timestamp', 'icon' => 'fas fa-clock'],
+    ],
+    'rows'      => $rows,
+    'pager'     => $pager,
+    'total'     => $total,
+    'nav_urls'  => $nav_urls,
+    'perPage'  => 25,
+    'deleteUrl' => base_url('advanced/software/crash_logs/delete'),
+]) ?>

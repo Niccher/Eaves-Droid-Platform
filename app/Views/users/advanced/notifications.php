@@ -20,7 +20,7 @@ if (!empty($detail_mode)) {
                 </div>
                 <div class="col-lg-4">
                     <?php if (!empty($app_detail)): ?>
-                    <div class="card card-secondary card-outline shadow-sm mb-0">
+                    <div class="card card-primary card-outline shadow-sm mb-0">
                         <div class="card-body py-2 px-3">
                             <div class="row text-center">
                                 <div class="col-4 border-right">
@@ -78,14 +78,17 @@ if (!empty($detail_mode)) {
 
             <div class="row">
                 <div class="col-12">
-                    <div class="card card-secondary shadow-sm">
-                        <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-list mr-2"></i>All Notifications <small class="text-muted ml-2"><?= count($rows) ?> on this page</small></h3>
+                    <div class="card card-primary shadow-sm">
+                        <div class="card-header text-white d-flex justify-content-between align-items-center">
+                            <h3 class="card-title mb-0"><i class="fas fa-list mr-2"></i>All Notifications <small class="ml-2"><?= count($rows) ?> on this page</small></h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool btn-sm text-white" data-card-widget="collapse" data-toggle="tooltip" title="Collapse / Expand"><i class="fas fa-minus"></i></button>
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover table-striped mb-0">
-                                    <thead class="thead-light">
+                                    <thead class="thead-light text-white">
                                     <tr>
                                         <th><i class="fas fa-clock mr-1"></i>Arrived</th>
                                         <th><i class="fas fa-user mr-1"></i>Sender</th>
@@ -132,7 +135,7 @@ if (!empty($detail_mode)) {
                                 </table>
                             </div>
                         </div>
-                        <div class="card-footer"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
+                        <div class="card-footer bg-primary text-white"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
                     </div>
                 </div>
             </div>
@@ -142,92 +145,39 @@ if (!empty($detail_mode)) {
 <?php
 } else {
 ?>
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-3 align-items-center">
-                <div class="col-lg-7">
-                    <div class="d-flex align-items-center flex-wrap">
-                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-bell text-secondary mr-2"></i>Notifications</h1>
-                        <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-cube mr-1"></i>Sources: <b><?= $total ?? 0 ?></b></span>
-                        <?php if (!empty($total_notifications)): ?>
-                            <span class="badge badge-secondary border p-2 ml-2 text-white"><i class="fas fa-database mr-1"></i>Total alerts: <b><?= $total_notifications ?></b></span>
-                        <?php endif; ?>
-                    </div>
-                    <p class="text-muted mt-1 mb-0">Notification log grouped by app name (sender or package when unnamed)</p>
-                </div>
-                <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
-            </div>
-        </div>
-    </section>
-    <section class="content"><div class="container-fluid"><div class="row"><div class="col-12">
-        <div class="card card-secondary shadow-sm">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-bell mr-2"></i>Notification Log <small class="text-muted ml-2"><?= count($rows) ?> sources on this page</small></h3>
-                <div class="card-tools"><button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button></div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="thead-light">
-                        <tr>
-                            <th><i class="fas fa-cube mr-1"></i>Source</th>
-                            <th><i class="fas fa-hashtag mr-1"></i>Count</th>
-                            <th><i class="fas fa-tv mr-1"></i>Screen Alerts</th>
-                            <th><i class="fas fa-clock mr-1"></i>Last Activity</th>
-                            <th><i class="fas fa-heading mr-1"></i>Latest Preview</th>
-                            <th class="text-center"><i class="fas fa-eye mr-1"></i>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php if (empty($rows)): ?>
-                            <tr><td colspan="6" class="text-center py-5">
-                                <div class="empty-state"><i class="fas fa-bell-slash fa-3x text-muted mb-3"></i><h4>No notifications</h4><p class="text-muted">Notifications will appear here once captured</p></div>
-                            </td></tr>
-                        <?php else: foreach ($rows as $r): ?>
-                            <?php
-                                $tsAbs    = $r['latest_ts_abs'] ?? '—';
-                                $tsRel    = $r['latest_ts_rel'] ?? '—';
-                                $groupKey = $r['group_key'] ?? '';
-                                $pkgEnc   = $r['group_url_enc'] ?? '';
-                                $subtitle = $r['package_name'] ?? $r['sender'] ?? '';
-                                $preview  = $r['latest_title_short'] ?? '—';
-                            ?>
-                            <tr>
-                                <td>
-                                    <?php $displayTitle = !empty($r['app_name']) ? $r['app_name'] : $groupKey; ?>
-                                    <div class="font-weight-bold"><i class="fas fa-cube mr-1 text-warning"></i><?= htmlspecialchars($displayTitle ?: '—') ?></div>
-                                    <?php if ($groupKey !== '' && $groupKey !== $displayTitle): ?>
-                                        <small class="text-muted d-block"><?= htmlspecialchars($groupKey) ?></small>
-                                    <?php endif; ?>
-                                </td>
-                                <td><span class="badge badge-warning"><?= (int) ($r['notification_count'] ?? 0) ?></span></td>
-                                <td><span class="badge badge-info"><?= (int) ($r['screen_count'] ?? 0) ?></span></td>
-                                <td>
-                                    <small class="d-block font-weight-bold"><?= $tsRel ?></small>
-                                    <small class="text-muted"><?= $tsAbs ?></small>
-                                </td>
-                                <td><small class="text-muted"><?= htmlspecialchars($preview) ?></small></td>
-                                <td class="text-center">
-						<a href="<?= base_url('advanced/software/notifications/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-warning mr-1" title="View all notifications">
-							<i class="fas fa-eye"></i>
-						</a>
-						<form method="post" action="<?= base_url('advanced/software/notifications/delete/' . $pkgEnc) ?>" style="display:inline;" onsubmit="return confirm('Delete all notifications for this app?');">
-							<button type="submit" class="btn btn-sm btn-outline-danger" title="Delete all notifications">
-								<i class="fas fa-trash-alt"></i>
-							</button>
-						</form>
-					</td>
-                            </tr>
-                        <?php endforeach; endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card-footer"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
-        </div>
-    </div></div></div></section>
-</div>
+<?php
+    $actions = static function ($r) {
+        $pkgEnc = $r['group_url_enc'] ?? '';
+        $html = '';
+        if ($pkgEnc !== '') {
+            $html .= '<a href="' . base_url('advanced/software/notifications/' . $pkgEnc) . '" class="btn btn-sm btn-outline-warning mr-1" title="View all notifications"><i class="fas fa-eye"></i></a>';
+            $html .= '<form method="post" action="' . base_url('advanced/software/notifications/delete/' . $pkgEnc) . '" style="display:inline;" onsubmit="return confirm(\'Delete all notifications for this app?\');">'
+                   . '<button type="submit" class="btn btn-sm btn-outline-danger" title="Delete all notifications"><i class="fas fa-trash-alt"></i></button>'
+                   . '</form>';
+        }
+        return $html;
+    };
+?>
+<?= view('users/advanced/_card_table', [
+    'title'    => 'Notifications',
+    'subtitle' => 'Notification log grouped by app name (sender or package when unnamed)',
+    'icon'     => 'fas fa-bell',
+    'tableId'  => 'notificationsTable',
+    'columns'  => [
+        ['field' => 'app_name',          'label' => 'Source',        'format' => 'text', 'icon' => 'fas fa-mobile-alt'],
+        ['field' => 'group_key',         'label' => 'Channel',       'format' => 'text', 'truncate' => 40, 'icon' => 'fas fa-tag'],
+        ['field' => 'notification_count','label' => 'Alerts',        'format' => 'badge', 'default' => 'warning', 'icon' => 'fas fa-bell'],
+        ['field' => 'latest_ts_abs',     'label' => 'Last Arrived',  'format' => 'text', 'icon' => 'fas fa-clock'],
+        ['field' => 'latest_title_short','label' => 'Latest Preview','format' => 'text', 'truncate' => 60, 'icon' => 'fas fa-comment-alt'],
+    ],
+    'rows'     => $rows,
+    'pager'    => $pager,
+    'total'    => $total,
+    'nav_urls' => $nav_urls ?? '',
+    'perPage'  => 25,
+    'actions'  => $actions,
+    'noExpand' => true,
+]) ?>
 <?php
 }
 ?>

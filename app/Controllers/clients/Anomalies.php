@@ -382,6 +382,7 @@ class Anomalies extends BaseClientController
         return array_merge(
             ['user_info' => $this->finderModel->basic_user()],
             $this->getUserDataCounts(),
+            $this->getDeviceViewData(),
             [
                 'pag'     => 'intelligence',
                 'sub_pag' => 'anomalies',

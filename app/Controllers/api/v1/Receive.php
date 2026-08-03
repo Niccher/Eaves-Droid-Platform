@@ -21,8 +21,8 @@ class Receive extends BaseController
 
     // Configuration for the file upload logic
     private $uploadConfig = [
-        'max_size'      => 83886080, // 80MB
-        'allowed_types' => ['txt', 'enc', 'bin', 'jpg', 'jpeg', 'png', '3gp', 'mp3', 'wav'],
+        'max_size'      => 209715200, // 200MB
+        'allowed_types' => ['txt', 'enc', 'bin', 'gz', 'json', 'csv', 'dat', 'xml', 'log', 'jpg', 'jpeg', 'png', '3gp', 'mp3', 'wav'],
         'upload_path'   => WRITEPATH . 'uploads/text_dump/',
         'encrypt_name'  => true,
     ];
@@ -110,8 +110,8 @@ class Receive extends BaseController
             try {
                 $file->move($this->uploadConfig['upload_path'], $newName);
             } catch (\Exception $e) {
-                log_message('error', 'File move failed: ' . $e->getMessage());
-                return $this->fail('Failed to save file');
+                log_message('error', 'File move failed: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' Line: ' . $e->getLine() . ' | Trace: ' . $e->getTraceAsString());
+                return $this->fail('Failed to save file: ' . $e->getMessage());
             }
         }
 
@@ -267,8 +267,8 @@ class Receive extends BaseController
             try {
                 $file->move($this->uploadConfig['upload_path'], $newName);
             } catch (\Exception $e) {
-                log_message('error', 'File move failed: ' . $e->getMessage());
-                return $this->fail('Failed to save file');
+                log_message('error', 'File move failed: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' Line: ' . $e->getLine() . ' | Trace: ' . $e->getTraceAsString());
+                return $this->fail('Failed to save file: ' . $e->getMessage());
             }
         }
 

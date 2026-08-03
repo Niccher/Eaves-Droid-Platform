@@ -107,4 +107,29 @@ if (! function_exists('format_ms_datetime')) {
 
         return date($format, (int) floor($msTimestamp / 1000));
     }
+
+    if (! function_exists('format_bytes')) {
+        /**
+         * Format a byte count as human-readable size.
+         * Returns e.g. '1.5 GB', '256 MB', '32 KB', etc.
+         */
+        function format_bytes(int $bytes): string
+        {
+            if ($bytes < 0) {
+                $bytes = 0;
+            }
+
+            if ($bytes >= 1 << 40) {
+                return round($bytes / (1 << 40), 2) . ' TB';
+            } elseif ($bytes >= 1 << 30) {
+                return round($bytes / (1 << 30), 2) . ' GB';
+            } elseif ($bytes >= 1 << 20) {
+                return round($bytes / (1 << 20), 2) . ' MB';
+            } elseif ($bytes >= 1 << 10) {
+                return round($bytes / (1 << 10), 2) . ' KB';
+            } else {
+                return $bytes . ' B';
+            }
+        }
+    }
 }

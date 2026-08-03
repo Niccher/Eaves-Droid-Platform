@@ -676,14 +676,29 @@ class Account extends BaseClientController
                 $rawTimestamp = $device['extraction_timestamp'] ?? null;
                 $lastSeenTime = null;
 
-                if ($rawTimestamp) {
+                // Check for valid timestamp (not null, not empty, not zero)
+                if ($rawTimestamp !== null && $rawTimestamp !== '' && $rawTimestamp !== 0 && $rawTimestamp !== '0') {
                     if (is_numeric($rawTimestamp)) {
                         // Handle millisecond or second timestamp
-                        $lastSeenTime = strlen($rawTimestamp) > 11 ? (int)($rawTimestamp / 1000) : (int)$rawTimestamp;
+                        $lastSeenTime = strlen((string)$rawTimestamp) > 11 ? (int)($rawTimestamp / 1000) : (int)$rawTimestamp;
                     } else {
                         // Handle date string
                         $lastSeenTime = strtotime($rawTimestamp);
                     }
+                }
+
+                // Fallback: try to get the most recent file upload time for this device
+                if (!$lastSeenTime) {
+                    $lastUpload = $this->getLastFileUploadTime($device['device_id'] ?? null);
+                    if ($lastUpload) {
+                        $lastSeenTime = $lastUpload;
+                    }
+                }
+
+                // Get first contact date (when device was first registered)
+                $firstContactTime = null;
+                if (!empty($device['created_at'])) {
+                    $firstContactTime = strtotime($device['created_at']);
                 }
 
                 $formattedDevices[] = [
@@ -693,7 +708,9 @@ class Account extends BaseClientController
                     'browser' => 'FGM Extractor',
                     'ip_address' => $device['device_ip_address'] ?? 'Unknown',
                     'last_seen' => $lastSeenTime ? date('Y-m-d H:i:s', $lastSeenTime) : 'N/A',
-                    'last_seen_formatted' => $lastSeenTime ? date('M d, Y, l H:i', $lastSeenTime) : 'Never'
+                    'last_seen_formatted' => $lastSeenTime ? date('M d, Y, l H:i', $lastSeenTime) : 'Never',
+                    'first_contact' => $firstContactTime ? date('Y-m-d H:i:s', $firstContactTime) : 'N/A',
+                    'first_contact_formatted' => $firstContactTime ? date('M d, Y, l H:i', $firstContactTime) : 'Never'
                 ];
             }
 
@@ -724,6 +741,39 @@ class Account extends BaseClientController
         } catch (\Exception $e) {
             log_message('error', 'Failed to get recent files: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Gets the most recent file upload timestamp for a specific device.
+     *
+     * @param string|null $deviceId
+     * @return int|null Unix timestamp or null if no uploads found
+     */
+    private function getLastFileUploadTime(?string $deviceId): ?int
+    {
+        if (!$deviceId) {
+            return null;
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            $row = $db->table('uploaded_files')
+                ->select('MAX(uploaded_at) as last_upload')
+                ->where('token_owner_id', $this->userId)
+                ->where('device_checksum', $deviceId)
+                ->get()
+                ->getRow();
+
+            if ($row && $row->last_upload) {
+                $ts = (int)$row->last_upload;
+                // Convert milliseconds to seconds if needed
+                return strlen((string)$ts) > 11 ? (int)($ts / 1000) : $ts;
+            }
+            return null;
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to get last file upload time: ' . $e->getMessage());
+            return null;
         }
     }
 
@@ -1393,64 +1443,11 @@ class Account extends BaseClientController
                     $filename = 'location_history_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'misc_software':
-                    $data = [
-                        'device_context' => $this->finderModel->export_device_context($this->userId),
-                        'network_info' => $this->finderModel->export_network_info($this->userId),
-                        'accounts' => $this->finderModel->export_accounts($this->userId),
-                        'calendar' => $this->finderModel->export_calendar_events($this->userId),
-                        'app_usage' => $this->finderModel->export_app_usage($this->userId),
-                        'notifications' => $this->finderModel->export_notifications($this->userId),
-                        'accessibility' => $this->finderModel->export_accessibility($this->userId),
-                        'input_methods' => $this->finderModel->export_input_methods($this->userId),
-                        'security_audit' => $this->finderModel->export_security_audit($this->userId),
-                        'proc_info' => $this->finderModel->export_proc_info($this->userId),
-                        'data_usage' => $this->finderModel->export_data_usage($this->userId),
-                        'saved_wifi' => $this->finderModel->export_saved_wifi($this->userId),
-                        'default_apps' => $this->finderModel->export_default_apps($this->userId),
-                        'alarms' => $this->finderModel->export_alarms($this->userId),
-                        'app_security' => $this->finderModel->export_app_security($this->userId),
-                        'network_security' => $this->finderModel->export_network_security($this->userId),
-                        'telephony_network' => $this->finderModel->export_telephony_network($this->userId),
-                        'system_locale' => $this->finderModel->export_system_locale($this->userId),
-                        'app_permissions' => $this->finderModel->export_app_permissions($this->userId),
-                        'browser_history' => $this->finderModel->export_browser_history($this->userId),
-                        'clipboard' => $this->finderModel->export_clipboard($this->userId),
-                        'content_providers' => $this->finderModel->export_content_providers($this->userId),
-                        'crash_logs' => $this->finderModel->export_crash_logs($this->userId),
-                        'digital_wellbeing' => $this->finderModel->export_digital_wellbeing($this->userId),
-                        'doze_standby' => $this->finderModel->export_doze_standby($this->userId),
-                        'email_accounts' => $this->finderModel->export_email_accounts($this->userId),
-                        'health_data' => $this->finderModel->export_health_data($this->userId),
-                        'keyboard_input' => $this->finderModel->export_keyboard_input($this->userId),
-                        'keyguard_events' => $this->finderModel->export_keyguard_events($this->userId),
-                        'screenshots' => $this->finderModel->export_screenshots($this->userId),
-                        'screen_state' => $this->finderModel->export_screen_state($this->userId),
-                        'vpn_config' => $this->finderModel->export_vpn_config($this->userId),
-                        'running_processes' => $this->finderModel->export_running_processes_detailed($this->userId),
-                    ];
+                    $data = $this->buildMiscSoftwareExportData();
                     $filename = 'misc_software_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'misc_hardware':
-                    $data = [
-                        'hardware_graphics' => $this->finderModel->export_hardware_graphics($this->userId),
-                        'hardware_network' => $this->finderModel->export_hardware_network($this->userId),
-                        'camera_info' => $this->finderModel->export_camera_info($this->userId),
-                        'battery_stats' => $this->finderModel->export_battery_stats($this->userId),
-                        'sensors' => $this->finderModel->export_sensors($this->userId),
-                        'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
-                        'cell_towers' => $this->finderModel->export_cell_towers($this->userId),
-                        'display_info' => $this->finderModel->export_display_info($this->userId),
-                        'storage' => $this->finderModel->export_storage($this->userId),
-                        'thermal' => $this->finderModel->export_thermal($this->userId),
-                        'nfc' => $this->finderModel->export_nfc($this->userId),
-                        'processes' => $this->finderModel->export_processes($this->userId),
-                        'audio_devices' => $this->finderModel->export_audio_devices($this->userId),
-                        'biometric' => $this->finderModel->export_biometric($this->userId),
-                        'gnss_hardware' => $this->finderModel->export_gnss_hardware($this->userId),
-                        'power_rails' => $this->finderModel->export_power_rails($this->userId),
-                        'usb_devices' => $this->finderModel->export_usb_devices($this->userId),
-                        'vibration' => $this->finderModel->export_vibration($this->userId),
-                    ];
+                    $data = $this->buildMiscHardwareExportData();
                     $filename = 'misc_hardware_export_' . date('Y-m-d_H-i-s') . ($format === 'csv' ? '.csv' : '.json');
                     break;
                 case 'advanced':
@@ -1487,40 +1484,9 @@ class Account extends BaseClientController
                             'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
                             'sensors' => $this->finderModel->export_sensors($this->userId),
                         ],
-                        'misc_software' => [
-                            'device_context' => $this->finderModel->export_device_context($this->userId),
-                            'network_info' => $this->finderModel->export_network_info($this->userId),
-                            'accounts' => $this->finderModel->export_accounts($this->userId),
-                            'calendar' => $this->finderModel->export_calendar_events($this->userId),
-                            'app_usage' => $this->finderModel->export_app_usage($this->userId),
-                            'notifications' => $this->finderModel->export_notifications($this->userId),
-                            'accessibility' => $this->finderModel->export_accessibility($this->userId),
-                            'input_methods' => $this->finderModel->export_input_methods($this->userId),
-                            'security_audit' => $this->finderModel->export_security_audit($this->userId),
-                            'proc_info' => $this->finderModel->export_proc_info($this->userId),
-                            'data_usage' => $this->finderModel->export_data_usage($this->userId),
-                            'saved_wifi' => $this->finderModel->export_saved_wifi($this->userId),
-                            'default_apps' => $this->finderModel->export_default_apps($this->userId),
-                            'alarms' => $this->finderModel->export_alarms($this->userId),
-                            'app_security' => $this->finderModel->export_app_security($this->userId),
-                            'network_security' => $this->finderModel->export_network_security($this->userId),
-                            'telephony_network' => $this->finderModel->export_telephony_network($this->userId),
-                            'system_locale' => $this->finderModel->export_system_locale($this->userId),
-                        ],
-                        'misc_hardware' => [
-                            'hardware_graphics' => $this->finderModel->export_hardware_graphics($this->userId),
-                            'hardware_network' => $this->finderModel->export_hardware_network($this->userId),
-                            'camera_info' => $this->finderModel->export_camera_info($this->userId),
-                            'battery_stats' => $this->finderModel->export_battery_stats($this->userId),
-                            'sensors' => $this->finderModel->export_sensors($this->userId),
-                            'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
-                            'cell_towers' => $this->finderModel->export_cell_towers($this->userId),
-                            'display_info' => $this->finderModel->export_display_info($this->userId),
-                            'storage' => $this->finderModel->export_storage($this->userId),
-                            'thermal' => $this->finderModel->export_thermal($this->userId),
-                            'nfc' => $this->finderModel->export_nfc($this->userId),
-                            'processes' => $this->finderModel->export_processes($this->userId),
-                        ],
+                        'misc_software' => $this->buildMiscSoftwareExportData(),
+                        'misc_hardware' => $this->buildMiscHardwareExportData(),
+                        'security' => $this->buildSecurityExportData(),
                         'export_info' => [
                             'exported_at' => date('Y-m-d H:i:s'),
                             'user_id' => $this->userId,
@@ -1661,6 +1627,100 @@ class Account extends BaseClientController
     }
 
     /**
+     * Builds the full misc software export payload (33 categories).
+     */
+    private function buildMiscSoftwareExportData(): array
+    {
+        $f = $this->finderModel;
+        $u = $this->userId;
+
+        return [
+            'device_context' => $f->export_device_context($u),
+            'network_info' => $f->export_network_info($u),
+            'accounts' => $f->export_accounts($u),
+            'calendar' => $f->export_calendar_events($u),
+            'app_usage' => $f->export_app_usage($u),
+            'notifications' => $f->export_notifications($u),
+            'accessibility' => $f->export_accessibility($u),
+            'input_methods' => $f->export_input_methods($u),
+            'security_audit' => $f->export_security_audit($u),
+            'proc_info' => $f->export_proc_info($u),
+            'data_usage' => $f->export_data_usage($u),
+            'saved_wifi' => $f->export_saved_wifi($u),
+            'default_apps' => $f->export_default_apps($u),
+            'alarms' => $f->export_alarms($u),
+            'app_security' => $f->export_app_security($u),
+            'network_security' => $f->export_network_security($u),
+            'telephony_network' => $f->export_telephony_network($u),
+            'system_locale' => $f->export_system_locale($u),
+            'app_permissions' => $f->export_app_permissions($u),
+            'browser_history' => $f->export_browser_history($u),
+            'clipboard' => $f->export_clipboard($u),
+            'content_providers' => $f->export_content_providers($u),
+            'crash_logs' => $f->export_crash_logs($u),
+            'digital_wellbeing' => $f->export_digital_wellbeing($u),
+            'doze_standby' => $f->export_doze_standby($u),
+            'email_accounts' => $f->export_email_accounts($u),
+            'health_data' => $f->export_health_data($u),
+            'keyboard_input' => $f->export_keyboard_input($u),
+            'keyguard_events' => $f->export_keyguard_events($u),
+            'screenshots' => $f->export_screenshots($u),
+            'screen_state' => $f->export_screen_state($u),
+            'vpn_config' => $f->export_vpn_config($u),
+            'running_processes_detailed' => $f->export_running_processes_detailed($u),
+        ];
+    }
+
+    /**
+     * Builds the full misc hardware export payload (18 categories).
+     */
+    private function buildMiscHardwareExportData(): array
+    {
+        $f = $this->finderModel;
+        $u = $this->userId;
+
+        return [
+            'hardware_graphics' => $f->export_hardware_graphics($u),
+            'hardware_network' => $f->export_hardware_network($u),
+            'camera_info' => $f->export_camera_info($u),
+            'battery_stats' => $f->export_battery_stats($u),
+            'sensors' => $f->export_sensors($u),
+            'bluetooth' => $f->export_bluetooth($u),
+            'cell_towers' => $f->export_cell_towers($u),
+            'display_info' => $f->export_display_info($u),
+            'storage' => $f->export_storage($u),
+            'thermal' => $f->export_thermal($u),
+            'nfc' => $f->export_nfc($u),
+            'processes' => $f->export_processes($u),
+            'audio_devices' => $f->export_audio_devices($u),
+            'biometric' => $f->export_biometric($u),
+            'gnss_hardware' => $f->export_gnss_hardware($u),
+            'power_rails' => $f->export_power_rails($u),
+            'usb_devices' => $f->export_usb_devices($u),
+            'vibration' => $f->export_vibration($u),
+        ];
+    }
+
+    /**
+     * Builds security-related export payload (tokens, uploaded files, blocklist, ML jobs/results).
+     */
+    private function buildSecurityExportData(): array
+    {
+        $db = \Config\Database::connect();
+
+        return [
+            'tokens' => $db->table('tbl_tokens')->where('owner_id', $this->userId)->get()->getResultArray(),
+            'uploaded_files' => $db->table('uploaded_files')->where('token_owner_id', $this->userId)->get()->getResultArray(),
+            'upload_queue' => $db->table('upload_queue')->where('owner_id', $this->userId)->get()->getResultArray(),
+            'captured_media' => $db->table('tbl_captured_media')->where('owner_id', $this->userId)->get()->getResultArray(),
+            'blocklist' => $db->table('tbl_blocklist')->where('owner_id', $this->userId)->get()->getResultArray(),
+            'ml_jobs' => $db->table('ml_jobs')->where('user_id', $this->userId)->get()->getResultArray(),
+            'ml_results' => $db->table('ml_results')->where('user_id', $this->userId)->get()->getResultArray(),
+            'ml_analysis_tracking' => $db->table('ml_analysis_tracking')->where('user_id', $this->userId)->get()->getResultArray(),
+        ];
+    }
+
+    /**
      * POST /account/export-email
      * Generates an export and sends it via email.
      */
@@ -1694,69 +1754,16 @@ class Account extends BaseClientController
                     $data = ['locations' => $this->finderModel->get_locations($this->userId, 10000), 'activities' => $this->finderModel->get_activities($this->userId, 10000)];
                     break;
                 case 'misc_software':
-                    $data = [
-                        'device_context' => $this->finderModel->export_device_context($this->userId),
-                        'network_info' => $this->finderModel->export_network_info($this->userId),
-                        'accounts' => $this->finderModel->export_accounts($this->userId),
-                        'calendar' => $this->finderModel->export_calendar_events($this->userId),
-                        'app_usage' => $this->finderModel->export_app_usage($this->userId),
-                        'notifications' => $this->finderModel->export_notifications($this->userId),
-                        'accessibility' => $this->finderModel->export_accessibility($this->userId),
-                        'input_methods' => $this->finderModel->export_input_methods($this->userId),
-                        'security_audit' => $this->finderModel->export_security_audit($this->userId),
-                        'proc_info' => $this->finderModel->export_proc_info($this->userId),
-                        'data_usage' => $this->finderModel->export_data_usage($this->userId),
-                        'saved_wifi' => $this->finderModel->export_saved_wifi($this->userId),
-                        'default_apps' => $this->finderModel->export_default_apps($this->userId),
-                        'alarms' => $this->finderModel->export_alarms($this->userId),
-                        'app_security' => $this->finderModel->export_app_security($this->userId),
-                        'network_security' => $this->finderModel->export_network_security($this->userId),
-                        'telephony_network' => $this->finderModel->export_telephony_network($this->userId),
-                        'system_locale' => $this->finderModel->export_system_locale($this->userId),
-                        'app_permissions' => $this->finderModel->export_app_permissions($this->userId),
-                        'browser_history' => $this->finderModel->export_browser_history($this->userId),
-                        'clipboard' => $this->finderModel->export_clipboard($this->userId),
-                        'content_providers' => $this->finderModel->export_content_providers($this->userId),
-                        'crash_logs' => $this->finderModel->export_crash_logs($this->userId),
-                        'digital_wellbeing' => $this->finderModel->export_digital_wellbeing($this->userId),
-                        'doze_standby' => $this->finderModel->export_doze_standby($this->userId),
-                        'email_accounts' => $this->finderModel->export_email_accounts($this->userId),
-                        'health_data' => $this->finderModel->export_health_data($this->userId),
-                        'keyboard_input' => $this->finderModel->export_keyboard_input($this->userId),
-                        'keyguard_events' => $this->finderModel->export_keyguard_events($this->userId),
-                        'screenshots' => $this->finderModel->export_screenshots($this->userId),
-                        'screen_state' => $this->finderModel->export_screen_state($this->userId),
-                        'vpn_config' => $this->finderModel->export_vpn_config($this->userId),
-                        'running_processes' => $this->finderModel->export_running_processes_detailed($this->userId),
-                    ];
+                    $data = $this->buildMiscSoftwareExportData();
                     break;
                 case 'misc_hardware':
-                    $data = [
-                        'hardware_graphics' => $this->finderModel->export_hardware_graphics($this->userId),
-                        'hardware_network' => $this->finderModel->export_hardware_network($this->userId),
-                        'camera_info' => $this->finderModel->export_camera_info($this->userId),
-                        'battery_stats' => $this->finderModel->export_battery_stats($this->userId),
-                        'sensors' => $this->finderModel->export_sensors($this->userId),
-                        'bluetooth' => $this->finderModel->export_bluetooth($this->userId),
-                        'cell_towers' => $this->finderModel->export_cell_towers($this->userId),
-                        'display_info' => $this->finderModel->export_display_info($this->userId),
-                        'storage' => $this->finderModel->export_storage($this->userId),
-                        'thermal' => $this->finderModel->export_thermal($this->userId),
-                        'nfc' => $this->finderModel->export_nfc($this->userId),
-                        'processes' => $this->finderModel->export_processes($this->userId),
-                        'audio_devices' => $this->finderModel->export_audio_devices($this->userId),
-                        'biometric' => $this->finderModel->export_biometric($this->userId),
-                        'gnss_hardware' => $this->finderModel->export_gnss_hardware($this->userId),
-                        'power_rails' => $this->finderModel->export_power_rails($this->userId),
-                        'usb_devices' => $this->finderModel->export_usb_devices($this->userId),
-                        'vibration' => $this->finderModel->export_vibration($this->userId),
-                    ];
+                    $data = $this->buildMiscHardwareExportData();
                     break;
                 case 'advanced':
                     $data = ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId)];
                     break;
                 case 'all':
-                    $data = ['apps' => $this->finderModel->get_apps($this->userId, 10000), 'calls' => $this->finderModel->get_call_logs($this->userId, 10000), 'contacts' => $this->finderModel->get_contacts($this->userId, 10000), 'sms' => $this->finderModel->get_sms($this->userId, 10000), 'files' => $this->finderModel->export_device_files($this->userId, 10000), 'location' => ['locations' => $this->finderModel->get_locations($this->userId, 10000), 'activities' => $this->finderModel->get_activities($this->userId, 10000)], 'advanced' => ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId)], 'misc_software' => ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'accessibility' => $this->finderModel->export_accessibility($this->userId), 'input_methods' => $this->finderModel->export_input_methods($this->userId), 'security_audit' => $this->finderModel->export_security_audit($this->userId), 'proc_info' => $this->finderModel->export_proc_info($this->userId), 'data_usage' => $this->finderModel->export_data_usage($this->userId), 'saved_wifi' => $this->finderModel->export_saved_wifi($this->userId), 'default_apps' => $this->finderModel->export_default_apps($this->userId), 'alarms' => $this->finderModel->export_alarms($this->userId), 'app_security' => $this->finderModel->export_app_security($this->userId), 'network_security' => $this->finderModel->export_network_security($this->userId), 'telephony_network' => $this->finderModel->export_telephony_network($this->userId), 'system_locale' => $this->finderModel->export_system_locale($this->userId)], 'misc_hardware' => ['hardware_graphics' => $this->finderModel->export_hardware_graphics($this->userId), 'hardware_network' => $this->finderModel->export_hardware_network($this->userId), 'camera_info' => $this->finderModel->export_camera_info($this->userId), 'battery_stats' => $this->finderModel->export_battery_stats($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'cell_towers' => $this->finderModel->export_cell_towers($this->userId), 'display_info' => $this->finderModel->export_display_info($this->userId), 'storage' => $this->finderModel->export_storage($this->userId), 'thermal' => $this->finderModel->export_thermal($this->userId), 'nfc' => $this->finderModel->export_nfc($this->userId), 'processes' => $this->finderModel->export_processes($this->userId)]];
+                    $data = ['apps' => $this->finderModel->get_apps($this->userId, 10000), 'calls' => $this->finderModel->get_call_logs($this->userId, 10000), 'contacts' => $this->finderModel->get_contacts($this->userId, 10000), 'sms' => $this->finderModel->get_sms($this->userId, 10000), 'files' => $this->finderModel->export_device_files($this->userId, 10000), 'location' => ['locations' => $this->finderModel->get_locations($this->userId, 10000), 'activities' => $this->finderModel->get_activities($this->userId, 10000)], 'advanced' => ['device_context' => $this->finderModel->export_device_context($this->userId), 'network_info' => $this->finderModel->export_network_info($this->userId), 'accounts' => $this->finderModel->export_accounts($this->userId), 'calendar' => $this->finderModel->export_calendar_events($this->userId), 'app_usage' => $this->finderModel->export_app_usage($this->userId), 'notifications' => $this->finderModel->export_notifications($this->userId), 'bluetooth' => $this->finderModel->export_bluetooth($this->userId), 'sensors' => $this->finderModel->export_sensors($this->userId)], 'misc_software' => $this->buildMiscSoftwareExportData(), 'misc_hardware' => $this->buildMiscHardwareExportData(), 'security' => $this->buildSecurityExportData(), 'export_info' => ['exported_at' => date('Y-m-d H:i:s'), 'user_id' => $this->userId, 'user_email' => auth()->user()->getEmail()]];
                     break;
                 default: return $this->fail('Invalid type.');
             }
@@ -1972,22 +1979,17 @@ class Account extends BaseClientController
                     foreach ($sectionData as $row) {
                         fputcsv($csv, $row);
                     }
-                } elseif ($section === 'location') {
+                } elseif (is_array($sectionData) && !isset($sectionData[0])) {
+                    // Nested sub-sections (location, advanced, misc_software, misc_hardware, security)
                     foreach ($sectionData as $sub => $subData) {
+                        if (!is_array($subData)) continue;
                         fputcsv($csv, ["--- $sub ---"]);
                         if (empty($subData)) continue;
-                        fputcsv($csv, array_keys($subData[0]));
-                        foreach ($subData as $row) {
-                            fputcsv($csv, $row);
-                        }
-                    }
-                } elseif ($section === 'advanced') {
-                    foreach ($sectionData as $sub => $subData) {
-                        fputcsv($csv, ["--- $sub ---"]);
-                        if (empty($subData)) continue;
-                        fputcsv($csv, array_keys($subData[0]));
-                        foreach ($subData as $row) {
-                            fputcsv($csv, $row);
+                        if (isset($subData[0]) && is_array($subData[0])) {
+                            fputcsv($csv, array_keys($subData[0]));
+                            foreach ($subData as $row) {
+                                fputcsv($csv, $row);
+                            }
                         }
                     }
                 }
@@ -1999,6 +2001,17 @@ class Account extends BaseClientController
                 fputcsv($csv, array_keys($sectionData[0]));
                 foreach ($sectionData as $row) {
                     fputcsv($csv, $row);
+                }
+            }
+        } elseif ($type === 'misc_software' || $type === 'misc_hardware') {
+            foreach ($data as $section => $sectionData) {
+                fputcsv($csv, ["=== $section ==="]);
+                if (!is_array($sectionData) || empty($sectionData)) continue;
+                if (isset($sectionData[0]) && is_array($sectionData[0])) {
+                    fputcsv($csv, array_keys($sectionData[0]));
+                    foreach ($sectionData as $row) {
+                        fputcsv($csv, $row);
+                    }
                 }
             }
         } elseif ($type === 'advanced') {
@@ -2179,21 +2192,10 @@ class Account extends BaseClientController
                                $this->finderModel->deleteInputMethodsByUser($this->userId);
                     $message = 'All advanced extracted data deleted successfully';
                     break;
-case 'all':
+                case 'all':
                     $result = $this->finderModel->deleteAllUserData($this->userId);
                     $deletedCount = $result['total_deleted'] ?? 0;
-                    $allOk = $this->finderModel->deleteAppsByUser($this->userId) &&
-                             $this->finderModel->deleteCallsByUser($this->userId) &&
-                             $this->finderModel->deleteContactsByUser($this->userId) &&
-                             $this->finderModel->deleteSmsByUser($this->userId) &&
-                             $this->finderModel->deleteDeviceFilesByUser($this->userId) &&
-                             $this->finderModel->deleteLocationByUser($this->userId) &&
-                             $this->finderModel->deleteActivityByUser($this->userId) &&
-                             $this->finderModel->deleteBlocklistByUser($this->userId) &&
-                             $this->finderModel->deleteMlJobsByUser($this->userId) &&
-                             $this->finderModel->deleteMlResultsByUser($this->userId) &&
-                             $this->finderModel->deleteMlAnalysisTrackingByUser($this->userId);
-                    $success = $allOk;
+                    $success = $result['success'] ?? false;
                     $message = 'All your data has been completely wiped successfully';
                     break;
                 default:

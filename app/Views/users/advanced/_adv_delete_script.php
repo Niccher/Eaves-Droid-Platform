@@ -1,6 +1,73 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Delete row handler
+    // ============================================================
+    // GLOBAL TABLE SEARCH HANDLER
+    // ============================================================
+    document.querySelectorAll('.table-search').forEach(function(input) {
+        input.addEventListener('keyup', function() {
+            var keyword = this.value.toLowerCase();
+            var tableId = this.getAttribute('data-table') || 'table-sortable';
+            var table = document.getElementById(tableId);
+            if (!table) return;
+            table.querySelectorAll('tbody tr.accordion-toggle').forEach(function(row) {
+                row.style.display = row.textContent.toLowerCase().indexOf(keyword) > -1 ? '' : 'none';
+            });
+        });
+    });
+    // ============================================================
+    // EXPANDABLE ROW HANDLER (like location_all.php)
+    // ============================================================
+    document.querySelectorAll('.accordion-toggle.expandable-row').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't trigger if clicking on a button/link inside
+            if (e.target.closest('button, a')) return;
+
+            const targetId = this.getAttribute('data-target');
+            const target = document.querySelector(targetId);
+            const chevron = this.querySelector('.chevron-icon');
+            const expandableRow = this.closest('tr').nextElementSibling;
+
+            if (!target || !expandableRow) return;
+
+            const isCurrentlyOpen = expandableRow.style.display === 'table-row';
+
+            // Close all other accordion items
+            document.querySelectorAll('.accordion-toggle.expandable-row').forEach(function(other) {
+                if (other !== row) {
+                    const otherTarget = document.querySelector(other.getAttribute('data-target'));
+                    const otherChevron = other.querySelector('.chevron-icon');
+                    const otherRow = other.closest('tr').nextElementSibling;
+                    if (otherTarget) otherTarget.style.display = 'none';
+                    if (otherRow) otherRow.style.display = 'none';
+                    if (otherChevron) {
+                        otherChevron.classList.remove('fa-chevron-up');
+                        otherChevron.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+
+            // Toggle current item
+            if (!isCurrentlyOpen) {
+                target.style.display = 'block';
+                expandableRow.style.display = 'table-row';
+                if (chevron) {
+                    chevron.classList.remove('fa-chevron-down');
+                    chevron.classList.add('fa-chevron-up');
+                }
+            } else {
+                target.style.display = 'none';
+                expandableRow.style.display = 'none';
+                if (chevron) {
+                    chevron.classList.remove('fa-chevron-up');
+                    chevron.classList.add('fa-chevron-down');
+                }
+            }
+        });
+    });
+
+    // ============================================================
+    // DELETE ROW HANDLER
+    // ============================================================
     document.querySelectorAll('.delete-row').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -37,7 +104,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Details modal handler
+    // ============================================================
+    // DETAILS MODAL HANDLER (for .details-row buttons)
+    // ============================================================
     document.querySelectorAll('.details-row').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -62,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     htmlContainer: 'p-0'
                 },
                 didOpen: function() {
-                    // Add copy functionality for JSON blocks
                     document.querySelectorAll('.copy-json').forEach(function(btn) {
                         btn.addEventListener('click', function() {
                             var target = this.getAttribute('data-target');
@@ -77,8 +145,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+    }
 
     function buildDetailsContent(data) {
+        // Arrays (codecs, devices, interfaces, links, displays) render as item cards
+        if (Array.isArray(data)) {
+            return buildListContent(data);
+        }
         if (!data || Object.keys(data).length === 0) {
             return '<div class="p-4 text-center text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><p>No details available</p></div>';
         }
@@ -90,11 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show priority fields first
         priorityKeys.forEach(function(key) {
             if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
-                var value = data[key];
-                if (key.includes('_at') && typeof value === 'number') {
-                    value = formatTimestamp(value);
-                }
-                html += buildDetailCard(key.replace(/_/g, ' ').replace(/\b\w/g, function(l){ return l.toUpperCase(); }), value, 'info');
+                html += buildDetailCard(key.replace(/_/g, ' ').replace(/\b\w/g, function(l){ return l.toUpperCase(); }), formatValue(data[key], key), 'info');
             }
         });
 
@@ -103,42 +172,65 @@ document.addEventListener('DOMContentLoaded', function() {
             if (priorityKeys.includes(key) || excludedKeys.includes(key)) return;
             var value = data[key];
             if (value === undefined || value === null) return;
-            if (value === '' && type !== 'number' && type !== 'boolean') return;
+            if (value === '' && typeof value !== 'number' && typeof value !== 'boolean') return;
 
             var icon = 'info';
             var type = typeof value;
             if (type === 'object' && value !== null) {
-                if (Array.isArray(value)) {
-                    icon = 'list';
-                } else {
-                    icon = 'code';
-                }
+                icon = Array.isArray(value) ? 'list' : 'code';
             } else if (type === 'number') {
                 icon = 'hashtag';
             } else if (type === 'boolean') {
                 icon = 'toggle-on';
             }
 
-            var displayValue = '';
-            if (type === 'object' && value !== null) {
-                var jsonStr = JSON.stringify(value, null, 2);
-                var id = 'json-' + key.replace(/[^a-zA-Z0-9]/g, '-');
-                displayValue = '<pre class="json-pre" id="' + id + '">' + escapeHtml(jsonStr) + '</pre>';
-                displayValue += '<button class="btn btn-sm btn-outline-secondary copy-json mt-2" data-target="' + id + '"><i class="fas fa-copy mr-1"></i>Copy JSON</button>';
-            } else if (type === 'boolean') {
-                displayValue = value ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-secondary">No</span>';
-            } else if (key.includes('_at') && type === 'number') {
-                displayValue = formatTimestamp(value);
-            } else {
-                displayValue = escapeHtml(String(value));
-            }
-
             var label = key.replace(/_/g, ' ').replace(/\b\w/g, function(l){ return l.toUpperCase(); });
-            html += buildDetailCard(label, displayValue, icon);
+            html += buildDetailCard(label, formatValue(value, key), icon);
         });
 
         html += '</div>';
         return html;
+    }
+
+    // Renders each element of an array as its own well-formatted card
+    function buildListContent(items) {
+        if (!items || items.length === 0) {
+            return '<div class="p-4 text-center text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><p>No data available</p></div>';
+        }
+        var html = '<div class="details-grid p-3">';
+        items.forEach(function(item, idx) {
+            var itemObj = (typeof item === 'object' && item !== null) ? item : { 'value': item };
+            html += '<div class="detail-card" style="grid-column: span 2;">';
+            html += '<div class="detail-icon"><i class="fas fa-list text-info"></i></div>';
+            html += '<div class="detail-label">Item ' + (idx + 1) + '</div>';
+            html += '<div class="detail-value" style="text-align:left;font-weight:400;">';
+            html += '<table class="table table-sm table-borderless small mb-0">';
+            Object.keys(itemObj).forEach(function(key) {
+                var value = itemObj[key];
+                if (value === undefined || value === null) return;
+                if (value === '' && typeof value !== 'number' && typeof value !== 'boolean') return;
+                var label = key.replace(/_/g, ' ').replace(/\b\w/g, function(l){ return l.toUpperCase(); });
+                html += '<tr><th class="text-muted" style="width:38%;vertical-align:top;">' + escapeHtml(label) + '</th><td>' + formatValue(value, key) + '</td></tr>';
+            });
+            html += '</table></div></div>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function formatValue(value, key) {
+        if (value === undefined || value === null) return '<span class="text-muted">—</span>';
+        var type = typeof value;
+        if (type === 'object') {
+            var jsonStr = JSON.stringify(value, null, 2);
+            var id = 'json-' + key.replace(/[^a-zA-Z0-9]/g, '-') + '-' + Math.random().toString(36).slice(2, 7);
+            var out = '<pre class="json-pre mb-0" id="' + id + '">' + escapeHtml(jsonStr) + '</pre>';
+            out += '<button class="btn btn-sm btn-outline-secondary copy-json mt-1" data-target="' + id + '"><i class="fas fa-copy mr-1"></i>Copy JSON</button>';
+            return out;
+        }
+        if (type === 'boolean') return value ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-secondary">No</span>';
+        if (key.includes('_at') && type === 'number') return formatTimestamp(value);
+        return escapeHtml(String(value));
     }
 
     function buildDetailCard(label, value, iconType) {

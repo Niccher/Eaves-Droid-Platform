@@ -1,55 +1,96 @@
 <?php
-/** @var array $basic_timeline    SMS + Call events */
-/** @var array $advanced_timeline All event types combined */
+/** @var array $basic_timeline */
+/** @var array $advanced_timeline */
+/** @var string $adv_filter */
+/** @var int $adv_total */
+/** @var int $adv_page */
+/** @var string $default_tab */
 
-// ─── Type config (icon + badge colour) ────────────────────────────────────────
-$typeConfig = [
-    'sms'       => ['icon' => 'fas fa-envelope',          'bg' => 'bg-primary',   'label' => 'SMS',       'badge' => 'primary'],
-    'call'      => ['icon' => 'fas fa-phone',              'bg' => 'bg-success',   'label' => 'Calls',     'badge' => 'success'],
-    'activity'  => ['icon' => 'fas fa-running',            'bg' => 'bg-info',      'label' => 'Activity',  'badge' => 'info'],
-    'location'  => ['icon' => 'fas fa-map-marker-alt',     'bg' => 'bg-warning',   'label' => 'Location',  'badge' => 'warning'],
-    'app_usage' => ['icon' => 'fas fa-mobile-alt',         'bg' => 'bg-indigo',    'label' => 'App Use',   'badge' => 'secondary'],
-    'upload'    => ['icon' => 'fas fa-upload',             'bg' => 'bg-teal',      'label' => 'Upload',    'badge' => 'info'],
-    'file'      => ['icon' => 'fas fa-file-alt',           'bg' => 'bg-secondary', 'label' => 'File',      'badge' => 'secondary'],
-    'financial' => ['icon' => 'fas fa-coins',              'bg' => 'bg-green',     'label' => 'Financial', 'badge' => 'success'],
-    'other'     => ['icon' => 'fas fa-info-circle',        'bg' => 'bg-gray',      'label' => 'Other',     'badge' => 'secondary'],
+$tlColors = [
+    'sms'       => '#3b82f6',
+    'call'      => '#10b981',
+    'activity'  => '#06b6d4',
+    'location'  => '#f59e0b',
+    'app_usage' => '#8b5cf6',
+    'upload'    => '#14b8a6',
+    'file'      => '#64748b',
+    'health'    => '#ec4899',
+    'keyguard'  => '#334155',
+    'other'     => '#6b7280',
+];
+$tlIcons = [
+    'sms'       => 'fas fa-envelope',
+    'call'      => 'fas fa-phone',
+    'activity'  => 'fas fa-running',
+    'location'  => 'fas fa-map-marker-alt',
+    'app_usage' => 'fas fa-mobile-alt',
+    'upload'    => 'fas fa-upload',
+    'file'      => 'fas fa-file-alt',
+    'health'    => 'fas fa-heartbeat',
+    'keyguard'  => 'fas fa-shield-alt',
+    'other'     => 'fas fa-info-circle',
+];
+$tlLabels = [
+    'sms'       => 'SMS',
+    'call'      => 'Call',
+    'activity'  => 'Activity',
+    'location'  => 'Location',
+    'app_usage' => 'App',
+    'upload'    => 'Upload',
+    'file'      => 'File',
+    'health'    => 'Health',
+    'keyguard'  => 'Keyguard',
+    'other'     => 'Event',
 ];
 
-// ─── Helper: normalise ms-epoch vs s-epoch ─────────────────────────────────────
-function tl_ts(int $raw): int {
-    return $raw > 9_999_999_999 ? (int) ($raw / 1000) : $raw;
+function tl_ts(int $raw): int { return $raw > 9_999_999_999 ? (int)($raw / 1000) : $raw; }
+
+$bSms    = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 'sms'));
+$bCalls  = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 'call'));
+$bMissed = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 'call' && ($e['subtype'] ?? '') === 'missed'));
+
+// Advanced type counts from current page data
+$aCounts = [];
+$advExclude = ['sms', 'call'];
+if (!empty($advanced_timeline)) {
+    foreach ($advanced_timeline as $ev) {
+        $t = $ev['type'] ?? 'other';
+        if (!in_array($t, $advExclude)) {
+            $aCounts[$t] = ($aCounts[$t] ?? 0) + 1;
+        }
+    }
+    arsort($aCounts);
 }
-
-// ─── Count basics ──────────────────────────────────────────────────────────────
-$basicSms   = count(array_filter($basic_timeline ?? [],   fn($e) => $e['type'] === 'sms'));
-$basicCalls = count(array_filter($basic_timeline ?? [],   fn($e) => $e['type'] === 'call'));
-$advTotal   = count($advanced_timeline ?? []);
+$aTotal = $adv_total ?? count($advanced_timeline ?? []);
 ?>
-<div class="content-wrapper">
+<style>
+.bg-purple { background: #8b5cf6 !important; }
+.bg-teal   { background: #14b8a6 !important; }
+.bg-indigo { background: #4f46e5 !important; }
+.bg-maroon { background: #b45309 !important; color: #fff; }
+.info-box-sm { min-height: 70px; border-radius: 8px; margin-bottom: 4px; }
+</style>
 
-    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+<div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row align-items-center mb-2">
-                <div class="col-sm-7">
-                    <h1 class="m-0">
-                        <i class="fas fa-stream text-primary mr-2"></i>
-                        Device Timeline
-                    </h1>
-                    <p class="text-muted mt-1 mb-0" style="font-size:.9rem;">
-                        Chronological event stream correlated across all data sources
-                    </p>
+            <div class="row mb-4 align-items-center">
+                <div class="col-lg-8 col-md-6">
+                    <div class="d-flex align-items-center">
+                        <h1 class="h2 mb-0">
+                            <i class="fas fa-stream text-primary mr-2"></i>
+                            Device Timeline
+                        </h1>
+                        <div class="ml-3">
+                            <span class="badge badge-primary border p-2">
+                                <i class="fas fa-layer-group mr-1"></i> Intelligence
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Chronological event stream across SMS, Calls, Apps, Locations, Health, and Keyguard state.</p>
                 </div>
-                <div class="col-sm-5 text-right">
-                    <span class="badge badge-primary px-3 py-2 mr-1" style="font-size:.8rem;">
-                        <i class="fas fa-envelope mr-1"></i><?= number_format($basicSms) ?> SMS
-                    </span>
-                    <span class="badge badge-success px-3 py-2 mr-1" style="font-size:.8rem;">
-                        <i class="fas fa-phone mr-1"></i><?= number_format($basicCalls) ?> Calls
-                    </span>
-                    <span class="badge badge-dark px-3 py-2" style="font-size:.8rem;">
-                        <i class="fas fa-layer-group mr-1"></i><?= number_format($advTotal) ?> Advanced Events
-                    </span>
+                <div class="col-lg-4 col-md-6 text-right">
+                    <!-- reserved for future actions -->
                 </div>
             </div>
         </div>
@@ -57,334 +98,235 @@ $advTotal   = count($advanced_timeline ?? []);
 
     <section class="content">
         <div class="container-fluid">
-
-            <!-- ── Nav Pills ─────────────────────────────────────────────────── -->
-            <div class="card shadow-sm mb-0">
-                <div class="card-header pb-0 pt-3" style="border-bottom: 2px solid #dee2e6;">
-                    <ul class="nav nav-pills" id="timeline-pills" role="tablist">
+            <div class="card card-secondary card-outline shadow-sm">
+                <div class="card-header">
+                    <ul class="nav nav-pills" id="tl-tabs" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link active font-weight-bold" id="pill-basic" data-toggle="pill"
-                               href="#pane-basic" role="tab">
+                            <a class="nav-link <?= $default_tab === 'basic' ? 'active' : '' ?>" id="tab-basic" data-toggle="pill" href="#pane-basic" role="tab">
                                 <i class="fas fa-comment-alt mr-1"></i> Basic Timeline
-                                <span class="badge badge-light ml-1"><?= number_format($basicSms + $basicCalls) ?></span>
+                                <span class="badge badge-light ml-1"><?= number_format($bSms + $bCalls) ?></span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link font-weight-bold" id="pill-advanced" data-toggle="pill"
-                               href="#pane-advanced" role="tab">
+                            <a class="nav-link <?= $default_tab === 'advanced' ? 'active' : '' ?>" id="tab-advanced" data-toggle="pill" href="#pane-advanced" role="tab">
                                 <i class="fas fa-layer-group mr-1"></i> Advanced Timeline
-                                <span class="badge badge-dark ml-1"><?= number_format($advTotal) ?></span>
+                                <span class="badge badge-dark ml-1"><?= number_format($aTotal) ?></span>
                             </a>
                         </li>
                     </ul>
                 </div>
+                <div class="card-body">
+                    <div class="tab-content" id="tl-panes">
 
-                <div class="card-body pt-3">
-                    <div class="tab-content" id="timeline-pills-content">
-
-                        <!-- ════════════════════════════════════════════════════
-                             PILL 1 — BASIC TIMELINE
-                             SMS + Call events only
-                        ════════════════════════════════════════════════════ -->
-                        <div class="tab-pane fade show active" id="pane-basic" role="tabpanel">
-
-                            <!-- Sub-filters -->
-                            <div class="mb-3 d-flex align-items-center flex-wrap" style="gap:.4rem;">
-                                <small class="text-muted mr-1 font-weight-bold">Filter:</small>
-                                <button class="btn btn-sm btn-primary tl-filter-btn active" data-filter="all">
+                        <!-- ═══════ BASIC: SMS + Calls ═══════ -->
+                        <div class="tab-pane fade <?= $default_tab === 'basic' ? 'show active' : '' ?>" id="pane-basic" role="tabpanel">
+                            <div class="mb-3 d-flex align-items-center flex-wrap" style="gap:6px;">
+                                <small class="text-muted font-weight-bold mr-1"><i class="fas fa-filter mr-1"></i>Filter:</small>
+                                <button class="btn btn-sm bf-btn active" data-f="all" style="border-radius:8px; font-weight:600;">
                                     <i class="fas fa-list mr-1"></i> All
                                 </button>
-                                <button class="btn btn-sm btn-outline-primary tl-filter-btn" data-filter="sms">
-                                    <i class="fas fa-envelope mr-1"></i> SMS
-                                    <span class="badge badge-primary ml-1"><?= $basicSms ?></span>
+                                <button class="btn btn-sm bf-btn" data-f="sms" style="border-radius:8px; font-weight:600; color:<?= $tlColors['sms'] ?>;">
+                                    <i class="fas fa-envelope mr-1"></i> SMS <span class="badge ml-1" style="background:<?= $tlColors['sms'] ?>; color:#fff;"><?= $bSms ?></span>
                                 </button>
-                                <button class="btn btn-sm btn-outline-success tl-filter-btn" data-filter="call">
-                                    <i class="fas fa-phone mr-1"></i> Calls
-                                    <span class="badge badge-success ml-1"><?= $basicCalls ?></span>
+                                <button class="btn btn-sm bf-btn" data-f="call" style="border-radius:8px; font-weight:600; color:<?= $tlColors['call'] ?>;">
+                                    <i class="fas fa-phone mr-1"></i> Calls <span class="badge ml-1" style="background:<?= $tlColors['call'] ?>; color:#fff;"><?= $bCalls ?></span>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger tl-filter-btn" data-filter="missed">
-                                    <i class="fas fa-phone-slash mr-1"></i> Missed
+                                <button class="btn btn-sm bf-btn" data-f="missed" style="border-radius:8px; font-weight:600; color:#dc2626;">
+                                    <i class="fas fa-phone-slash mr-1"></i> Missed <span class="badge ml-1" style="background:#dc2626; color:#fff;"><?= $bMissed ?></span>
                                 </button>
+                                <div class="input-group input-group-sm ml-auto" style="max-width:260px;">
+                                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-search"></i></span></div>
+                                    <input type="text" id="bsrch" class="form-control" placeholder="Search events...">
+                                </div>
                             </div>
 
                             <?php if (empty($basic_timeline)): ?>
-                            <div class="text-center py-5">
-                                <i class="fas fa-comment-slash fa-3x text-muted mb-3 d-block"></i>
-                                <h5 class="text-muted">No communication events yet</h5>
-                                <p class="text-muted">SMS messages and call records will appear once data is extracted.</p>
-                            </div>
+                            <div class="text-center py-5"><i class="fas fa-comment-slash fa-3x text-muted mb-3 d-block"></i><h5 class="text-muted">No communication events yet</h5><p class="text-muted">SMS and call records will appear once data is extracted.</p></div>
                             <?php else: ?>
-
                             <div class="timeline" id="basic-tl">
-                                <?php
-                                $lastDate = '';
-                                foreach ($basic_timeline as $ev):
-                                    $ts       = tl_ts((int)($ev['time'] ?? 0));
-                                    $dateStr  = date('d M. Y', $ts);
-                                    $timeStr  = date('H:i', $ts);
-                                    $type     = $ev['type'] ?? 'other';
-                                    $subtype  = $ev['subtype'] ?? $type;
-                                    $cfg      = $typeConfig[$type] ?? $typeConfig['other'];
-                                    $icon     = $ev['icon'] ?? $cfg['icon'];
-                                    $bgClass  = $ev['color'] ?? $cfg['bg'];
-                                    $title    = $ev['title'] ?? 'Event';
-                                    $body     = $ev['body'] ?? '';
-                                    $meta     = $ev['meta'] ?? '';
-
-                                    if ($dateStr !== $lastDate):
-                                        $lastDate = $dateStr;
-                                ?>
-                                <div class="time-label tl-date-sep" data-type="<?= esc($type) ?>" data-sub="<?= esc($subtype) ?>">
-                                    <span class="bg-dark"><?= esc($dateStr) ?></span>
-                                </div>
+                                <?php $lastBDate = ''; foreach ($basic_timeline as $ev): $ts = tl_ts((int)($ev['time'] ?? 0)); $date = date('D, j M Y', $ts); $time = date('H:i', $ts); $type = $ev['type'] ?? 'other'; $sub = $ev['subtype'] ?? $type; $icon = $ev['icon'] ?? $tlIcons[$type] ?? 'fas fa-info-circle'; $bgColor = $tlColors[$type] ?? '#6b7280'; $tit = $ev['title'] ?? 'Event'; $bod = $ev['body'] ?? ''; $cont = $ev['meta'] ?? ''; $flt = $sub === 'missed' ? 'missed' : $type; if ($date !== $lastBDate): $lastBDate = $date; ?>
+                                <div class="time-label" data-filters="<?= esc($type . ' ' . $sub) ?>"><span class="bg-dark"><?= esc($date) ?></span></div>
                                 <?php endif; ?>
-
-                                <div class="tl-event" data-type="<?= esc($type) ?>" data-sub="<?= esc($subtype) ?>">
-                                    <i class="<?= esc($icon) ?> <?= $bgClass ?>"></i>
+                                <div class="tl-ev" data-filters="<?= esc($flt) ?>">
+                                    <i class="<?= esc($icon) ?>" style="background:<?= $bgColor ?>; color:#fff; padding:8px; border-radius:50%; font-size:0.85rem;"></i>
                                     <div class="timeline-item">
-                                        <span class="time">
-                                            <i class="fas fa-clock"></i> <?= $timeStr ?>
-                                            <?php if ($meta): ?>
-                                            <span class="ml-2 text-muted" style="font-size:.75rem;">
-                                                <i class="fas fa-user mr-1"></i><?= esc($meta) ?>
-                                            </span>
-                                            <?php endif; ?>
-                                        </span>
+                                        <span class="time"><i class="fas fa-clock"></i> <?= $time ?> <?php if(!empty($cont)): ?><span class="ml-2 text-muted" style="font-size:0.73rem;"><i class="fas fa-user mr-1"></i><?= esc($cont) ?></span><?php endif; ?></span>
                                         <h3 class="timeline-header">
-                                            <span class="badge badge-<?= $cfg['badge'] ?> mr-1" style="font-size:.7rem;">
-                                                <?= esc(strtoupper($subtype)) ?>
-                                            </span>
-                                            <?= htmlspecialchars($title) ?>
+                                            <span class="badge" style="font-size:0.68rem; background:<?= $bgColor ?>; color:#fff;"><?= esc(strtoupper($sub)) ?></span>
+                                            <?= htmlspecialchars($tit) ?>
                                         </h3>
-                                        <?php if (!empty($body)): ?>
-                                        <div class="timeline-body text-muted" style="font-size:.85rem;">
-                                            <?= htmlspecialchars(mb_strimwidth($body, 0, 280, '…')) ?>
-                                        </div>
+                                        <?php if (!empty($bod)): ?>
+                                        <div class="timeline-body text-muted" style="font-size:0.85rem;"><?= htmlspecialchars(mb_strimwidth($bod, 0, 300, '…')) ?></div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
-
                                 <div><i class="fas fa-clock bg-gray"></i></div>
                             </div>
-
                             <?php endif; ?>
-                        </div><!-- /#pane-basic -->
+                        </div>
 
-
-                        <!-- ════════════════════════════════════════════════════
-                             PILL 2 — ADVANCED TIMELINE
-                             All event types: files, app launches, system metadata, etc.
-                        ════════════════════════════════════════════════════ -->
-                        <div class="tab-pane fade" id="pane-advanced" role="tabpanel">
-
-                            <?php
-                            // Build type counts for the advanced filter bar
-                            $advCounts = [];
-                            foreach ($advanced_timeline ?? [] as $ev) {
-                                $t = $ev['type'] ?? 'other';
-                                $advCounts[$t] = ($advCounts[$t] ?? 0) + 1;
-                            }
-                            arsort($advCounts);
-                            ?>
-
-                            <!-- Sub-type filter pills -->
-                            <div class="mb-3 d-flex align-items-center flex-wrap" style="gap:.4rem;">
-                                <small class="text-muted mr-1 font-weight-bold">Filter:</small>
-                                <button class="btn btn-sm btn-dark adv-filter-btn active" data-filter="all">
-                                    <i class="fas fa-layer-group mr-1"></i> All
-                                    <span class="badge badge-light ml-1"><?= $advTotal ?></span>
+                        <!-- ═══════ ADVANCED TIMELINE ═══════ -->
+                        <div class="tab-pane fade <?= $default_tab === 'advanced' ? 'show active' : '' ?>" id="pane-advanced" role="tabpanel">
+                            <div class="mb-3 d-flex flex-wrap align-items-center" style="gap:6px;">
+                                <small class="text-muted font-weight-bold mr-1"><i class="fas fa-filter mr-1"></i>Type:</small>
+                                <button class="btn btn-sm af-btn active" data-tp="all" style="border-radius:8px; font-weight:600;">
+                                    <i class="fas fa-layer-group mr-1"></i> All <span class="badge badge-light ml-1"><?= number_format($aTotal) ?></span>
                                 </button>
-                                <?php foreach ($advCounts as $t => $cnt):
-                                    $tcfg = $typeConfig[$t] ?? $typeConfig['other'];
-                                    $bdg  = $tcfg['badge'];
-                                ?>
-                                <button class="btn btn-sm btn-outline-<?= $bdg ?> adv-filter-btn" data-filter="<?= esc($t) ?>">
-                                    <i class="<?= $tcfg['icon'] ?> mr-1"></i>
-                                    <?= esc($tcfg['label']) ?>
-                                    <span class="badge badge-<?= $bdg ?> ml-1"><?= $cnt ?></span>
+                                <?php foreach ($aCounts as $tKey => $tCnt): $c = $tlColors[$tKey] ?? '#6b7280'; $icn = $tlIcons[$tKey] ?? 'fas fa-info-circle'; $lbl = $tlLabels[$tKey] ?? 'Event'; $isActive = ($adv_filter === $tKey); ?>
+                                <button class="btn btn-sm af-btn <?= $isActive ? 'active' : '' ?>" data-tp="<?= esc($tKey) ?>" style="font-weight:600; border-radius:8px; color:<?= $c ?>;">
+                                    <i class="<?= esc($icn) ?> mr-1"></i> <?= esc($lbl) ?>
+                                    <span class="badge ml-1" style="background:<?= $c ?>; color:#fff;"><?= $tCnt ?></span>
                                 </button>
                                 <?php endforeach; ?>
-                            </div>
-
-                            <!-- Legend -->
-                            <div class="alert alert-light border py-2 px-3 mb-3" style="font-size:.8rem;">
-                                <i class="fas fa-info-circle text-info mr-1"></i>
-                                The Advanced Timeline merges <strong>SMS, Calls, Location check-ins, Physical Activity changes,
-                                App Usage sessions, File uploads</strong> and other system-level metadata into a single
-                                chronological stream — giving you complete context of what occurred on the device.
                             </div>
 
                             <?php if (empty($advanced_timeline)): ?>
-                            <div class="text-center py-5">
-                                <i class="fas fa-layer-group fa-3x text-muted mb-3 d-block"></i>
-                                <h5 class="text-muted">No advanced events yet</h5>
-                                <p class="text-muted">Events will appear as device data is extracted and processed.</p>
-                            </div>
+                            <div class="text-center py-5"><i class="fas fa-layer-group fa-3x text-muted mb-3 d-block"></i><h5 class="text-muted">No events found</h5><p class="text-muted">Try a different type filter or check back after more data is imported.</p></div>
                             <?php else: ?>
-
                             <div class="timeline" id="adv-tl">
-                                <?php
-                                usort($advanced_timeline, fn($a, $b) => ($b['time'] ?? 0) <=> ($a['time'] ?? 0));
-                                $lastDateAdv = '';
-                                foreach ($advanced_timeline as $ev):
-                                    $ts      = tl_ts((int)($ev['time'] ?? 0));
-                                    $dateStr = date('d M. Y', $ts);
-                                    $timeStr = date('H:i:s', $ts);
-                                    $type    = $ev['type'] ?? 'other';
-                                    $subtype = $ev['subtitle'] ?? ($ev['subtype'] ?? '');
-                                    $cfg     = $typeConfig[$type] ?? $typeConfig['other'];
-
-                                    // Upload icon overrides
-                                    $icon    = $ev['icon'] ?? $cfg['icon'];
-                                    $bgClass = $ev['color'] ?? $cfg['bg'];
-                                    if ($type === 'upload' && !empty($subtype)) {
-                                        $cat = strtolower($subtype);
-                                        if (in_array($cat, ['bluetooth','bt']))     { $icon = 'fab fa-bluetooth';       $bgClass = 'bg-primary'; }
-                                        elseif (in_array($cat, ['files','file']))   { $icon = 'fas fa-file-archive';    $bgClass = 'bg-success'; }
-                                        elseif (in_array($cat, ['apps','app']))     { $icon = 'fas fa-mobile-alt';      $bgClass = 'bg-indigo';  }
-                                        elseif (in_array($cat, ['contacts']))       { $icon = 'fas fa-address-book';    $bgClass = 'bg-warning'; }
-                                        elseif ($cat === 'sms')                     { $icon = 'fas fa-comments';        $bgClass = 'bg-danger';  }
-                                        elseif (in_array($cat, ['logs','call']))    { $icon = 'fas fa-phone-square';    $bgClass = 'bg-info';    }
-                                        elseif ($cat === 'location')                { $icon = 'fas fa-map-pin';         $bgClass = 'bg-maroon';  }
+                                <?php $lastADate = ''; foreach ($advanced_timeline as $ev): $tsA = tl_ts((int)($ev['time'] ?? 0)); $dateA = date('D, j M Y', $tsA); $timeA = date('H:i:s', $tsA); $tyA = $ev['type'] ?? 'other'; $suA = $ev['subtitle'] ?? ($ev['subtype'] ?? ''); $cA = $tlColors[$tyA] ?? '#6b7280'; $ioA = $ev['icon'] ?? $tlIcons[$tyA] ?? 'fas fa-info-circle'; $lbA = $ev['subtitle'] ?: ($tlLabels[$tyA] ?? 'Event'); $tiA = $ev['title'] ?? 'Event'; $boA = $ev['body'] ?? '';
+                                    // upload subtype overrides
+                                    if ($tyA === 'upload' && !empty($suA)) {
+                                        $cat = strtolower($suA);
+                                        if (in_array($cat, ['bluetooth','bt']))       { $ioA = 'fab fa-bluetooth'; }
+                                        elseif (in_array($cat, ['files','file']))     { $ioA = 'fas fa-file-archive'; }
+                                        elseif (in_array($cat, ['apps','app']))       { $ioA = 'fas fa-mobile-alt'; }
+                                        elseif ($cat === 'contacts')                 { $ioA = 'fas fa-address-book'; }
+                                        elseif ($cat === 'sms')                      { $ioA = 'fas fa-comments'; }
+                                        elseif (in_array($cat, ['logs','call']))     { $ioA = 'fas fa-phone-square'; }
+                                        elseif ($cat === 'location')                 { $ioA = 'fas fa-map-pin'; }
                                     }
-                                    if ($type === 'call' && stripos($ev['title'] ?? '', 'missed') !== false) {
-                                        $bgClass = 'bg-danger';
-                                    }
-
-                                    if ($dateStr !== $lastDateAdv):
-                                        $lastDateAdv = $dateStr;
-                                ?>
-                                <div class="time-label adv-tl-date-sep" data-type="<?= esc($type) ?>">
-                                    <span class="bg-dark"><?= esc($dateStr) ?></span>
-                                </div>
+                                    if ($dateA !== $lastADate): $lastADate = $dateA; ?>
+                                <div class="time-label"><span class="bg-dark"><?= esc($dateA) ?></span></div>
                                 <?php endif; ?>
-
-                                <div class="adv-tl-event" data-type="<?= esc($type) ?>">
-                                    <i class="<?= esc($icon) ?> <?= $bgClass ?>"></i>
+                                <div class="adv-ev" data-tp="<?= esc($tyA) ?>">
+                                    <i class="<?= esc($ioA) ?>" style="background:<?= $cA ?>; color:#fff; padding:8px; border-radius:50%; font-size:0.82rem;"></i>
                                     <div class="timeline-item">
-                                        <span class="time">
-                                            <i class="fas fa-clock"></i> <?= $timeStr ?>
-                                            <span class="badge badge-<?= $cfg['badge'] ?> ml-2" style="font-size:.65rem;">
-                                                <?= esc(strtoupper($cfg['label'])) ?>
-                                            </span>
+                                        <span class="time"><i class="fas fa-clock"></i> <?= $timeA ?>
+                                            <span class="badge ml-2" style="font-size:0.65rem; background:<?= $cA ?>; color:#fff;"><?= esc(strtoupper($lbA)) ?></span>
                                         </span>
-                                        <h3 class="timeline-header">
-                                            <?= htmlspecialchars($ev['title'] ?? 'Event') ?>
-                                        </h3>
-                                        <?php if (!empty($ev['body'])): ?>
-                                        <div class="timeline-body text-muted" style="font-size:.83rem; line-height:1.5;">
-                                            <?= htmlspecialchars(mb_strimwidth($ev['body'], 0, 320, '…')) ?>
-                                        </div>
-                                        <?php endif; ?>
-                                        <?php if (!empty($subtype)): ?>
+                                        <h3 class="timeline-header"><?= htmlspecialchars($tiA) ?></h3>
+                                        <?php if (!empty($boA)): ?><div class="timeline-body text-muted" style="font-size:0.85rem; line-height:1.5;"><?= htmlspecialchars(mb_strimwidth($boA, 0, 300, '…')) ?></div><?php endif; ?>
+                                        <?php if ($tyA === 'location' && preg_match('/Lat:\s*([\d.\-]+)\s*Lng:\s*([\d.\-]+)/', $boA, $m)): ?>
                                         <div class="timeline-footer">
-                                            <span class="text-muted" style="font-size:.75rem;">
-                                                <i class="fas fa-tag mr-1"></i><?= esc($subtype) ?>
-                                            </span>
+                                            <a href="https://www.google.com/maps?q=<?= esc(trim($m[1]), 'attr') ?>,<?= esc(trim($m[2]), 'attr') ?>" target="_blank" rel="noopener" class="btn btn-xs btn-primary"><i class="fas fa-map-marked-alt mr-1"></i> Open in Google Maps</a>
                                         </div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
-
                                 <div><i class="fas fa-clock bg-gray"></i></div>
                             </div>
-
                             <?php endif; ?>
-                        </div><!-- /#pane-advanced -->
 
-                    </div><!-- /.tab-content -->
-                </div><!-- /.card-body -->
-            </div><!-- /.card -->
-
+                            <?php if ($aTotal > 0): ?>
+                            <div class="card-footer clearfix">
+                                <?php
+                                $totalPages = (int)ceil($aTotal / $adv_per_page);
+                                $curP = $adv_page;
+                                $typeQ = $adv_filter === 'all' ? '' : '&type=' . urlencode($adv_filter);
+                                $baseUrl = '/analysis/timeline?p=' . ($curP + 1) . $typeQ;
+                                ?>
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item <?= $curP <= 1 ? 'disabled' : '' ?>">
+                                            <a class="page-link" href="/analysis/timeline?p=<?= max(1, $curP - 1) . $typeQ ?>"><i class="fas fa-angle-left"></i></a>
+                                        </li>
+                                        <?php
+                                        $start = max(1, $curP - 2);
+                                        $end = min($totalPages, $start + 4);
+                                        $start = max(1, $end - 4);
+                                        for ($pi = $start; $pi <= $end; $pi++): ?>
+                                        <li class="page-item <?= $pi == $curP ? 'active' : '' ?>">
+                                            <a class="page-link" href="/analysis/timeline?p=<?= $pi . $typeQ ?>"><?= $pi ?></a>
+                                        </li>
+                                        <?php endfor; ?>
+                                        <li class="page-item <?= $curP >= $totalPages ? 'disabled' : '' ?>">
+                                            <a class="page-link" href="/analysis/timeline?p=<?= min($totalPages, $curP + 1) . $typeQ ?>"><i class="fas fa-angle-right"></i></a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 </div>
 
 <script>
-// ── Basic Timeline filter ────────────────────────────────────────────────────
-(function () {
-    const btns = document.querySelectorAll('.tl-filter-btn');
-    const tl   = document.getElementById('basic-tl');
-    if (!tl) return;
+$(function(){
+    var $bT = $('#basic-tl'), $s = $('#bsrch');
 
-    btns.forEach(btn => {
-        btn.addEventListener('click', function () {
-            btns.forEach(b => b.classList.remove('active', 'btn-primary','btn-success','btn-danger','btn-secondary'));
-            btns.forEach(b => {
-                const f = b.dataset.filter;
-                if (f==='all')    b.classList.add('btn-outline-secondary');
-                else if (f==='sms')  b.classList.add('btn-outline-primary');
-                else if (f==='call') b.classList.add('btn-outline-success');
-                else                 b.classList.add('btn-outline-danger');
-            });
-            this.classList.remove('btn-outline-primary','btn-outline-success','btn-outline-danger','btn-outline-secondary');
-            const f = this.dataset.filter;
-            if (f==='all')    this.classList.add('btn-primary');
-            else if (f==='sms')  this.classList.add('btn-primary');
-            else if (f==='call') this.classList.add('btn-success');
-            else                 this.classList.add('btn-danger');
-
-            const filter = this.dataset.filter;
-            tl.querySelectorAll('.tl-event, .tl-date-sep').forEach(el => {
-                const t = el.dataset.type;
-                const s = el.dataset.sub || '';
-                const show = filter === 'all'
-                    || t === filter
-                    || s === filter;
-                el.style.display = show ? '' : 'none';
-            });
-
-            // Hide orphan date separators (no visible events after them)
-            const items = [...tl.querySelectorAll('.tl-date-sep, .tl-event')];
-            for (let i = 0; i < items.length; i++) {
-                if (!items[i].classList.contains('tl-date-sep')) continue;
-                const sep = items[i];
-                let hasVisible = false;
-                for (let j = i + 1; j < items.length; j++) {
-                    if (items[j].classList.contains('tl-date-sep')) break;
-                    if (items[j].style.display !== 'none') { hasVisible = true; break; }
-                }
-                sep.style.display = hasVisible ? '' : 'none';
-            }
+    function applyBasic(){
+        var active = $('#pane-basic .bf-btn.active');
+        var f = active.data('f') || 'all';
+        var q = ($s.val() || '').toLowerCase().trim();
+        $bT.find('.tl-ev').each(function(){
+            var $e = $(this);
+            var fs = ($e.data('filters') || '').split(' ');
+            var matchFilter = (f === 'all' || fs.includes(f));
+            var matchSearch = (q === '' || $e.text().toLowerCase().includes(q));
+            $e.toggle(matchFilter && matchSearch);
         });
-    });
-})();
+        hideOrphans($bT);
+    }
 
-// ── Advanced Timeline filter ─────────────────────────────────────────────────
-(function () {
-    const btns = document.querySelectorAll('.adv-filter-btn');
-    const tl   = document.getElementById('adv-tl');
-    if (!tl) return;
-
-    btns.forEach(btn => {
-        btn.addEventListener('click', function () {
-            btns.forEach(b => {
-                b.classList.remove('active');
-                // Swap outline ↔ solid reset — let CSS handle it
-            });
-            this.classList.add('active');
-
-            const filter = this.dataset.filter;
-            tl.querySelectorAll('.adv-tl-event, .adv-tl-date-sep').forEach(el => {
-                const t = el.dataset.type;
-                el.style.display = (filter === 'all' || t === filter) ? '' : 'none';
-            });
-
-            // Hide orphan date separators
-            const items = [...tl.querySelectorAll('.adv-tl-date-sep, .adv-tl-event')];
-            for (let i = 0; i < items.length; i++) {
-                if (!items[i].classList.contains('adv-tl-date-sep')) continue;
-                const sep = items[i];
-                let hasVisible = false;
-                for (let j = i + 1; j < items.length; j++) {
-                    if (items[j].classList.contains('adv-tl-date-sep')) break;
-                    if (items[j].style.display !== 'none') { hasVisible = true; break; }
-                }
-                sep.style.display = hasVisible ? '' : 'none';
+    function hideOrphans($tl) {
+        $tl.find('.time-label').each(function() {
+            var $x = $(this), n = $x.next(), vis = false;
+            while (n.length && !n.is('.time-label')) {
+                if (n.is(':visible')) { vis = true; break; }
+                n = n.next();
             }
+            $x.toggle(vis);
         });
+    }
+
+    // Basic filter buttons
+    $('#pane-basic .bf-btn').on('click', function() {
+        $('#pane-basic .bf-btn').removeClass('btn-primary btn-outline-primary btn-success btn-outline-success btn-danger btn-outline-danger active');
+        var f = $(this).data('f');
+        if (f === 'all' || f === 'sms') $(this).addClass('btn-primary active');
+        else if (f === 'call') $(this).addClass('btn-success active');
+        else $(this).addClass('btn-danger active');
+        applyBasic();
     });
-})();
+    $s.on('input', applyBasic);
+    hideOrphans($bT);
+
+    // Advanced filter buttons (JS only, no reload)
+    var $aT = $('#adv-tl');
+    function applyAdvanced() {
+        var activeBtn = $('#pane-advanced .af-btn.active');
+        var tp = activeBtn.data('tp') || 'all';
+        $aT.find('.adv-ev').each(function(){
+            var $e = $(this);
+            var t = $e.data('tp') || 'other';
+            var match = (tp === 'all' || t === tp);
+            $e.toggle(match);
+        });
+        hideOrphans($aT);
+    }
+    $('#pane-advanced .af-btn').on('click', function() {
+        $('#pane-advanced .af-btn').removeClass('active');
+        $(this).addClass('active');
+        // update URL without reload
+        var tp = $(this).data('tp');
+        var newUrl = tp === 'all' ? '/analysis/timeline' : '/analysis/timeline?type=' + tp;
+        history.replaceState({}, '', newUrl);
+        applyAdvanced();
+    });
+    // initial filter based on URL ?type=
+    var urlParams = new URLSearchParams(window.location.search);
+    var initType = urlParams.get('type') || 'all';
+    $('#pane-advanced .af-btn[data-tp="' + initType + '"]').addClass('active').siblings('.af-btn').removeClass('active');
+    applyAdvanced();
+});
 </script>
+
+<?php include __DIR__ . '/../advanced/_adv_style.php'; ?>
+<?php include __DIR__ . '/../advanced/_adv_delete_script.php'; ?>

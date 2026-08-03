@@ -98,7 +98,10 @@ class BaseClientController extends BaseController
         } else {
             $this->session->set('active_device_id', $deviceId);
         }
-        return $this->response->redirect(previous_url() ?: base_url('home'));
+        // Use referrer or fall back to home, avoid 404 if referrer is missing
+        $referrer = $this->request->getServer('HTTP_REFERER');
+        $fallback = $referrer ?: base_url('home');
+        return $this->response->redirect($fallback);
     }
 
     /**
@@ -580,6 +583,26 @@ protected function getUserDataCounts(): array
             'files_urls' => $this->getFileNavigationUrls($viewType),
             // We can add counts here later if needed
         ], $paginationData);
+    }
+
+    /**
+     * Run a query with the standard 25‑row pagination used by every
+     * software‑detail page.
+     *
+     * @param \CodeIgniter\Database\BaseBuilder $builder
+     * @param int $perPage
+     * @return array [$rows, $pager, $total]
+     */
+    protected function paginate(\CodeIgniter\Database\BaseBuilder $builder, int $perPage = 25): array
+    {
+        $pager = \Config\Services::pager();
+        $page  = (int)($this->request->getGet('page') ?? 1);
+        $total = $builder->countAllResults(false);          // total rows (no limit)
+        $builder->limit($perPage, ($page - 1) * $perPage);
+        $rows  = $builder->get()->getResultArray();
+
+        $pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+        return [$rows, $pager, $total];
     }
 
     /**

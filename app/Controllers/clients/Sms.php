@@ -15,7 +15,13 @@ class Sms extends BaseClientController
      */
     public function index()
     {
-        return $this->view('all');
+        $totalSMS = $this->finderModel->get_count_Sms($this->userId);
+        $data = $this->getSmsCommonData('all');
+        $data = array_merge($data, [
+            'sms_dump' => $this->finderModel->get_sms($this->userId, $this->perPage),
+            'pager' => $this->finderModel->pager,
+        ]);
+        return $this->renderSmsView('users/sms/sms', $data);
     }
 
     /**
@@ -24,7 +30,13 @@ class Sms extends BaseClientController
      */
     public function inbox()
     {
-        return $this->view('inbox');
+        $totalSMS = $this->finderModel->get_count_SmsInbox($this->userId);
+        $data = $this->getSmsCommonData('inbox');
+        $data = array_merge($data, [
+            'sms_dump' => $this->finderModel->get_sms_type($this->userId, 'inbox', $this->perPage),
+            'pager' => $this->finderModel->pager,
+        ]);
+        return $this->renderSmsView('users/sms/inbox', $data);
     }
 
     /**
@@ -33,7 +45,13 @@ class Sms extends BaseClientController
      */
     public function sent()
     {
-        return $this->view('sent');
+        $totalSMS = $this->finderModel->get_count_SmsSent($this->userId);
+        $data = $this->getSmsCommonData('sent');
+        $data = array_merge($data, [
+            'sms_dump' => $this->finderModel->get_sms_type($this->userId, 'sent', $this->perPage),
+            'pager' => $this->finderModel->pager,
+        ]);
+        return $this->renderSmsView('users/sms/sent', $data);
     }
 
     /**
@@ -138,7 +156,7 @@ class Sms extends BaseClientController
             'totalSMS' => $totalSMS,
             'totalSmsInbox' => $totalSmsInbox,
             'totalSmsSent' => $totalSmsSent,
-        ], $paginationData);
+        ], $this->getDeviceViewData(), $paginationData);
     }
 
     /**
@@ -165,8 +183,14 @@ class Sms extends BaseClientController
      */
     protected function renderSmsView(string $mainView, array $extraData = []): string
     {
+        // Ensure totalSMS is passed to the view (used by sidebar)
+        if (!isset($extraData['totalSMS'])) {
+            $extraData['totalSMS'] = $this->finderModel->get_count_Sms($this->userId);
+        }
+        
         $data = array_merge([
             'user_info' => $this->userData,
+            'total_sms' => $extraData['totalSMS'],
         ], $this->getUserDataCounts(), $extraData);
 
         return view('headers_footers/head_users', $data)

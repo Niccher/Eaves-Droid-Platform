@@ -1,123 +1,43 @@
-<?php /** @var array $rows @var int $total @var string $nav_urls */ ?>
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-3 align-items-center">
-                <div class="col-lg-7">
-                    <div class="d-flex align-items-center flex-wrap">
-                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-photo-video text-primary mr-2"></i>Remote Media Forensic</h1>
-                        <span class="badge badge-primary border p-2"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
-                    </div>
-                    <p class="text-muted mt-1 mb-0">Multimedia files captured remotely via device commands</p>
-                </div>
-                <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
-            </div>
-        </div>
-    </section>
-
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card card-primary card-outline shadow-sm">
-                        <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-list mr-2"></i>Media Evidence <small class="text-muted ml-2"><?= count($rows) ?> entries</small></h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0">
-                                    <thead class="thead-light">
-                                        <tr>
-                                            <th><i class="fas fa-file-invoice mr-1"></i>File Info</th>
-                                            <th><i class="fas fa-tag mr-1"></i>Type</th>
-                                            <th><i class="fas fa-hdd mr-1"></i>Size</th>
-                                            <th><i class="fas fa-calendar-alt mr-1"></i>Captured At</th>
-                                            <th class="text-right"><i class="fas fa-cogs mr-1"></i>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (empty($rows)): ?>
-                                            <tr>
-                                                <td colspan="5" class="text-center py-5">
-                                                    <div class="empty-state">
-                                                        <i class="fas fa-photo-video fa-3x text-muted mb-3"></i>
-                                                        <h4>No media captured yet</h4>
-                                                        <p class="text-muted">Captured photos and audio recordings will appear here</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        <?php else: foreach ($rows as $r): ?>
-                                            <tr>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="adv-avatar mr-2">
-                                                            <i class="<?= ($r['media_type'] === 'image') ? 'fas fa-image text-info' : 'fas fa-microphone text-danger' ?>"></i>
-                                                        </div>
-                                                        <div>
-                                                            <div class="font-weight-bold"><?= htmlspecialchars($r['original_filename'] ?? '—') ?></div>
-                                                            <small class="text-muted"><?= htmlspecialchars($r['mime_type'] ?? '') ?></small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="badge badge-<?= ($r['media_type'] === 'image') ? 'info' : 'danger' ?>">
-                                                        <?= strtoupper($r['media_type']) ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <code><?= number_format(($r['file_size'] ?? 0) / 1024, 2) ?> KB</code>
-                                                </td>
-                                                <td>
-                                                    <small class="text-dark font-weight-bold"><?= date('M d, Y, H:i (l)', strtotime($r['created_at'])) ?></small>
-                                                </td>
-                                                <td class="text-right">
-                                                    <?php if ($r['media_type'] === 'image'): ?>
-                                                        <button class="btn btn-sm btn-outline-info view-media" 
-                                                                data-type="image" 
-                                                                data-url="<?= base_url('advanced/media/serve/' . $r['stored_filename']) ?>"
-                                                                data-title="<?= htmlspecialchars($r['original_filename']) ?>">
-                                                            <i class="fas fa-eye mr-1"></i> View
-                                                        </button>
-                                                    <?php else: ?>
-                                                        <button class="btn btn-sm btn-outline-danger view-media" 
-                                                                data-type="audio" 
-                                                                data-url="<?= base_url('advanced/media/serve/' . $r['stored_filename']) ?>"
-                                                                data-title="<?= htmlspecialchars($r['original_filename']) ?>">
-                                                            <i class="fas fa-play mr-1"></i> Play
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    <a href="<?= base_url('advanced/media/serve/' . $r['stored_filename']) ?>" class="btn btn-sm btn-outline-secondary" download title="Download">
-                                                        <i class="fas fa-download"></i>
-                                                    </a>
-                                                    <button class="btn btn-sm btn-outline-danger delete-media" 
-                                                            data-id="<?= $r['id'] ?>" 
-                                                            data-filename="<?= htmlspecialchars($r['original_filename']) ?>"
-                                                            title="Delete">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; endif; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="card-footer clearfix">
-                            <div class="float-right">
-                                <?php if (isset($pager)): ?>
-                                    <?= $pager->links('default', 'bootstrap5_full') ?>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-</div>
+<?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php
+    $actions = static function ($r) {
+        $type = $r['media_type'] ?? '';
+        $file = rawurlencode((string) ($r['stored_filename'] ?? ''));
+        $serve = base_url('advanced/media/serve/' . $file);
+        $title = htmlspecialchars((string) ($r['original_filename'] ?? ''), ENT_QUOTES);
+        $html = '';
+        if ($type === 'image') {
+            $html .= '<button class="btn btn-sm btn-outline-info view-media" data-type="image" data-url="' . esc($serve) . '" data-title="' . $title . '"><i class="fas fa-eye mr-1"></i> View</button>';
+        } else {
+            $html .= '<button class="btn btn-sm btn-outline-danger view-media" data-type="audio" data-url="' . esc($serve) . '" data-title="' . $title . '"><i class="fas fa-play mr-1"></i> Play</button>';
+        }
+        $html .= ' <a href="' . esc($serve) . '" class="btn btn-sm btn-outline-secondary" download title="Download"><i class="fas fa-download"></i></a>';
+        $html .= ' <button class="btn btn-sm btn-outline-danger delete-media" data-id="' . (int) ($r['id'] ?? 0) . '" data-filename="' . $title . '" title="Delete"><i class="fas fa-trash"></i></button>';
+        return $html;
+    };
+?>
+<?= view('users/advanced/_card_table', [
+    'title'    => 'Remote Media Forensic',
+    'subtitle' => 'Multimedia files captured remotely via device commands',
+    'icon'     => 'fas fa-photo-video',
+    'tableId'  => 'remoteMediaTable',
+    'columns'  => [
+        ['field' => 'original_filename', 'label' => 'File Info',       'format' => 'text'],
+        ['field' => 'mime_type',         'label' => 'MIME',            'format' => 'code'],
+        ['field' => 'media_type',        'label' => 'Type',            'format' => 'badge', 'map' => ['image' => 'info', 'audio' => 'danger'], 'default' => 'secondary'],
+        ['field' => 'file_size',         'label' => 'Size',            'format' => 'bytes'],
+        ['field' => 'created_at_display','label' => 'Captured At',     'format' => 'text'],
+    ],
+    'secondary' => [
+        ['field' => 'stored_filename', 'label' => 'Stored Filename', 'format' => 'code'],
+        ['field' => 'device_id',       'label' => 'Device ID',       'format' => 'text'],
+    ],
+    'rows'     => $rows,
+    'pager'    => $pager,
+    'total'    => $total,
+    'nav_urls' => $nav_urls ?? '',
+    'actions'  => $actions,
+]) ?>
 
 <!-- Image View Modal -->
 <div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -168,7 +88,8 @@
 
 <script>
 $(function() {
-    $('.view-media').on('click', function() {
+    $('.view-media').on('click', function(e) {
+        e.stopPropagation();
         const type = $(this).data('type');
         const url = $(this).data('url');
         const title = $(this).data('title');
@@ -184,7 +105,7 @@ $(function() {
             $('#audioModalTitle').text('Playing: ' + title);
             $('#audioFilename').text(title);
             $('#audioModal').modal('show');
-            
+
             // Auto play when modal shows
             $('#audioModal').on('shown.bs.modal', function () {
                 audio.play().catch(e => console.log("Autoplay blocked or error:", e));
@@ -193,7 +114,8 @@ $(function() {
     });
 
     // Delete Media Logic
-    $('.delete-media').on('click', function() {
+    $('.delete-media').on('click', function(e) {
+        e.stopPropagation();
         const id = $(this).data('id');
         const filename = $(this).data('filename');
         const $row = $(this).closest('tr');
@@ -225,7 +147,7 @@ $(function() {
                     const $totalBadge = $('.badge-primary b');
                     const newTotal = parseInt($totalBadge.text()) - 1;
                     $totalBadge.text(newTotal);
-                    
+
                     if ($('tbody tr').length === 0) {
                         location.reload(); // Reload to show empty state if last row deleted
                     }
@@ -243,5 +165,3 @@ $(function() {
     });
 });
 </script>
-
-<?php include __DIR__ . '/_adv_style.php'; ?>

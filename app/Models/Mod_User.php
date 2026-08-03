@@ -495,6 +495,7 @@ class Mod_User extends Model
             }
 
             $devices = $builder
+                ->select('tbl_device_profile.*, tbl_device_profile.created_at')
                 ->groupBy('tbl_device_profile.device_id')
                 ->orderBy('extraction_timestamp', 'DESC')
                 ->get()

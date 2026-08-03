@@ -16,6 +16,7 @@ class Mod_Finder extends Model
     protected $validationMessages = [];
     protected $skipValidation = false;
     public $pager; // Changed from protected to public
+    private $total_timeline = 0;
 
     protected ?string $deviceId = null;
 
@@ -678,7 +679,7 @@ class Mod_Finder extends Model
     public function get_contacts1(int $userId, int $perPage = 25): array
     {
         try {
-            $builder = $this->db->table('tbl_contacts');
+            $builder = $this->fq('tbl_contacts', $userId);
 
             // Get total count for pagination
             $total = $this->get_count_Contacts($userId);
@@ -694,7 +695,6 @@ class Mod_Finder extends Model
                 phone_numbers,
                 phone_count
             ')
-                ->where('owner_id', $userId)
                 ->orderBy('display_name', 'ASC')
                 ->limit($perPage, $offset)
                 ->get()
@@ -729,7 +729,7 @@ class Mod_Finder extends Model
     public function get_contacts(int $userId, int $perPage = 25): array
     {
         try {
-            $builder = $this->db->table('tbl_contacts');
+            $builder = $this->fq('tbl_contacts', $userId);
 
             // Get total count for pagination
             $total = $this->get_count_Contacts($userId);
@@ -750,7 +750,6 @@ class Mod_Finder extends Model
             device_id,
             created_at
         ')
-                ->where('owner_id', $userId)
                 ->orderBy('display_name', 'ASC')
                 ->limit($perPage, $offset)
                 ->get()
@@ -1692,6 +1691,25 @@ class Mod_Finder extends Model
             log_message('error', 'get_accounts: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Returns a query builder for accounts (no limit/offset) to be paginated by the controller.
+     */
+    public function getAccountsQuery(int $user_id): \CodeIgniter\Database\BaseBuilder
+    {
+        return $this->fq('tbl_accounts', $user_id)
+            ->select('id, owner_id, device_id, account_name, account_type, summary_json, total_count, extracted_at, created_at, updated_at, account_label, is_syncable, sync_auto, sync_interval, last_sync_time, last_sync_result, last_sync_error, user_data, auth_token_type, features')
+            ->orderBy('account_type', 'ASC');
+    }
+
+    /**
+     * Generic query builder for a software table (owner/device filtered),
+     * no limit/offset so the controller can paginate it uniformly.
+     */
+    public function tableQuery(string $table, int $userId, string $orderCol = 'extracted_at', string $orderDir = 'DESC'): \CodeIgniter\Database\BaseBuilder
+    {
+        return $this->fq($table, $userId)->orderBy($orderCol, $orderDir);
     }
 
     public function get_calendar_events(int $user_id, int $perPage = 25): array
@@ -3876,7 +3894,7 @@ class Mod_Finder extends Model
     public function get_unified_timeline(int $userId, int $limit = 100): array
     {
         $timeline = [];
-        $src      = (int) ceil($limit / 6); // per-source cap
+        $src      = (int) ceil($limit / 10); // per-source cap
 
         // ── 1. SMS ────────────────────────────────────────────────────────────
         try {
@@ -4057,25 +4075,53 @@ class Mod_Finder extends Model
                 ->select('name, path, size_bytes, last_modified, mime_type')
                 ->where('owner_id', $userId)
                 ->where('last_modified >', 0)
+                ->where('size_bytes >', 0)
+                ->groupStart()
+                    ->notLike('path', '%/Movies/.thumbnails%')
+                    ->notLike('path', '/data/user/0/%')
+                    ->notLike('name', '%.thumbnail%')
+                    ->notLike('name', '%.nomedia%')
+                ->groupEnd()
                 ->orderBy('last_modified', 'DESC')
                 ->limit($src)
                 ->get()->getResultArray();
 
             foreach ($rows as $r) {
-                $size  = $r['size_bytes'] > 0 ? round($r['size_bytes'] / 1024, 1) . ' KB' : 'unknown size';
-                $mime  = !empty($r['mime_type']) ? ' · ' . $r['mime_type'] : '';
+                $sizeBytes = (int)($r['size_bytes'] ?? 0);
+                $sizeHuman = $this->humanFileSize($sizeBytes);
+                $mime = $r['mime_type'] ?? '';
+                $ext  = strtolower(pathinfo($r['name'] ?? '', PATHINFO_EXTENSION));
+                // Determine file category for icon/label
+                $fileIcon = 'fas fa-file';
+                $fileLabel = 'File';
+                if ($mime) {
+                    if (strpos($mime, 'pdf') !== false) { $fileIcon = 'fas fa-file-pdf'; $fileLabel = 'PDF'; }
+                    elseif (strpos($mime, 'image') !== false) { $fileIcon = 'fas fa-file-image'; $fileLabel = 'Image'; }
+                    elseif (strpos($mime, 'video') !== false) { $fileIcon = 'fas fa-file-video'; $fileLabel = 'Video'; }
+                    elseif (strpos($mime, 'audio') !== false) { $fileIcon = 'fas fa-file-audio'; $fileLabel = 'Audio'; }
+                    elseif (strpos($mime, 'text') !== false) { $fileIcon = 'fas fa-file-alt'; $fileLabel = 'Text'; }
+                    elseif (strpos($mime, 'zip') !== false || strpos($mime, 'compressed') !== false) { $fileIcon = 'fas fa-file-archive'; $fileLabel = 'Archive'; }
+                } elseif ($ext) {
+                    if (in_array($ext, ['pdf'])) { $fileIcon = 'fas fa-file-pdf'; $fileLabel = 'PDF'; }
+                    elseif (in_array($ext, ['jpg','jpeg','png','gif','webp','bmp'])) { $fileIcon = 'fas fa-file-image'; $fileLabel = 'Image'; }
+                    elseif (in_array($ext, ['mp4','mkv','mov','avi','3gp'])) { $fileIcon = 'fas fa-file-video'; $fileLabel = 'Video'; }
+                    elseif (in_array($ext, ['mp3','wav','ogg','m4a','aac'])) { $fileIcon = 'fas fa-file-audio'; $fileLabel = 'Audio'; }
+                    elseif (in_array($ext, ['txt','log','csv','json','xml','html','md'])) { $fileIcon = 'fas fa-file-alt'; $fileLabel = 'Text'; }
+                    elseif (in_array($ext, ['zip','rar','7z','tar','gz'])) { $fileIcon = 'fas fa-file-archive'; $fileLabel = 'Archive'; }
+                    elseif (in_array($ext, ['apk'])) { $fileIcon = 'fas fa-file-code'; $fileLabel = 'APK'; }
+                }
+
                 $timeline[] = [
                     'type'     => 'file',
-                    'subtitle' => 'file',
+                    'subtitle' => $fileLabel,
                     'title'    => 'File: ' . ($r['name'] ?? 'Unknown'),
-                    'body'     => 'Path: ' . ($r['path'] ?? '?') . ' · Size: ' . $size . $mime,
+                    'body'     => 'Path: ' . ($r['path'] ?? '?') . ' · Size: ' . $sizeHuman . ($mime ? ' · ' . $mime : ''),
                     'time'     => (int) ($r['last_modified'] ?? 0),
-                    'icon'     => 'fas fa-file-alt',
+                    'icon'     => $fileIcon,
                     'color'    => 'bg-secondary',
                 ];
             }
         } catch (\Throwable $e) { log_message('error', 'timeline Files: ' . $e->getMessage()); }
-
         // ── 8. Data upload/receive events (tbl_receive) ───────────────────────
         try {
             $cols = $this->db->query("SHOW COLUMNS FROM tbl_receive")->getResultArray();
@@ -4101,10 +4147,174 @@ class Mod_Finder extends Model
             }
         } catch (\Throwable $e) { log_message('error', 'timeline Receive: ' . $e->getMessage()); }
 
-        // ── Sort all events DESC by time and slice ────────────────────────────
+        // ── 9. Health data ─────────────────────────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_health_data')
+                ->select('data_type, value, unit, start_time, end_time, step_count, distance_meters, calories_kcal, sleep_stage, heart_rate_bpm, workout_type, workout_duration_seconds')
+                ->where('owner_id', $userId)
+                ->where('end_time >', 0)
+                ->orderBy('end_time', 'DESC')
+                ->limit($src)
+                ->get()->getResultArray();
+
+            $healthIcons = [
+                'steps'      => 'fas fa-shoe-prints',
+                'heart_rate' => 'fas fa-heartbeat',
+                'sleep'      => 'fas fa-moon',
+                'workout'    => 'fas fa-dumbbell',
+                'distance'   => 'fas fa-road',
+                'calories'   => 'fas fa-fire',
+            ];
+            foreach ($rows as $r) {
+                $dtype = strtolower($r['data_type'] ?? 'health');
+                $body = '';
+                $icon = $healthIcons[$dtype] ?? 'fas fa-heartbeat';
+                $color = 'bg-pink';
+                $title = 'Health: ' . ucfirst($dtype);
+
+                if ($dtype === 'steps' && !empty($r['step_count'])) {
+                    $title = 'Steps Recorded';
+                    $body = number_format((int)$r['step_count']) . ' steps';
+                } elseif ($dtype === 'heart_rate' && !empty($r['heart_rate_bpm'])) {
+                    $title = 'Heart Rate Measured';
+                    $body = $r['heart_rate_bpm'] . ' bpm';
+                } elseif ($dtype === 'sleep' && !empty($r['sleep_stage'])) {
+                    $title = 'Sleep Tracked';
+                    $body = 'Stage: ' . $r['sleep_stage']
+                        . ($r['value'] > 0 ? ' · ' . $r['value'] . ' ' . ($r['unit'] ?? '') : '');
+                } elseif ($dtype === 'workout' && !empty($r['workout_type'])) {
+                    $title = 'Workout: ' . $r['workout_type'];
+                    $dur = !empty($r['workout_duration_seconds']) ? ' · ' . floor($r['workout_duration_seconds'] / 60) . ' min' : '';
+                    $body = ($r['calories_kcal'] ? $r['calories_kcal'] . ' kcal' : '') . $dur;
+                    $icon = $healthIcons['workout'];
+                } elseif ($dtype === 'distance' && !empty($r['distance_meters'])) {
+                    $title = 'Distance Tracked';
+                    $body = round($r['distance_meters'] / 1000, 2) . ' km';
+                } elseif (!empty($r['value'])) {
+                    $body = $r['value'] . ' ' . ($r['unit'] ?? '');
+                }
+                $timeline[] = [
+                    'type'     => 'health',
+                    'subtitle' => $dtype,
+                    'title'    => $title,
+                    'body'     => $body,
+                    'time'     => (int) ($r['end_time'] ?? 0),
+                    'icon'     => $icon,
+                    'color'    => 'bg-pink',
+                ];
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline Health: ' . $e->getMessage()); }
+
+        // ── 10. Keyguard lock/unlock ───────────────────────────────────────────
+        try {
+            $rows = $this->db->table('tbl_keyguard_events')
+                ->select('event_type, timestamp, `method`, success, biometric_type')
+                ->where('owner_id', $userId)
+                ->where('timestamp >', 0)
+                ->orderBy('timestamp', 'DESC')
+                ->limit($src)
+                ->get()->getResultArray();
+
+            foreach ($rows as $r) {
+                $etype = strtolower($r['event_type'] ?? 'keyguard');
+                $method = $r['method'] ?? '';
+                $isSuccess = ($r['success'] ?? 0) == 1;
+                $bio = $r['biometric_type'] ?? '';
+
+                if (in_array($etype, ['screen_on', 'screen_off'])) {
+                    $title = $etype === 'screen_on' ? 'Screen Turned ON' : 'Screen Turned OFF';
+                    $icon = $etype === 'screen_on' ? 'fas fa-sun' : 'fas fa-moon';
+                    $color = $etype === 'screen_on' ? 'bg-warning' : 'bg-gray-dark';
+                    $body = '';
+                } elseif ($etype === 'user_present' || $etype === 'device_unlocked') {
+                    $title = $isSuccess ? 'Device Unlocked' : 'Unlock Attempt';
+                    $icon = $isSuccess ? 'fas fa-unlock' : 'fas fa-exclamation-triangle';
+                    $color = $isSuccess ? 'bg-success' : 'bg-danger';
+                    $parts = [];
+                    if ($method) $parts[] = 'Method: ' . $method;
+                    if ($bio) $parts[] = 'Biometric: ' . $bio;
+                    $body = implode(' · ', $parts);
+                } elseif (in_array($etype, ['locked', 'device_locked'])) {
+                    $title = 'Device Locked';
+                    $icon = 'fas fa-lock';
+                    $color = 'bg-secondary';
+                    $body = $method ? 'Method: ' . $method : '';
+                } else {
+                    $title = 'Keyguard: ' . ucfirst(str_replace('_', ' ', $etype));
+                    $icon = 'fas fa-shield-alt';
+                    $color = 'bg-secondary';
+                    $body = $method ?? '';
+                }
+
+                if (!$isSuccess && $etype !== 'screen_on' && $etype !== 'screen_off' && $etype !== 'device_locked') {
+                    $body = 'FAILED' . ($body ? ' · ' . $body : '');
+                }
+
+                $timeline[] = [
+                    'type'     => 'keyguard',
+                    'subtitle' => $etype,
+                    'title'    => $title,
+                    'body'     => $body,
+                    'time'     => (int) ($r['timestamp'] ?? 0),
+                    'icon'     => $icon,
+                    'color'    => $color,
+                ];
+            }
+        } catch (\Throwable $e) { log_message('error', 'timeline Keyguard: ' . $e->getMessage()); }
+
+        // Sort all events DESC by time and slice
         usort($timeline, fn($a, $b) => $b['time'] <=> $a['time']);
         return array_slice($timeline, 0, $limit);
     }
+
+    /**
+     * Unified timeline with optional type filtering and pagination.
+     */
+    public function get_unified_timeline_filtered(int $userId, string $filterType = 'all', int $perPage = 100, array $excludeTypes = []): array
+    {
+        $all = $this->get_unified_timeline($userId, 1000);
+        if (!empty($excludeTypes)) {
+            $all = array_filter($all, fn($e) => !in_array(($e['type'] ?? ''), $excludeTypes, true));
+            $all = array_values($all);
+        }
+        if ($filterType !== 'all') {
+            $all = array_filter($all, fn($e) => ($e['type'] ?? '') === $filterType);
+            $all = array_values($all);
+        }
+        $total = count($all);
+        $page = (int) (service('request')->getGet('p') ?? 1);
+        $offset = ($page - 1) * $perPage;
+        $pageData = array_slice($all, $offset, $perPage);
+
+        $this->pager = \Config\Services::pager();
+        $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+        $this->total_timeline = $total;
+
+        return $pageData;
+    }
+
+    public function get_timeline_total_page_count(): int
+    {
+        return $this->total_timeline ?? 0;
+    }
+
+    public function get_timeline_page(): int
+    {
+        return (int) (service('request')->getGet('p') ?? 1);
+    }
+
+    /**
+     * Human readable file size.
+     */
+    private function humanFileSize(int $bytes): string
+    {
+        if ($bytes <= 0) return '0 B';
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = floor(log($bytes, 1024));
+        $size = $bytes / pow(1024, $i);
+        return round($size, 1) . ' ' . $units[$i];
+    }
+
     /**
      * Privacy Audit: Analyze permissions for risk scoring.
      */
@@ -5347,9 +5557,7 @@ try {
                 ->limit($perPage, $offset)
                 ->get()->getResultArray();
             foreach ($results as &$r) {
-                foreach (['device_admin_apps' => 'device_admin_apps_json', 'app_permissions_map' => 'app_permissions_map_json', 'running_services' => 'running_services_json'] as $key => $field) {
-                    $r[$key] = json_decode($r[$field] ?? '{}', true);
-                }
+                // Keep JSON as strings to avoid memory exhaustion - view will handle truncation
                 $r['ts_display'] = $r['extracted_at'] ? date('Y-m-d H:i:s', (int)$r['extracted_at']) : '';
             }
             $this->pager = \Config\Services::pager();
@@ -6312,6 +6520,36 @@ try {
         }
     }
 
+    public function delete_battery_stats_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_battery_stats')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_battery_stats_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_camera_info_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_camera_info')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_camera_info_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete_device_profile_row(int $id, int $userId): bool
+    {
+        try {
+            return (bool) $this->db->table('tbl_device_profile')->where('id', $id)->where('owner_id', $userId)->delete();
+        } catch (\Exception $e) {
+            log_message('error', 'delete_device_profile_row: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Centralized Table Registry — maps every data table to its extractor category.
      * New extractors only need a new entry here to be included in unified delete/export.
@@ -6430,11 +6668,39 @@ try {
 
         // Other data
         'uploaded_files'    => 'uploaded_files',
+        'upload_queue'      => 'upload_queue',
         'captured_media'    => 'tbl_captured_media',
         'user_actions'      => 'tbl_user_actions',
         'device_config'     => 'tbl_device_config',
-        'app_defaults'      => 'tbl_app_defaults',
+
+        // Security & ML data
+        'tokens'            => 'tbl_tokens',
+        'blocklist'         => 'tbl_blocklist',
+        'ml_jobs'           => 'ml_jobs',
+        'ml_results'        => 'ml_results',
+        'ml_analysis_tracking' => 'ml_analysis_tracking',
     ];
+
+    /**
+     * Tables whose owner column differs from the default `owner_id`.
+     * Keyed by table name.
+     */
+    public const OWNER_COLUMN_OVERRIDES = [
+        'uploaded_files'        => 'token_owner_id',
+        'tbl_user_actions'      => 'user_id',
+        'tbl_device_config'     => 'user_id',
+        'ml_jobs'               => 'user_id',
+        'ml_results'            => 'user_id',
+        'ml_analysis_tracking'  => 'user_id',
+    ];
+
+    /**
+     * Resolves the correct owner column for a given table.
+     */
+    public function ownerColumnForTable(string $table): string
+    {
+        return self::OWNER_COLUMN_OVERRIDES[$table] ?? 'owner_id';
+    }
 
     /**
      * Nuclear delete — removes ALL user data from every registered table.
@@ -6451,6 +6717,13 @@ try {
         $totalDeleted = 0;
 
         try {
+            // Delete physical files FIRST so their DB rows are still resolvable.
+            $fileCount = $this->deleteUploadedFilesOnDisk($userId);
+            if ($fileCount > 0) {
+                $deleted['tbl_uploaded_files'] = $fileCount;
+                $totalDeleted += $fileCount;
+            }
+
             foreach (self::TABLE_REGISTRY as $category => $tables) {
                 $tableList = is_array($tables) ? $tables : [$tables];
 
@@ -6459,20 +6732,14 @@ try {
                         log_message('warning', 'deleteAllUserData: Table "{table}" does not exist, skipping.', ['table' => $table]);
                         continue;
                     }
-                    $count = $db->table($table)->where('owner_id', $userId)->countAllResults(false);
+                    $ownerColumn = $this->ownerColumnForTable($table);
+                    $count = $db->table($table)->where($ownerColumn, $userId)->countAllResults(false);
                     if ($count > 0) {
-                        $db->table($table)->where('owner_id', $userId)->delete();
+                        $db->table($table)->where($ownerColumn, $userId)->delete();
                         $deleted[$table] = $count;
                         $totalDeleted += $count;
                     }
                 }
-            }
-
-            // Also delete associated uploaded files on disk
-            $fileCount = $this->deleteUploadedFilesOnDisk($userId);
-            if ($fileCount > 0) {
-                $deleted['tbl_uploaded_files'] = $fileCount;
-                $totalDeleted += $fileCount;
             }
 
             $db->transComplete();
@@ -6498,24 +6765,75 @@ try {
      */
     private function deleteUploadedFilesOnDisk(int $userId): int
     {
+        $count = 0;
+
         try {
-            $model = new \App\Models\Mod_Uploaded_Files();
-            $records = $model->where('owner_id', $userId)->findAll();
-            $count = 0;
+            $db = $this->db;
+            $textDumpPath = WRITEPATH . 'uploads/text_dump/';
+
+            $records = $db->table('uploaded_files')
+                ->select('stored_filename, upload_path')
+                ->where('token_owner_id', $userId)
+                ->get()
+                ->getResultArray();
 
             foreach ($records as $record) {
-                $filePath = WRITEPATH . 'uploads/text_dump/' . ($record['new_name'] ?? '');
-                if ($filePath && file_exists($filePath)) {
-                    @unlink($filePath);
+                $stored = $record['stored_filename'] ?? '';
+                $path = $record['upload_path'] ?? ($textDumpPath . $stored);
+
+                if ($stored !== '' && $path !== '' && file_exists($path)) {
+                    @unlink($path);
                     $count++;
                 }
             }
 
-            $model->where('owner_id', $userId)->delete();
+            $db->table('uploaded_files')->where('token_owner_id', $userId)->delete();
+
+            $count += $this->deleteCapturedMediaOnDisk($userId);
             return $count;
         } catch (\Exception $e) {
             log_message('error', 'deleteUploadedFilesOnDisk: ' . $e->getMessage());
-            return 0;
+            return $count;
+        }
+    }
+
+    /**
+     * Deletes physical captured media (images/audio) associated with a user.
+     * Returns count of files deleted.
+     */
+    private function deleteCapturedMediaOnDisk(int $userId): int
+    {
+        $count = 0;
+
+        try {
+            $db = $this->db;
+            $records = $db->table('tbl_captured_media')
+                ->select('stored_filename, media_type')
+                ->where('owner_id', $userId)
+                ->get()
+                ->getResultArray();
+
+            foreach ($records as $record) {
+                $stored = $record['stored_filename'] ?? '';
+                if ($stored === '') {
+                    continue;
+                }
+
+                $dir = ($record['media_type'] ?? 'image') === 'audio'
+                    ? WRITEPATH . 'uploads/audio/'
+                    : WRITEPATH . 'uploads/captured/';
+
+                if (file_exists($dir . $stored)) {
+                    @unlink($dir . $stored);
+                    $count++;
+                }
+            }
+
+            $db->table('tbl_captured_media')->where('owner_id', $userId)->delete();
+            return $count;
+        } catch (\Exception $e) {
+            log_message('error', 'deleteCapturedMediaOnDisk: ' . $e->getMessage());
+            return $count;
         }
     }
 
@@ -6547,7 +6865,7 @@ try {
                 }
 
                 $builder = $this->db->table($table);
-                $builder->where('owner_id', $userId);
+                $builder->where($this->ownerColumnForTable($table), $userId);
                 $count = $builder->countAllResults(false);
 
                 if ($count > 0) {

@@ -1,85 +1,29 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-3 align-items-center">
-                <div class="col-lg-7">
-                    <div class="d-flex align-items-center flex-wrap">
-                        <h1 class="h2 mb-0 mr-3"><i class="fas fa-desktop text-secondary mr-2"></i>Screen State</h1>
-                        <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i>Total: <b><?= $total ?? 0 ?></b></span>
-                    </div>
-                    <p class="text-muted mt-1 mb-0">Screen on/off events, unlock attempts, and brightness levels</p>
-                </div>
-                <div class="col-lg-5 text-right"><?= $nav_urls ?></div>
-            </div>
-        </div>
-    </section>
-    <section class="content"><div class="container-fluid"><div class="row"><div class="col-12">
-        <div class="card card-secondary shadow-sm">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-list mr-2"></i>Events <small class="text-muted ml-2"><?= count($rows) ?> entries</small></h3>
-                <div class="card-tools"><button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button></div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="thead-light">
-                        <tr>
-                            <th><i class="fas fa-tag mr-1"></i>Event</th>
-                            <th><i class="fas fa-battery-half mr-1"></i>Battery</th>
-                            <th><i class="fas fa-key mr-1"></i>Unlock Method</th>
-                            <th><i class="fas fa-check-circle mr-1"></i>Success</th>
-                            <th><i class="fas fa-sun mr-1"></i>Brightness</th>
-                            <th><i class="fas fa-clock mr-1"></i>Timestamp</th>
-                            <th class="text-center"><i class="fas fa-cogs mr-1"></i>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php if (empty($rows)): ?>
-                            <tr><td colspan="7" class="text-center py-5">
-                                <div class="empty-state"><i class="fas fa-desktop fa-3x text-muted mb-3"></i><h4>No screen state data</h4><p class="text-muted">Events will appear here once extracted</p></div>
-                            </td></tr>
-                        <?php else: foreach ($rows as $r): ?>
-                            <tr>
-                                <td>
-                                    <?php $etype = strtolower($r['event_type'] ?? ''); ?>
-                                    <span class="badge badge-<?= str_contains($etype, 'off') ? 'danger' : 'success' ?> p-2">
-                                        <i class="fas fa-<?= str_contains($etype, 'off') ? 'power-off' : 'play' ?> mr-1"></i>
-                                        <?= htmlspecialchars($r['event_type'] ?? '—') ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if (isset($r['battery_level'])): ?>
-                                        <span class="badge badge-<?= (int)$r['battery_level'] > 20 ? 'success' : 'danger' ?> p-2"><?= (int)$r['battery_level'] ?>%</span>
-                                    <?php else: ?><span class="text-muted">—</span><?php endif; ?>
-                                </td>
-                                <td><span class="badge badge-info p-2"><?= htmlspecialchars($r['unlock_method'] ?? '—') ?></span></td>
-                                <td class="text-center">
-                                    <?= isset($r['unlock_success']) && $r['unlock_success'] !== null ? ($r['unlock_success'] ? '<span class="badge badge-success p-2">Yes</span>' : '<span class="badge badge-danger p-2">No</span>') : '<span class="text-muted">—</span>' ?>
-                                </td>
-                                <td>
-                                    <?php if (isset($r['screen_brightness'])): ?>
-                                        <span class="badge badge-warning p-2"><?= (int)$r['screen_brightness'] ?></span>
-                                    <?php else: ?><span class="text-muted">—</span><?php endif; ?>
-                                </td>
-                                <td><?= !empty($r['timestamp']) ? format_timestamp_display((int)$r['timestamp']) : '<span class="text-muted">—</span>' ?></td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-danger delete-row"
-                                            data-id="<?= $r['id'] ?? '' ?>"
-                                            data-url="<?= base_url('advanced/software/screen_state/delete') ?>"
-                                            title="Delete this row">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card-footer"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
-        </div>
-    </div></div></div></section>
-</div>
-<?php include __DIR__ . '/_adv_style.php'; ?>
-<?php include __DIR__ . '/_adv_delete_script.php'; ?>
+
+<?= view('users/advanced/_card_table', [
+    'title'    => 'Screen State',
+    'subtitle' => 'Screen on/off events, unlock attempts, and brightness levels',
+    'tableId'  => 'screenStateTable',
+    'columns'  => [
+        ['field' => 'event_type',        'label' => 'Event',        'format' => 'badge', 'map' => ['off' => 'danger', 'screen_off' => 'danger', 'OFF' => 'danger', 'SCREEN_OFF' => 'danger', 'power_off' => 'danger'], 'default' => 'success', 'icon' => 'fas fa-power-off'],
+        ['field' => 'timestamp',         'label' => 'Timestamp',    'format' => 'timestamp', 'icon' => 'fas fa-clock'],
+        ['field' => 'battery_level',     'label' => 'Battery',      'format' => 'percent', 'icon' => 'fas fa-battery-three-quarters'],
+        ['field' => 'unlock_method',     'label' => 'Unlock Method','format' => 'badge', 'default' => 'info', 'icon' => 'fas fa-key'],
+        ['field' => 'unlock_success',    'label' => 'Success',      'format' => 'yesno', 'icon' => 'fas fa-check'],
+        ['field' => 'screen_brightness', 'label' => 'Brightness',   'format' => 'text', 'icon' => 'fas fa-sun'],
+    ],
+    'secondary' => [
+        ['field' => 'failed_attempts',     'label' => 'Failed Attempts', 'format' => 'text', 'icon' => 'fas fa-times-circle'],
+        ['field' => 'strong_auth_required','label' => 'Strong Auth Required', 'format' => 'yesno', 'icon' => 'fas fa-shield-alt'],
+        ['field' => 'auto_brightness',     'label' => 'Auto Brightness', 'format' => 'yesno', 'icon' => 'fas fa-adjust'],
+        ['field' => 'doze_state',          'label' => 'Doze State',      'format' => 'text', 'icon' => 'fas fa-moon'],
+        ['field' => 'keyguard_state',      'label' => 'Keyguard State',  'format' => 'text', 'icon' => 'fas fa-lock'],
+        ['field' => 'extracted_at',        'label' => 'Extracted',       'format' => 'timestamp', 'icon' => 'fas fa-clock'],
+    ],
+    'rows'      => $rows,
+    'pager'     => $pager,
+    'total'     => $total,
+    'nav_urls'  => $nav_urls,
+    'perPage'  => 25,
+    'deleteUrl' => base_url('advanced/software/screen_state/delete'),
+]) ?>
