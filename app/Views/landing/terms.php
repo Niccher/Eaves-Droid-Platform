@@ -11,6 +11,22 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-3">
+                    <style>
+                        .nav-pills .nav-link {
+                            color: #007bff;
+                            border: 1px solid transparent;
+                        }
+                        .nav-pills .nav-link:hover {
+                            border-color: #007bff;
+                        }
+                        .nav-pills .nav-link.active,
+                        .nav-pills .show > .nav-link {
+                            background-color: #ffffff;
+                            color: #007bff;
+                            border: 1px solid #007bff;
+                            font-weight: 700;
+                        }
+                    </style>
                     <!-- Terms Navigation -->
                     <div class="card card-primary card-outline shadow-sm sticky-top" style="top: 20px;">
                         <div class="card-header">

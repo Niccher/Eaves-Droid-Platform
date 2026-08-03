@@ -207,6 +207,56 @@
                     </div>
                     <?php endif; ?>
 
+                    <!-- App Results -->
+                    <?php if (!empty($results['apps'])): ?>
+                    <div class="card card-outline card-info shadow-sm mb-4">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fab fa-android mr-2"></i>
+                                Apps (<?= count($results['apps']) ?>)
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0 tabledump">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>App</th>
+                                            <th>Package</th>
+                                            <th>Version</th>
+                                            <th>Size</th>
+                                            <th>Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($results['apps'] as $app): ?>
+                                        <tr>
+                                            <td class="font-weight-bold">
+                                                <?php if (!empty($app['app_icon'])): ?>
+                                                    <img src="data:image/png;base64,<?= esc($app['app_icon']) ?>" class="rounded-circle mr-2" style="width:24px;height:24px;" onerror="this.style.display='none';">
+                                                <?php endif; ?>
+                                                <?= esc($app['Name']) ?>
+                                            </td>
+                                            <td class="text-sm"><?= esc($app['Package']) ?></td>
+                                            <td><?= esc($app['Version'] ?: 'N/A') ?></td>
+                                            <td><?= $app['AppSize'] > 0 ? number_format($app['AppSize'] / 1048576, 2) . ' MB' : '—' ?></td>
+                                            <td>
+                                                <span class="badge badge-<?= $app['IsSystem'] ? 'success' : 'info' ?>">
+                                                    <?= $app['IsSystem'] ? 'System' : 'User' ?>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                 <?php endif; ?>
 
             </div>

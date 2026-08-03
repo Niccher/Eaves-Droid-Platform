@@ -36,6 +36,7 @@ $routes->get('download', 'Home::landing_download', ['as' => 'download']);
 $routes->get('aboutus', 'Home::landing_aboutus', ['as' => 'about']);
 $routes->get('faqs_terms', 'Home::landing_faqs', ['as' => 'faqs']);
 $routes->get('how_to', 'Home::landing_how_to', ['as' => 'how-to']);
+$routes->get('privacy-policy', 'Home::landing_privacy', ['as' => 'privacy-policy']);
 $routes->get('pricing', 'Home::landing_prices', ['as' => 'pricing']);
 
 // Contact Form (GET for view, POST for submission)
@@ -225,11 +226,12 @@ $routes->group('', [
     $routes->get('home', 'Client::home', ['as' => 'client-dashboard']);
 
     /**
-     * Handles universal search across SMS, Calls, Contacts, and Files.
+     * Handles universal search across SMS, Calls, Contacts, Files, and Apps.
      *
      * @return string
      */
     $routes->get('globalsearch', 'GlobalSearch::index', ['as' => 'global-search']);
+    $routes->get('globalsearch/(:any)', 'GlobalSearch::search/$1');
 
 
     /**

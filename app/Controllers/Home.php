@@ -54,6 +54,16 @@ class Home extends BaseController
             . view('headers_footers/footer_landing');
     }
 
+    public function landing_privacy($pg = 'privacy'){
+        $data['pag']        = 'privacy-policy';
+        $data['page_title'] = 'Privacy Policy | Eaves Droid';
+        $data['page_desc']  = 'Read the Eaves Droid Privacy Policy to understand how we collect, use, store, and protect your mobile data when you use our intelligence platform.';
+        $data['page_keys']  = 'eaves droid privacy policy, data privacy, mobile data protection, data security, privacy terms';
+        return view('headers_footers/head_landing', $data)
+            . view('landing/privacy')
+            . view('headers_footers/footer_landing');
+    }
+
     public function landing_how_to($pg = 'howto'){
         $data['pag']        = 'howto';
         $data['page_title'] = 'How It Works | Eaves Droid';

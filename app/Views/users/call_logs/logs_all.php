@@ -38,12 +38,15 @@
                         <!-- Main Card -->
                         <div class="card card-secondary shadow-sm">
                             <div class="card-header">
-                                <h3 class="card-title">
+                                <h3 class="card-title text-white">
                                     <i class="fas fa-history mr-2"></i>
                                     Call History
-                                    <small class="text-muted ml-2">Showing <?php echo count($call_logs_dump) ?> of <?php echo $totalCalls ?? 0 ?> calls</small>
+                                    <small class="text-white ml-2">Showing <?php echo count($call_logs_dump) ?> of <?php echo $totalCalls ?? 0 ?> calls</small>
                                 </h3>
-                                <div class="card-tools my-2">
+                                <div class="card-tools ml-auto my-2">
+                                    <button type="button" class="btn btn-success btn-sm" id="pdfExport" title="Export PDF">
+                                        <i class="fas fa-file-pdf mr-1"></i> Export
+                                    </button>
                                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                         <i class="fas fa-minus"></i>
                                     </button>
@@ -434,6 +437,32 @@ $(document).ready(function() {
                     }
                 });
             }
+            });
+        });
+
+        // PDF Export
+        $('#pdfExport').on('click', function () {
+            var element = document.querySelector('.table-sortable');
+            if (!element) return;
+            Swal.fire({
+                title: 'Generating PDF...',
+                text: 'Please wait while we prepare your document',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            html2pdf().set({
+                margin:       10,
+                filename:     'call_logs_export_' + Date.now() + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, letterRendering: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            }).from(element).save().then(function () {
+                Swal.close();
+                Swal.fire({ icon: 'success', title: 'Export Complete', text: 'PDF has been downloaded', timer: 2000, showConfirmButton: false });
+            }).catch(function () {
+                Swal.close();
+                Swal.fire({ icon: 'error', title: 'Export Failed', text: 'Could not generate PDF', timer: 3000, showConfirmButton: false });
+            });
         });
     });
 });

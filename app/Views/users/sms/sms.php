@@ -17,7 +17,7 @@
                                 </span>
                             </div>
                         </div>
-                        <p class="text-muted mt-2 mb-0">View and manage all your SMS messages</p>
+                        <p class="text-white mt-2 mb-0">View and manage all your SMS messages</p>
                     </div>
                     <div class="col-lg-4 col-md-6">
                         <div class="float-right mt-2">
@@ -41,10 +41,13 @@
                                 <h3 class="card-title">
                                     <i class="fas fa-comments mr-2"></i>
                                     SMS Messages
-                                    <small class="text-muted ml-2">Showing <?php echo count($sms_dump) ?>
+                                    <small class="text-white ml-2">Showing <?php echo count($sms_dump) ?>
                                         of <?php echo $totalSMS ?? 0 ?> messages</small>
                                 </h3>
-                                <div class="card-tools my-2">
+                                <div class="card-tools ml-auto my-2">
+                                    <button type="button" class="btn btn-success btn-sm" id="pdfExport" title="Export PDF">
+                                        <i class="fas fa-file-pdf mr-1"></i> Export
+                                    </button>
                                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                         <i class="fas fa-minus"></i>
                                     </button>
@@ -782,4 +785,30 @@
                 });
             });
         });
-    </script>
+
+        // PDF Export
+        $('#pdfExport').on('click', function () {
+            var element = document.querySelector('.table-sortable');
+            if (!element) return;
+            Swal.fire({
+                title: 'Generating PDF...',
+                text: 'Please wait while we prepare your document',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            html2pdf().set({
+                margin:       10,
+                filename:     'sms_export_' + Date.now() + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, letterRendering: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            }).from(element).save().then(function () {
+                Swal.close();
+                Swal.fire({ icon: 'success', title: 'Export Complete', text: 'PDF has been downloaded', timer: 2000, showConfirmButton: false });
+            }).catch(function () {
+                Swal.close();
+                Swal.fire({ icon: 'error', title: 'Export Failed', text: 'Could not generate PDF', timer: 3000, showConfirmButton: false });
+            });
+        });
+    });
+</script>

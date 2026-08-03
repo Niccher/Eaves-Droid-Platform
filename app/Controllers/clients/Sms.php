@@ -30,7 +30,7 @@ class Sms extends BaseClientController
      */
     public function inbox()
     {
-        $totalSMS = $this->finderModel->get_count_SmsInbox($this->userId);
+        $totalSMS = $this->finderModel->get_count_Sms_category($this->userId, 'inbox');
         $data = $this->getSmsCommonData('inbox');
         $data = array_merge($data, [
             'sms_dump' => $this->finderModel->get_sms_type($this->userId, 'inbox', $this->perPage),
@@ -45,7 +45,7 @@ class Sms extends BaseClientController
      */
     public function sent()
     {
-        $totalSMS = $this->finderModel->get_count_SmsSent($this->userId);
+        $totalSMS = $this->finderModel->get_count_Sms_category($this->userId, 'sent');
         $data = $this->getSmsCommonData('sent');
         $data = array_merge($data, [
             'sms_dump' => $this->finderModel->get_sms_type($this->userId, 'sent', $this->perPage),

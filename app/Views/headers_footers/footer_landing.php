@@ -33,6 +33,7 @@
                         <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">FAQ</a></li>
                         <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">Terms of Service</a></li>
                         <li class="mb-3"><a href="<?= base_url('how_to') ?>" class="text-light hover-primary">How It Works</a></li>
+                        <li class="mb-3"><a href="<?= base_url('privacy-policy') ?>" class="text-light hover-primary">Privacy Policy</a></li>
                     </ul>
                 </div>
             </div>

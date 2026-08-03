@@ -3416,69 +3416,161 @@ class Mod_Finder extends Model
     /**
      * Search SMS by keyword.
      */
-    public function search_sms(int $userId, string $query): array
+    public function search_sms(int $userId, string $query, int $limit = 0, int $offset = 0): array
     {
-        return $this->db->table('tbl_sms')
+        $builder = $this->db->table('tbl_sms')
             ->select('address as Number, body as Message, sms_date as Date, sms_type as Type')
             ->where('owner_id', $userId)
             ->groupStart()
             ->like('address', $query)
             ->orLike('body', $query)
             ->groupEnd()
-            ->orderBy('sms_date', 'DESC')
-            ->get()
-            ->getResultArray();
+            ->orderBy('sms_date', 'DESC');
+
+        if ($limit > 0) {
+            $builder->limit($limit, $offset);
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
+    public function search_sms_count(int $userId, string $query): int
+    {
+        return (int) $this->db->table('tbl_sms')
+            ->where('owner_id', $userId)
+            ->groupStart()
+            ->like('address', $query)
+            ->orLike('body', $query)
+            ->groupEnd()
+            ->countAllResults(false);
     }
 
     /**
      * Search Call Logs by keyword.
      */
-    public function search_calls(int $userId, string $query): array
+    public function search_calls(int $userId, string $query, int $limit = 0, int $offset = 0): array
     {
-        return $this->db->table('tbl_logs')
+        $builder = $this->db->table('tbl_logs')
             ->select('contact_name as Name, phone_number as Number, call_date as Date, call_type as Type, duration_seconds as Duration')
             ->where('owner_id', $userId)
             ->groupStart()
             ->like('contact_name', $query)
             ->orLike('phone_number', $query)
             ->groupEnd()
-            ->orderBy('call_date', 'DESC')
-            ->get()
-            ->getResultArray();
+            ->orderBy('call_date', 'DESC');
+
+        if ($limit > 0) {
+            $builder->limit($limit, $offset);
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
+    public function search_calls_count(int $userId, string $query): int
+    {
+        return (int) $this->db->table('tbl_logs')
+            ->where('owner_id', $userId)
+            ->groupStart()
+            ->like('contact_name', $query)
+            ->orLike('phone_number', $query)
+            ->groupEnd()
+            ->countAllResults(false);
     }
 
     /**
      * Search Contacts by keyword.
      */
-    public function search_contacts(int $userId, string $query): array
+    public function search_contacts(int $userId, string $query, int $limit = 0, int $offset = 0): array
     {
-        return $this->db->table('tbl_contacts')
+        $builder = $this->db->table('tbl_contacts')
             ->select('display_name as Name, phone_numbers as Number, last_contacted, contact_id')
             ->where('owner_id', $userId)
             ->groupStart()
             ->like('display_name', $query)
             ->orLike('phone_numbers', $query)
             ->groupEnd()
-            ->orderBy('display_name', 'ASC')
-            ->get()
-            ->getResultArray();
+            ->orderBy('display_name', 'ASC');
+
+        if ($limit > 0) {
+            $builder->limit($limit, $offset);
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
+    public function search_contacts_count(int $userId, string $query): int
+    {
+        return (int) $this->db->table('tbl_contacts')
+            ->where('owner_id', $userId)
+            ->groupStart()
+            ->like('display_name', $query)
+            ->orLike('phone_numbers', $query)
+            ->groupEnd()
+            ->countAllResults(false);
     }
 
     /**
      * Search Files by keyword.
      */
-    public function search_files(int $userId, string $query): array
+    public function search_files(int $userId, string $query, int $limit = 0, int $offset = 0): array
     {
-        return $this->db->table('tbl_device_files')
+        $builder = $this->db->table('tbl_device_files')
             ->select('name as file_name, path as file_path, size_bytes as file_size, category as file_type, last_modified')
             ->where('owner_id', $userId)
             ->groupStart()
             ->like('name', $query)
             ->orLike('path', $query)
             ->groupEnd()
-            ->orderBy('last_modified', 'DESC')
-            ->get()
-            ->getResultArray();
+            ->orderBy('last_modified', 'DESC');
+
+        if ($limit > 0) {
+            $builder->limit($limit, $offset);
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
+    public function search_files_count(int $userId, string $query): int
+    {
+        return (int) $this->db->table('tbl_device_files')
+            ->where('owner_id', $userId)
+            ->groupStart()
+            ->like('name', $query)
+            ->orLike('path', $query)
+            ->groupEnd()
+            ->countAllResults(false);
+    }
+
+    /**
+     * Search Apps by keyword (app_name or package_name).
+     */
+    public function search_apps(int $userId, string $query, int $limit = 0, int $offset = 0): array
+    {
+        $builder = $this->db->table('tbl_apps')
+            ->select('app_name as Name, package_name as Package, app_size as AppSize, app_icon, version_name as Version, is_system_app as IsSystem')
+            ->where('owner_id', $userId)
+            ->groupStart()
+            ->like('app_name', $query)
+            ->orLike('package_name', $query)
+            ->groupEnd()
+            ->orderBy('app_name', 'ASC');
+
+        if ($limit > 0) {
+            $builder->limit($limit, $offset);
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
+    public function search_apps_count(int $userId, string $query): int
+    {
+        return (int) $this->db->table('tbl_apps')
+            ->where('owner_id', $userId)
+            ->groupStart()
+            ->like('app_name', $query)
+            ->orLike('package_name', $query)
+            ->groupEnd()
+            ->countAllResults(false);
     }
 
     /**
