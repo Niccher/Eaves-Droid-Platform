@@ -72,6 +72,7 @@ class Impersonate extends BaseSuperadminController
         session()->set('impersonated_by', $this->userId);
         session()->set('impersonated_username', $targetUser->username);
 
+        session()->remove('user_v4');
         auth()->loginById($userId);
 
         $this->logAdminAction('impersonate_start', 'high', true, [
@@ -95,6 +96,7 @@ class Impersonate extends BaseSuperadminController
 
         $impersonatedUserId = $this->userId;
 
+        session()->remove('user_v4');
         auth()->loginById((int) $impersonatedBy);
 
         session()->remove('impersonated_by');
