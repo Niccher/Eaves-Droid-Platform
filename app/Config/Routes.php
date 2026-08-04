@@ -1816,6 +1816,9 @@ $routes->group('superadmin', [
      */
     $routes->get('audit', 'AuditLog::index', ['as' => 'superadmin-audit']);
     $routes->get('omni-search', 'OmniSearch::index', ['as' => 'superadmin-omni-search']);
+    $routes->get('impersonate', 'Impersonate::index', ['as' => 'superadmin-impersonate']);
+    $routes->post('impersonate/act-as/(:num)', 'Impersonate::actAs/$1', ['as' => 'superadmin-impersonate-act']);
+    $routes->post('impersonate/stop', 'Impersonate::stop', ['as' => 'superadmin-impersonate-stop']);
 });
 
 // =================================================================

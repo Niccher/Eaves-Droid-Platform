@@ -84,7 +84,8 @@ class AuthGroups extends ShieldAuthGroups
         'system.seed'         => 'Can run database seeders',
         'system.env'          => 'Can view and edit environment configuration',
          'beta.access'         => 'Can access beta-level features',
-         'intelligence.search' => 'Can use the Omni Search cross-user forensic search',
+'intelligence.search' => 'Can use the Omni Search cross-user forensic search',
+         'intelligence.impersonate' => 'Can impersonate other users for troubleshooting',
      ];
 
     /**

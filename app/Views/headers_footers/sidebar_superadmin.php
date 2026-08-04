@@ -1,4 +1,13 @@
     <body class="hold-transition sidebar-mini layout-fixed">
+    <?php if (!empty($is_impersonating)): ?>
+    <div class="alert alert-warning mb-0 text-center" style="border-radius:0; margin-bottom:0 !important;">
+        <i class="fas fa-exclamation-triangle mr-1"></i>
+        You are acting as <strong><?php echo htmlspecialchars(session()->get('impersonated_username') ?? 'Unknown'); ?></strong>
+        <a href="<?php echo base_url('superadmin/impersonate/stop'); ?>" class="btn btn-sm btn-danger ml-2">
+            <i class="fas fa-sign-out-alt mr-1"></i>Exit Impersonation
+        </a>
+    </div>
+    <?php endif; ?>
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -118,6 +127,14 @@
                                class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-omni-search') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-search"></i>
                                 <p>Omni Search</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/impersonate'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-impersonate') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-user-secret"></i>
+                                <p>Impersonate</p>
                             </a>
                         </li>
 

@@ -36,10 +36,15 @@ class BaseAdminController extends BaseController
 
     protected function renderView(string $mainView, array $extraData = []): string
     {
+        $impersonatedBy = session()->get('impersonated_by');
+        $isImpersonating = $impersonatedBy !== null;
+
         $data = array_merge([
             'user_info' => $this->userData,
             'active_device_id' => null,
             'sidebar_user_devices' => [],
+            'is_impersonating' => $isImpersonating,
+            'impersonated_by' => $impersonatedBy,
         ], $extraData);
 
         $sidebar = auth()->user()->inGroup('superadmin')
