@@ -13,6 +13,12 @@ class Users extends BaseAdminController
     {
         $db = $this->getDb();
 
+        $perPage = 25;
+        $page = (int) ($this->request->getGet('page') ?? 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+
         $userBuilder = $db->table('users')
             ->select('users.*, auth_identities.secret as email')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = \'email_password\'', 'left')
@@ -30,8 +36,10 @@ class Users extends BaseAdminController
             }
         }
 
+        $totalUsers = (int) $userBuilder->countAllResults(false);
+
         $users = $userBuilder->orderBy('users.created_at', 'DESC')
-            ->limit(15)
+            ->limit($perPage, ($page - 1) * $perPage)
             ->get()
             ->getResultArray();
 
@@ -46,10 +54,17 @@ class Users extends BaseAdminController
             $grouped[$uid][] = $gr['group'];
         }
 
+        $pager = \Config\Services::pager();
+        $pager->makeLinks($page, $perPage, $totalUsers, 'bootstrap5_full');
+
         return $this->renderView('admin/users/index', [
             'pag' => 'admin-users',
             'users' => $users,
             'user_groups' => $grouped,
+            'pager' => $pager,
+            'total_users' => $totalUsers,
+            'current_page' => $page,
+            'per_page' => $perPage,
         ]);
     }
 

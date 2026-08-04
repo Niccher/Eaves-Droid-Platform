@@ -133,6 +133,24 @@
                         </tbody>
                     </table>
                 </div>
+                <?php if ($total_users > $per_page): ?>
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="entry-info">
+                                Showing <?= (($current_page - 1) * $per_page) + 1 ?>
+                                to <?= min($current_page * $per_page, $total_users) ?>
+                                of <?= number_format($total_users) ?> entries
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="float-right">
+                                <?= $pager->links('default', 'bootstrap5_full') ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </section>
