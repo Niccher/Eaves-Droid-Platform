@@ -90,8 +90,8 @@ class RegisterController extends Controller
             // Get the user entity
             $user = $users->findById($userId);
 
-            // Add to default group
-            $user->addGroup('user');
+            // Assign the default (exclusive) group
+            setUserGroup((int) $userId, 'user');
 
             // Create user profile record
             $profileData = [

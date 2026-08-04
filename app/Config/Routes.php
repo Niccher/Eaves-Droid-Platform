@@ -1766,6 +1766,58 @@ $routes->group('admin', [
 });
 
 // =================================================================
+// 7.7 SUPERADMIN ROUTES (Privileged Administration)
+//    Requires the superadmin group only
+// =================================================================
+
+$routes->group('superadmin', [
+    'namespace' => 'App\Controllers\superadmin',
+    'filter' => 'group:superadmin'
+], static function ($routes) {
+
+    // -------------------------------------------------------------
+    // 7.7.1 SUPERADMIN HOME
+    // -------------------------------------------------------------
+
+    /**
+     * Displays superadmin overview dashboard.
+     *
+     * @return string
+     */
+    $routes->get('home', 'Dashboard::index', ['as' => 'superadmin-home']);
+
+    // -------------------------------------------------------------
+    // 7.7.2 ROLE MATRIX (promote/demote)
+    // -------------------------------------------------------------
+
+    /**
+     * Lists all accounts with their current role.
+     *
+     * @return string
+     */
+    $routes->get('users', 'RoleMatrix::index', ['as' => 'superadmin-users']);
+
+    /**
+     * Changes a user's role (promote/demote).
+     *
+     * @param int $id User ID
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    $routes->post('users/role/(:num)', 'RoleMatrix::changeRole/$1', ['as' => 'superadmin-users-role']);
+
+    // -------------------------------------------------------------
+    // 7.7.3 SECURITY AUDIT TRAIL
+    // -------------------------------------------------------------
+
+    /**
+     * Displays the security/action audit trail.
+     *
+     * @return string
+     */
+    $routes->get('audit', 'AuditLog::index', ['as' => 'superadmin-audit']);
+});
+
+// =================================================================
 // 8. UTILITY & SYSTEM ROUTES
 // =================================================================
 

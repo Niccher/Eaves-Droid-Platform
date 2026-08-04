@@ -7,15 +7,30 @@ use CodeIgniter\Shield\Models\UserModel;
 
 class Users extends BaseAdminController
 {
+    private const PRIVILEGED_GROUPS = ['superadmin', 'admin', 'developer'];
+
     public function index()
     {
         $db = $this->getDb();
 
-        $users = $db->table('users')
+        $userBuilder = $db->table('users')
             ->select('users.*, auth_identities.secret as email')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = \'email_password\'', 'left')
-            ->where('users.deleted_at IS NULL')
-            ->orderBy('users.created_at', 'DESC')
+            ->where('users.deleted_at IS NULL');
+
+        if (!$this->canManageRoles()) {
+            $superAdminIds = $db->table('auth_groups_users')
+                ->select('user_id')
+                ->where('group', 'superadmin')
+                ->get()
+                ->getResultArray();
+            $ids = array_column($superAdminIds, 'user_id');
+            if ($ids !== []) {
+                $userBuilder->whereNotIn('users.id', $ids);
+            }
+        }
+
+        $users = $userBuilder->orderBy('users.created_at', 'DESC')
             ->limit(15)
             ->get()
             ->getResultArray();
@@ -47,6 +62,12 @@ class Users extends BaseAdminController
 
     public function store()
     {
+        $group = $this->request->getPost('group');
+
+        if (in_array($group, self::PRIVILEGED_GROUPS, true) && !$this->canManageRoles()) {
+            return redirect()->back()->withInput()->with('error', 'You do not have permission to assign that role.');
+        }
+
         $rules = [
             'username' => 'required|min_length[3]|max_length[30]|is_unique[users.username]',
             'email' => 'required|valid_email|is_unique[auth_identities.secret]',
@@ -78,7 +99,7 @@ class Users extends BaseAdminController
             $userId = $users->getInsertID();
             $savedUser = $users->findById($userId);
             $group = $this->request->getPost('group');
-            $savedUser->addGroup($group);
+            setUserGroup((int) $userId, $group);
 
             $profileData = [
                 'user_id' => $userId,
@@ -161,6 +182,20 @@ class Users extends BaseAdminController
             return redirect()->to('admin/users')->with('error', 'User not found.');
         }
 
+        $targetGroups = $this->getUserGroups($id);
+        $newGroup = $this->request->getPost('group');
+        $roleChange = $targetGroups !== [] && !in_array($newGroup, $targetGroups, true);
+
+        if (!$this->canManageRoles()) {
+            if ($targetGroups !== [] && array_intersect($targetGroups, self::PRIVILEGED_GROUPS) !== []) {
+                return redirect()->to('admin/users')->with('error', 'You do not have permission to modify a privileged account.');
+            }
+
+            if ($roleChange && in_array($newGroup, self::PRIVILEGED_GROUPS, true)) {
+                return redirect()->back()->withInput()->with('error', 'You do not have permission to assign that role.');
+            }
+        }
+
         $rules = [
             'username' => "required|min_length[3]|max_length[30]|is_unique[users.username,id,{$id}]",
             'email' => "required|valid_email|is_unique[auth_identities.secret,user_id,{$id}]",
@@ -200,14 +235,7 @@ class Users extends BaseAdminController
             }
 
             $newGroup = $this->request->getPost('group');
-            $db->table('auth_groups_users')
-                ->where('user_id', $id)
-                ->delete();
-            $db->table('auth_groups_users')->insert([
-                'user_id' => $id,
-                'group' => $newGroup,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+            setUserGroup((int) $id, $newGroup);
 
             $status = $this->request->getPost('status');
             if (in_array($status, ['active', 'suspended'])) {
@@ -229,7 +257,7 @@ class Users extends BaseAdminController
                 'resource_id' => (string) $id,
                 'old_values' => json_encode([
                     'username' => $existing['username'],
-                    'group' => $existing['group'] ?? null,
+                    'group' => $targetGroups[0] ?? null,
                     'status' => $existing['status'] ?? null,
                 ]),
                 'new_values' => json_encode([
@@ -252,6 +280,11 @@ class Users extends BaseAdminController
     {
         if ($id === $this->userId) {
             return redirect()->to('admin/users')->with('error', 'You cannot delete your own account.');
+        }
+
+        $targetGroups = $this->getUserGroups($id);
+        if (!$this->canManageRoles() && array_intersect($targetGroups, self::PRIVILEGED_GROUPS) !== []) {
+            return redirect()->to('admin/users')->with('error', 'You do not have permission to delete a privileged account.');
         }
 
         $db = $this->getDb();
@@ -379,6 +412,10 @@ class Users extends BaseAdminController
             return redirect()->to('admin/users')->with('error', 'You cannot suspend your own account.');
         }
 
+        if (!$this->canManageRoles() && array_intersect($this->getUserGroups($id), self::PRIVILEGED_GROUPS) !== []) {
+            return redirect()->to('admin/users')->with('error', 'You do not have permission to suspend a privileged account.');
+        }
+
         $db = $this->getDb();
         $db->table('users')
             ->where('id', $id)
@@ -393,6 +430,10 @@ class Users extends BaseAdminController
 
     public function activate(int $id)
     {
+        if (!$this->canManageRoles() && array_intersect($this->getUserGroups($id), self::PRIVILEGED_GROUPS) !== []) {
+            return redirect()->to('admin/users')->with('error', 'You do not have permission to activate a privileged account.');
+        }
+
         $db = $this->getDb();
         $db->table('users')
             ->where('id', $id)
@@ -434,6 +475,10 @@ class Users extends BaseAdminController
     {
         if ($id === $this->userId) {
             return redirect()->to('admin/users')->with('error', 'You cannot clear your own data.');
+        }
+
+        if (!$this->canManageRoles() && array_intersect($this->getUserGroups($id), self::PRIVILEGED_GROUPS) !== []) {
+            return redirect()->to('admin/users')->with('error', 'You do not have permission to clear data for a privileged account.');
         }
 
         $tables = [
@@ -509,6 +554,10 @@ class Users extends BaseAdminController
             return redirect()->back()->with('error', 'Unknown data type: ' . $type);
         }
 
+        if (!$this->canManageRoles() && array_intersect($this->getUserGroups($id), self::PRIVILEGED_GROUPS) !== []) {
+            return redirect()->back()->with('error', 'You do not have permission to modify data for a privileged account.');
+        }
+
         $db = $this->getDb();
         $info = $tableMap[$type];
         $count = $db->table($info['table'])->where($info['column'], $id)->countAllResults();
@@ -563,5 +612,21 @@ class Users extends BaseAdminController
         }
 
         return $counts;
+    }
+
+    private function canManageRoles(): bool
+    {
+        return auth()->user()->can('users.manage-roles');
+    }
+
+    private function getUserGroups(int $userId): array
+    {
+        $rows = $this->getDb()->table('auth_groups_users')
+            ->select('`group`')
+            ->where('user_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        return array_values(array_unique(array_column($rows, 'group')));
     }
 }

@@ -80,6 +80,8 @@
                                 $groups = $user_groups[$u['id']] ?? ['user'];
                                 $role = implode(', ', $groups);
                                 $isActive = $u['active'] ?? 1;
+                                $canManageRoles = auth()->user()->can('users.manage-roles');
+                                $targetPrivileged = array_intersect($groups, ['superadmin', 'admin', 'developer']) !== [];
                             ?>
                             <tr>
                                 <td><?= $u['id'] ?></td>
@@ -107,18 +109,18 @@
                                     <div class="btn-group btn-group-sm">
                                         <a href="<?= base_url('admin/users/edit/' . $u['id']) ?>" class="btn btn-info" title="Edit"><i class="fas fa-edit"></i></a>
                                         <a href="<?= base_url('admin/users/data/' . $u['id']) ?>" class="btn btn-primary" title="View Data"><i class="fas fa-database"></i></a>
-                                        <?php if ($isActive): ?>
+                                        <?php if ($isActive && ($canManageRoles || !$targetPrivileged)): ?>
                                         <form method="post" action="<?= base_url('admin/users/suspend/' . $u['id']) ?>" class="d-inline action-form" data-confirm-title="Suspend User" data-confirm-text="Are you sure you want to suspend this user? They will not be able to log in.">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="btn btn-warning btn-sm" title="Suspend"><i class="fas fa-pause"></i></button>
                                         </form>
-                                        <?php else: ?>
+                                        <?php elseif (!$isActive && ($canManageRoles || !$targetPrivileged)): ?>
                                         <form method="post" action="<?= base_url('admin/users/activate/' . $u['id']) ?>" class="d-inline action-form" data-confirm-title="Activate User" data-confirm-text="Are you sure you want to activate this user?">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="btn btn-success btn-sm" title="Activate"><i class="fas fa-play"></i></button>
                                         </form>
                                         <?php endif; ?>
-                                        <?php if ($u['id'] !== $user_info['id']): ?>
+                                        <?php if ($u['id'] !== $user_info['id'] && ($canManageRoles || !$targetPrivileged)): ?>
                                         <form method="post" action="<?= base_url('admin/users/delete/' . $u['id']) ?>" class="d-inline action-form" data-confirm-title="Delete User" data-confirm-text="Are you sure you want to permanently delete this user? This action cannot be undone.">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="btn btn-danger btn-sm" title="Delete"><i class="fas fa-trash"></i></button>
@@ -143,29 +145,6 @@ $(document).ready(function() {
         searching: false,
         paging: false,
         responsive: true,
-    });
-
-    // SweetAlert confirm for action forms
-    $(document).on('submit', '.action-form', function(e) {
-        e.preventDefault();
-        const form = this;
-        const title = $(form).data('confirm-title') || 'Confirm Action';
-        const text = $(form).data('confirm-text') || 'Are you sure?';
-        
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, proceed',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
     });
 });
 </script>

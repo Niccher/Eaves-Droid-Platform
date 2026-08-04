@@ -61,11 +61,11 @@
                 <div class="card-body p-0">
                     <table class="table table-striped" id="tokenTable">
                         <thead>
-                            <tr><th>ID</th><th>Owner</th><th>Token</th><th>Device</th><th>Status</th><th>Created</th><th>Expires</th><th>Last Used</th><th>Actions</th></tr>
+                            <tr><th>ID</th><th>Owner</th><th>Token</th><th>Device</th><th>Status</th><th>Created</th><th>Last Used</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
                             <?php if (empty($tokens)): ?>
-                            <tr><td colspan="9" class="text-center text-muted py-4">No tokens found.</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-4">No tokens found.</td></tr>
                             <?php else: ?>
                             <?php foreach ($tokens as $t): ?>
                             <tr>
@@ -79,23 +79,24 @@
                                     <span class="badge badge-<?= $s[1] ?>"><?= $s[0] ?></span>
                                 </td>
                                 <td><?= htmlspecialchars($t['created_at'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($t['expires_at'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($t['last_used_at'] ?? 'Never') ?></td>
-                                <td>
-                                    <?php if ($t['status'] === '00'): ?>
-                                    <form method="post" action="<?= base_url('admin/tokens/revoke/' . $t['counter']) ?>" style="display:inline">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-warning" title="Revoke" onclick="return confirm('Revoke this token?')"><i class="fas fa-pause"></i></button>
-                                    </form>
-                                    <form method="post" action="<?= base_url('admin/tokens/regenerate/' . $t['counter']) ?>" style="display:inline">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-info" title="Regenerate" onclick="return confirm('Regenerate this token?')"><i class="fas fa-sync"></i></button>
-                                    </form>
-                                    <?php endif; ?>
-                                    <form method="post" action="<?= base_url('admin/tokens/delete/' . $t['counter']) ?>" style="display:inline">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Delete this token?')"><i class="fas fa-trash"></i></button>
-                                    </form>
+                                <td class="text-nowrap">
+                                    <div class="d-flex align-items-center">
+                                        <?php if ($t['status'] === '00'): ?>
+                                        <form method="post" action="<?= base_url('admin/tokens/revoke/' . $t['counter']) ?>" class="action-form mr-1" data-confirm-title="Revoke Token" data-confirm-text="Are you sure you want to revoke this token? It will no longer authenticate API requests.">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="btn btn-sm btn-warning" title="Revoke"><i class="fas fa-pause"></i></button>
+                                        </form>
+                                        <form method="post" action="<?= base_url('admin/tokens/regenerate/' . $t['counter']) ?>" class="action-form mr-1" data-confirm-title="Regenerate Token" data-confirm-text="Are you sure you want to regenerate this token? The current token value will be replaced.">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="btn btn-sm btn-info" title="Regenerate"><i class="fas fa-sync"></i></button>
+                                        </form>
+                                        <?php endif; ?>
+                                        <form method="post" action="<?= base_url('admin/tokens/delete/' . $t['counter']) ?>" class="action-form" data-confirm-title="Delete Token" data-confirm-text="Are you sure you want to delete this token? This action cannot be undone.">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -124,10 +125,10 @@
                                 <td><?= htmlspecialchars($t['created_at'] ?? '-') ?></td>
                                 <td><span class="badge badge-danger"><?= htmlspecialchars($t['expires_at'] ?? '-') ?></span></td>
                                 <td><?= htmlspecialchars($t['last_used_at'] ?? 'Never') ?></td>
-                                <td>
-                                    <form method="post" action="<?= base_url('admin/tokens/delete/' . $t['counter']) ?>" style="display:inline">
+                                <td class="text-nowrap">
+                                    <form method="post" action="<?= base_url('admin/tokens/delete/' . $t['counter']) ?>" class="action-form" data-confirm-title="Delete Token" data-confirm-text="Are you sure you want to permanently delete this token? This action cannot be undone.">
                                         <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this token?')"><i class="fas fa-trash"></i> Delete</button>
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>

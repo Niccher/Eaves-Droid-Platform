@@ -64,9 +64,11 @@
                             <select name="group" id="group" class="form-control">
                                 <option value="user" <?= old('group') === 'user' ? 'selected' : '' ?>>User</option>
                                 <option value="beta" <?= old('group') === 'beta' ? 'selected' : '' ?>>Beta User</option>
+                                <?php if (auth()->user()->can('users.manage-roles')): ?>
                                 <option value="admin" <?= old('group') === 'admin' ? 'selected' : '' ?>>Admin</option>
                                 <option value="developer" <?= old('group') === 'developer' ? 'selected' : '' ?>>Developer</option>
                                 <option value="superadmin" <?= old('group') === 'superadmin' ? 'selected' : '' ?>>Super Admin</option>
+                                <?php endif; ?>
                             </select>
                         </div>
                     </div>

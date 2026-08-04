@@ -61,14 +61,25 @@
                         </div>
                         <div class="form-group">
                             <label for="group">Role</label>
+                            <?php
+                                $currentGroup = old('group', $edit_user['groups'][0] ?? 'user');
+                                $targetPrivileged = array_intersect($edit_user['groups'] ?? [], ['superadmin', 'admin', 'developer']) !== [];
+                            ?>
+                            <?php if ($targetPrivileged && !auth()->user()->can('users.manage-roles')): ?>
+                            <input type="text" class="form-control" value="<?= htmlspecialchars(ucfirst($currentGroup)) ?>" disabled>
+                            <input type="hidden" name="group" value="<?= esc($currentGroup) ?>">
+                            <small class="text-muted">Role is locked — you need <code>users.manage-roles</code> to modify privileged accounts.</small>
+                            <?php else: ?>
                             <select name="group" id="group" class="form-control">
-                                <?php $currentGroup = old('group', $edit_user['groups'][0] ?? 'user'); ?>
                                 <option value="user" <?= $currentGroup === 'user' ? 'selected' : '' ?>>User</option>
                                 <option value="beta" <?= $currentGroup === 'beta' ? 'selected' : '' ?>>Beta User</option>
+                                <?php if (auth()->user()->can('users.manage-roles')): ?>
                                 <option value="admin" <?= $currentGroup === 'admin' ? 'selected' : '' ?>>Admin</option>
                                 <option value="developer" <?= $currentGroup === 'developer' ? 'selected' : '' ?>>Developer</option>
                                 <option value="superadmin" <?= $currentGroup === 'superadmin' ? 'selected' : '' ?>>Super Admin</option>
+                                <?php endif; ?>
                             </select>
+                            <?php endif; ?>
                         </div>
                         <div class="form-group">
                             <label for="status">Account Status</label>

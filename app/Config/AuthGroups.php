@@ -75,9 +75,14 @@ class AuthGroups extends ShieldAuthGroups
         'admin.access'        => 'Can access the sites admin area',
         'admin.settings'      => 'Can access the main site settings',
         'users.manage-admins' => 'Can manage other admins',
+        'users.manage-roles'  => 'Can assign and change user roles',
         'users.create'        => 'Can create new non-admin users',
         'users.edit'          => 'Can edit existing non-admin users',
         'users.delete'        => 'Can delete existing non-admin users',
+        'security.audit'      => 'Can view the security audit trail',
+        'system.migrate'      => 'Can run database migrations',
+        'system.seed'         => 'Can run database seeders',
+        'system.env'          => 'Can view and edit environment configuration',
         'beta.access'         => 'Can access beta-level features',
     ];
 

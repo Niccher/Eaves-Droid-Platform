@@ -98,6 +98,6 @@ class Autoload extends AutoloadConfig
      * @var string[]
      * @phpstan-var list<string>
      */
-    public $helpers = ['auth', 'setting', 'url', 'logs_helper', 'security', 'error', 'time', 'email'];
+    public $helpers = ['auth', 'setting', 'url', 'logs_helper', 'security', 'error', 'time', 'email', 'group_helper'];
 //    public $helpers = [ 'url', 'form', 'html', 'text', 'security', 'logs_helper',  ];
 }

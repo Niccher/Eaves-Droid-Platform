@@ -48,8 +48,19 @@ class Dashboard extends BaseAdminController
 
         $latestBackup = null;
 
-        $recentRegistrations = $db->table('users')
-            ->orderBy('created_at', 'DESC')
+        $recentBuilder = $db->table('users');
+        if (!auth()->user()->inGroup('superadmin')) {
+            $superAdminIds = $db->table('auth_groups_users')
+                ->select('user_id')
+                ->where('group', 'superadmin')
+                ->get()
+                ->getResultArray();
+            $ids = array_column($superAdminIds, 'user_id');
+            if ($ids !== []) {
+                $recentBuilder->whereNotIn('users.id', $ids);
+            }
+        }
+        $recentRegistrations = $recentBuilder->orderBy('users.created_at', 'DESC')
             ->limit(5)
             ->get()
             ->getResultArray();

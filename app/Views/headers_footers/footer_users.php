@@ -31,6 +31,31 @@
     <script src="<?php echo base_url('assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js?v=1.4'); ?>"></script>
     <!-- AdminLTE App -->
     <script src="<?php echo base_url('assets/js/adminlte.min.js?v=1.4'); ?>"></script>
+    <!-- Global SweetAlert2 confirm for .action-form submissions -->
+    <script>
+    $(document).ready(function() {
+        $(document).on('submit', '.action-form', function(e) {
+            e.preventDefault();
+            const form = this;
+            const title = $(form).data('confirm-title') || 'Confirm Action';
+            const text = $(form).data('confirm-text') || 'Are you sure?';
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, proceed',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+    </script>
     </body>
 </html>
 

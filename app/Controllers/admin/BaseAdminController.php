@@ -40,8 +40,12 @@ class BaseAdminController extends BaseController
             'sidebar_user_devices' => [],
         ], $extraData);
 
+        $sidebar = auth()->user()->inGroup('superadmin')
+            ? 'headers_footers/sidebar_superadmin'
+            : 'headers_footers/sidebar_admin';
+
         return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_admin', $data)
+            . view($sidebar, $data)
             . view($mainView, $data)
             . view('headers_footers/footer_users', $data);
     }
