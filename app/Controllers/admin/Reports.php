@@ -10,9 +10,20 @@ class Reports extends BaseAdminController
         $data = ['pag' => 'admin-reports', 'active_tab' => $tab];
         $data['tab_counts'] = [];
 
+        $hiddenIds = $this->getHiddenSuperAdminIds();
+
         // Dashboard data
-        $data['total_users'] = $db->table('users')->where('deleted_at IS NULL')->countAllResults();
-        $data['users_with_data'] = $db->table('uploaded_files')->select('token_owner_id')->groupBy('token_owner_id')->countAllResults();
+        $usersCountBuilder = $db->table('users')->where('deleted_at IS NULL');
+        if ($hiddenIds !== []) {
+            $usersCountBuilder->whereNotIn('users.id', $hiddenIds);
+        }
+        $data['total_users'] = $usersCountBuilder->countAllResults();
+
+        $uploadsCountBuilder = $db->table('uploaded_files')->select('token_owner_id');
+        if ($hiddenIds !== []) {
+            $uploadsCountBuilder->whereNotIn('token_owner_id', $hiddenIds);
+        }
+        $data['users_with_data'] = $uploadsCountBuilder->groupBy('token_owner_id')->countAllResults();
         $data['total_uploads'] = $db->table('uploaded_files')->countAllResults();
         $data['total_storage'] = $db->table('uploaded_files')->selectSum('file_size_bytes')->get()->getRow()->file_size_bytes ?? 0;
 
@@ -28,11 +39,14 @@ class Reports extends BaseAdminController
         $data['data_type_counts'] = $dataTypeCounts;
 
         // User activity data
-        $data['users'] = $db->table('users')
+        $usersQuery = $db->table('users')
             ->select('users.id, users.username, auth_identities.secret as email')
             ->join('auth_identities', "auth_identities.user_id = users.id AND auth_identities.type = 'email_password'", 'left')
-            ->where('users.deleted_at IS NULL')
-            ->orderBy('users.username', 'ASC')
+            ->where('users.deleted_at IS NULL');
+        if ($hiddenIds !== []) {
+            $usersQuery->whereNotIn('users.id', $hiddenIds);
+        }
+        $data['users'] = $usersQuery->orderBy('users.username', 'ASC')
             ->get()
             ->getResultArray();
 
@@ -59,10 +73,15 @@ class Reports extends BaseAdminController
             'Uploads'       => ['table' => 'uploaded_files',    'icon' => 'fa-upload'],
         ];
 
-        $allUsers = $db->table('users')->select('users.id, users.username')->where('users.deleted_at IS NULL')->get()->getResultArray();
+        $allUsers = $db->table('users')->select('users.id, users.username')->where('users.deleted_at IS NULL');
+        if ($hiddenIds !== []) {
+            $allUsers->whereNotIn('users.id', $hiddenIds);
+        }
+        $allUsers = $allUsers->get()->getResultArray();
         $userData = [];
         $grandTotal = 0;
         $allTotals = [];
+        $totalsById = [];
         foreach ($dataTables2 as $label => $info) {
             $allTotals[$label] = 0;
         }
@@ -77,6 +96,7 @@ class Reports extends BaseAdminController
                 $total += $count;
                 $allTotals[$label] += $count;
             }
+            $totalsById[(int) $u['id']] = $total;
             if ($total > 0) {
                 $userData[] = ['username' => $u['username'], 'total' => $total, 'categories' => $categories];
             }
@@ -87,6 +107,31 @@ class Reports extends BaseAdminController
         $data['user_data'] = $userData;
         $data['all_totals'] = $allTotals;
         $data['grand_total'] = $grandTotal;
+
+        // Enrich user list (role, last login, record totals) for the activity tab
+        $userIds = array_column($data['users'], 'id');
+        if ($userIds !== []) {
+            $roleMap = [];
+            foreach ($db->table('auth_groups_users')->select('user_id, `group`')->whereIn('user_id', $userIds)->get()->getResultArray() as $r) {
+                $uid = (int) $r['user_id'];
+                if (!isset($roleMap[$uid])) {
+                    $roleMap[$uid] = $r['group'];
+                }
+            }
+
+            $loginMap = [];
+            foreach ($db->table('auth_logins')->select('user_id, MAX(date) AS last_login')->whereIn('user_id', $userIds)->groupBy('user_id')->get()->getResultArray() as $r) {
+                $loginMap[(int) $r['user_id']] = $r['last_login'];
+            }
+
+            foreach ($data['users'] as &$u) {
+                $uid = (int) $u['id'];
+                $u['role'] = $roleMap[$uid] ?? 'user';
+                $u['last_login'] = $loginMap[$uid] ?? null;
+                $u['total_records'] = $totalsById[$uid] ?? 0;
+            }
+            unset($u);
+        }
 
         // Performance data
         $totalQueries = 0;
@@ -136,6 +181,10 @@ class Reports extends BaseAdminController
             ->get()
             ->getResultArray();
 
+        $this->response
+            ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->setHeader('Pragma', 'no-cache');
+
         return $this->renderView('admin/reports/index', $data);
     }
 
@@ -172,6 +221,10 @@ class Reports extends BaseAdminController
 
         if (empty($dataTypes)) {
             return redirect()->to('admin/reports/generate')->with('error', 'Please select at least one data type to generate a report.');
+        }
+
+        if ($userId && $userId !== 'all' && in_array((int) $userId, $this->getHiddenSuperAdminIds(), true)) {
+            return redirect()->to('admin/reports/generate')->with('error', 'You do not have permission to generate a report for that user.');
         }
 
         $results = [];
@@ -415,6 +468,9 @@ class Reports extends BaseAdminController
         }
 
         $userId = $user['id'];
+        if (in_array((int) $userId, $this->getHiddenSuperAdminIds(), true)) {
+            return redirect()->to('admin/reports/user-activity')->with('error', 'You do not have permission to view that user\'s activity.');
+        }
 
         $dataTables = [
             ['label' => 'SMS',           'table' => 'tbl_sms',           'icon' => 'fa-sms'],
@@ -486,6 +542,10 @@ class Reports extends BaseAdminController
         $dateTo = $this->request->getPost('date_to') ?? date('Y-m-d');
         $dataTypes = $this->request->getPost('data_types') ?? [];
         $userId = $this->request->getPost('user_id');
+
+        if ($userId && $userId !== 'all' && in_array((int) $userId, $this->getHiddenSuperAdminIds(), true)) {
+            return redirect()->back()->with('error', 'You do not have permission to export data for that user.');
+        }
 
         $tableMap = $this->getDataTypeMap();
 
@@ -577,6 +637,10 @@ class Reports extends BaseAdminController
 
         if (empty($dataTypes)) {
             return redirect()->to('admin/reports/generate')->with('error', 'Please select at least one data type.');
+        }
+
+        if ($userId && $userId !== 'all' && in_array((int) $userId, $this->getHiddenSuperAdminIds(), true)) {
+            return redirect()->to('admin/reports/generate')->with('error', 'You do not have permission to export data for that user.');
         }
 
         $tableMap = $this->getDataTypeMap();

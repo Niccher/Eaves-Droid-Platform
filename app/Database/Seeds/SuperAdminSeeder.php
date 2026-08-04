@@ -56,7 +56,8 @@ class SuperAdminSeeder extends Seeder
             'system.migrate',
             'system.seed',
             'system.env',
-            'beta.access'
+            'beta.access',
+            'intelligence.search'
         );
 
         echo "Superadmin group and permissions ensured for: {$email}\n";

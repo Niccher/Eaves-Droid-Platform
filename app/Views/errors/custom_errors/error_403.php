@@ -1,18 +1,20 @@
 <?php
 $loggedIn = function_exists('auth') && auth()->loggedIn();
+$isSuperAdmin = $loggedIn && auth()->user() && auth()->user()->inGroup('superadmin');
 $isAdmin = $loggedIn && auth()->user() && auth()->user()->can('admin.access');
 $code = '403';
 $title = 'Forbidden';
 $icon = 'fa-lock';
 $color = 'danger';
-$message = $message ?? ($error_message ?? 'You don\'t have permission to access this resource.');
+$flashError = function_exists('session') ? session()->getFlashdata('error') : null;
+$message = $message ?? ($flashError ?: ($error_message ?? 'You don\'t have permission to access this resource.'));
 ?>
 
 <?php if ($loggedIn): ?>
 <?= view('headers_footers/head_users') ?>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
-    <?= view($isAdmin ? 'headers_footers/sidebar_admin' : 'headers_footers/sidebar_users', [
+    <?= view($isSuperAdmin ? 'headers_footers/sidebar_superadmin' : ($isAdmin ? 'headers_footers/sidebar_admin' : 'headers_footers/sidebar_users'), [
         'user_info' => auth()->user()->toArray(),
         'sidebar_user_devices' => [],
         'active_device_id' => null,
@@ -36,7 +38,7 @@ $message = $message ?? ($error_message ?? 'You don\'t have permission to access 
                     <p class="lead mb-4"><?= esc($message) ?></p>
                     <div class="d-flex justify-content-center gap-3">
                         <a href="javascript:history.back()" class="btn btn-outline-secondary mx-1"><i class="fas fa-arrow-left mr-2"></i>Go Back</a>
-                        <a href="<?= base_url($isAdmin ? 'admin/dashboard' : ($loggedIn ? 'home' : '')) ?>" class="btn btn-primary mx-1"><i class="fas fa-home mr-2"></i><?= $isAdmin ? 'Admin Dashboard' : ($loggedIn ? 'Dashboard' : 'Home') ?></a>
+                        <a href="<?= base_url($isSuperAdmin ? 'superadmin/home' : ($isAdmin ? 'admin/dashboard' : ($loggedIn ? 'home' : ''))) ?>" class="btn btn-primary mx-1"><i class="fas fa-home mr-2"></i><?= $isSuperAdmin ? 'Super Admin' : ($isAdmin ? 'Admin Dashboard' : ($loggedIn ? 'Dashboard' : 'Home')) ?></a>
                     </div>
                 </div>
                 <div class="card-footer text-muted text-center small">

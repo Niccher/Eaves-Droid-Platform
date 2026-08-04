@@ -31,7 +31,9 @@ class Errors extends Controller
      */
     public function show403(): string
     {
-        return view('errors/custom_errors/error_403');
+        return view('errors/custom_errors/error_403', [
+            'message' => session()->getFlashdata('error') ?: null,
+        ]);
     }
 
     /**

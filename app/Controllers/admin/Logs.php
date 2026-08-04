@@ -11,8 +11,19 @@ class Logs extends BaseAdminController
         $db = $this->getDb();
         $data = ['pag' => 'admin-logs', 'active_tab' => $tab];
 
-        // All actions
-        $data['logs'] = $db->table('tbl_user_actions')
+        // All actions — read-only activity log. Critical/security events
+        // (e.g. role changes) are restricted to the superadmin audit trail.
+        $perPage = 25;
+        $page = (int) ($this->request->getGet('page') ?? 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $severity = $this->request->getGet('severity');
+        $category = $this->request->getGet('category');
+        $outcome = $this->request->getGet('outcome');
+
+        $allBuilder = $db->table('tbl_user_actions')
             ->select("'action' as source, tbl_user_actions.id, tbl_user_actions.user_id, users.username,
                       tbl_user_actions.action_type, tbl_user_actions.action_category as category,
                       tbl_user_actions.action_severity as severity, tbl_user_actions.ip_address,
@@ -21,10 +32,42 @@ class Logs extends BaseAdminController
                       tbl_user_actions.new_values, tbl_user_actions.request_url,
                       NULL as identifier, NULL as response_code, NULL as execution_time_ms")
             ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
-            ->orderBy('tbl_user_actions.created_at', 'DESC')
-            ->limit(50)
+            ->where('tbl_user_actions.action_severity !=', 'critical')
+            ->where('tbl_user_actions.action_type !=', 'admin_role_change');
+
+        if (in_array($severity, ['low', 'medium', 'high'], true)) {
+            $allBuilder->where('tbl_user_actions.action_severity', $severity);
+        }
+        if ($category !== null && $category !== '') {
+            $allBuilder->where('tbl_user_actions.action_category', $category);
+        }
+        if (in_array($outcome, ['success', 'failed'], true)) {
+            $allBuilder->where('tbl_user_actions.success', $outcome === 'success' ? 1 : 0);
+        }
+
+        $totalAll = (int) $allBuilder->countAllResults(false);
+        $data['logs'] = $allBuilder->orderBy('tbl_user_actions.created_at', 'DESC')
+            ->limit($perPage, ($page - 1) * $perPage)
             ->get()
             ->getResultArray();
+
+        $pager = \Config\Services::pager();
+        $pager->makeLinks($page, $perPage, $totalAll, 'bootstrap5_full');
+
+        $data['pager'] = $pager;
+        $data['total_all'] = $totalAll;
+        $data['current_page'] = $page;
+        $data['per_page'] = $perPage;
+        $data['filters'] = ['severity' => $severity, 'category' => $category, 'outcome' => $outcome];
+        $data['categories'] = array_column(
+            $db->table('tbl_user_actions')
+                ->select('action_category')
+                ->distinct()
+                ->orderBy('action_category', 'ASC')
+                ->get()
+                ->getResultArray(),
+            'action_category'
+        );
 
         // Access logs
         $data['accessLogs'] = $db->table('tbl_user_actions')
@@ -105,7 +148,7 @@ class Logs extends BaseAdminController
         $data['engineHistory'] = $model->getJobHistory(100);
 
         // Tab counts
-        $data['count_all'] = $db->table('tbl_user_actions')->countAllResults();
+        $data['count_all'] = $totalAll;
         $data['count_access'] = $db->table('tbl_user_actions')->where('action_category', 'authentication')->countAllResults();
         $data['count_errors'] = $db->table('tbl_user_actions')->where('success', 0)->countAllResults();
         $data['count_php_errors'] = count($errorFiles);

@@ -8,23 +8,31 @@ class Tokens extends BaseAdminController
     {
         $db = $this->getDb();
 
-        $tokens = $db->table('tbl_tokens')
+        $perPage = 25;
+        $page = (int) ($this->request->getGet('page') ?? 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $allBuilder = $db->table('tbl_tokens')
             ->select('tbl_tokens.*, users.username')
             ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
-            ->where('tbl_tokens.status !=', '99')
-            ->orderBy('tbl_tokens.counter', 'DESC')
-            ->limit(15)
+            ->where('tbl_tokens.status !=', '99');
+        $totalAll = (int) $allBuilder->countAllResults(false);
+        $tokens = $allBuilder->orderBy('tbl_tokens.counter', 'DESC')
+            ->limit($perPage, ($page - 1) * $perPage)
             ->get()
             ->getResultArray();
 
-        $expiredTokens = $db->table('tbl_tokens')
+        $expiredBuilder = $db->table('tbl_tokens')
             ->select('tbl_tokens.*, users.username')
             ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
             ->where('tbl_tokens.expires_at <', date('Y-m-d H:i:s'))
             ->where('tbl_tokens.expires_at IS NOT NULL')
-            ->where('tbl_tokens.status !=', '99')
-            ->orderBy('tbl_tokens.expires_at', 'DESC')
-            ->limit(15)
+            ->where('tbl_tokens.status !=', '99');
+        $totalExpired = (int) $expiredBuilder->countAllResults(false);
+        $expiredTokens = $expiredBuilder->orderBy('tbl_tokens.expires_at', 'DESC')
+            ->limit($perPage, ($page - 1) * $perPage)
             ->get()
             ->getResultArray();
 
@@ -54,14 +62,23 @@ class Tokens extends BaseAdminController
             ->get()
             ->getResultArray();
 
-        $countAll = $db->table('tbl_tokens')->where('status !=', '99')->countAllResults();
+        $pagerAll = \Config\Services::pager();
+        $pagerAll->makeLinks($page, $perPage, $totalAll, 'bootstrap5_full');
+        $pagerExpired = \Config\Services::pager();
+        $pagerExpired->makeLinks($page, $perPage, $totalExpired, 'bootstrap5_full');
 
         return $this->renderView('admin/tokens/index', [
             'pag' => 'admin-tokens',
             'active_tab' => $tab,
             'tokens' => $tokens,
             'expired_tokens' => $expiredTokens,
-            'count_all' => $countAll,
+            'total_all' => $totalAll,
+            'total_expired' => $totalExpired,
+            'pager_all' => $pagerAll,
+            'pager_expired' => $pagerExpired,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'count_all' => $totalAll,
             'total' => $total,
             'active' => $active,
             'used' => $used,

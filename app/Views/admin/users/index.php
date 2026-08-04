@@ -55,9 +55,25 @@
                 <div class="card-header">
                     <h3 class="card-title">All Users</h3>
                     <div class="card-tools">
-                        <a href="<?= base_url('admin/users/create') ?>" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus"></i> Create User
-                        </a>
+                        <div class="d-flex align-items-center">
+                            <form method="get" action="<?= base_url('admin/users') ?>" class="form-inline mr-2">
+                                <select name="group" class="form-control form-control-sm mr-1">
+                                    <option value="">All roles</option>
+                                    <?php
+                                    $roleOptions = auth()->user()->can('users.manage-roles')
+                                        ? ['superadmin', 'admin', 'developer', 'beta', 'user']
+                                        : ['admin', 'developer', 'beta', 'user'];
+                                    foreach ($roleOptions as $role): ?>
+                                    <option value="<?= $role ?>" <?= ($group_filter ?? null) === $role ? 'selected' : '' ?>><?= ucfirst($role) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary mr-1" title="Apply role filter"><i class="fas fa-filter"></i></button>
+                                <a href="<?= base_url('admin/users') ?>" class="btn btn-sm btn-outline-danger mr-1" title="Clear role filter"><i class="fas fa-times"></i></a>
+                            </form>
+                            <a href="<?= base_url('admin/users/create') ?>" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> Create User
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -75,6 +91,9 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <?php if (empty($users)): ?>
+                            <tr><td colspan="8" class="text-center text-muted py-4">No users match the selected filter.</td></tr>
+                            <?php else: ?>
                             <?php foreach ($users as $u): ?>
                             <?php
                                 $groups = $user_groups[$u['id']] ?? ['user'];
@@ -130,6 +149,7 @@
                                 </td>
                             </tr>
                             <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>

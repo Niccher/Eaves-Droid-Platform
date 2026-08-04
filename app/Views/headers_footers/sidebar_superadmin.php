@@ -113,6 +113,14 @@
                             </a>
                         </li>
 
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/omni-search'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-omni-search') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-search"></i>
+                                <p>Omni Search</p>
+                            </a>
+                        </li>
+
                         <li class="nav-header">ADMINISTRATION</li>
 
                         <li class="nav-item">

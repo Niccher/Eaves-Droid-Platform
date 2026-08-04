@@ -1815,6 +1815,7 @@ $routes->group('superadmin', [
      * @return string
      */
     $routes->get('audit', 'AuditLog::index', ['as' => 'superadmin-audit']);
+    $routes->get('omni-search', 'OmniSearch::index', ['as' => 'superadmin-omni-search']);
 });
 
 // =================================================================

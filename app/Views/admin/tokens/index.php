@@ -104,9 +104,25 @@
                         </tbody>
                     </table>
                 </div>
+                <?php if ($total_all > $per_page): ?>
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="entry-info">
+                                Showing <?= (($current_page - 1) * $per_page) + 1 ?>
+                                to <?= min($current_page * $per_page, $total_all) ?>
+                                of <?= number_format($total_all) ?> entries
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="float-right">
+                                <?= $pager_all->links('default', 'bootstrap5_full') ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <?php endif; ?>
-
-                <!-- ===== EXPIRED TOKENS ===== -->
+                <?php endif; ?>
                 <?php if ($tab === 'expired'): ?>
                 <div class="card-body p-0">
                     <table class="table table-striped" id="expiredTable">
@@ -137,6 +153,24 @@
                         </tbody>
                     </table>
                 </div>
+                <?php if ($total_expired > $per_page): ?>
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="entry-info">
+                                Showing <?= (($current_page - 1) * $per_page) + 1 ?>
+                                to <?= min($current_page * $per_page, $total_expired) ?>
+                                of <?= number_format($total_expired) ?> entries
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="float-right">
+                                <?= $pager_expired->links('default', 'bootstrap5_full') ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <?php endif; ?>
 
                 <!-- ===== ANALYTICS ===== -->

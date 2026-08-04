@@ -104,39 +104,103 @@
 
                     <!-- ===== USER ACTIVITY ===== -->
                     <?php if ($tab === 'user-activity'): ?>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="input-group input-group-lg" style="max-width: 400px;">
-                                <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-search"></i></span></div>
-                                <input type="text" class="form-control" id="userSearch" placeholder="Search users...">
+                    <div class="row mb-4">
+                        <div class="col-lg-3 col-6">
+                            <div class="info-box bg-gradient-primary">
+                                <span class="info-box-icon"><i class="fas fa-users"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Users</span>
+                                    <span class="info-box-number"><?= number_format(count($users)) ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="info-box bg-gradient-success">
+                                <span class="info-box-icon"><i class="fas fa-database"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Users With Data</span>
+                                    <span class="info-box-number"><?= number_format(count($user_data)) ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="info-box bg-gradient-info">
+                                <span class="info-box-icon"><i class="fas fa-file-alt"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Records</span>
+                                    <span class="info-box-number"><?= number_format($grand_total) ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="info-box bg-gradient-warning">
+                                <span class="info-box-icon"><i class="fas fa-signal"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Data Sources</span>
+                                    <span class="info-box-number"><?= number_format(count($data_tables)) ?></span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="row" id="userCards">
-                        <?php foreach ($users as $u): ?>
-                        <div class="col-lg-4 col-md-6 col-sm-12 mb-3 user-card-wrapper">
-                            <a href="<?= base_url('admin/reports/user-activity/' . urlencode($u['username'])) ?>" class="text-decoration-none">
-                                <div class="card card-hover shadow-sm border-0">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
-                                                    <i class="fas fa-user fa-2x text-white"></i>
+
+                    <div class="card card-outline card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-user-clock mr-1 text-primary"></i>Registered Users</h3>
+                            <div class="card-tools">
+                                <span class="badge badge-primary badge-pill mr-2"><?= number_format(count($users)) ?> users</span>
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                            </div>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover table-striped mb-0" id="userActivityTable">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th class="text-center">Records</th>
+                                        <th>Last Login</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($users)): ?>
+                                    <tr><td colspan="5" class="text-center text-muted py-5"><i class="fas fa-user-slash fa-3x d-block mb-2"></i>No users found.</td></tr>
+                                    <?php else: ?>
+                                    <?php foreach ($users as $u): ?>
+                                    <?php
+                                        $initial  = strtoupper(mb_substr($u['username'], 0, 1));
+                                        $role     = $u['role'] ?? 'user';
+                                        $roleIcon = ['superadmin' => 'fa-crown', 'admin' => 'fa-user-shield', 'developer' => 'fa-code', 'user' => 'fa-user'][$role] ?? 'fa-user';
+                                        $avatarCls = ['superadmin' => 'bg-gradient-primary', 'admin' => 'bg-gradient-info', 'developer' => 'bg-gradient-warning', 'user' => 'bg-secondary'][$role] ?? 'bg-secondary';
+                                        $badgeCls  = ['superadmin' => 'badge-primary', 'admin' => 'badge-info', 'developer' => 'badge-warning', 'user' => 'badge-secondary'][$role] ?? 'badge-secondary';
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center font-weight-bold <?= $avatarCls ?>" style="width:40px;height:40px;font-size:15px;"><?= $initial ?></div>
+                                                <div class="ml-3">
+                                                    <strong class="d-block"><?= htmlspecialchars($u['username']) ?></strong>
+                                                    <small class="text-muted"><i class="far fa-envelope mr-1"></i><?= htmlspecialchars($u['email'] ?? '—') ?></small>
                                                 </div>
                                             </div>
-                                            <div class="ml-3 flex-grow-1">
-                                                <h5 class="mb-1 font-weight-bold text-dark"><?= htmlspecialchars($u['username']) ?></h5>
-                                                <small class="text-muted"><i class="fas fa-envelope mr-1"></i><?= htmlspecialchars($u['email'] ?? 'No email') ?></small>
-                                            </div>
-                                            <div class="ml-2"><i class="fas fa-chevron-right text-muted"></i></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </a>
+                                        </td>
+                                        <td><span class="badge <?= $badgeCls ?>"><i class="fas <?= $roleIcon ?> mr-1"></i><?= ucfirst($role) ?></span></td>
+                                        <td class="text-center"><span class="badge badge-dark badge-pill"><?= number_format($u['total_records'] ?? 0) ?></span></td>
+                                        <td class="text-muted small"><?= !empty($u['last_login']) ? '<i class="far fa-clock mr-1"></i>' . date('M j, Y g:i A', strtotime($u['last_login'])) : '<span class="text-muted"><i class="fas fa-minus mr-1"></i>Never</span>' ?></td>
+                                        <td class="text-center">
+                                            <a href="<?= base_url('admin/reports/user-activity/' . urlencode($u['username'])) ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-chart-line mr-1"></i>View Report</a>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
                         </div>
-                        <?php endforeach; ?>
+                        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-2">
+                            <span class="text-muted small"><i class="fas fa-info-circle mr-1 text-primary"></i>Select a user to view their detailed activity report.</span>
+                            <span class="text-muted small">Records count across all <?= number_format(count($data_tables)) ?> data sources.</span>
+                        </div>
                     </div>
-                    <?php if (empty($users)): ?><div class="alert alert-info">No users found.</div><?php endif; ?>
                     <?php endif; ?>
 
                     <!-- ===== DATA USAGE ===== -->
@@ -398,14 +462,6 @@ new Chart(document.getElementById('uploadTrend'), {
         datasets: [{ label: 'Uploads', data: <?= json_encode(array_column($uploads_by_day, 'count')) ?: '[]' ?>, borderColor: '#28a745', fill: false, tension: 0.3 }]
     },
     options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-});
-<?php endif; ?>
-<?php if ($tab === 'user-activity'): ?>
-$(document).ready(function() {
-    $('#userSearch').on('keyup', function() {
-        var value = this.value.toLowerCase();
-        $('#userCards .user-card-wrapper').each(function() { $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1); });
-    });
 });
 <?php endif; ?>
 <?php if ($tab === 'data-usage'): ?>

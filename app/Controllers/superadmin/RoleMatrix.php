@@ -114,7 +114,7 @@ class RoleMatrix extends BaseSuperadminController
         }
     }
 
-    private function getUserGroups(int $userId): array
+    protected function getUserGroups(int $userId): array
     {
         $rows = $this->getDb()->table('auth_groups_users')
             ->select('`group`')

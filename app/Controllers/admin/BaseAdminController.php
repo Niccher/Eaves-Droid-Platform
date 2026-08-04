@@ -7,6 +7,8 @@ use App\Models\Mod_Log_User_Action;
 
 class BaseAdminController extends BaseController
 {
+    protected const PRIVILEGED_GROUPS = ['superadmin', 'admin', 'developer'];
+
     protected $userData;
     protected $userId;
 
@@ -76,5 +78,36 @@ class BaseAdminController extends BaseController
         ], $extras);
 
         $logModel->logAction($data);
+    }
+
+    protected function canManageRoles(): bool
+    {
+        return auth()->user()->can('users.manage-roles');
+    }
+
+    protected function getUserGroups(int $userId): array
+    {
+        $rows = $this->getDb()->table('auth_groups_users')
+            ->select('`group`')
+            ->where('user_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        return array_values(array_unique(array_column($rows, 'group')));
+    }
+
+    protected function getHiddenSuperAdminIds(): array
+    {
+        if (in_array('superadmin', $this->getUserGroups($this->userId), true)) {
+            return [];
+        }
+
+        $rows = $this->getDb()->table('auth_groups_users')
+            ->select('user_id')
+            ->where('group', 'superadmin')
+            ->get()
+            ->getResultArray();
+
+        return array_map('intval', array_column($rows, 'user_id'));
     }
 }

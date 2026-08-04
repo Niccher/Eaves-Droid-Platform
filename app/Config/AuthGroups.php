@@ -83,8 +83,9 @@ class AuthGroups extends ShieldAuthGroups
         'system.migrate'      => 'Can run database migrations',
         'system.seed'         => 'Can run database seeders',
         'system.env'          => 'Can view and edit environment configuration',
-        'beta.access'         => 'Can access beta-level features',
-    ];
+         'beta.access'         => 'Can access beta-level features',
+         'intelligence.search' => 'Can use the Omni Search cross-user forensic search',
+     ];
 
     /**
      * --------------------------------------------------------------------
@@ -95,11 +96,12 @@ class AuthGroups extends ShieldAuthGroups
      * This defines group-level permissions.
      */
     public array $matrix = [
-        'superadmin' => [
-            'admin.*',
-            'users.*',
-            'beta.*',
-        ],
+         'superadmin' => [
+             'admin.*',
+             'users.*',
+             'beta.*',
+             'intelligence.*',
+         ],
         'admin' => [
             'admin.access',
             'users.create',

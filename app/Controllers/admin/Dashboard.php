@@ -8,7 +8,19 @@ class Dashboard extends BaseAdminController
     {
         $db = $this->getDb();
 
-        $totalUsers = $db->table('users')->where('deleted_at IS NULL')->countAllResults();
+        $totalUsersBuilder = $db->table('users')->where('deleted_at IS NULL');
+        if (!auth()->user()->inGroup('superadmin')) {
+            $superAdminIds = $db->table('auth_groups_users')
+                ->select('user_id')
+                ->where('group', 'superadmin')
+                ->get()
+                ->getResultArray();
+            $ids = array_column($superAdminIds, 'user_id');
+            if ($ids !== []) {
+                $totalUsersBuilder->whereNotIn('users.id', $ids);
+            }
+        }
+        $totalUsers = $totalUsersBuilder->countAllResults();
         $totalDevices = $db->table('tbl_devices')->countAllResults();
         $totalUploads = $db->table('uploaded_files')->countAllResults();
         $storageUsed = $db->table('uploaded_files')
@@ -20,6 +32,8 @@ class Dashboard extends BaseAdminController
         $recentActivity = $db->table('tbl_user_actions')
             ->select('tbl_user_actions.*, users.username')
             ->join('users', 'users.id = tbl_user_actions.user_id', 'left')
+            ->where('tbl_user_actions.action_severity !=', 'critical')
+            ->where('tbl_user_actions.action_type !=', 'admin_role_change')
             ->orderBy('tbl_user_actions.created_at', 'DESC')
             ->limit(10)
             ->get()

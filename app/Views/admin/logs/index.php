@@ -98,7 +98,7 @@ $tab = $active_tab ?? 'all';
 
             <?php
             $callouts = [
-                'all' => ['title' => 'All System Logs', 'desc' => 'Every system action recorded — user logins, admin operations, API requests, remote device commands, and system events. Use the tabs below to filter by log type.'],
+                'all' => ['title' => 'All System Logs', 'desc' => 'Every system action recorded — user logins, admin operations, API requests, remote device commands, and system events. Filter by severity, category or outcome. Critical security events (such as role changes) are restricted to the superadmin audit trail.'],
                 'access' => ['title' => 'Access Logs', 'desc' => 'Authentication and access events — user logins (password, token, QR), logout, token verification, and registration attempts. Audit trail for who accessed the platform and when.'],
                 'errors' => ['title' => 'Error Logs', 'desc' => 'Failed operations and system errors — unsuccessful login attempts, failed API calls, upload errors, and any action that did not complete successfully.'],
                 'php-errors' => ['title' => 'PHP Error Logs', 'desc' => 'PHP runtime error files — parse errors, exceptions, warnings, and notices logged by the application. View raw log file contents and clear old files to free up disk space.'],
@@ -152,6 +152,29 @@ $tab = $active_tab ?? 'all';
                 <div class="card-body p-0 tab-content">
                     <!-- ===== ALL LOGS ===== -->
                     <div class="tab-pane <?= $tab === 'all' ? 'active' : '' ?>" id="tab-all">
+                        <div class="card-body py-2 border-bottom bg-light">
+                            <form method="get" action="<?= base_url('admin/logs') ?>" class="form-inline">
+                                <select name="severity" class="form-control form-control-sm mr-2 mb-1">
+                                    <option value="">All severities</option>
+                                    <?php foreach (['low', 'medium', 'high'] as $s): ?>
+                                    <option value="<?= $s ?>" <?= ($filters['severity'] ?? null) === $s ? 'selected' : '' ?>><?= ucfirst($s) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <select name="category" class="form-control form-control-sm mr-2 mb-1">
+                                    <option value="">All categories</option>
+                                    <?php foreach ($categories as $c): ?>
+                                    <option value="<?= htmlspecialchars($c) ?>" <?= ($filters['category'] ?? null) === $c ? 'selected' : '' ?>><?= htmlspecialchars(ucfirst($c)) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <select name="outcome" class="form-control form-control-sm mr-2 mb-1">
+                                    <option value="">All outcomes</option>
+                                    <option value="success" <?= ($filters['outcome'] ?? null) === 'success' ? 'selected' : '' ?>>Success</option>
+                                    <option value="failed" <?= ($filters['outcome'] ?? null) === 'failed' ? 'selected' : '' ?>>Failed</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary mb-1"><i class="fas fa-filter"></i> Apply</button>
+                                <a href="<?= base_url('admin/logs') ?>" class="btn btn-sm btn-outline-secondary ml-1 mb-1">Reset</a>
+                            </form>
+                        </div>
                         <table class="table table-hover" id="logsTableAll">
                             <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Category</th><th>Severity</th><th>IP</th><th>Status</th><th>Details</th></tr></thead>
                             <tbody>
@@ -177,6 +200,24 @@ $tab = $active_tab ?? 'all';
                                 <?php endif; ?>
                             </tbody>
                         </table>
+                        <?php if ($total_all > $per_page): ?>
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="entry-info">
+                                        Showing <?= (($current_page - 1) * $per_page) + 1 ?>
+                                        to <?= min($current_page * $per_page, $total_all) ?>
+                                        of <?= number_format($total_all) ?> entries
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="float-right">
+                                        <?= $pager->links('default', 'bootstrap5_full') ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- ===== ACCESS LOGS ===== -->

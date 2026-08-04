@@ -94,8 +94,8 @@ class Auth extends ShieldAuth
         'login'             => 'client-dashboard',
         'logout'            => 'login',
         'force_reset'       => '/',
-        'permission_denied' => '/',
-        'group_denied'      => '/',
+        'permission_denied' => 'error/403',
+        'group_denied'      => 'error/403',
     ];
 
     /**

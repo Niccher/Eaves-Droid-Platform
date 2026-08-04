@@ -7,8 +7,6 @@ use CodeIgniter\Shield\Models\UserModel;
 
 class Users extends BaseAdminController
 {
-    private const PRIVILEGED_GROUPS = ['superadmin', 'admin', 'developer'];
-
     public function index()
     {
         $db = $this->getDb();
@@ -23,6 +21,18 @@ class Users extends BaseAdminController
             ->select('users.*, auth_identities.secret as email')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = \'email_password\'', 'left')
             ->where('users.deleted_at IS NULL');
+
+        $groupFilter = $this->request->getGet('group');
+        if ($groupFilter !== null && $groupFilter !== '') {
+            $validGroups = ['superadmin', 'admin', 'developer', 'beta', 'user'];
+            if (in_array($groupFilter, $validGroups, true)) {
+                $userBuilder->whereIn('users.id', static function ($builder) use ($groupFilter) {
+                    return $builder->select('user_id')
+                        ->from('auth_groups_users')
+                        ->where('`group`', $groupFilter);
+                });
+            }
+        }
 
         if (!$this->canManageRoles()) {
             $superAdminIds = $db->table('auth_groups_users')
@@ -65,6 +75,7 @@ class Users extends BaseAdminController
             'total_users' => $totalUsers,
             'current_page' => $page,
             'per_page' => $perPage,
+            'group_filter' => $groupFilter,
         ]);
     }
 
@@ -627,21 +638,5 @@ class Users extends BaseAdminController
         }
 
         return $counts;
-    }
-
-    private function canManageRoles(): bool
-    {
-        return auth()->user()->can('users.manage-roles');
-    }
-
-    private function getUserGroups(int $userId): array
-    {
-        $rows = $this->getDb()->table('auth_groups_users')
-            ->select('`group`')
-            ->where('user_id', $userId)
-            ->get()
-            ->getResultArray();
-
-        return array_values(array_unique(array_column($rows, 'group')));
     }
 }
