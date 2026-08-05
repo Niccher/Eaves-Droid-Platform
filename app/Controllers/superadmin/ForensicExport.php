@@ -2,6 +2,8 @@
 
 namespace App\Controllers\superadmin;
 
+use App\Models\Mod_Export_Job;
+
 class ForensicExport extends BaseSuperadminController
 {
     public function index()
@@ -18,9 +20,12 @@ class ForensicExport extends BaseSuperadminController
             ->get()
             ->getResultArray();
 
+        $recentJobs = (new Mod_Export_Job())->recentFor($this->userId, 15);
+
         return $this->renderView('superadmin/forensic_export', [
             'pag' => 'superadmin-forensics',
             'users' => $users,
+            'recentJobs' => $recentJobs,
         ]);
     }
 
@@ -44,7 +49,6 @@ class ForensicExport extends BaseSuperadminController
         $db = $this->getDb();
         $userId = $this->request->getPost('user_id');
         $categories = $this->request->getPost('categories') ?? [];
-        $format = $this->request->getPost('format') ?? 'zip';
         $dateFrom = $this->request->getPost('date_from') ?? '1970-01-01';
         $dateTo = $this->request->getPost('date_to') ?? date('Y-m-d');
 
@@ -56,122 +60,95 @@ class ForensicExport extends BaseSuperadminController
             return redirect()->back()->with('error', 'Please select at least one data category.');
         }
 
-        // Verify user exists
         $user = $db->table('users')->where('id', $userId)->where('deleted_at IS NULL')->get()->getRowArray();
         if (!$user) {
             return redirect()->back()->with('error', 'User not found.');
         }
 
-        $dataTypes = [
-            'sms' => ['table' => 'tbl_sms', 'date_col' => 'created_at', 'label' => 'SMS'],
-            'calls' => ['table' => 'tbl_logs', 'date_col' => 'created_at', 'label' => 'Call Logs'],
-            'contacts' => ['table' => 'tbl_contacts', 'date_col' => 'created_at', 'label' => 'Contacts'],
-            'apps' => ['table' => 'tbl_apps', 'date_col' => 'created_at', 'label' => 'Apps'],
-            'files' => ['table' => 'tbl_device_files', 'date_col' => 'created_at', 'label' => 'Files'],
-            'locations' => ['table' => 'tbl_location', 'date_col' => 'created_at', 'label' => 'Locations'],
-            'activities' => ['table' => 'tbl_activity', 'date_col' => 'created_at', 'label' => 'Activities'],
-            'accounts' => ['table' => 'tbl_accounts', 'date_col' => 'created_at', 'label' => 'Accounts'],
-            'network' => ['table' => 'tbl_network_info', 'date_col' => 'created_at', 'label' => 'Network Info'],
-            'device_context' => ['table' => 'tbl_device_context', 'date_col' => 'created_at', 'label' => 'Device Context'],
-            'bluetooth' => ['table' => 'tbl_bluetooth', 'date_col' => 'created_at', 'label' => 'Bluetooth'],
-            'sensors' => ['table' => 'tbl_sensor_profile', 'date_col' => 'created_at', 'label' => 'Sensors'],
-            'security_audit' => ['table' => 'tbl_security_audit', 'date_col' => 'created_at', 'label' => 'Security Audit'],
-            'notifications' => ['table' => 'tbl_notifications', 'date_col' => 'created_at', 'label' => 'Notifications'],
-            'calendar' => ['table' => 'tbl_calendar_events', 'date_col' => 'created_at', 'label' => 'Calendar'],
-            'app_usage' => ['table' => 'tbl_app_usage', 'date_col' => 'created_at', 'label' => 'App Usage'],
-            'media' => ['table' => 'tbl_captured_media', 'date_col' => 'created_at', 'label' => 'Media'],
-            'sim' => ['table' => 'tbl_sim_configs', 'date_col' => 'created_at', 'label' => 'SIM Configs'],
-        ];
-
-        $zip = new \ZipArchive();
-        $tempDir = WRITEPATH . 'exports/forensic_' . $user['username'] . '_' . date('Ymd_His');
-        
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
-
-        $zipPath = $tempDir . '.zip';
-        $manifest = [
-            'exported_at' => date('Y-m-d H:i:s'),
-            'user' => [
-                'id' => $user['id'],
-                'username' => $user['username'],
-                'email' => $user['email'] ?? '',
+        $jobId = (new Mod_Export_Job())->enqueue([
+            'job_type'       => 'forensics',
+            'requester_id'   => $this->userId,
+            'target_user_id' => (int) $userId,
+            'params'         => [
+                'user_id'    => (int) $userId,
+                'username'   => $user['username'],
+                'email'      => $user['email'] ?? '',
+                'categories' => $categories,
+                'date_from'  => $dateFrom,
+                'date_to'    => $dateTo,
+                'exporter'   => $this->userData['username'] ?? 'Unknown',
             ],
-            'date_range' => $dateFrom . ' to ' . $dateTo,
-            'categories' => [],
-        ];
+        ]);
 
-        if ($zip->open($zipPath, \ZipArchive::CREATE) !== true) {
-            return redirect()->back()->with('error', 'Failed to create export archive.');
+        if (!$jobId) {
+            return redirect()->back()->with('error', 'Failed to enqueue export job. Please try again.');
         }
 
-        foreach ($categories as $cat) {
-            if (!isset($dataTypes[$cat])) continue;
+        return redirect()->to('superadmin/forensic-export')
+            ->with('message', "Export job #{$jobId} queued. It will be ready shortly — the download link appears below when complete.");
+    }
 
-            $info = $dataTypes[$cat];
-            $table = $info['table'];
-            $dateCol = $info['date_col'];
-            $label = $info['label'];
+    /**
+     * JSON status for one or more job ids (used by the poller).
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function jobsStatus()
+    {
+        $ids = $this->request->getGet('ids');
+        $ids = $ids ? array_filter(array_map('intval', explode(',', $ids))) : [];
 
-            $query = $db->table($table)
-                ->where($dateCol . ' >=', $dateFrom)
-                ->where($dateCol . ' <=', $dateTo)
-                ->where('owner_id', $userId);
-
-            $count = $query->countAllResults(false);
-            $rows = $query->get()->getResultArray();
-
-            if ($count > 0) {
-                // Write CSV
-                $csvPath = $tempDir . '/' . $cat . '.csv';
-                $csvFile = fopen($csvPath, 'w');
-                
-                if ($rows) {
-                    fputcsv($csvFile, array_keys($rows[0]));
-                    foreach ($rows as $row) {
-                        fputcsv($csvFile, $row);
-                    }
-                }
-                fclose($csvFile);
-                
-                $zip->addFile($csvPath, $cat . '.csv');
-                $manifest['categories'][] = [
-                    'category' => $cat,
-                    'label' => $label,
-                    'records' => $count,
+        $statuses = [];
+        if ($ids) {
+            $rows = $this->getDb()->table('export_jobs')
+                ->where('requester_id', $this->userId)
+                ->whereIn('id', $ids)
+                ->get()
+                ->getResultArray();
+            foreach ($rows as $r) {
+                $statuses[(int) $r['id']] = [
+                    'status' => $r['status'],
+                    'result_size' => (int) $r['result_size'],
+                    'error_message' => $r['error_message'],
+                    'download_url' => $r['status'] === 'done'
+                        ? base_url('superadmin/forensic-export/download/' . $r['id'])
+                        : null,
                 ];
             }
         }
 
-        // Add manifest
-        $manifestPath = $tempDir . '/manifest.json';
-        file_put_contents($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT));
-        $zip->addFile($manifestPath, 'manifest.json');
-
-        // Add readme
-        $readme = "Forensic Export for user: {$user['username']}\n";
-        $readme .= "Export Date: " . date('Y-m-d H:i:s') . "\n";
-        $readme .= "Date Range: $dateFrom to $dateTo\n";
-        $readme .= "Categories: " . implode(', ', array_map(fn($c) => $dataTypes[$c]['label'] ?? $c, $categories)) . "\n";
-        $readme .= "Exported by: " . ($this->userData['username'] ?? 'Unknown') . "\n";
-        $zip->addFromString('README.txt', $readme);
-
-        $zip->close();
-
-        // Clean up temp directory
-        $this->cleanupDir($tempDir);
-
-        return $this->response->download($zipPath, null)->setFileName('forensic_export_' . $user['username'] . '_' . date('Ymd_His') . '.zip');
+        return $this->response->setJSON(['jobs' => $statuses]);
     }
 
-    private function cleanupDir(string $dir): void
+    /**
+     * Streams a completed export file. Only the requester can download.
+     *
+     * @param int $id Job ID
+     * @return \CodeIgniter\HTTP\ResponseInterface|\CodeIgniter\HTTP\RedirectResponse
+     */
+    public function download($id)
     {
-        if (!is_dir($dir)) return;
-        $files = glob($dir . '/*');
-        foreach ($files as $file) {
-            if (is_file($file)) unlink($file);
+        $job = $this->getDb()->table('export_jobs')
+            ->where('id', (int) $id)
+            ->where('requester_id', $this->userId)
+            ->get()
+            ->getRowArray();
+
+        if (!$job) {
+            return redirect()->to('superadmin/forensic-export')->with('error', 'Export job not found.');
         }
-        rmdir($dir);
+
+        if ($job['status'] !== 'done' || !$job['result_path'] || !is_file($job['result_path'])) {
+            return redirect()->to('superadmin/forensic-export')->with('error', 'Export is not ready or file is missing.');
+        }
+
+        $username = 'export';
+        $params = json_decode($job['params'] ?? '[]', true);
+        if (is_array($params) && !empty($params['username'])) {
+            $username = $params['username'];
+        }
+        $filename = 'forensic_export_' . $username . '_' . date('Ymd_His', strtotime($job['completed_at'] ?? 'now')) . '.zip';
+
+        return $this->response->download($job['result_path'], null)->setFileName($filename);
     }
 }

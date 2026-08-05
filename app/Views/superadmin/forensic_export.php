@@ -40,7 +40,7 @@
                             <h3 class="card-title"><i class="fas fa-user mr-2"></i>Select User</h3>
                         </div>
                         <div class="card-body">
-                            <form id="exportForm" action="<?= base_url('superadmin/forensic-export/export') ?>" method="post" target="_blank">
+                            <form id="exportForm" action="<?= base_url('superadmin/forensic-export/export') ?>" method="post">
                                 <?= csrf_field() ?>
                                 
                                 <div class="form-group">
@@ -124,39 +124,85 @@
                             <h3 class="card-title"><i class="fas fa-info-circle mr-2"></i>Export Information</h3>
                         </div>
                         <div class="card-body">
+                            <h6>How it works</h6>
+                            <ul class="small">
+                                <li>Exports are processed in the background, so the page does not wait for large datasets.</li>
+                                <li>Once ready, a <strong>Download</strong> button appears in the Recent Export Jobs list below.</li>
+                                <li>Run <code>php spark export:process</code> (or the <em>export:process</em> cron job) to generate pending exports.</li>
+                            </ul>
+                            <hr>
                             <h6>Export Contents</h6>
                             <ul class="small">
                                 <li>ZIP archive with CSV files per category</li>
                                 <li>manifest.json - Export metadata</li>
                                 <li>README.txt - Export details</li>
                             </ul>
-                            
-                            <h6 class="mt-3">Data Categories</h6>
-                            <ul class="small">
-                                <li>SMS Messages</li>
-                                <li>Call Logs</li>
-                                <li>Contacts</li>
-                                <li>Installed Apps</li>
-                                <li>Files</li>
-                                <li>Locations & Activities</li>
-                                <li>Accounts & Network Info</li>
-                                <li>Device Context & Sensors</li>
-                                <li>Bluetooth & Security Audit</li>
-                                <li>Notifications & Calendar</li>
-                                <li>App Usage & Media</li>
-                                <li>SIM Configs</li>
-                            </ul>
-
-                            <h6 class="mt-3">Export Format</h6>
-                            <ul class="small">
-                                <li>ZIP archive with CSV files</li>
-                                <li>manifest.json with metadata</li>
-                                <li>README.txt with export details</li>
-                            </ul>
 
                             <div class="alert alert-warning mt-3">
                                 <i class="fas fa-exclamation-triangle mr-2"></i>
                                 <strong>Legal Notice:</strong> This export contains sensitive personal data. Handle according to applicable privacy laws (GDPR, CCPA, etc.). Ensure proper chain of custody for legal proceedings.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Export Jobs -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex align-items-center">
+                            <h3 class="card-title mb-0"><i class="fas fa-history mr-2"></i>Recent Export Jobs</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th style="width: 70px;">Job #</th>
+                                            <th>Target User</th>
+                                            <th style="width: 150px;">Queued</th>
+                                            <th style="width: 130px;">Status</th>
+                                            <th style="width: 180px;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($recentJobs)): ?>
+                                            <tr><td colspan="5" class="text-center text-muted py-3">No export jobs yet.</td></tr>
+                                        <?php else: ?>
+                                            <?php foreach ($recentJobs as $job):
+                                                $jobParams = json_decode($job['params'] ?? '[]', true);
+                                                $targetName = $jobParams['username'] ?? ('User #' . $job['target_user_id']);
+                                            ?>
+                                                <tr data-job-id="<?= (int) $job['id'] ?>">
+                                                    <td class="align-middle">#<?= (int) $job['id'] ?></td>
+                                                    <td class="align-middle"><?= htmlspecialchars($targetName) ?></td>
+                                                    <td class="align-middle"><?= htmlspecialchars($job['queued_at'] ?? '') ?></td>
+                                                    <td class="align-middle job-status">
+                                                        <?php if ($job['status'] === 'done'): ?>
+                                                            <span class="badge badge-success">Done</span>
+                                                        <?php elseif ($job['status'] === 'failed'): ?>
+                                                            <span class="badge badge-danger">Failed</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-warning"><i class="fas fa-spinner fa-spin mr-1"></i><?= $job['status'] === 'processing' ? 'Processing' : 'Queued' ?></span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="align-middle job-download">
+                                                        <?php if ($job['status'] === 'done'): ?>
+                                                            <a class="btn btn-success btn-sm" href="<?= base_url('superadmin/forensic-export/download/' . (int) $job['id']) ?>">
+                                                                <i class="fas fa-download mr-1"></i>Download (<?= number_format((int) $job['result_size'] / 1024, 0) ?> KB)
+                                                            </a>
+                                                        <?php elseif ($job['status'] === 'failed'): ?>
+                                                            <span class="text-danger small"><?= htmlspecialchars(mb_substr($job['error_message'] ?? 'Error', 0, 80)) ?></span>
+                                                        <?php else: ?>
+                                                            <span class="text-muted small">Preparing...</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -171,7 +217,7 @@ $(function() {
     $('#exportForm').on('submit', function(e) {
         const userId = $('#user_id').val();
         const categories = $('input[name="categories[]"]:checked').length;
-        
+
         if (!userId) {
             alert('Please select a user.');
             return false;
@@ -180,9 +226,44 @@ $(function() {
             alert('Please select at least one data category.');
             return false;
         }
-        
-        $('#exportBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Generating Export...');
-        $('#exportStatus').text('Preparing export... this may take a moment for large datasets.');
+
+        $('#exportBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Queuing Export...');
+        $('#exportStatus').text('Export job queued. It will be processed in the background.');
     });
+
+    const statusUrl = <?= json_encode(base_url('superadmin/forensic-export/jobs/status')) ?>;
+
+    function pollJobs() {
+        const ids = $('[data-job-id]').map(function() { return $(this).data('job-id'); }).get();
+        if (!ids.length) return;
+
+        $.get(statusUrl, { ids: ids.join(',') }, function(res) {
+            if (res && res.jobs) {
+                $.each(res.jobs, function(id, j) {
+                    const row = $('[data-job-id="' + id + '"]');
+                    if (!row.length) return;
+
+                    const statusCell = row.find('.job-status');
+                    const dlCell = row.find('.job-download');
+
+                    if (j.status === 'done') {
+                        statusCell.html('<span class="badge badge-success">Done</span>');
+                        if (j.download_url) {
+                            dlCell.html('<a class="btn btn-success btn-sm" href="' + j.download_url + '"><i class="fas fa-download mr-1"></i>Download' + (j.result_size ? ' (' + Math.round(j.result_size / 1024) + ' KB)' : '') + '</a>');
+                        }
+                    } else if (j.status === 'failed') {
+                        statusCell.html('<span class="badge badge-danger">Failed</span>');
+                        dlCell.html('<span class="text-danger small">' + (j.error_message || 'Error') + '</span>');
+                    } else {
+                        statusCell.html('<span class="badge badge-warning"><i class="fas fa-spinner fa-spin mr-1"></i>' + (j.status === 'processing' ? 'Processing' : 'Queued') + '</span>');
+                    }
+                });
+            }
+        }).always(function() {
+            setTimeout(pollJobs, 5000);
+        });
+    }
+
+    pollJobs();
 });
 </script>

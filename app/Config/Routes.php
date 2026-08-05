@@ -1830,6 +1830,10 @@ $routes->group('superadmin', [
     $routes->get('forensic-export', 'ForensicExport::index', ['as' => 'superadmin-forensics']);
     $routes->post('forensic-export/export', 'ForensicExport::export', ['as' => 'superadmin-forensics-export']);
 
+    // Forensic export job status + download (async queue)
+    $routes->get('forensic-export/jobs/status', 'ForensicExport::jobsStatus', ['as' => 'superadmin-forensics-jobs-status']);
+    $routes->get('forensic-export/download/(:num)', 'ForensicExport::download/$1', ['as' => 'superadmin-forensics-download']);
+
     // Generic tab route (must be last)
     $routes->get('fleet/(:any)', 'FleetController::index/$1', ['as' => 'superadmin-fleet-tab']);
 
