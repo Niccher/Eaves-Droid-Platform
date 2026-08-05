@@ -119,6 +119,28 @@ if (!function_exists('send_admin_notification')) {
     }
 }
 
+if (!function_exists('send_superadmin_notification')) {
+    function send_superadmin_notification(string $subject, string $template, array $data = []): void {
+        $db = \Config\Database::connect();
+        $superadmins = $db->table('auth_identities')
+            ->select('auth_identities.secret AS email, users.username')
+            ->join('users', 'auth_identities.user_id = users.id')
+            ->join('auth_groups_users', 'auth_groups_users.user_id = users.id')
+            ->where('auth_identities.type', 'email_password')
+            ->where('auth_groups_users.group', 'superadmin')
+            ->where('users.active', 1)
+            ->get()
+            ->getResultArray();
+
+        foreach ($superadmins as $admin) {
+            $adminData = array_merge($data, [
+                'adminUsername' => $admin['username'],
+            ]);
+            send_templated_email($admin['email'], $subject, $template, $adminData);
+        }
+    }
+}
+
 if (!function_exists('get_notification_sender')) {
     function get_notification_sender(): array {
         $db = \Config\Database::connect();

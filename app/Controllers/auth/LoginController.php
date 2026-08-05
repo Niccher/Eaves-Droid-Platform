@@ -27,10 +27,34 @@ class LoginController extends Controller
     /**
      * Handle login form submission
      */
-    public function loginAction(): RedirectResponse
+    public function loginAction(): \CodeIgniter\HTTP\ResponseInterface
     {
         $logModel = new Mod_Log_User_Action();
         $email    = $this->request->getPost('email');
+
+        // 0. Rate-limit / lockout check (rejects locked-out IPs/accounts up-front)
+        $lockout = $this->checkLockout($email);
+        if ($lockout !== null) {
+            $logModel->logAction([
+                'action_category' => 'authentication',
+                'action_type'     => 'login_locked',
+                'action_severity' => 'high',
+                'success'         => 0,
+                'error_message'   => $lockout['reason'],
+                'new_values'      => json_encode([
+                    'ip' => $lockout['ip'],
+                    'email' => $email,
+                    'failed' => $lockout['failed'],
+                ]),
+                'request_url'     => current_url(),
+            ]);
+
+            session()->setFlashdata('error', $lockout['message']);
+            $this->response->setStatusCode(429);
+            $this->response->setHeader('Retry-After', (string) $lockout['retry_after']);
+            $this->response->setBody(view('auth/login'));
+            return $this->response;
+        }
 
         // 1. Define the validation rules
         $rules = $this->getValidationRules();
@@ -108,6 +132,9 @@ class LoginController extends Controller
             'request_url'     => current_url(),
         ]);
 
+        // Success! Clear the failed-attempt counter for this IP.
+        $this->clearFailedAttempts($this->request->getIPAddress());
+
         // Success! Redirect to intended page or dashboard
         $session = session();
         $redirect = $session->getTempdata('beforeLoginUrl');
@@ -123,6 +150,120 @@ class LoginController extends Controller
         }
 
         return redirect()->to($redirect)->with('message', 'Welcome back!');
+    }
+
+    /**
+     * Returns an array describing a lockout if the IP/account is over the
+     * failed-attempt threshold, otherwise null.
+     *
+     * @param string|null $email
+     * @return array{ip:string, failed:int, retry_after:int, message:string, reason:string}|null
+     */
+    protected function checkLockout(?string $email): ?array
+    {
+        $db = \Config\Database::connect();
+
+        $security = [];
+        foreach ($db->table('settings')->where('class', 'security')->get()->getResultArray() as $r) {
+            $security[$r['key']] = $r['value'];
+        }
+
+        $maxAttempts   = (int) ($security['max_login_attempts'] ?? 5);
+        $lockoutMinutes = (int) ($security['lockout_duration'] ?? 15);
+        if ($maxAttempts <= 0) $maxAttempts = 5;
+        if ($lockoutMinutes <= 0) $lockoutMinutes = 15;
+
+        $since = date('Y-m-d H:i:s', time() - ($lockoutMinutes * 60));
+        $ip = $this->request->getIPAddress();
+
+        $ipFailed = (int) $db->table('auth_logins')
+            ->where('ip_address', $ip)
+            ->where('success', 0)
+            ->where('date >=', $since)
+            ->countAllResults();
+
+        $emailFailed = 0;
+        if ($email) {
+            $emailFailed = (int) $db->table('auth_logins')
+                ->where('identifier', $email)
+                ->where('success', 0)
+                ->where('date >=', $since)
+                ->countAllResults();
+        }
+
+        $failed = max($ipFailed, $emailFailed);
+
+        if ($failed < $maxAttempts) {
+            return null;
+        }
+
+        // Over threshold: lock out. Trigger brute-force alert if enabled.
+        $this->notifyBruteForce($ip, (string) $email, $failed, $lockoutMinutes);
+
+        return [
+            'ip'          => $ip,
+            'failed'      => $failed,
+            'retry_after' => $lockoutMinutes * 60,
+            'reason'      => "Too many failed login attempts ({$failed} in {$lockoutMinutes} min)",
+            'message'     => "Too many failed login attempts. Your IP has been locked for {$lockoutMinutes} minutes.",
+        ];
+    }
+
+    /**
+     * Clears recent failed login records for an IP after a successful login.
+     */
+    protected function clearFailedAttempts(string $ip): void
+    {
+        try {
+            \Config\Database::connect()->table('auth_logins')
+                ->where('ip_address', $ip)
+                ->where('success', 0)
+                ->delete();
+        } catch (\Throwable $e) {
+            log_message('error', 'clearFailedAttempts: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notifies admins when a brute-force lockout is triggered, if the
+     * on_brute_force email trigger is enabled.
+     */
+    protected function notifyBruteForce(string $ip, string $email, int $failed, int $lockoutMinutes): void
+    {
+        try {
+            $db = \Config\Database::connect();
+            $enabled = true;
+            foreach ($db->table('settings')->where('class', 'email_triggers')->get()->getResultArray() as $r) {
+                if ($r['key'] === 'on_brute_force' && $r['value'] === '0') {
+                    $enabled = false;
+                    break;
+                }
+            }
+            if (!$enabled) {
+                return;
+            }
+
+            helper('email');
+            send_superadmin_notification(
+                'Eaves Droid — Brute-Force Lockout Triggered',
+                'email/admin/brute_force',
+                [
+                    'ip'              => $ip,
+                    'accountEmail'    => $email ?: 'N/A',
+                    'failedAttempts'  => $failed,
+                    'lockoutMinutes'  => $lockoutMinutes,
+                    'securityAction'  => 'Brute-Force Lockout',
+                    'securityDescription' => 'Failed login threshold exceeded; IP/account locked.',
+                    'securityStatus'  => 'danger',
+                    'securityInitiatedBy' => 'System (Login Throttle)',
+                    'securityBrowser' => $this->request->getUserAgent()->getAgentString(),
+                    'securityBrowserIp' => $ip,
+                    'securityExecutedAt' => date('Y-m-d H:i:s'),
+                ]
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'notifyBruteForce: ' . $e->getMessage());
+        }
     }
 
     /**

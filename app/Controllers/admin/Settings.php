@@ -65,6 +65,7 @@ $allowedMap = [
                 'on_user_deleted', 'on_maintenance_toggle', 'on_backup_success', 'on_backup_failed',
                 'on_anomaly_high', 'on_cron_failed', 'on_settings_changed',
                 'on_storage_warning', 'on_storage_critical', 'on_queue_stalled', 'on_ssl_expiring',
+                'on_brute_force',
             ],
             'backup' => ['schedule_cron', 'retention_days', 'storage_path', 'compress', 'notify_on_success', 'notify_on_failure'],
             'storage' => ['threshold_warning', 'threshold_critical', 'notify_admins', 'logs_retention_days', 'queue_cleanup_timeout_hours', 'queue_cleanup_max_attempts', 'ml_cleanup_timeout_hours', 'cleanup_backups_days', 'cleanup_cache_days', 'cleanup_exports_days'],
@@ -1135,6 +1136,7 @@ $allowedMap = [
                 'on_anomaly_high' => ['label' => 'High Severity Anomaly', 'description' => 'Alert admins when ML detects high-severity anomaly.'],
                 'on_cron_failed' => ['label' => 'Cron Job Failed', 'description' => 'Alert admins when a scheduled cron job fails.'],
                 'on_settings_changed' => ['label' => 'Critical Settings Changed', 'description' => 'Alert admins when critical system settings are modified.'],
+                'on_brute_force' => ['label' => 'Brute-Force Lockout', 'description' => 'Alert superadmins when the failed-login threshold is exceeded.'],
             ],
             'systemTriggers' => [
                 'on_storage_warning' => ['label' => 'Storage Warning', 'description' => 'Alert when disk usage exceeds warning threshold.'],
