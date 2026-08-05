@@ -36,11 +36,15 @@ class MaintenanceFilter implements FilterInterface
 
     public function before(RequestInterface $request, $arguments = null)
     {
-        $db = Database::connect();
-        $settings = [];
-        $rows = $db->table('settings')->where('class', 'app')->get()->getResultArray();
-        foreach ($rows as $r) {
-            $settings[$r['key']] = $r['value'];
+        $settings = cache('maintenance_settings');
+        if (!is_array($settings)) {
+            $db = Database::connect();
+            $settings = [];
+            $rows = $db->table('settings')->where('class', 'app')->get()->getResultArray();
+            foreach ($rows as $r) {
+                $settings[$r['key']] = $r['value'];
+            }
+            cache()->save('maintenance_settings', $settings, 60);
         }
 
         $maintenanceMode = $settings['maintenance_mode'] ?? '0';

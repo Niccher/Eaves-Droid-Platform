@@ -361,9 +361,13 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="entry-info">
-                                            Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
-                                            to <?php echo min($currentPage * $perPage, $totalSmsInbox ?? 0) ?>
-                                            of <?php echo $totalSmsInbox ?? 0 ?> entries
+                                            <?php if (($totalSMS ?? 0) > 0): ?>
+                                                Showing <?php echo (($currentPage - 1) * $perPage) + 1 ?>
+                                                to <?php echo min($currentPage * $perPage, $totalSMS) ?>
+                                                of <?php echo $totalSMS ?> entries
+                                            <?php else: ?>
+                                                Showing 0 of 0 entries
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="col-md-6">

@@ -183,6 +183,7 @@ $allowedMap = [
         if ($returnUrl && filter_var($returnUrl, FILTER_VALIDATE_URL)) {
             $redirectUrl = parse_url($returnUrl, PHP_URL_PATH);
         }
+        cache()->delete('maintenance_settings');
         return redirect()->to($redirectUrl)->with('message', "Updated {$updated} setting(s) for section '{$section}'.");
     }
 
