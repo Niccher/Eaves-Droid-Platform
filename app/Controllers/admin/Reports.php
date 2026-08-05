@@ -10,6 +10,11 @@ class Reports extends BaseAdminController
         $data = ['pag' => 'admin-reports', 'active_tab' => $tab];
         $data['tab_counts'] = [];
 
+        // Log report view
+        $this->logAdminAction('report_view', 'low', true, [
+            'tab' => $tab,
+        ]);
+
         $hiddenIds = $this->getHiddenSuperAdminIds();
 
         // Dashboard data

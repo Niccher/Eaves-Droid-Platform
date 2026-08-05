@@ -12,6 +12,8 @@ class RemoteDevice extends BaseAdminController
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('remote_device_view', 'low', true);
+
         $users = $db->table('users')
             ->select('users.id, users.username')
             ->join('tbl_device_profile', 'tbl_device_profile.owner_id = users.id', 'inner')

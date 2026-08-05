@@ -7,6 +7,23 @@ use CodeIgniter\Shield\Models\UserModel;
 
 class Impersonate extends BaseSuperadminController
 {
+    public function initController(
+        \CodeIgniter\HTTP\RequestInterface $request,
+        \CodeIgniter\HTTP\ResponseInterface $response,
+        \Psr\Log\LoggerInterface $logger
+    ): void {
+        // For stop action during impersonation, skip superadmin check
+        $isStopAction = $request->getMethod(true) === 'POST' 
+            && strpos($request->getUri()->getPath(), 'superadmin/impersonate/stop') !== false;
+
+        if ($isStopAction && session()->get('impersonated_by') !== null) {
+            // Only run BaseAdminController init (auth check), not BaseSuperadminController superadmin check
+            \App\Controllers\admin\BaseAdminController::initController($request, $response, $logger);
+            return;
+        }
+
+        parent::initController($request, $response, $logger);
+    }
     public function index()
     {
         $db = $this->getDb();
@@ -83,7 +100,11 @@ class Impersonate extends BaseSuperadminController
             ]),
         ]);
 
-        return redirect()->to('admin/dashboard')->with('message', 'Now impersonating ' . $targetUser->username);
+        // Return view that opens admin dashboard in new tab
+        return view('superadmin/impersonate_start', [
+            'targetUser' => $targetUser,
+            'redirectUrl' => base_url('admin/dashboard'),
+        ]);
     }
 
     public function stop()

@@ -8,6 +8,8 @@ class Dashboard extends BaseSuperadminController
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('superadmin_dashboard_view', 'low', true);
+
         $groupCounts = [];
         $groupRows = $db->table('auth_groups_users')
             ->select('`group`, COUNT(*) AS total')

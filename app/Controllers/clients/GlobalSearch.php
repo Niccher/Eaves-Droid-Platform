@@ -27,6 +27,18 @@ class GlobalSearch extends BaseClientController
             return redirect()->to('home');
         }
 
+        // Log user global search
+        $logModel = new \App\Models\Mod_Log_User_Action();
+        $logModel->logAction([
+            'user_id'         => $this->userId,
+            'action_category' => 'search',
+            'action_type'     => 'global_search',
+            'action_severity' => 'low',
+            'success'         => 1,
+            'new_values'      => json_encode(['keyword' => $query]),
+            'request_url'     => current_url(),
+        ]);
+
         $counts = $this->getCounts($query);
         $totalCount = array_sum($counts);
 
@@ -58,6 +70,18 @@ class GlobalSearch extends BaseClientController
         if (!array_key_exists($tab, self::TABS)) {
             return redirect()->to('global-search?q=' . urlencode($query));
         }
+
+        // Log user global search tab view
+        $logModel = new \App\Models\Mod_Log_User_Action();
+        $logModel->logAction([
+            'user_id'         => $this->userId,
+            'action_category' => 'search',
+            'action_type'     => 'global_search_tab',
+            'action_severity' => 'low',
+            'success'         => 1,
+            'new_values'      => json_encode(['keyword' => $query, 'tab' => $tab]),
+            'request_url'     => current_url(),
+        ]);
 
         $counts = $this->getCounts($query);
         $totalCount = array_sum($counts);

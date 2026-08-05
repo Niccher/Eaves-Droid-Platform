@@ -61,7 +61,22 @@ writable/uploads/*
 !writable/uploads/index.html
 
 writable/debugbar/*
-!writable/debugbar/.gitkeep
+!writable/debugbar/index.html
+
+writable/backups/*
+!writable/backups/.gitkeep
+
+writable/exports/*
+!writable/exports/index.html
+
+writable/reports/*
+!writable/reports/index.html
+
+writable/temp/*
+!writable/temp/index.html
+
+writable/credentials/*
+!writable/credentials/.gitkeep
 
 php_errors.log
 

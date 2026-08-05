@@ -91,6 +91,18 @@
 
                         <li class="nav-header">MAIN</li>
 
+                        <?php if (!empty($is_impersonating)): ?>
+                        <li class="nav-item">
+                            <form action="<?php echo base_url('superadmin/impersonate/stop'); ?>" method="post" class="nav-link">
+                                <?php echo csrf_field(); ?>
+                                <button type="submit" class="w-100 text-left btn btn-block btn-danger">
+                                    <i class="nav-icon fas fa-sign-out-alt"></i>
+                                    <p>Stop Impersonation</p>
+                                </button>
+                            </form>
+                        </li>
+                        <?php endif; ?>
+
                         <li class="nav-item">
                             <a href="<?php echo base_url('superadmin/home'); ?>"
                                class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-home') ? 'active' : ''; ?>">
@@ -138,6 +150,14 @@
                                class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-impersonate') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-user-secret"></i>
                                 <p>Impersonate</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/fleet'); ?>"
+                               class="nav-link <?php echo (isset($pag) && ($pag === 'superadmin-fleet' || $pag === 'superadmin-fleet-home' || str_starts_with($pag, 'superadmin-fleet'))) ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-building"></i>
+                                <p>Fleet Overview</p>
                             </a>
                         </li>
 

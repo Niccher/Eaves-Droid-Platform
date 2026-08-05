@@ -19,6 +19,9 @@ class Filters extends BaseConfig
         'secureheaders' => SecureHeaders::class,
         'throttle'      => \App\Filters\ThrottleFilter::class,
         'maintenance'   => \App\Filters\MaintenanceFilter::class,
+        'impersonate'   => \App\Filters\ImpersonateFilter::class,
+        'role'          => \App\Filters\RoleFilter::class,
+        'session'       => \CodeIgniter\Shield\Filters\SessionAuth::class,
     ];
 
     public array $globals = [

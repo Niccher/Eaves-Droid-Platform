@@ -11,6 +11,10 @@ class Settings extends BaseAdminController
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'general',
+        ]);
+
         $saved = [];
         $rows = $db->table('settings')->where('class', 'app')->get()->getResultArray();
         foreach ($rows as $r) {
@@ -167,6 +171,10 @@ $allowedMap = [
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'database',
+        ]);
+
         $tableStats = [];
         $tables = $db->listTables();
         foreach ($tables as $table) {
@@ -216,6 +224,10 @@ $allowedMap = [
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'api',
+        ]);
+
         $saved = [];
         $rows = $db->table('settings')->where('class', 'api')->get()->getResultArray();
         foreach ($rows as $r) {
@@ -232,6 +244,10 @@ $allowedMap = [
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'security',
+        ]);
+
         $saved = [];
         $rows = $db->table('settings')->where('class', 'security')->get()->getResultArray();
         foreach ($rows as $r) {
@@ -247,6 +263,10 @@ $allowedMap = [
     public function notification_settings()
     {
         $db = $this->getDb();
+
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'notification',
+        ]);
 
         $saved = [];
         $rows = $db->table('settings')->where('class', 'notification')->get()->getResultArray();
@@ -320,6 +340,10 @@ $allowedMap = [
     public function maintenance()
     {
         $db = $this->getDb();
+
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'maintenance',
+        ]);
 
         $saved = [];
         $rows = $db->table('settings')->where('class', 'app')->get()->getResultArray();
@@ -414,6 +438,10 @@ $allowedMap = [
     public function backup()
     {
         $db = $this->getDb();
+
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'backup',
+        ]);
 
         $backups = [];
         $backupPath = WRITEPATH . 'backups';
@@ -635,6 +663,10 @@ $allowedMap = [
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'storage',
+        ]);
+
         $saved = [];
         $rows = $db->table('settings')->where('class', 'storage')->get()->getResultArray();
         foreach ($rows as $r) {
@@ -822,6 +854,10 @@ $allowedMap = [
     public function cron()
     {
         $db = $this->getDb();
+
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'cron',
+        ]);
 
         $cronJobs = $db->table('cron_jobs')
             ->orderBy('enabled', 'DESC')

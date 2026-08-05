@@ -8,6 +8,10 @@ class Tokens extends BaseAdminController
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('token_view', 'low', true, [
+            'tab' => $tab,
+        ]);
+
         $perPage = 25;
         $page = (int) ($this->request->getGet('page') ?? 1);
         if ($page < 1) {
@@ -96,6 +100,8 @@ class Tokens extends BaseAdminController
 
     public function analytics()
     {
+        $this->logAdminAction('token_analytics_view', 'low', true);
+
         return $this->index('analytics');
     }
 

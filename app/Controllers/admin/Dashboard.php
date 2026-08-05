@@ -8,6 +8,8 @@ class Dashboard extends BaseAdminController
     {
         $db = $this->getDb();
 
+        $this->logAdminAction('admin_dashboard_view', 'low', true);
+
         $totalUsersBuilder = $db->table('users')->where('deleted_at IS NULL');
         if (!auth()->user()->inGroup('superadmin')) {
             $superAdminIds = $db->table('auth_groups_users')

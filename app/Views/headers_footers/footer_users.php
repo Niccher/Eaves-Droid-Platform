@@ -55,7 +55,15 @@
             });
         });
     });
+
+    // Auto-stop impersonation when page is closed
+    <?php if (session()->get('impersonated_by')): ?>
+    <script>
+    window.addEventListener('beforeunload', function() {
+        navigator.sendBeacon('<?php echo base_url('superadmin/impersonate/stop'); ?>');
+    });
     </script>
+    <?php endif; ?>
     </body>
 </html>
 

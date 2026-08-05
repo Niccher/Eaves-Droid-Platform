@@ -16,6 +16,12 @@ class OmniSearch extends BaseSuperadminController
         $data['total'] = 0;
         $data['categoryCounts'] = [];
 
+        if ($query !== null && $query !== '') {
+            $this->logAdminAction('omni_search', 'low', true, [
+                'keyword' => $query,
+            ]);
+        }
+
         $catMeta = [
             'sms'      => ['label' => 'SMS',     'icon' => 'fa-sms',        'color' => 'info',    'table' => 'tbl_sms'],
             'calls'    => ['label' => 'Calls',   'icon' => 'fa-phone',      'color' => 'success',  'table' => 'tbl_logs'],

@@ -113,7 +113,13 @@ class LoginController extends Controller
         $redirect = $session->getTempdata('beforeLoginUrl');
 
         if ($redirect === null) {
-            $redirect = $user->inGroup('superadmin') ? '/superadmin/home' : '/home';
+            if ($user->inGroup('superadmin')) {
+                $redirect = '/superadmin/home';
+            } elseif ($user->inGroup('admin')) {
+                $redirect = '/admin/dashboard';
+            } else {
+                $redirect = '/home';
+            }
         }
 
         return redirect()->to($redirect)->with('message', 'Welcome back!');

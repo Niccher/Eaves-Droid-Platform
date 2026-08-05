@@ -39,7 +39,14 @@ $pag = $pag ?? 'superadmin-impersonate';
             <?php if (!empty($impersonated_by)): ?>
                 <div class="alert alert-warning">
                     <h5><i class="fas fa-exclamation-triangle mr-1"></i> Currently Impersonating</h5>
-                    <p>You are currently impersonating a user. <a href="<?php echo base_url('superadmin/impersonate/stop'); ?>" class="alert-link">Stop impersonation</a></p>
+                    <p>You are currently impersonating a user. 
+                    <form action="<?php echo base_url('superadmin/impersonate/stop'); ?>" method="post" class="d-inline">
+                        <?php csrf_field(); ?>
+                        <button type="submit" class="alert-link btn btn-link p-0" style="text-decoration: underline; border: none; background: none; color: inherit;">
+                            Stop impersonation
+                        </button>
+                    </form>
+                    </p>
                 </div>
             <?php endif; ?>
 

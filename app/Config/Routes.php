@@ -206,12 +206,12 @@ service('auth')->routes($routes);
 
 // =================================================================
 // 5. PROTECTED CLIENT/DASHBOARD ROUTES
-//    All routes require authentication (session filter)
+//    All routes require authentication (session filter) + role filter
 // =================================================================
 
 $routes->group('', [
     'namespace' => 'App\Controllers\clients',
-    'filter' => 'session'  // Requires authentication
+    'filter' => 'session,role'  // Requires authentication + role check (user only)
 ], static function ($routes) {
 
     // =============================================================
@@ -1284,12 +1284,12 @@ $routes->group('api/v1', [
 
 // =================================================================
 // 7. ADMIN ROUTES (Administrative Interface)
-//    Requires admin role and authentication
+//    Requires admin or superadmin role
 // =================================================================
 
 $routes->group('admin', [
     'namespace' => 'App\Controllers\admin',
-    'filter' => 'group:admin,superadmin'  // Requires auth + admin/superadmin group
+    'filter' => 'role'  // Requires admin or superadmin role
 ], static function ($routes) {
 
     // -------------------------------------------------------------
@@ -1767,12 +1767,12 @@ $routes->group('admin', [
 
 // =================================================================
 // 7.7 SUPERADMIN ROUTES (Privileged Administration)
-//    Requires the superadmin group only
+//    Requires superadmin role (or impersonation)
 // =================================================================
 
 $routes->group('superadmin', [
     'namespace' => 'App\Controllers\superadmin',
-    'filter' => 'group:superadmin'
+    'filter' => 'role,impersonate'  // Requires superadmin role OR impersonation
 ], static function ($routes) {
 
     // -------------------------------------------------------------
@@ -1780,11 +1780,33 @@ $routes->group('superadmin', [
     // -------------------------------------------------------------
 
     /**
+     * Redirect /superadmin/ to dashboard
+     */
+    $routes->get('', 'Dashboard::index', ['as' => 'superadmin-root']);
+
+    /**
      * Displays superadmin overview dashboard.
      *
      * @return string
      */
     $routes->get('home', 'Dashboard::index', ['as' => 'superadmin-home']);
+
+    /**
+     * Displays fleet overview dashboard.
+     *
+     * @return string
+     */
+    $routes->get('fleet', 'FleetController::index', ['as' => 'superadmin-fleet']);
+
+    // Fleet sub-pages (must come before generic fleet/(:any))
+    $routes->get('fleet/timeline', 'FleetController::timeline', ['as' => 'superadmin-fleet-timeline']);
+    $routes->get('fleet/patches', 'FleetController::patches', ['as' => 'superadmin-fleet-patches']);
+    $routes->get('fleet/alerts', 'FleetController::alerts', ['as' => 'superadmin-fleet-alerts']);
+    $routes->get('fleet/geo', 'FleetController::geo', ['as' => 'superadmin-fleet-geo']);
+    $routes->get('fleet/device/(:any)', 'FleetController::deviceDetail/$1', ['as' => 'superadmin-fleet-device']);
+
+    // Generic tab route (must be last)
+    $routes->get('fleet/(:any)', 'FleetController::index/$1', ['as' => 'superadmin-fleet-tab']);
 
     // -------------------------------------------------------------
     // 7.7.2 ROLE MATRIX (promote/demote)
@@ -1818,7 +1840,7 @@ $routes->group('superadmin', [
     $routes->get('omni-search', 'OmniSearch::index', ['as' => 'superadmin-omni-search']);
     $routes->get('impersonate', 'Impersonate::index', ['as' => 'superadmin-impersonate']);
     $routes->post('impersonate/act-as/(:num)', 'Impersonate::actAs/$1', ['as' => 'superadmin-impersonate-act']);
-    $routes->post('impersonate/stop', 'Impersonate::stop', ['as' => 'superadmin-impersonate-stop']);
+    $routes->match(['get', 'post'], 'impersonate/stop', 'Impersonate::stop', ['as' => 'superadmin-impersonate-stop']);
 });
 
 // =================================================================

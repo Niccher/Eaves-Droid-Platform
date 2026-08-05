@@ -146,6 +146,20 @@
                 <!-- Sidebar Menu -->
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-header">MAIN</li>
+
+                        <?php if (!empty($is_impersonating)): ?>
+                        <li class="nav-item">
+                            <form action="<?php echo base_url('superadmin/impersonate/stop'); ?>" method="post" class="nav-link">
+                                <?php echo csrf_field(); ?>
+                                <button type="submit" class="w-100 text-left btn btn-block btn-danger">
+                                    <i class="nav-icon fas fa-sign-out-alt"></i>
+                                    <p>Stop Impersonation</p>
+                                </button>
+                            </form>
+                        </li>
+                        <?php endif; ?>
+
                         <!-- Dashboard -->
                         <li class="nav-item">
                             <a href="<?php echo base_url('home'); ?>"
