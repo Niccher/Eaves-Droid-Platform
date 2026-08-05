@@ -91,13 +91,18 @@
             <div class="row mb-2">
                 <div class="col-12">
                     <div class="card">
-                        <form action="<?= base_url('admin/settings/retention/purge') ?>" method="post" id="purgeForm">
-                            <?= csrf_field() ?>
-                            <div class="card-header d-flex align-items-center">
+                        <?= form_open('admin/settings/retention/save', ['id' => 'configForm', 'method' => 'post']) ?>
+                        <?= form_open('admin/settings/retention/purge', ['id' => 'purgeForm', 'method' => 'post']) ?>
+                            <div class="card-header d-flex align-items-center flex-wrap">
                                 <h3 class="card-title mb-0"><i class="fas fa-cogs mr-2"></i>Retention Configuration</h3>
-                                <button type="submit" class="btn btn-danger btn-sm ml-auto" onclick="return confirm('This will PERMANENTLY DELETE data older than retention periods. Are you sure?')">
-                                    <i class="fas fa-trash-alt mr-1"></i> Run Purge Now
-                                </button>
+                                <div class="ml-auto d-flex">
+                                    <button type="submit" form="configForm" class="btn btn-primary btn-sm mr-2" title="Save the retention days and auto-purge toggles for all categories">
+                                        <i class="fas fa-save mr-1"></i> Save Configuration
+                                    </button>
+                                    <button type="submit" form="purgeForm" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash-alt mr-1"></i> Run Purge Now
+                                    </button>
+                                </div>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -117,18 +122,18 @@
                                                     <td class="bg-light"><strong><?= $label ?></strong></td>
                                                     <td class="text-center"><?= number_format($stat['total']) ?></td>
                                                     <td class="text-center">
-                                                        <input type="number" name="retention_<?= $label ?>_days" class="form-control form-control-sm" value="<?= $stat['retention_days'] ?>" min="0" style="width: 80px;">
+                                                        <input type="number" form="configForm" name="retention_<?= $label ?>_days" class="form-control form-control-sm" value="<?= $stat['retention_days'] ?>" min="0" style="width: 80px;">
                                                     </td>
                                                     <td class="text-center">
                                                         <div class="custom-control custom-switch">
-                                                            <input type="hidden" name="retention_<?= $label ?>_enabled" value="0">
-                                                            <input type="checkbox" class="custom-control-input" id="ret_<?= $label ?>_enabled" name="retention_<?= $label ?>_enabled" value="1" <?= $stat['enabled'] ? 'checked' : '' ?>>
+                                                            <input type="hidden" form="configForm" name="retention_<?= $label ?>_enabled" value="0">
+                                                            <input type="checkbox" form="configForm" class="custom-control-input" id="ret_<?= $label ?>_enabled" name="retention_<?= $label ?>_enabled" value="1" <?= $stat['enabled'] ? 'checked' : '' ?>>
                                                             <label class="custom-control-label" for="ret_<?= $label ?>_enabled"></label>
                                                         </div>
                                                     </td>
                                                     <td class="text-center">
                                                         <div class="custom-control custom-checkbox">
-                                                            <input type="checkbox" class="custom-control-input" id="ret_<?= $label ?>_purge" name="categories[]" value="<?= $label ?>">
+                                                            <input type="checkbox" form="purgeForm" class="custom-control-input" id="ret_<?= $label ?>_purge" name="categories[]" value="<?= $label ?>">
                                                             <label class="custom-control-label" for="ret_<?= $label ?>_purge"></label>
                                                         </div>
                                                     </td>
@@ -138,6 +143,7 @@
                                     </table>
                                 </div>
                             </div>
+                        </form>
                         </form>
                     </div>
                 </div>

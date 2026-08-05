@@ -1379,39 +1379,25 @@ private function sendMaintenanceToggledEmail(string $mode, array $changes, array
             'section' => 'retention',
         ]);
 
-        $saved = [];
-        $rows = $db->table('settings')->where('class', 'retention')->get()->getResultArray();
-        foreach ($rows as $r) {
-            $saved[$r['key']] = $r['value'];
-        }
+        $saved = (new \App\Services\RetentionService())->getSettings();
 
-        // Get data statistics for each category
-        $categories = [
-            'sms' => 'tbl_sms',
-            'calls' => 'tbl_logs',
-            'contacts' => 'tbl_contacts',
-            'locations' => 'tbl_location',
-            'activities' => 'tbl_activity',
-            'apps' => 'tbl_apps',
-            'files' => 'tbl_device_files',
-            'network' => 'tbl_network_info',
-            'device_context' => 'tbl_device_context',
-            'bluetooth' => 'tbl_bluetooth',
-            'sensors' => 'tbl_sensor_profile',
-            'security_audit' => 'tbl_security_audit',
-            'notifications' => 'tbl_notifications',
-            'calendar' => 'tbl_calendar_events',
-            'app_usage' => 'tbl_app_usage',
-            'media' => 'tbl_captured_media',
-            'sim' => 'tbl_sim_configs',
-            'accounts' => 'tbl_accounts',
-            'app_usage' => 'tbl_app_usage',
-        ];
+        $categories = \App\Services\RetentionService::CATEGORIES_MAP;
+
+        // Row counts are expensive (~18 COUNT(*) scans); cache briefly and
+        // refresh after a purge. Retention days/enabled stay live from settings.
+        $counts = cache('retention_stats_counts');
+        if (!is_array($counts)) {
+            $counts = [];
+            foreach ($categories as $label => $table) {
+                $counts[$label] = $db->table($table)->countAllResults();
+            }
+            cache()->save('retention_stats_counts', $counts, 300);
+        }
 
         $stats = [];
         foreach ($categories as $label => $table) {
             $stats[$label] = [
-                'total' => $db->table($table)->countAllResults(),
+                'total' => $counts[$label] ?? 0,
                 'retention_days' => (int) ($saved["retention_{$label}_days"] ?? 365),
                 'enabled' => (bool) ($saved["retention_{$label}_enabled"] ?? false),
             ];
@@ -1438,58 +1424,20 @@ private function sendMaintenanceToggledEmail(string $mode, array $changes, array
             'new_values' => json_encode($this->request->getPost()),
         ]);
 
-        $db = $this->getDb();
-        $post = $this->request->getPost();
-        $categories = $post['categories'] ?? [];
+        $categories = $this->request->getPost('categories') ?? [];
 
         if (empty($categories)) {
             return redirect()->back()->with('error', 'Please select at least one category to purge.');
         }
 
-        $categoriesMap = [
-            'sms' => 'tbl_sms',
-            'calls' => 'tbl_logs',
-            'contacts' => 'tbl_contacts',
-            'locations' => 'tbl_location',
-            'activities' => 'tbl_activity',
-            'apps' => 'tbl_apps',
-            'files' => 'tbl_device_files',
-            'network' => 'tbl_network_info',
-            'device_context' => 'tbl_device_context',
-            'bluetooth' => 'tbl_bluetooth',
-            'sensors' => 'tbl_sensor_profile',
-            'security_audit' => 'tbl_security_audit',
-            'notifications' => 'tbl_notifications',
-            'calendar' => 'tbl_calendar_events',
-            'app_usage' => 'tbl_app_usage',
-            'media' => 'tbl_captured_media',
-            'sim' => 'tbl_sim_configs',
-            'accounts' => 'tbl_accounts',
-        ];
+        $results = (new \App\Services\RetentionService())->purge($categories);
 
         $totalDeleted = 0;
-        $results = [];
-
-        foreach ($categories as $cat) {
-            if (!isset($categoriesMap[$cat])) continue;
-
-            $table = $categoriesMap[$cat];
-            $retentionDays = (int) ($post["retention_{$cat}_days"] ?? 365);
-
-            if ($retentionDays <= 0) {
-                $results[$cat] = ['deleted' => 0, 'error' => 'Invalid retention days'];
-                continue;
-            }
-
-            $cutoff = date('Y-m-d H:i:s', strtotime("-{$retentionDays} days"));
-
-            $deleted = $db->table($table)
-                ->where('created_at <', $cutoff)
-                ->delete();
-
-            $totalDeleted += $deleted;
-            $results[$cat] = ['deleted' => $deleted];
+        foreach ($results as $r) {
+            $totalDeleted += (int) ($r['deleted'] ?? 0);
         }
+
+        cache()->delete('retention_stats_counts');
 
         $this->logAdminAction('data_purge_run', 'critical', true, [
             'new_values' => json_encode([
@@ -1499,5 +1447,29 @@ private function sendMaintenanceToggledEmail(string $mode, array $changes, array
         ]);
 
         return redirect()->to('admin/settings/retention')->with('message', "Purge completed. Total records deleted: {$totalDeleted}.");
+    }
+
+    public function save_retention()
+    {
+        if ($denied = $this->requirePermission('data.retention')) {
+            return $denied;
+        }
+
+        if (!$this->request->is('post')) {
+            return redirect()->to('admin/settings/retention')->with('error', 'Invalid request method.');
+        }
+
+        $post = $this->request->getPost();
+        unset($post[csrf_token()]);
+
+        $updated = (new \App\Services\RetentionService())->saveSettings($post);
+
+        $this->logAdminAction('retention_settings_save', 'medium', true, [
+            'new_values' => json_encode(['updated' => $updated]),
+        ]);
+
+        cache()->delete('retention_stats_counts');
+
+        return redirect()->to('admin/settings/retention')->with('message', "Retention configuration saved ({$updated} setting(s)).");
     }
 }

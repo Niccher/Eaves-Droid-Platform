@@ -1582,6 +1582,13 @@ $routes->group('admin', [
         $routes->get('retention', 'Settings::retention', ['as' => 'admin-retention']);
 
         /**
+         * Saves data retention configuration (per-category days + enabled).
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->post('retention/save', 'Settings::save_retention', ['as' => 'admin-retention-save']);
+
+        /**
          * Runs manual data purge based on retention rules.
          *
          * @return \CodeIgniter\HTTP\ResponseInterface
