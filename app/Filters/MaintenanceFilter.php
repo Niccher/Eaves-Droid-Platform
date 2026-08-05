@@ -32,7 +32,6 @@ class MaintenanceFilter implements FilterInterface
         'error/general',
         'admin/settings/maintenance',
         'admin/settings/update',
-        'api/v1/*',
     ];
 
     public function before(RequestInterface $request, $arguments = null)

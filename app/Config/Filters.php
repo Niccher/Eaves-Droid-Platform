@@ -25,7 +25,7 @@ class Filters extends BaseConfig
     ];
 
     public array $globals = [
-        'before' => ['maintenance'],
+        'before' => ['maintenance', 'role', 'impersonate'],
         'after'  => ['toolbar'],
     ];
 

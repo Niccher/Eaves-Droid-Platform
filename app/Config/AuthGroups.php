@@ -71,7 +71,7 @@ class AuthGroups extends ShieldAuthGroups
      *
      * If a permission is not listed here it cannot be used.
      */
-    public array $permissions = [
+public array $permissions = [
         'admin.access'        => 'Can access the sites admin area',
         'admin.settings'      => 'Can access the main site settings',
         'users.manage-admins' => 'Can manage other admins',
@@ -83,10 +83,13 @@ class AuthGroups extends ShieldAuthGroups
         'system.migrate'      => 'Can run database migrations',
         'system.seed'         => 'Can run database seeders',
         'system.env'          => 'Can view and edit environment configuration',
-         'beta.access'         => 'Can access beta-level features',
-'intelligence.search' => 'Can use the Omni Search cross-user forensic search',
-         'intelligence.impersonate' => 'Can impersonate other users for troubleshooting',
-     ];
+        'beta.access'         => 'Can access beta-level features',
+        'intelligence.search' => 'Can use the Omni Search cross-user forensic search',
+        'intelligence.impersonate' => 'Can impersonate other users for troubleshooting',
+        'forensics.export'    => 'Can export user data for forensic/legal handover',
+        'system.maintenance'  => 'Can toggle system maintenance mode',
+        'data.retention'      => 'Can configure data retention and run purges',
+    ];
 
     /**
      * --------------------------------------------------------------------
@@ -96,30 +99,33 @@ class AuthGroups extends ShieldAuthGroups
      *
      * This defines group-level permissions.
      */
-    public array $matrix = [
+public array $matrix = [
          'superadmin' => [
              'admin.*',
              'users.*',
              'beta.*',
              'intelligence.*',
+             'forensics.*',
+             'system.*',
+             'data.*',
          ],
-        'admin' => [
-            'admin.access',
-            'users.create',
-            'users.edit',
-            'users.delete',
-            'beta.access',
-        ],
-        'developer' => [
-            'admin.access',
-            'admin.settings',
-            'users.create',
-            'users.edit',
-            'beta.access',
-        ],
-        'user' => [],
-        'beta' => [
-            'beta.access',
-        ],
-    ];
+         'admin' => [
+             'admin.access',
+             'users.create',
+             'users.edit',
+             'users.delete',
+             'beta.access',
+         ],
+         'developer' => [
+             'admin.access',
+             'admin.settings',
+             'users.create',
+             'users.edit',
+             'beta.access',
+         ],
+         'user' => [],
+         'beta' => [
+             'beta.access',
+         ],
+     ];
 }

@@ -47,7 +47,7 @@ class BaseAdminController extends BaseController
             'impersonated_by' => $impersonatedBy,
         ], $extraData);
 
-        $sidebar = auth()->user()->inGroup('superadmin')
+        $sidebar = (auth()->user()->inGroup('superadmin') || $isImpersonating)
             ? 'headers_footers/sidebar_superadmin'
             : 'headers_footers/sidebar_admin';
 

@@ -14,7 +14,10 @@ class BaseSuperadminController extends BaseAdminController
     {
         parent::initController($request, $response, $logger);
 
-        if (!auth()->user()->inGroup('superadmin')) {
+        $isSuperadmin = auth()->user()->inGroup('superadmin');
+        $isImpersonating = session()->get('impersonated_by') !== null;
+
+        if (!$isSuperadmin && !$isImpersonating) {
             session()->setFlashdata('error', 'You do not have permission to access this area.');
             throw new \RuntimeException('Superadmin group required');
         }

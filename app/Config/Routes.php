@@ -211,7 +211,7 @@ service('auth')->routes($routes);
 
 $routes->group('', [
     'namespace' => 'App\Controllers\clients',
-    'filter' => 'session,role'  // Requires authentication + role check (user only)
+    'filter' => ['maintenance', 'session']  // Maintenance first, then authentication; role check handled globally
 ], static function ($routes) {
 
     // =============================================================
@@ -1107,7 +1107,7 @@ $routes->get('downloads/export/(:any)', '\App\Controllers\clients\Account::downl
 
 $routes->group('api/v1', [
     'namespace' => 'App\Controllers\api\v1',
-    'filter' => 'throttle:api'  // Rate limiting
+    'filter' => ['maintenance', 'throttle:api']  // Maintenance first, then rate limiting
 ], static function ($routes) {
 
     // -------------------------------------------------------------
@@ -1289,10 +1289,10 @@ $routes->group('api/v1', [
 
 $routes->group('admin', [
     'namespace' => 'App\Controllers\admin',
-    'filter' => 'role'  // Requires admin or superadmin role
+    'filter' => ['maintenance', 'session']  // Maintenance first, then authentication; role check handled globally
 ], static function ($routes) {
 
-    // -------------------------------------------------------------
+    // =============================================================
     // 7.1 ADMIN DASHBOARD
     // -------------------------------------------------------------
 
@@ -1575,6 +1575,20 @@ $routes->group('admin', [
         $routes->get('database', 'Settings::database', ['as' => 'admin-database']);
 
         /**
+         * Displays data retention & purge settings.
+         *
+         * @return string
+         */
+        $routes->get('retention', 'Settings::retention', ['as' => 'admin-retention']);
+
+        /**
+         * Runs manual data purge based on retention rules.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->post('retention/purge', 'Settings::run_purge', ['as' => 'admin-retention-purge']);
+
+        /**
          * Runs system maintenance.
          *
          * @return \CodeIgniter\HTTP\ResponseInterface
@@ -1772,7 +1786,7 @@ $routes->group('admin', [
 
 $routes->group('superadmin', [
     'namespace' => 'App\Controllers\superadmin',
-    'filter' => 'role,impersonate'  // Requires superadmin role OR impersonation
+    'filter' => ['maintenance', 'session']  // Maintenance first, then authentication; role/impersonation handled globally
 ], static function ($routes) {
 
     // -------------------------------------------------------------
@@ -1804,6 +1818,10 @@ $routes->group('superadmin', [
     $routes->get('fleet/alerts', 'FleetController::alerts', ['as' => 'superadmin-fleet-alerts']);
     $routes->get('fleet/geo', 'FleetController::geo', ['as' => 'superadmin-fleet-geo']);
     $routes->get('fleet/device/(:any)', 'FleetController::deviceDetail/$1', ['as' => 'superadmin-fleet-device']);
+
+    // Forensic Export
+    $routes->get('forensic-export', 'ForensicExport::index', ['as' => 'superadmin-forensics']);
+    $routes->post('forensic-export/export', 'ForensicExport::export', ['as' => 'superadmin-forensics-export']);
 
     // Generic tab route (must be last)
     $routes->get('fleet/(:any)', 'FleetController::index/$1', ['as' => 'superadmin-fleet-tab']);

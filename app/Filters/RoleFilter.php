@@ -21,8 +21,47 @@ class RoleFilter implements FilterInterface
         'client'     => ['user', 'superadmin'],
     ];
 
+    /**
+     * Routes to skip RBAC check entirely
+     */
+    protected array $skipRoutes = [
+        'login',
+        'logout',
+        'register',
+        'forgot',
+        'forgot/offline',
+        'reset-password',
+        'error/403',
+        'error/404',
+        'error/500',
+        'error/503',
+        'error/general',
+        'landing',
+        'download',
+        'aboutus',
+        'faqs_terms',
+        'how_to',
+        'contactus',
+        'pricing',
+    ];
+
     public function before(RequestInterface $request, $arguments = null): ?RedirectResponse
     {
+        // Skip RBAC for allowed routes
+        $route = $request->getUri()->getPath();
+        $route = ltrim($route, '/');
+        
+        foreach ($this->skipRoutes as $skip) {
+            if ($route === $skip || str_starts_with($route, $skip . '/')) {
+                return null;
+            }
+        }
+
+        // Allow access to root path
+        if ($route === '') {
+            return null;
+        }
+
         if (!auth()->loggedIn()) {
             return redirect()->to('/login')->with('error', 'Please log in first.');
         }
@@ -50,8 +89,11 @@ class RoleFilter implements FilterInterface
             $requiredRoles = $this->roleMap['client'];
         }
 
+        // Impersonating sessions retain the acting superadmin's privileges
+        $isImpersonating = session()->get('impersonated_by') !== null;
+
         // Check if user has any of the required roles
-        if (!empty($requiredRoles)) {
+        if (!$isImpersonating && !empty($requiredRoles)) {
             $hasRole = false;
             foreach ($requiredRoles as $role) {
                 if (auth()->user()->inGroup($role)) {
@@ -61,17 +103,23 @@ class RoleFilter implements FilterInterface
             }
 
             if (!$hasRole) {
-                return redirect()->to(config('Auth')->groupDeniedRedirect())
-                    ->with('error', lang('Auth.notEnoughPrivilege'));
+                // Redirect to appropriate dashboard based on user's role
+                $user = auth()->user();
+                if ($user->inGroup('superadmin')) {
+                    return redirect()->to('/superadmin/home');
+                } elseif ($user->inGroup('admin')) {
+                    return redirect()->to('/admin/dashboard');
+                } else {
+                    return redirect()->to('/home');
+                }
             }
         }
 
-        // Handle impersonation for superadmin routes
-        if (str_starts_with($route, '/superadmin')) {
+        // Handle non-impersonating non-superadmin access to superadmin routes
+        if (!$isImpersonating && str_starts_with($route, '/superadmin')) {
             $isSuperadmin = auth()->user()->inGroup('superadmin');
-            $isImpersonating = session()->get('impersonated_by') !== null;
 
-            if (!$isSuperadmin && !$isImpersonating) {
+            if (!$isSuperadmin) {
                 return redirect()->to(config('Auth')->groupDeniedRedirect())
                     ->with('error', lang('Auth.notEnoughPrivilege'));
             }

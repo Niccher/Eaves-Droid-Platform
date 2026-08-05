@@ -161,6 +161,14 @@
                             </a>
                         </li>
 
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/forensic-export'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-forensics') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-file-export"></i>
+                                <p>Forensic Export</p>
+                            </a>
+                        </li>
+
                         <li class="nav-header">ADMINISTRATION</li>
 
                         <li class="nav-item">
@@ -184,6 +192,14 @@
                                class="nav-link <?php echo (isset($pag) && $pag === 'admin-defaults') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-cog"></i>
                                 <p>App Defaults</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/settings/retention'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-retention') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-clock"></i>
+                                <p>Data Retention & Purge</p>
                             </a>
                         </li>
 

@@ -7,6 +7,18 @@ use CodeIgniter\API\ResponseTrait;
 class Settings extends BaseAdminController
 {
     use ResponseTrait;
+
+    private function requirePermission(string $permission)
+    {
+        if (!auth()->user()->can($permission)) {
+            $this->logAdminAction('permission_denied', 'medium', false, [
+                'new_values' => json_encode(['uri' => current_url()]),
+            ]);
+            return redirect()->to('admin/dashboard')->with('error', 'You do not have permission to access this page.');
+        }
+        return null;
+    }
+
     public function index()
     {
         $db = $this->getDb();
@@ -34,6 +46,13 @@ class Settings extends BaseAdminController
 
         $section = $post['section'] ?? 'app';
         unset($post['section'], $post[csrf_token()]);
+
+        $maintenanceKeys = ['maintenance_mode', 'maintenance_type', 'maintenance_start', 'maintenance_end'];
+        if ($section === 'app' && array_intersect(array_keys($post), $maintenanceKeys)) {
+            if ($denied = $this->requirePermission('system.maintenance')) {
+                return $denied;
+            }
+        }
 
 $allowedMap = [
             'app' => ['app_name', 'app_description', 'maintenance_mode', 'maintenance_type', 'maintenance_start', 'maintenance_end', 'timezone', 'language'],
@@ -339,6 +358,10 @@ $allowedMap = [
 
     public function maintenance()
     {
+        if ($denied = $this->requirePermission('system.maintenance')) {
+            return $denied;
+        }
+
         $db = $this->getDb();
 
         $this->logAdminAction('settings_view', 'low', true, [
@@ -396,6 +419,10 @@ $allowedMap = [
 
     public function run_maintenance()
     {
+        if ($denied = $this->requirePermission('system.maintenance')) {
+            return $denied;
+        }
+
         $db = $this->getDb();
         $action = $this->request->getPost('action');
         $messages = [];
@@ -1334,5 +1361,143 @@ private function sendMaintenanceToggledEmail(string $mode, array $changes, array
         } catch (\Throwable $e) {
             log_message('error', 'Settings changed email failed: ' . $e->getMessage());
         }
+    }
+
+    // =================================================================
+    // DATA RETENTION & PURGE (GDPR-style)
+    // =================================================================
+
+    public function retention()
+    {
+        if ($denied = $this->requirePermission('data.retention')) {
+            return $denied;
+        }
+
+        $db = $this->getDb();
+
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'retention',
+        ]);
+
+        $saved = [];
+        $rows = $db->table('settings')->where('class', 'retention')->get()->getResultArray();
+        foreach ($rows as $r) {
+            $saved[$r['key']] = $r['value'];
+        }
+
+        // Get data statistics for each category
+        $categories = [
+            'sms' => 'tbl_sms',
+            'calls' => 'tbl_logs',
+            'contacts' => 'tbl_contacts',
+            'locations' => 'tbl_location',
+            'activities' => 'tbl_activity',
+            'apps' => 'tbl_apps',
+            'files' => 'tbl_device_files',
+            'network' => 'tbl_network_info',
+            'device_context' => 'tbl_device_context',
+            'bluetooth' => 'tbl_bluetooth',
+            'sensors' => 'tbl_sensor_profile',
+            'security_audit' => 'tbl_security_audit',
+            'notifications' => 'tbl_notifications',
+            'calendar' => 'tbl_calendar_events',
+            'app_usage' => 'tbl_app_usage',
+            'media' => 'tbl_captured_media',
+            'sim' => 'tbl_sim_configs',
+            'accounts' => 'tbl_accounts',
+            'app_usage' => 'tbl_app_usage',
+        ];
+
+        $stats = [];
+        foreach ($categories as $label => $table) {
+            $stats[$label] = [
+                'total' => $db->table($table)->countAllResults(),
+                'retention_days' => (int) ($saved["retention_{$label}_days"] ?? 365),
+                'enabled' => (bool) ($saved["retention_{$label}_enabled"] ?? false),
+            ];
+        }
+
+        return $this->renderView('admin/settings/retention', [
+            'pag' => 'admin-retention',
+            'settings' => $saved,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function run_purge()
+    {
+        if ($denied = $this->requirePermission('data.retention')) {
+            return $denied;
+        }
+
+        if (!$this->request->is('post')) {
+            return redirect()->to('admin/settings/retention')->with('error', 'Invalid request method.');
+        }
+
+        $this->logAdminAction('data_purge_run', 'critical', true, [
+            'new_values' => json_encode($this->request->getPost()),
+        ]);
+
+        $db = $this->getDb();
+        $post = $this->request->getPost();
+        $categories = $post['categories'] ?? [];
+
+        if (empty($categories)) {
+            return redirect()->back()->with('error', 'Please select at least one category to purge.');
+        }
+
+        $categoriesMap = [
+            'sms' => 'tbl_sms',
+            'calls' => 'tbl_logs',
+            'contacts' => 'tbl_contacts',
+            'locations' => 'tbl_location',
+            'activities' => 'tbl_activity',
+            'apps' => 'tbl_apps',
+            'files' => 'tbl_device_files',
+            'network' => 'tbl_network_info',
+            'device_context' => 'tbl_device_context',
+            'bluetooth' => 'tbl_bluetooth',
+            'sensors' => 'tbl_sensor_profile',
+            'security_audit' => 'tbl_security_audit',
+            'notifications' => 'tbl_notifications',
+            'calendar' => 'tbl_calendar_events',
+            'app_usage' => 'tbl_app_usage',
+            'media' => 'tbl_captured_media',
+            'sim' => 'tbl_sim_configs',
+            'accounts' => 'tbl_accounts',
+        ];
+
+        $totalDeleted = 0;
+        $results = [];
+
+        foreach ($categories as $cat) {
+            if (!isset($categoriesMap[$cat])) continue;
+
+            $table = $categoriesMap[$cat];
+            $retentionDays = (int) ($post["retention_{$cat}_days"] ?? 365);
+
+            if ($retentionDays <= 0) {
+                $results[$cat] = ['deleted' => 0, 'error' => 'Invalid retention days'];
+                continue;
+            }
+
+            $cutoff = date('Y-m-d H:i:s', strtotime("-{$retentionDays} days"));
+
+            $deleted = $db->table($table)
+                ->where('created_at <', $cutoff)
+                ->delete();
+
+            $totalDeleted += $deleted;
+            $results[$cat] = ['deleted' => $deleted];
+        }
+
+        $this->logAdminAction('data_purge_run', 'critical', true, [
+            'new_values' => json_encode([
+                'total_deleted' => $totalDeleted,
+                'results' => $results,
+            ]),
+        ]);
+
+        return redirect()->to('admin/settings/retention')->with('message', "Purge completed. Total records deleted: {$totalDeleted}.");
     }
 }
