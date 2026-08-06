@@ -320,7 +320,7 @@
                                     </a>
                                 </li>
 
-                                <li class="nav-item">
+                                 <li class="nav-item">
                                     <?php if (empty($anomalies ?? [])): ?>
                                     <a href="<?php echo base_url('analysis/anomalies/run'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
@@ -334,6 +334,13 @@
                                         <p>Results</p>
                                     </a>
                                     <?php endif; ?>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('analysis/behavioral-anomalies'); ?>"
+                                       class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'behavioral') ? 'active' : ''; ?>">
+                                        <i class="fas fa-brain nav-icon"></i>
+                                        <p>Behavioral Analysis</p>
+                                    </a>
                                 </li>
                             </ul>
                         </li>
