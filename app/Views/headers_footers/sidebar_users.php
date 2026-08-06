@@ -282,8 +282,9 @@
                         <!-- Intelligence Section (Collapsible) -->
                         <?php 
                             $intel_pages = ['analysis', 'timeline'];
-            $is_intel_open = (isset($pag) && in_array($pag, $intel_pages)) 
-                          || (isset($sub_pag) && in_array($sub_pag, ['timeline', 'wellbeing', 'anomalies', 'behavioral']));
+                            $intel_subs = ['timeline', 'wellbeing', 'anomalies', 'behavioral', 'correlation_engine', 'risk_care_plan'];
+                            $is_intel_open = (isset($pag) && in_array($pag, $intel_pages)) 
+                          || (isset($sub_pag) && in_array($sub_pag, $intel_subs));
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_intel_open ? 'menu-open' : ''; ?>">
                             <a href="#" class="nav-link <?php echo $is_intel_open ? 'active' : ''; ?>">
@@ -340,6 +341,22 @@
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'behavioral') ? 'active' : ''; ?>">
                                         <i class="fas fa-brain nav-icon"></i>
                                         <p>Behavioral Analysis</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('analysis/correlation-engine'); ?>"
+                                       class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'correlation_engine') ? 'active' : ''; ?>">
+                                        <i class="fas fa-project-diagram nav-icon"></i>
+                                        <p>Correlation Engine</p>
+                                        <span class="badge badge-danger float-right">Platinum</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('analysis/care-plan'); ?>"
+                                       class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'risk_care_plan') ? 'active' : ''; ?>">
+                                        <i class="fas fa-shield-alt nav-icon"></i>
+                                        <p>Care Plan</p>
+                                        <span class="badge badge-warning float-right">Gold+</span>
                                     </a>
                                 </li>
                             </ul>

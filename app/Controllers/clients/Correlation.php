@@ -899,4 +899,63 @@ class Correlation extends BaseClientController{
 
         return $this->renderAppView('users/correlation/behavioral_anomalies', $data);
     }
+
+    /**
+     * Cross-category Correlation Engine (Platinum).
+     */
+    public function correlation_engine()
+    {
+        $data['pag']       = 'intelligence';
+        $data['sub_pag']   = 'correlation_engine';
+        $data['user_info'] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
+
+        $gate = new \App\Services\PlanGate();
+        $limits = $gate->limits($this->userId);
+        $data['plan'] = $limits['plan'] ?? 'free';
+
+        if (!$gate->hasFeature($this->userId, 'correlation')) {
+            session()->setFlashdata('error', 'Correlation Engine requires a Platinum plan.');
+            return redirect()->back();
+        }
+
+        $correlationService = new \App\Services\CorrelationService();
+        $graph = $correlationService->buildGraph($this->userId);
+        $topLinks = $correlationService->topLinks($this->userId, 20);
+        $clusters = $correlationService->clusterContacts($this->userId);
+
+        $data['graph'] = $graph;
+        $data['graph_json'] = json_encode($graph);
+        $data['top_links'] = $topLinks;
+        $data['clusters'] = $clusters;
+
+        return $this->renderAppView('users/correlation/correlation_engine', $data);
+    }
+
+    /**
+     * Risk Score & Care Plan (Free/Gold/Platinum).
+     */
+    public function risk_care_plan()
+    {
+        $data['pag']       = 'intelligence';
+        $data['sub_pag']   = 'risk_care_plan';
+        $data['user_info'] = $this->finderModel->basic_user();
+        $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
+
+        $gate = new \App\Services\PlanGate();
+        $limits = $gate->limits($this->userId);
+        $data['plan'] = $limits['plan'] ?? 'free';
+        $data['is_platinum'] = ($data['plan'] === 'platinum');
+        $data['is_gold'] = ($data['plan'] === 'gold');
+
+        $carePlanService = new \App\Services\CarePlanService();
+        $risk = $carePlanService->current($this->userId);
+
+        $data['risk'] = $risk;
+        $data['trend'] = $risk ? $carePlanService->trend($this->userId, $risk['device_id'] ?? null) : [];
+        $data['percentile'] = $risk ? $carePlanService->percentile((int)$risk['score'], $this->userId) : null;
+        $data['actions'] = ($risk && $data['is_platinum']) ? $carePlanService->actionPlan($this->userId, $risk['device_id'] ?? null, $risk) : [];
+
+        return $this->renderAppView('users/correlation/risk_care_plan', $data);
+    }
 }

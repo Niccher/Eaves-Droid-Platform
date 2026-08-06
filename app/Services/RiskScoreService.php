@@ -195,6 +195,15 @@ class RiskScoreService
                 'window_days' => $result['window_days'],
                 'computed_at' => $result['computed_at'],
             ], true); // true = ON DUPLICATE KEY UPDATE
+
+            $this->db->table('device_risk_history')->insert([
+                'user_id' => $result['user_id'],
+                'device_id' => $result['device_id'],
+                'score' => $result['score'],
+                'severity_counts' => json_encode($result['severity_counts']),
+                'top_findings' => json_encode($result['top_findings']),
+                'computed_at' => $result['computed_at'],
+            ]);
             
             return true;
         } catch (\Exception $e) {
