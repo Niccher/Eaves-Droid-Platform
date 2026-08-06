@@ -322,13 +322,13 @@
 
                                 <li class="nav-item">
                                     <?php if (empty($anomalies ?? [])): ?>
-                                    <a href="<?php echo base_url('anomalies/run'); ?>"
+                                    <a href="<?php echo base_url('analysis/anomalies/run'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
                                         <i class="fas fa-play nav-icon"></i>
                                         <p>Run Scanner</p>
                                     </a>
                                     <?php else: ?>
-                                    <a href="<?php echo base_url('anomalies/results'); ?>"
+                                    <a href="<?php echo base_url('analysis/anomalies/results'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
                                         <i class="fas fa-chart-line nav-icon"></i>
                                         <p>Results</p>
