@@ -330,19 +330,13 @@
                                     </a>
                                     <ul class="nav nav-treeview">
                                         <li class="nav-item">
-                                            <a href="<?php echo base_url('anomalies'); ?>"
+                                            <a href="<?php echo base_url('anomalies/results'); ?>"
                                                class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
-                                                <i class="fas fa-info-circle nav-icon"></i>
-                                                <p>Info</p>
+                                                <i class="fas fa-chart-line nav-icon"></i>
+                                                <p>Results</p>
                                             </a>
                                         </li>
-                                        <li class="nav-item">
-                                            <a href="<?php echo base_url('anomalies/algorithms'); ?>"
-                                               class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
-                                                <i class="fas fa-cogs nav-icon"></i>
-                                                <p>Algorithms</p>
-                                            </a>
-                                        </li>
+                                        <?php if (empty($anomalies ?? [])): ?>
                                         <li class="nav-item">
                                             <a href="<?php echo base_url('anomalies/run'); ?>"
                                                class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
@@ -350,13 +344,7 @@
                                                 <p>Run Engine</p>
                                             </a>
                                         </li>
-                                        <li class="nav-item">
-                                            <a href="<?php echo base_url('anomalies/results'); ?>"
-                                               class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
-                                                <i class="fas fa-chart-line nav-icon"></i>
-                                                <p>Results</p>
-                                            </a>
-                                        </li>
+                                        <?php endif; ?>
                                     </ul>
                                 </li>
                             </ul>
