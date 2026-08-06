@@ -5381,7 +5381,7 @@ class Mod_Finder extends Model
                 FROM tbl_digital_wellbeing_apps wa
                 JOIN tbl_digital_wellbeing w ON w.id = wa.wellbeing_id
                 WHERE wa.owner_id = ? AND w.extracted_at >= ?
-                GROUP BY wa.package_name, wa.app_name, wa.category
+                 GROUP BY wa.package_name, wa.category
                 ORDER BY total_minutes DESC
                 LIMIT ?
             ";
@@ -5395,7 +5395,7 @@ class Mod_Finder extends Model
                 $total = (int)$r['total_minutes'];
                 $share = $grandTotal > 0 ? round($total / $grandTotal * 100, 1) : 0;
                 $out[] = [
-                    'package'   => $r['package_name'],
+                    'package'   => $r['app_name'],
                     'name'      => $r['app_name'] ?: $r['package_name'],
                     'category'  => $r['category'] ?: 'Other',
                     'minutes'   => $total,
