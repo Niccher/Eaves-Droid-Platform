@@ -164,6 +164,113 @@
                 </div>
             </div>
 
+            <?php if(!empty($sleep)): ?>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card card-info card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-moon mr-1"></i> Sleep Intervals</h3>
+                            <span class="badge badge-info ml-2"><?= esc($wellbeing_depth_label) ?></span>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover table-striped">
+                                <thead><tr><th>Date</th><th>Sleep Start</th><th>Sleep End</th><th>Duration (hrs)</th><th>Stages</th></tr></thead>
+                                <tbody>
+                                <?php foreach ($sleep as $s): ?>
+                                <tr>
+                                    <td><?= esc($s['date']) ?></td>
+                                    <td><?= esc($s['sleep_start']) ?></td>
+                                    <td><?= esc($s['sleep_end']) ?></td>
+                                    <td><?= esc($s['duration_hours']) ?></td>
+                                    <td><?= esc(implode(', ', $s['stages'])) ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if(!empty($screen_time)): ?>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card card-primary card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-desktop mr-1"></i> Daily Screen Time</h3>
+                            <span class="badge badge-info ml-2"><?= esc($wellbeing_depth_label) ?></span>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="screenTimeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if(!empty($addiction)): ?>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card card-danger card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-1"></i> App Addiction Report</h3>
+                            <span class="badge badge-info ml-2"><?= esc($wellbeing_depth_label) ?></span>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover table-striped">
+                                <thead><tr><th>App</th><th>Category</th><th>Minutes</th><th>Share</th><th>Risk</th></tr></thead>
+                                <tbody>
+                                <?php foreach ($addiction as $a): ?>
+                                <tr>
+                                    <td><?= esc($a['name']) ?></td>
+                                    <td><?= esc($a['category']) ?></td>
+                                    <td><?= esc($a['minutes']) ?></td>
+                                    <td><?= esc($a['share_pct']) ?>%</td>
+                                    <td><?= $a['addiction_risk'] ? '<span class="badge badge-danger">High</span>' : '<span class="badge badge-success">Low</span>' ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if(!empty($activity_battery) && $is_platinum): ?>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card card-success card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-walking mr-1"></i> Daily Steps</h3>
+                            <span class="badge badge-info ml-2">Platinum</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="stepsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card card-warning card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-battery-half mr-1"></i> Avg Battery Level</h3>
+                            <span class="badge badge-info ml-2">Platinum</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="batteryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <?php endif; ?>
 
         </div>
@@ -222,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: ['Social/Gaming', 'Productivity', 'Other'],
             datasets: [{
                 data: [<?= $dopamine_pct ?>, <?= $productivity_pct ?>, <?= $other_pct ?>],
-                backgroundColor: ['#dc3545', '#28a745', '#17a2b8'], // AdminLTE Danger, Success, Info colors
+                backgroundColor: ['#dc3545', '#28a745', '#17a2b8'],
                 borderWidth: 1
             }]
         },
@@ -250,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Hours Spent',
                 data: <?= $top_apps_values ?>.map(v => (v/60).toFixed(1)),
-                backgroundColor: '#007bff', // AdminLTE Primary color
+                backgroundColor: '#007bff',
                 borderRadius: 4,
                 borderWidth: 1
             }]
@@ -274,6 +381,105 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    <?php endif; ?>
+
+    <?php if(!empty($screen_time)): ?>
+    // 4. Daily Screen Time Line Chart
+    const screenTimeData = <?= json_encode($screen_time) ?>;
+    const stCtx = document.getElementById('screenTimeChart');
+    if (stCtx) {
+        new Chart(stCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: screenTimeData.map(d => d.date),
+                datasets: [{
+                    label: 'Minutes',
+                    data: screenTimeData.map(d => d.minutes),
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0,123,255,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) { return context.raw + ' min'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    <?php endif; ?>
+
+    <?php if(!empty($activity_battery) && $is_platinum): ?>
+    // 5. Steps Chart
+    const stepsData = <?= json_encode($activity_battery) ?>;
+    const stepsCtx = document.getElementById('stepsChart');
+    if (stepsCtx) {
+        new Chart(stepsCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: stepsData.map(d => d.date),
+                datasets: [{
+                    label: 'Steps',
+                    data: stepsData.map(d => d.steps || 0),
+                    backgroundColor: '#28a745',
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 6. Battery Chart
+    const batteryData = <?= json_encode($activity_battery) ?>;
+    const batteryCtx = document.getElementById('batteryChart');
+    if (batteryCtx) {
+        new Chart(batteryCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: batteryData.map(d => d.date),
+                datasets: [{
+                    label: 'Avg Battery %',
+                    data: batteryData.map(d => d.battery || null),
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255,193,7,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    spanGaps: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, max: 100, grid: { display: false } },
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
     <?php endif; ?>
 });
 </script>

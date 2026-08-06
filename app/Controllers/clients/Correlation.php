@@ -591,24 +591,38 @@ class Correlation extends BaseClientController{
         $perPage = 100;
         $filterType = $this->request->getGet('type') ?? 'all';
 
+        // Plan-gated history window (Free=7d, Gold=30d, Platinum=full)
+        $gate = new \App\Services\PlanGate();
+        $limits = $gate->limits($this->userId);
+        $maxHistory = (int)($limits['history_days'] ?? 7);
+        $data['plan'] = $limits['plan'] ?? 'free';
+        $data['max_history_days'] = $maxHistory;
+        $data['history_label'] = $maxHistory >= 365 ? 'Full history' : ($maxHistory . ' days');
+        $requested = (int)($this->request->getGet('days') ?? 0);
+        $days = ($requested > 0) ? min($requested, $maxHistory) : $maxHistory;
+        $data['timeline_days'] = $days;
+
         // Default tab: Advanced when ?type= is a non-basic event type
         $advTypes = ['upload', 'app_usage', 'file', 'keyguard', 'health', 'location', 'activity', 'other'];
         $data['default_tab'] = (in_array($filterType, $advTypes, true)) ? 'advanced' : 'basic';
 
-        // Basic: SMS + Calls only (limit 100)
-        $data['basic_timeline'] = $this->finderModel->get_basic_timeline($this->userId, $perPage);
+        // Basic: SMS + Calls only (bounded by plan window)
+        $data['basic_timeline'] = $this->finderModel->get_basic_timeline($this->userId, $perPage, $days);
 
         // Advanced: ALL events (excluding sms/call which belong to Basic tab)
         // We fetch up to 1000 events; client-side filter pills handle the
         // filtering without a page reload. URL ?type= only drives initial state.
         $allAdvanced = $this->finderModel->get_unified_timeline_filtered(
-            $this->userId, 'all', 1000, ['sms', 'call']
+            $this->userId, 'all', 1000, ['sms', 'call'], $days
         );
         $data['advanced_timeline'] = $allAdvanced;
         $data['adv_total'] = count($allAdvanced);
         $data['adv_filter'] = $filterType;
         $data['adv_per_page'] = $perPage;
         $data['adv_page'] = (int)($this->request->getGet('p') ?? 1);
+
+        // Pivot (crisis-mode daily breakdown)
+        $data['pivot'] = $this->finderModel->get_timeline_pivot($this->userId, $days);
 
         return $this->renderAppView('users/correlation/intelligence_timeline', $data);
     }
@@ -814,6 +828,15 @@ class Correlation extends BaseClientController{
         $data['user_info'] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
 
+        // Plan depth (Gold/Platinum) — bound all ranges by wellbeing_depth/history
+        $gate = new \App\Services\PlanGate();
+        $limits = $gate->limits($this->userId);
+        $data['plan'] = $limits['plan'] ?? 'free';
+        $depthDays = (int)($limits['wellbeing_depth'] ?? ($limits['history_days'] ?? 30));
+        if ($depthDays === 0) $depthDays = (int)($limits['history_days'] ?? 30);
+        $data['wellbeing_days'] = $depthDays;
+        $data['wellbeing_depth_label'] = ($limits['wellbeing_depth'] ?? '') === 'all' ? 'All data' : ($depthDays . ' days');
+
         // Raw heatmap rows → keyed by date string for JS
         $heatmapRaw = $this->finderModel->get_daily_usage_heatmap($this->userId);
         $heatmapData = [];
@@ -844,6 +867,20 @@ class Correlation extends BaseClientController{
         $data['top_apps_labels']    = json_encode($topAppsLabels);
         $data['top_apps_values']    = json_encode($topAppsValues);
         $data['has_data']           = !empty($heatmapRaw);
+
+        // ——— New Platinum/Gold intelligence panels ———
+        // Sleep inference (Gold+)
+        $data['sleep'] = $this->finderModel->get_sleep_intervals($this->userId, $depthDays);
+
+        // Daily screen time (Gold+)
+        $data['screen_time'] = $this->finderModel->get_daily_screen_time($this->userId, $depthDays);
+
+        // App addiction report (Gold+)
+        $data['addiction'] = $this->finderModel->get_app_addiction_report($this->userId, $depthDays);
+
+        // Steps + battery trends (Platinum)
+        $data['activity_battery'] = $this->finderModel->get_activity_battery_trends($this->userId, $depthDays);
+        $data['is_platinum'] = ($data['plan'] === 'platinum');
 
         return $this->renderAppView('users/correlation/digital_wellbeing', $data);
     }

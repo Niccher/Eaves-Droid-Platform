@@ -33,6 +33,9 @@ class PlanGate implements FilterInterface
         'forensic_export' => [
             'forensic-export',
         ],
+        'wellbeing' => [
+            'analysis/wellbeing',
+        ],
     ];
 
     protected array $skipRoutes = [

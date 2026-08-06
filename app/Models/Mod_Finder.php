@@ -3927,16 +3927,19 @@ class Mod_Finder extends Model
      * @param int $limit   Max rows per data source (total can be up to 2× limit)
      * @return array       Chronologically sorted event array
      */
-    public function get_basic_timeline(int $userId, int $limit = 200): array
+    public function get_basic_timeline(int $userId, int $limit = 200, int $sinceDays = 0): array
     {
         $timeline = [];
 
         // SMS events
         try {
-            $sms = $this->db->table('tbl_sms')
+            $builder = $this->db->table('tbl_sms')
                 ->select('address, body, sms_date, sms_type')
-                ->where('owner_id', $userId)
-                ->orderBy('sms_date', 'DESC')
+                ->where('owner_id', $userId);
+            if ($sinceDays > 0) {
+                $builder->where('sms_date >=', (time() - $sinceDays * 86400) * 1000);
+            }
+            $sms = $builder->orderBy('sms_date', 'DESC')
                 ->limit($limit)
                 ->get()->getResultArray();
 
@@ -3959,10 +3962,13 @@ class Mod_Finder extends Model
 
         // Call events
         try {
-            $calls = $this->db->table('tbl_logs')
+            $callsBuilder = $this->db->table('tbl_logs')
                 ->select('phone_number, contact_name, call_type, call_date, duration_seconds')
-                ->where('owner_id', $userId)
-                ->orderBy('call_date', 'DESC')
+                ->where('owner_id', $userId);
+            if ($sinceDays > 0) {
+                $callsBuilder->where('call_date >=', (time() - $sinceDays * 86400) * 1000);
+            }
+            $calls = $callsBuilder->orderBy('call_date', 'DESC')
                 ->limit($limit)
                 ->get()->getResultArray();
 
@@ -3996,7 +4002,7 @@ class Mod_Finder extends Model
      * Every source is wrapped in try/catch so a missing table never
      * breaks the page. Final list is sorted DESC and sliced to $limit.
      */
-    public function get_unified_timeline(int $userId, int $limit = 100): array
+    public function get_unified_timeline(int $userId, int $limit = 100, int $sinceDays = 0): array
     {
         $timeline = [];
         $src      = (int) ceil($limit / 10); // per-source cap
@@ -4369,15 +4375,22 @@ class Mod_Finder extends Model
 
         // Sort all events DESC by time and slice
         usort($timeline, fn($a, $b) => $b['time'] <=> $a['time']);
+
+        // Apply recency window bound (milliseconds)
+        if ($sinceDays > 0) {
+            $cutoffMs = (time() - $sinceDays * 86400) * 1000;
+            $timeline = array_values(array_filter($timeline, fn($e) => ($e['time'] ?? 0) >= $cutoffMs));
+        }
+
         return array_slice($timeline, 0, $limit);
     }
 
     /**
      * Unified timeline with optional type filtering and pagination.
      */
-    public function get_unified_timeline_filtered(int $userId, string $filterType = 'all', int $perPage = 100, array $excludeTypes = []): array
+    public function get_unified_timeline_filtered(int $userId, string $filterType = 'all', int $perPage = 100, array $excludeTypes = [], int $sinceDays = 0): array
     {
-        $all = $this->get_unified_timeline($userId, 1000);
+        $all = $this->get_unified_timeline($userId, 1000, $sinceDays);
         if (!empty($excludeTypes)) {
             $all = array_filter($all, fn($e) => !in_array(($e['type'] ?? ''), $excludeTypes, true));
             $all = array_values($all);
@@ -4398,12 +4411,49 @@ class Mod_Finder extends Model
         return $pageData;
     }
 
+    /**
+     * Pivot timeline events into per-day × per-category counts.
+     *
+     * @return array [ 'rows' => [ ['date'=>..., 'total'=>n, 'sms'=>n, 'call'=>n, 'location'=>n, 'activity'=>n, 'app'=>n, 'keyguard'=>n, 'health'=>n] ], 'categories' => [...] ]
+     */
+    public function get_timeline_pivot(int $userId, int $days = 30): array
+    {
+        $all = $this->get_unified_timeline($userId, 5000, $days);
+
+        $pivot = [];
+        foreach ($all as $e) {
+            $time = (int) ($e['time'] ?? 0);
+            if ($time <= 0) continue;
+            $date = date('Y-m-d', (int) floor($time / 1000));
+            if (!isset($pivot[$date])) {
+                $pivot[$date] = ['date' => $date, 'total' => 0];
+            }
+            $type = $e['type'] ?? 'other';
+            $pivot[$date]['total']++;
+            $pivot[$date][$type] = ($pivot[$date][$type] ?? 0) + 1;
+        }
+
+        // Reverse chronological + fill category labels
+        krsort($pivot);
+        $categories = [];
+        foreach ($pivot as $row) {
+            foreach ($row as $k => $v) {
+                if ($k !== 'date' && $k !== 'total' && !in_array($k, $categories, true)) {
+                    $categories[] = $k;
+                }
+            }
+        }
+
+        return [
+            'rows' => array_values($pivot),
+            'categories' => $categories,
+        ];
+    }
+
     public function get_timeline_total_page_count(): int
     {
         return $this->total_timeline ?? 0;
-    }
-
-    public function get_timeline_page(): int
+    }    public function get_timeline_page(): int
     {
         return (int) (service('request')->getGet('p') ?? 1);
     }
@@ -5234,6 +5284,173 @@ class Mod_Finder extends Model
             return $this->db->query($sql, [$userId, $limit])->getResultArray();
         } catch (\Exception $e) {
             log_message('error', 'get_top_time_sink_apps error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Sleep intervals inferred from health data (sleep/sleep_stage/heart_rate).
+     * start_time/end_time are ms timestamps.
+     */
+    public function get_sleep_intervals(int $userId, int $days = 30): array
+    {
+        try {
+            $cutoffMs = (time() - $days * 86400) * 1000;
+            $types = ['sleep', 'sleep_stage', 'sleep_session'];
+            $sql = "
+                SELECT start_time, end_time, sleep_stage, sleep_efficiency,
+                       session_name, session_type, session_description
+                FROM tbl_health_data
+                WHERE owner_id = ? AND end_time >= ? AND LOWER(IFNULL(sleep_stage,'')) <> ''
+                ORDER BY end_time ASC
+            ";
+            $rows = $this->db->query($sql, [$userId, $cutoffMs])->getResultArray();
+
+            // Group rows by calendar night (use end_time date)
+            $nights = [];
+            foreach ($rows as $r) {
+                $endMs = (int)($r['end_time'] ?? 0);
+                if ($endMs <= 0) continue;
+                $date = date('Y-m-d', (int)floor($endMs / 1000));
+                $start = (int)($r['start_time'] ?? 0);
+                if ($start <= 0) $start = $endMs - (8 * 3600000); // assume 8h if missing
+                if (!isset($nights[$date])) {
+                    $nights[$date] = ['date' => $date, 'start_ms' => $start, 'end_ms' => $endMs, 'stages' => []];
+                } else {
+                    $nights[$date]['start_ms'] = min($nights[$date]['start_ms'], $start);
+                    $nights[$date]['end_ms']   = max($nights[$date]['end_ms'], $endMs);
+                }
+                $stage = $r['sleep_stage'] ?? '';
+                if ($stage && !in_array($stage, $nights[$date]['stages'], true)) {
+                    $nights[$date]['stages'][] = $stage;
+                }
+            }
+
+            $out = [];
+            foreach ($nights as $n) {
+                $durHrs = round(($n['end_ms'] - $n['start_ms']) / 3600000, 1);
+                $out[] = [
+                    'date'       => $n['date'],
+                    'sleep_start'=> date('H:i', (int)floor($n['start_ms'] / 1000)),
+                    'sleep_end'  => date('H:i', (int)floor($n['end_ms'] / 1000)),
+                    'duration_hours' => $durHrs,
+                    'stages'     => $n['stages'],
+                ];
+            }
+            usort($out, fn($a, $b) => $b['date'] <=> $a['date']);
+            return $out;
+        } catch (\Exception $e) {
+            log_message('error', 'get_sleep_intervals error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Daily screen time (minutes) from digital_wellbeing snapshots.
+     */
+    public function get_daily_screen_time(int $userId, int $days = 30): array
+    {
+        try {
+            $cutoffMs = (time() - $days * 86400) * 1000;
+            $sql = "
+                SELECT DATE(FROM_UNIXTIME(extracted_at / 1000)) as date,
+                       total_daily_usage_minutes as minutes,
+                       unlock_count, notification_count
+                FROM tbl_digital_wellbeing
+                WHERE owner_id = ? AND extracted_at >= ? AND total_daily_usage_minutes > 0
+                ORDER BY date ASC
+            ";
+            return $this->db->query($sql, [$userId, $cutoffMs])->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_daily_screen_time error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * App addiction report: top apps by daily minutes + share of total +
+     * addiction-risk flag when an app dominates screen time.
+     */
+    public function get_app_addiction_report(int $userId, int $days = 30, int $limit = 8): array
+    {
+        try {
+            $cutoffMs = (time() - $days * 86400) * 1000;
+            $sql = "
+                SELECT wa.package_name, wa.app_name, wa.category,
+                       SUM(wa.daily_usage_minutes) as total_minutes
+                FROM tbl_digital_wellbeing_apps wa
+                JOIN tbl_digital_wellbeing w ON w.id = wa.wellbeing_id
+                WHERE wa.owner_id = ? AND w.extracted_at >= ?
+                GROUP BY wa.package_name, wa.app_name, wa.category
+                ORDER BY total_minutes DESC
+                LIMIT ?
+            ";
+            $rows = $this->db->query($sql, [$userId, $cutoffMs, $limit])->getResultArray();
+
+            $grandTotal = 0;
+            foreach ($rows as $r) $grandTotal += (int)$r['total_minutes'];
+
+            $out = [];
+            foreach ($rows as $r) {
+                $total = (int)$r['total_minutes'];
+                $share = $grandTotal > 0 ? round($total / $grandTotal * 100, 1) : 0;
+                $out[] = [
+                    'package'   => $r['package_name'],
+                    'name'      => $r['app_name'] ?: $r['package_name'],
+                    'category'  => $r['category'] ?: 'Other',
+                    'minutes'   => $total,
+                    'share_pct' => $share,
+                    'addiction_risk' => $share >= 25, // dominates >25% of screen time
+                ];
+            }
+            return $out;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_addiction_report error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Steps + battery-health daily trends (Platinum).
+     */
+    public function get_activity_battery_trends(int $userId, int $days = 30): array
+    {
+        try {
+            $cutoffMs = (time() - $days * 86400) * 1000;
+
+            // Daily steps from health data
+            $steps = $this->db->query("
+                SELECT DATE(FROM_UNIXTIME(end_time / 1000)) as date,
+                       SUM(step_count) as total_steps
+                FROM tbl_health_data
+                WHERE owner_id = ? AND end_time >= ? AND step_count > 0
+                GROUP BY date ORDER BY date ASC
+            ", [$userId, $cutoffMs])->getResultArray();
+
+            // Daily avg battery level from activity or battery stats
+            $battery = [];
+            try {
+                $battery = $this->db->query("
+                    SELECT DATE(FROM_UNIXTIME(activity_time / 1000)) as date,
+                           AVG(battery_level) as avg_battery
+                    FROM tbl_activity
+                    WHERE owner_id = ? AND activity_time >= ? AND battery_level IS NOT NULL
+                    GROUP BY date ORDER BY date ASC
+                ", [$userId, $cutoffMs])->getResultArray();
+            } catch (\Throwable $e) {
+                log_message('error', 'get_activity_battery_trends battery: ' . $e->getMessage());
+            }
+
+            // Merge into date-keyed map
+            $map = [];
+            foreach ($steps as $s)   $map[$s['date']] = ['date' => $s['date'], 'steps' => (int)$s['total_steps'], 'battery' => null];
+            foreach ($battery as $b) $map[$b['date']]['battery'] = round((float)$b['avg_battery'], 1);
+
+            $out = array_values($map);
+            usort($out, fn($a, $b) => strcmp($a['date'], $b['date']));
+            return $out;
+        } catch (\Exception $e) {
+            log_message('error', 'get_activity_battery_trends error: ' . $e->getMessage());
             return [];
         }
     }

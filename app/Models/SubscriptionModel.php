@@ -55,6 +55,7 @@ class SubscriptionModel extends Model
                 'push_notifications' => false,
                 'forensic_export' => true,
                 'wellbeing_summary_days' => 0,
+                'smart_timeline' => true,
             ],
             'ml_algorithms' => ['core'],
         ];

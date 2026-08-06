@@ -88,6 +88,10 @@ $aTotal = $adv_total ?? count($advanced_timeline ?? []);
                         </div>
                     </div>
                     <p class="text-muted mt-2 mb-0">Chronological event stream across SMS, Calls, Apps, Locations, Health, and Keyguard state.</p>
+                    <div class="mt-2">
+                        <span class="badge badge-info border p-2 mr-1"><i class="fas fa-history mr-1"></i> Window: <?= esc($history_label ?? '7 days') ?> (<?= esc(ucfirst($plan ?? 'free')) ?>)</span>
+                        <span class="badge badge-light border p-2"><i class="fas fa-th mr-1"></i> Crisis-mode pivot included</span>
+                    </div>
                 </div>
                 <div class="col-lg-4 col-md-6 text-right">
                     <!-- reserved for future actions -->
@@ -111,6 +115,12 @@ $aTotal = $adv_total ?? count($advanced_timeline ?? []);
                             <a class="nav-link <?= $default_tab === 'advanced' ? 'active' : '' ?>" id="tab-advanced" data-toggle="pill" href="#pane-advanced" role="tab">
                                 <i class="fas fa-layer-group mr-1"></i> Advanced Timeline
                                 <span class="badge badge-dark ml-1"><?= number_format($aTotal) ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-pivot" data-toggle="pill" href="#pane-pivot" role="tab">
+                                <i class="fas fa-th mr-1"></i> Daily Pivot
+                                <span class="badge badge-light ml-1"><?= number_format(count($pivot['rows'] ?? [])) ?></span>
                             </a>
                         </li>
                     </ul>
@@ -247,6 +257,41 @@ $aTotal = $adv_total ?? count($advanced_timeline ?? []);
                                         </li>
                                     </ul>
                                 </nav>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- ═══════ DAILY PIVOT ═══════ -->
+                        <div class="tab-pane fade" id="pane-pivot" role="tabpanel">
+                            <?php $pivotRows = $pivot['rows'] ?? []; $pivotCats = $pivot['categories'] ?? []; ?>
+                            <?php if (empty($pivotRows)): ?>
+                                <div class="text-center py-5"><i class="fas fa-th fa-3x text-muted mb-3 d-block"></i><h5 class="text-muted">No activity in this window</h5><p class="text-muted">Data will appear here once events are extracted.</p></div>
+                            <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover table-valign-middle mb-0">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th class="text-center">Total</th>
+                                            <?php foreach ($pivotCats as $cat): ?>
+                                                <th class="text-center"><i class="<?= esc($tlIcons[$cat] ?? 'fas fa-circle') ?> mr-1"></i><?= esc($tlLabels[$cat] ?? ucfirst($cat)) ?></th>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($pivotRows as $row): ?>
+                                        <tr>
+                                            <td class="font-weight-bold"><?= esc(date('D, j M Y', strtotime($row['date']))) ?></td>
+                                            <td class="text-center"><span class="badge badge-dark"><?= number_format($row['total']) ?></span></td>
+                                            <?php foreach ($pivotCats as $cat): $c = $tlColors[$cat] ?? '#6b7280'; ?>
+                                                <td class="text-center">
+                                                    <span class="badge" style="background:<?= $c ?>; color:#fff;"><?= number_format($row[$cat] ?? 0) ?></span>
+                                                </td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
                             <?php endif; ?>
                         </div>
