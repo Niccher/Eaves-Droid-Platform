@@ -891,7 +891,7 @@ class Correlation extends BaseClientController{
     public function behavioral_anomalies()
     {
         $data['pag']       = 'intelligence';
-        $data['sub_pag']   = 'anomalies';
+        $data['sub_pag']   = 'behavioral';
         $data['user_info'] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
 

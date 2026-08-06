@@ -24,8 +24,7 @@ class PlanGate implements FilterInterface
      */
     protected array $featureRoutes = [
         'risk_score' => [
-            'analysis/anomalies',
-            'analysis/anomaly',
+            'anomalies',
         ],
         'geofencing' => [
             'location',
@@ -59,7 +58,7 @@ class PlanGate implements FilterInterface
         'admin',
     ];
 
-    public function before(RequestInterface $request, $arguments = null): ?RedirectResponse
+    public function before(RequestInterface $request, $arguments = null): ?ResponseInterface
     {
         $route = ltrim($request->getUri()->getPath(), '/');
 
@@ -80,8 +79,11 @@ class PlanGate implements FilterInterface
             foreach ($prefixes as $prefix) {
                 if ($route === $prefix || str_starts_with($route, $prefix . '/')) {
                     if (!$gate->hasFeature($userId, $feature)) {
-                        return redirect()->back()
-                            ->with('error', "Upgrade required to access this feature ($feature).");
+                        return service('response')
+                            ->setStatusCode(403)
+                            ->setBody(view('errors/custom_errors/error_403', [
+                                'message' => "This feature requires a higher plan. Please upgrade your subscription to access $feature.",
+                            ]));
                     }
                 }
             }

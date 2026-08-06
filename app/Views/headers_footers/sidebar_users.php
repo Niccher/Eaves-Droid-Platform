@@ -283,7 +283,7 @@
                         <?php 
                             $intel_pages = ['analysis', 'timeline'];
             $is_intel_open = (isset($pag) && in_array($pag, $intel_pages)) 
-                          || (isset($sub_pag) && in_array($sub_pag, ['timeline', 'wellbeing', 'anomalies']));
+                          || (isset($sub_pag) && in_array($sub_pag, ['timeline', 'wellbeing', 'anomalies', 'behavioral']));
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_intel_open ? 'menu-open' : ''; ?>">
                             <a href="#" class="nav-link <?php echo $is_intel_open ? 'active' : ''; ?>">
@@ -322,13 +322,13 @@
 
                                  <li class="nav-item">
                                     <?php if (empty($anomalies ?? [])): ?>
-                                    <a href="<?php echo base_url('analysis/anomalies/run'); ?>"
+                                    <a href="<?php echo base_url('anomalies/run'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
                                         <i class="fas fa-play nav-icon"></i>
                                         <p>Run Scanner</p>
                                     </a>
                                     <?php else: ?>
-                                    <a href="<?php echo base_url('analysis/anomalies/results'); ?>"
+                                    <a href="<?php echo base_url('anomalies/results'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
                                         <i class="fas fa-chart-line nav-icon"></i>
                                         <p>Results</p>
