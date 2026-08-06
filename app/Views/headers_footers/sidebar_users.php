@@ -321,7 +321,7 @@
                                 </li>
 
                                 <li class="nav-item">
-                                    <a href="<?php echo base_url('analysis/anomalies'); ?>"
+                                    <a href="<?php echo base_url('anomalies'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
                                         <i class="fas fa-exclamation-triangle nav-icon"></i>
                                         <p>Anomalies</p>
