@@ -36,6 +36,12 @@ class PlanGate implements FilterInterface
         'wellbeing' => [
             'analysis/wellbeing',
         ],
+        'correlation' => [
+            'analysis/correlation',
+        ],
+        'care_plan' => [
+            'analysis/care-plan',
+        ],
     ];
 
     protected array $skipRoutes = [

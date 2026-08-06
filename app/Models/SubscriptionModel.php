@@ -56,6 +56,8 @@ class SubscriptionModel extends Model
                 'forensic_export' => true,
                 'wellbeing_summary_days' => 0,
                 'smart_timeline' => true,
+                'correlation' => false,
+                'care_plan' => false,
             ],
             'ml_algorithms' => ['core'],
         ];
