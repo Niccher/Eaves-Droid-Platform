@@ -320,13 +320,44 @@
                                     </a>
                                 </li>
 
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('anomalies'); ?>"
-                                       class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
+                                <li class="nav-item has-treeview <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'menu-open' : ''; ?>">
+                                    <a href="#" class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
                                         <i class="fas fa-exclamation-triangle nav-icon"></i>
-                                        <p>Anomalies</p>
-                                        <span class="badge badge-info float-right"><i class="fas fa-exclamation"></i></span>
+                                        <p>
+                                            Anomalies
+                                            <i class="right fas fa-angle-left"></i>
+                                        </p>
                                     </a>
+                                    <ul class="nav nav-treeview">
+                                        <li class="nav-item">
+                                            <a href="<?php echo base_url('anomalies'); ?>"
+                                               class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
+                                                <i class="fas fa-info-circle nav-icon"></i>
+                                                <p>Info</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="<?php echo base_url('anomalies/algorithms'); ?>"
+                                               class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
+                                                <i class="fas fa-cogs nav-icon"></i>
+                                                <p>Algorithms</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="<?php echo base_url('anomalies/run'); ?>"
+                                               class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
+                                                <i class="fas fa-play nav-icon"></i>
+                                                <p>Run Engine</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="<?php echo base_url('anomalies/results'); ?>"
+                                               class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
+                                                <i class="fas fa-chart-line nav-icon"></i>
+                                                <p>Results</p>
+                                            </a>
+                                        </li>
+                                    </ul>
                                 </li>
                             </ul>
                         </li>
