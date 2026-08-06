@@ -157,6 +157,9 @@ class Plans extends BaseSuperadminController
             ['key' => 'push_notifications', 'label' => 'Push Notifications', 'desc' => 'Real-time FCM alerts'],
             ['key' => 'forensic_export', 'label' => 'Forensic/Audit Export', 'desc' => 'Full data export'],
             ['key' => 'wellbeing', 'label' => 'Wellbeing & Lifestyle Reports', 'desc' => 'Lifestyle insights'],
+            ['key' => 'smart_timeline', 'label' => 'Smart Timeline', 'desc' => 'AI-powered timeline intelligence'],
+            ['key' => 'correlation', 'label' => 'Correlation Analysis', 'desc' => 'Cross-event correlation engine'],
+            ['key' => 'care_plan', 'label' => 'Care Plans', 'desc' => 'Structured care plan management'],
         ];
     }
     private function getAlgorithmDefinitions(): array
