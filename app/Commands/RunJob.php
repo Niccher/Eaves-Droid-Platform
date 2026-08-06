@@ -46,6 +46,14 @@ class RunJob extends BaseCommand
             $flatAlgIds = json_decode($job['algorithms'] ?? '[]', true) ?: [];
             $userId       = (int)$job['user_id'];
 
+            // Enforce plan tier on the job's algorithms
+            $gate = new \App\Services\PlanGate();
+            $allowedIds = $gate->allowedAlgorithmIds($userId, $model->getAlgorithmTiers());
+            if (!empty($allowedIds)) {
+                $allowedSet = array_flip($allowedIds);
+                $flatAlgIds = array_values(array_filter($flatAlgIds, fn($aid) => isset($allowedSet[$aid])));
+            }
+
             // Reconstruct category-keyed format expected by runPhpDetection()
             $selectedAlgs = [];
             $categories = $model->getAlgorithmCategories();

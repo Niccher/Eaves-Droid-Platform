@@ -41,7 +41,21 @@ class Mod_Receive extends Model
                     ->update($print_dump);
                 $action = 'updated';
             } else {
-                // Insert new
+                // Insert new — enforce plan device limit before creating a new device
+                $ownerId = $print_dump['owner_id'] ?? 0;
+                if ($ownerId) {
+                    $currentCount = $this->countDevicesForOwner($ownerId);
+                    $gate = new \App\Services\PlanGate();
+                    if (!$gate->canAddDevice($ownerId, $currentCount)) {
+                        log_message('info', "PlanGate: user #{$ownerId} device limit reached ({$currentCount}), rejecting new device {$deviceChecksum}");
+                        return json_encode([
+                            'success' => false,
+                            'message' => 'Device limit reached for your current plan. Upgrade to add more devices.',
+                            'device_limit_reached' => true,
+                        ]);
+                    }
+                }
+
                 $builder->insert($print_dump);
                 $action = 'created';
             }
@@ -66,6 +80,21 @@ class Mod_Receive extends Model
                 'success' => false,
                 'message' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Count devices currently linked to an owner.
+     * Reuses the checksum + owner_id resolution from Mod_User.
+     */
+    private function countDevicesForOwner(int $ownerId): int
+    {
+        try {
+            $userModel = new \App\Models\Mod_User();
+            return count($userModel->get_user_devices_from_profile($ownerId));
+        } catch (\Throwable $e) {
+            log_message('error', 'PlanGate countDevices error: ' . $e->getMessage());
+            return 0;
         }
     }
 

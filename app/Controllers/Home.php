@@ -74,6 +74,27 @@ class Home extends BaseController
             . view('headers_footers/footer_landing');
     }
 
+    public function landing_prices($pg = 'prices'){
+        $data['pag']        = 'pricing';
+        $data['page_title'] = 'Pricing Plans | Eaves Droid';
+        $data['page_desc']  = 'Compare Eaves Droid pricing plans — Free, Gold, and Platinum. Choose the tier that fits how many devices you monitor and how deep your data analysis needs to go.';
+        $data['page_keys']  = 'eaves droid pricing, free plan, gold plan, platinum plan, mobile analytics subscription, device monitoring plans';
+
+        $planModel = new \App\Models\PlanModel();
+        $versions = $planModel->getAllCurrentVersions();
+        $plans = [];
+        foreach ($versions as $v) {
+            $v['features'] = json_decode($v['features'] ?? '{}', true) ?: [];
+            $v['ml_algorithms'] = json_decode($v['ml_algorithms'] ?? '[]', true) ?: [];
+            $plans[$v['slug']] = $v;
+        }
+        $data['plans'] = $plans;
+
+        return view('headers_footers/head_landing', $data)
+            . view('landing/'. $pg)
+            . view('headers_footers/footer_landing');
+    }
+
     public function landing_error_404($pg = 'landing_404'){
         $data['page_title'] = '404 Not Found | Eaves Droid';
         $data['page_desc']  = 'The page you are looking for could not be found on Eaves Droid.';

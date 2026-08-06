@@ -21,6 +21,7 @@ class Filters extends BaseConfig
         'maintenance'   => \App\Filters\MaintenanceFilter::class,
         'impersonate'   => \App\Filters\ImpersonateFilter::class,
         'role'          => \App\Filters\RoleFilter::class,
+        'planGate'      => \App\Filters\PlanGate::class,
         'session'       => \CodeIgniter\Shield\Filters\SessionAuth::class,
     ];
 

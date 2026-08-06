@@ -107,6 +107,9 @@ class Anomalies extends BaseClientController
             );
         }
 
+        // Filter algorithms by the user's plan tier (core|advanced|deep)
+        $categories = $this->filterByPlan($categories);
+
         $data = $this->baseData();
         $data['categories'] = $categories;
         $data['engine'] = $engine;
@@ -156,6 +159,7 @@ class Anomalies extends BaseClientController
 
         $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
         $selectedAlgs = $this->filterAlgs($selectedAlgs, $adminSettings);
+        $selectedAlgs = $this->intersectWithPlan($selectedAlgs);
 
         if ($adminSettings['default_engine'] !== 'both') {
             $selectedEngine = $adminSettings['default_engine'];
@@ -364,6 +368,56 @@ class Anomalies extends BaseClientController
             if (empty($selectedAlgs[$catKey])) {
                 unset($selectedAlgs[$catKey]);
             }
+        }
+        return $selectedAlgs;
+    }
+
+    /**
+     * Filter a category tree down to the algorithms the user's plan allows
+     * (core|advanced|deep tiers from their active subscription).
+     *
+     * @param array $categories
+     * @return array
+     */
+    private function filterByPlan(array $categories): array
+    {
+        try {
+            $gate = new \App\Services\PlanGate();
+            $allowedIds = $gate->allowedAlgorithmIds($this->userId, $this->anomalyModel->getAlgorithmTiers());
+            if (empty($allowedIds)) {
+                return $categories;
+            }
+            return $this->anomalyModel->filterByPlanAlgorithms($categories, $allowedIds);
+        } catch (\Throwable $e) {
+            log_message('error', 'PlanGate filterByPlan error: ' . $e->getMessage());
+            return $categories;
+        }
+    }
+
+    /**
+     * Intersect category-keyed selected algorithms with the user's allowed
+     * plan algorithm ids, dropping any that the plan no longer allows.
+     */
+    private function intersectWithPlan(array $selectedAlgs): array
+    {
+        try {
+            $gate = new \App\Services\PlanGate();
+            $allowedIds = $gate->allowedAlgorithmIds($this->userId, $this->anomalyModel->getAlgorithmTiers());
+            if (empty($allowedIds)) {
+                return $selectedAlgs;
+            }
+            $allowedSet = array_flip($allowedIds);
+            foreach ($selectedAlgs as $catKey => $algList) {
+                $selectedAlgs[$catKey] = array_values(array_filter(
+                    (array)$algList,
+                    fn($aid) => isset($allowedSet[$aid])
+                ));
+                if (empty($selectedAlgs[$catKey])) {
+                    unset($selectedAlgs[$catKey]);
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'PlanGate intersectWithPlan error: ' . $e->getMessage());
         }
         return $selectedAlgs;
     }

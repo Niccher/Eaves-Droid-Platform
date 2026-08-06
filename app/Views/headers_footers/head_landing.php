@@ -63,6 +63,9 @@
                         <a href="<?php echo base_url('download'); ?>" class="nav-link <?= (isset($pag) && $pag == 'download') ? 'active' : '' ?>">Download</a>
                     </li>
                     <li class="nav-item">
+                        <a href="<?php echo base_url('pricing'); ?>" class="nav-link <?= (isset($pag) && $pag == 'pricing') ? 'active' : '' ?>">Pricing</a>
+                    </li>
+                    <li class="nav-item">
                         <a href="<?php echo base_url('faqs_terms'); ?>" class="nav-link <?= (isset($pag) && $pag == 'faqs_terms') ? 'active' : '' ?>">FAQ</a>
                     </li>
                     <li class="nav-item">

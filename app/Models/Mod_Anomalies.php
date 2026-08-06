@@ -2487,6 +2487,42 @@ class Mod_Anomalies extends Model
     }
 
     /**
+     * Map every known algorithm id to its plan tier (core|advanced|deep).
+     * Python-only / heavy-ML models are gated to higher tiers.
+     */
+    public function getAlgorithmTiers(): array
+    {
+        return [
+            // Core (available on free and up)
+            'sms_freq' => 'core', 'sms_time' => 'core', 'sms_cluster' => 'core',
+            'contacts_freq' => 'core', 'contacts_dup' => 'core',
+            'calls_burst' => 'core', 'calls_night' => 'core',
+            'loc_geofence' => 'core', 'loc_speed' => 'core', 'loc_dbscan' => 'core',
+            'apps_rep' => 'core', 'apps_perm' => 'core',
+            'files_spike' => 'core', 'files_ext' => 'core',
+            'act_screen' => 'core', 'act_switch' => 'core',
+            'dev_hw' => 'core', 'dev_net' => 'core',
+            // Advanced
+            'files_entropy' => 'advanced',
+            // Deep (python models)
+            'sms_bert' => 'deep', 'contacts_graph' => 'deep',
+            'calls_isolation' => 'deep', 'apps_autoencoder' => 'deep',
+            'act_lstm' => 'deep', 'dev_oneclass' => 'deep',
+        ];
+    }
+
+    /**
+     * Filter categories by a user's allowed plan algorithm ids.
+     */
+    public function filterByPlanAlgorithms(array $categories, array $allowedIds): array
+    {
+        if (empty($allowedIds)) {
+            return $categories;
+        }
+        return $this->filterAllowedAlgorithms($categories, $allowedIds);
+    }
+
+    /**
      * Returns severity-to-badge mapping for the results view.
      *
      * @return array<string, array{badge: string, icon: string}>
@@ -2667,6 +2703,9 @@ class Mod_Anomalies extends Model
             }
             if (!empty($batch)) {
                 $this->db->table('ml_results')->insertBatch($batch);
+                
+                // Trigger risk score recomputation for affected user/devices
+                $this->triggerRiskRecompute($batch);
             }
 
             // Send high severity anomaly alert to admins
@@ -2675,6 +2714,37 @@ class Mod_Anomalies extends Model
             }
         } catch (\Throwable $e) {
             log_message('error', 'saveResults failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Trigger risk score recomputation after ML results are saved.
+     */
+    private function triggerRiskRecompute(array $batch): void
+    {
+        try {
+            // Extract unique user/device pairs from the batch
+            $pairs = [];
+            foreach ($batch as $row) {
+                $key = $row['user_id'] . ':' . $row['device_id'];
+                if (!isset($pairs[$key])) {
+                    $pairs[$key] = [
+                        'user_id' => $row['user_id'],
+                        'device_id' => $row['device_id'],
+                    ];
+                }
+            }
+            
+            if (empty($pairs)) return;
+            
+            $riskService = new \App\Services\RiskScoreService();
+            foreach ($pairs as $pair) {
+                $riskService->computeScore($pair['user_id'], $pair['device_id'], 30);
+            }
+            
+            log_message('info', 'RiskScore: Triggered recompute for ' . count($pairs) . ' user/device pairs');
+        } catch (\Exception $e) {
+            log_message('error', 'RiskScore trigger failed: ' . $e->getMessage());
         }
     }
 

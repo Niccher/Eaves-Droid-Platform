@@ -433,7 +433,7 @@ $routes->group('', [
         $routes->get('/', 'Location::index', ['as' => 'location-all']);
         $routes->get('(:num)', 'Location::index/$1');
         $routes->post('delete/(:num)', 'Location::delete/$1');
-    });
+    }, ['filter' => 'planGate']);
 
     // Activity Routes
     $routes->group('activities', static function ($routes) {
@@ -812,7 +812,7 @@ $routes->group('', [
         $routes->get('progress/(:num)', 'Anomalies::progress/$1', ['as' => 'anomalies-progress']);
         $routes->get('status/(:num)',   'Anomalies::status/$1',   ['as' => 'anomalies-status']);
         $routes->post('process/(:num)','Anomalies::process/$1',  ['as' => 'anomalies-process']);
-    });
+    }, ['filter' => 'planGate']);
 
         /**
          * Displays financial SMS analysis.
@@ -1870,6 +1870,50 @@ $routes->group('superadmin', [
     $routes->get('impersonate', 'Impersonate::index', ['as' => 'superadmin-impersonate']);
     $routes->post('impersonate/act-as/(:num)', 'Impersonate::actAs/$1', ['as' => 'superadmin-impersonate-act']);
     $routes->match(['get', 'post'], 'impersonate/stop', 'Impersonate::stop', ['as' => 'superadmin-impersonate-stop']);
+
+    // -------------------------------------------------------------
+    // 7.7.2 PLANS & PRICING MANAGEMENT
+    // -------------------------------------------------------------
+
+    /**
+     * List all plans with current versions
+     */
+    $routes->get('plans', 'Plans::index', ['as' => 'superadmin-plans']);
+
+    /**
+     * Edit a plan version (creates new version)
+     */
+    $routes->get('plans/editVersion/(:num)', 'Plans::editVersion/$1', ['as' => 'superadmin-plans-edit']);
+    $routes->post('plans/updateVersion/(:num)', 'Plans::updateVersion/$1', ['as' => 'superadmin-plans-update']);
+
+    /**
+     * View version history for a plan
+     */
+    $routes->get('plans/history/(:num)', 'Plans::versionHistory/$1', ['as' => 'superadmin-plans-history']);
+
+    // -------------------------------------------------------------
+    // 7.7.3 SUBSCRIPTIONS & PAYMENTS
+    // -------------------------------------------------------------
+
+    /**
+     * List all users with their subscription status.
+     */
+    $routes->get('subscriptions', 'Subscriptions::index', ['as' => 'superadmin-subscriptions']);
+
+    /**
+     * Detail page for one user (subscription + payment history).
+     */
+    $routes->get('subscriptions/(:num)', 'Subscriptions::detail/$1', ['as' => 'superadmin-subscription-detail']);
+
+    /**
+     * Manually set a user's plan (free|gold|platinum).
+     */
+    $routes->post('subscriptions/plan/(:num)', 'Subscriptions::changePlan/$1', ['as' => 'superadmin-subscription-plan']);
+
+    /**
+     * Payment history across all users.
+     */
+    $routes->get('payments', 'Subscriptions::payments', ['as' => 'superadmin-payments']);
 });
 
 // =================================================================

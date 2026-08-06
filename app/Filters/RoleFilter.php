@@ -43,6 +43,7 @@ class RoleFilter implements FilterInterface
         'how_to',
         'contactus',
         'pricing',
+        'api',
     ];
 
     public function before(RequestInterface $request, $arguments = null): ?RedirectResponse

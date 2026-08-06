@@ -799,11 +799,29 @@ $data = [
                 }
             }
 
+            // Trigger geo processing after location insert
+            if ($recordsInserted > 0) {
+                $this->triggerGeoProcessing($var_file_owner, $var_file_print);
+            }
+
             return $recordsInserted;
 
         } catch (\Exception $e) {
             log_message('error', 'get_location exception: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Trigger geo intelligence processing after location insert.
+     */
+    private function triggerGeoProcessing(int $ownerId, string $devicePrint): void
+    {
+        try {
+            $transition = new \App\Services\GeoTransitionDetector();
+            $transition->processTransitions($ownerId, $devicePrint, 24);
+        } catch (\Exception $e) {
+            log_message('error', 'Geo trigger failed: ' . $e->getMessage());
         }
     }
 
@@ -1019,6 +1037,11 @@ $data = [
                 if ($this->db->table('tbl_location')->insert($locationData)) {
                     $recordsInserted++;
                 }
+            }
+
+            // Trigger geo processing after location insert
+            if ($recordsInserted > 0) {
+                $this->triggerGeoProcessing($ownerId, $devicePrint);
             }
 
             return $recordsInserted;

@@ -162,6 +162,30 @@
                         </li>
 
                         <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/plans'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-plans') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-tags"></i>
+                                <p>Plans & Pricing</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/subscriptions'); ?>"
+                               class="nav-link <?php echo (isset($pag) && ($pag === 'superadmin-subscriptions' || $pag === 'superadmin-subscription-detail')) ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-users"></i>
+                                <p>Subscribers</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/payments'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-payments') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-credit-card"></i>
+                                <p>Payment History</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
                             <a href="<?php echo base_url('superadmin/forensic-export'); ?>"
                                class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-forensics') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-file-export"></i>
