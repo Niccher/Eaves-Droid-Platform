@@ -5376,7 +5376,7 @@ class Mod_Finder extends Model
         try {
             $cutoffMs = (time() - $days * 86400) * 1000;
             $sql = "
-                SELECT wa.package_name, wa.app_name, wa.category,
+                SELECT wa.package_name AS app_name, wa.category,
                        SUM(wa.daily_usage_minutes) as total_minutes
                 FROM tbl_digital_wellbeing_apps wa
                 JOIN tbl_digital_wellbeing w ON w.id = wa.wellbeing_id
