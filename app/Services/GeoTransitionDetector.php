@@ -17,7 +17,7 @@ class GeoTransitionDetector
     
     public function __construct(?BaseConnection $db = null)
     {
-        $this->db = $db ?? Services::database();
+        $this->db = $db ?? db_connect();
         $this->minDwellMinutes = (int)setting('geo.zone_min_dwell_minutes', 5);
     }
     

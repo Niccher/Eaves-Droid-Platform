@@ -20,7 +20,7 @@ class CorrelationService
 
     public function __construct(?BaseConnection $db = null)
     {
-        $this->db = $db ?? Services::database();
+        $this->db = $db ?? db_connect();
         $this->locationToleranceSec = (int)setting('correlation.location_tolerance_sec', 600);
         $this->maxNodes = (int)setting('correlation.max_nodes', 25);
         $this->maxEdges = (int)setting('correlation.max_edges', 60);

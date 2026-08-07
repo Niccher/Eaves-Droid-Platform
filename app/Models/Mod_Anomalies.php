@@ -2517,7 +2517,7 @@ class Mod_Anomalies extends Model
     public function filterByPlanAlgorithms(array $categories, array $allowedIds): array
     {
         if (empty($allowedIds)) {
-            return $categories;
+            return [];
         }
         return $this->filterAllowedAlgorithms($categories, $allowedIds);
     }

@@ -15,7 +15,7 @@ class CarePlanService
 
     public function __construct(?BaseConnection $db = null)
     {
-        $this->db = $db ?? Services::database();
+        $this->db = $db ?? db_connect();
     }
 
     /**

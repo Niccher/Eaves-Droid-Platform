@@ -433,7 +433,7 @@ $routes->group('', [
         $routes->get('/', 'Location::index', ['as' => 'location-all']);
         $routes->get('(:num)', 'Location::index/$1');
         $routes->post('delete/(:num)', 'Location::delete/$1');
-    }, ['filter' => 'planGate']);
+    });
 
     // Activity Routes
     $routes->group('activities', static function ($routes) {
@@ -727,7 +727,7 @@ $routes->group('', [
     // 5.6 ANALYSIS & CORRELATION ROUTES
     // =============================================================
 
-    $routes->group('analysis', static function ($routes) {
+    $routes->group('analysis', ['filter' => 'planGate', 'namespace' => 'App\Controllers\clients'], static function ($routes) {
         /**
          * Displays analysis dashboard.
          *
@@ -822,7 +822,8 @@ $routes->group('', [
         $routes->get('progress/(:num)', 'Anomalies::progress/$1', ['as' => 'anomalies-progress']);
         $routes->get('status/(:num)',   'Anomalies::status/$1',   ['as' => 'anomalies-status']);
         $routes->post('process/(:num)','Anomalies::process/$1',  ['as' => 'anomalies-process']);
-    }, ['filter' => 'planGate']);
+        $routes->get('advanced',       'Anomalies::upgradeAdvanced', ['as' => 'anomalies-advanced']);
+    });
 
         /**
          * Displays financial SMS analysis.
@@ -1094,6 +1095,25 @@ $routes->group('', [
 
         // Legacy Access Logs Alias
         $routes->get('logs', 'Account::access_logs');
+    });
+
+    // =============================================================
+    // 5.7B BILLING / SUBSCRIPTION UPGRADE (simulated payments)
+    // =============================================================
+    $routes->group('billing', static function ($routes) {
+        /**
+         * Simulates a subscription payment and self-upgrades the user's plan.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->post('simulate', 'Billing::simulateUpgrade', ['as' => 'billing-simulate']);
+
+        /**
+         * Returns the user's active subscription details (AJAX).
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->get('subscription', 'Billing::subscription', ['as' => 'billing-subscription']);
     });
 
     // =============================================================

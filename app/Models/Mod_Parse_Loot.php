@@ -220,11 +220,13 @@ $data = [
                     'updated_at'          => $dated,
                 ];
 
-                // Strong duplicate prevention: same number, exact timestamp, duration, and type
+                // Strong duplicate prevention: same number, exact timestamp, duration, type, device
                 $exists = $this->db->table('tbl_logs')
                         ->where('phone_number', $logData['phone_number'])
                         ->where('call_date', $logData['call_date'])
                         ->where('duration_seconds', $logData['duration_seconds'])
+                        ->where('call_type', $logData['call_type'])
+                        ->where('device_id', $logData['device_id'])
                         ->where('owner_id', $logData['owner_id'])
                         ->countAllResults() > 0;
 
@@ -648,6 +650,7 @@ $data = [
                 $data = [
                     'name'           => $file['name'] ?? basename($file['path']),
                     'path'           => $file['path'],
+                    'path_hash'      => sha1((string) $file['path']),
                     'is_directory'   => isset($file['is_directory']) && $file['is_directory'] ? 1 : 0,
                     'size_bytes'     => $file['size_bytes'] ?? 0,
                     'last_modified'  => $file['last_modified'] ?? null,
@@ -696,7 +699,7 @@ $data = [
 
                 // Duplicate check: Same path, device, and owner
                 $exists = $this->db->table('tbl_device_files')
-                        ->where('path', $data['path'])
+                        ->where('path_hash', $data['path_hash'])
                         ->where('device_id', $data['device_id'])
                         ->where('owner_id', $data['owner_id'])
                         ->countAllResults() > 0;
@@ -706,7 +709,7 @@ $data = [
                 } else {
                     // Start Update existing file info
                      $this->db->table('tbl_device_files')
-                        ->where('path', $data['path'])
+                        ->where('path_hash', $data['path_hash'])
                         ->where('device_id', $data['device_id'])
                         ->where('owner_id', $data['owner_id'])
                         ->update([

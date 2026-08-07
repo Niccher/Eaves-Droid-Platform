@@ -19,7 +19,7 @@ class PlanModel extends Model
         $plan = $this->where('slug', $slug)->where('is_active', 1)->first();
         if (!$plan) return null;
 
-        return $this->db->table('plan_versions pv')
+        $plan = $this->db->table('plan_versions pv')
             ->select('pv.*, p.slug, p.name as plan_name')
             ->join('plans p', 'p.id = pv.plan_id')
             ->where('pv.plan_id', $plan['id'])
@@ -31,6 +31,19 @@ class PlanModel extends Model
             ->orderBy('pv.version', 'DESC')
             ->limit(1)
             ->get()->getRowArray();
+
+        if (!$plan) {
+            return null;
+        }
+
+        if (isset($plan['features']) && is_string($plan['features'])) {
+            $plan['features'] = json_decode($plan['features'], true) ?? [];
+        }
+        if (isset($plan['ml_algorithms']) && is_string($plan['ml_algorithms'])) {
+            $plan['ml_algorithms'] = json_decode($plan['ml_algorithms'], true) ?? [];
+        }
+
+        return $plan;
     }
 
     public function getAllCurrentVersions(): array
@@ -51,6 +64,28 @@ class PlanModel extends Model
             null,
             'plan_id'
         );
+    }
+
+    /**
+     * Return an array of current plan version rows keyed by plan slug.
+     * Each row contains at least: plan (slug), features (array), price_monthly_cents,
+     * price_yearly_cents, currency.
+     */
+    public function getCurrentVersions(): array
+    {
+        $rows = $this->getAllCurrentVersions();
+        $result = [];
+        foreach ($rows as $row) {
+            $slug = $row['slug'] ?? '';
+            if ($slug) {
+                // Ensure features is array
+                if (isset($row['features']) && is_string($row['features'])) {
+                    $row['features'] = json_decode($row['features'], true) ?? [];
+                }
+                $result[$slug] = $row;
+            }
+        }
+        return $result;
     }
 
     public function getVersionHistory(int $planId): array

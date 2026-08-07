@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SubscriptionModel;
+use App\Models\PlanModel;
 
 /**
  * PlanGate — centralizes plan-based enforcement checks.
@@ -13,10 +14,15 @@ use App\Models\SubscriptionModel;
 class PlanGate
 {
     private SubscriptionModel $subscriptions;
+    private PlanModel $plans;
 
-    public function __construct(?SubscriptionModel $subscriptions = null)
+    /** plan hierarchy – lowest → highest */
+    private const HIERARCHY = ['free', 'gold', 'platinum'];
+
+    public function __construct(?SubscriptionModel $subscriptions = null, ?PlanModel $plans = null)
     {
         $this->subscriptions = $subscriptions ?? new SubscriptionModel();
+        $this->plans         = $plans ?? new PlanModel();
     }
 
     /**
@@ -82,5 +88,56 @@ class PlanGate
             }
         }
         return $ids;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  NEW: helpers used by the filter                                    */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * All plan keys that have the given feature enabled (according to the
+     * *current* version row in `plan_versions`).
+     */
+    public function plansWithFeature(string $feature): array
+    {
+        $rows = $this->plans->getCurrentVersions();   // see PlanModel
+        $allowed = [];
+
+        foreach ($rows as $row) {
+            $features = $row['features'] ?? [];
+            if (($features[$feature] ?? false) === true) {
+                $allowed[] = $row['slug'];            // 'gold', 'platinum', …
+            }
+        }
+        return array_unique($allowed);
+    }
+
+    /**
+     * Current user's active plan key ('free'|'gold'|'platinum').
+     * Returns 'free' when the user has no active subscription row.
+     */
+    public function currentPlanKey(int $userId): string
+    {
+        $active = $this->subscriptions->getActivePlan($userId);
+        return $active['plan'] ?? 'free';
+    }
+
+    /**
+     * Given a feature, return the *upgrade* plans that
+     *   a) own the feature, and
+     *   b) are strictly higher than the user's current plan.
+     */
+    public function upgradePlansForFeature(int $userId, string $feature): array
+    {
+        $current = $this->currentPlanKey($userId);
+        $currentIdx = array_search($current, self::HIERARCHY, true);
+        if ($currentIdx === false) $currentIdx = 0;          // safety
+
+        $candidates = $this->plansWithFeature($feature);
+
+        return array_values(array_filter($candidates, function (string $plan) use ($currentIdx) {
+            $idx = array_search($plan, self::HIERARCHY, true);
+            return $idx !== false && $idx > $currentIdx;
+        }));
     }
 }

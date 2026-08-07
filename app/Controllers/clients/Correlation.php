@@ -910,15 +910,6 @@ class Correlation extends BaseClientController{
         $data['user_info'] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
 
-        $gate = new \App\Services\PlanGate();
-        $limits = $gate->limits($this->userId);
-        $data['plan'] = $limits['plan'] ?? 'free';
-
-        if (!$gate->hasFeature($this->userId, 'correlation')) {
-            session()->setFlashdata('error', 'Correlation Engine requires a Platinum plan.');
-            return redirect()->back();
-        }
-
         $correlationService = new \App\Services\CorrelationService();
         $graph = $correlationService->buildGraph($this->userId);
         $topLinks = $correlationService->topLinks($this->userId, 20);

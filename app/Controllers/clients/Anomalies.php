@@ -110,9 +110,13 @@ class Anomalies extends BaseClientController
         // Filter algorithms by the user's plan tier (core|advanced|deep)
         $categories = $this->filterByPlan($categories);
 
+        $gate = new \App\Services\PlanGate();
         $data = $this->baseData();
         $data['categories'] = $categories;
         $data['engine'] = $engine;
+        $data['current_plan'] = $gate->currentPlanKey($this->userId);
+        $data['has_algorithms'] = !empty($categories);
+        $data['upgrade_plans'] = $gate->upgradePlansForFeature($this->userId, 'risk_score');
 
         return $this->renderWizardView('analysis/select_algorithms', $data);
     }
@@ -294,16 +298,61 @@ class Anomalies extends BaseClientController
      */
     public function results()
     {
+        $gate = new \App\Services\PlanGate();
+        $planKey = $gate->currentPlanKey($this->userId);
+
+        // Free users have no anomaly access — show upgrade page (Gold + Platinum).
+        if ($planKey === 'free') {
+            return $this->renderUpgrade(
+                'Anomaly Detection',
+                $gate->upgradePlansForFeature($this->userId, 'risk_score'),
+                base_url('analysis/anomalies')
+            );
+        }
+
+        // Advanced results are a Platinum feature. Gold sees basic results with a
+        // locked "advanced" button; Platinum sees everything unlocked.
+        $canSeeAdvanced = $gate->hasFeature($this->userId, 'correlation')
+                       || in_array($planKey, ['platinum'], true);
+
+        $engineLabels = [
+            'php'    => ['label' => 'PHP Engine',    'icon' => 'fab fa-php',    'badge' => 'primary'],
+            'python' => ['label' => 'Python Engine',  'icon' => 'fab fa-python', 'badge' => 'warning'],
+        ];
+
         $jobId = $this->request->getGet('job_id')
               ?? $this->session->get('anomaly_job_id');
 
-        // ── Handle old-style direct access (no job) — redirect to run ──
-        if (!$jobId) {
-            return redirect()->to(base_url('analysis/anomalies/run'));
+        $job = $jobId ? $this->anomalyModel->getJob($jobId) : null;
+
+        // Shared plan-gating metadata for the view.
+        $data = $this->baseData();
+        $data['current_plan']          = $planKey;
+        $data['can_see_advanced']      = $canSeeAdvanced;
+        $data['advanced_plan']         = 'platinum';
+        $data['advanced_upgrade_url']  = base_url('analysis/anomalies/advanced');
+        $data['run_url']               = base_url('analysis/anomalies/run');
+        $data['algorithms_url']        = base_url('analysis/anomalies/algorithms');
+
+        // No completed report yet (or unknown job) — prompt the user to run
+        // anomaly detection rather than redirecting to a separate page.
+        if (!$job) {
+            $data['has_report'] = false;
+            $data['results']    = [];
+            $data['selected_engine'] = $this->session->get('anomaly_engine') ?? 'php';
+            $data['engine_meta']     = $engineLabels[$data['selected_engine']] ?? $engineLabels['php'];
+            $data['severity_map']    = $this->anomalyModel->getSeverityMap();
+            $data['severity_counts'] = $this->anomalyModel->getSeverityCounts([]);
+            $data['selected_algs']   = $this->session->get('anomaly_algorithms') ?? [];
+            $data['analysis_counts'] = $this->anomalyModel->getAnalysisCounts($this->userId);
+            $data['scope']           = 'full';
+            $data['job']             = null;
+
+            return $this->renderWizardView('analysis/results', $data);
         }
 
-        $job = $this->anomalyModel->getJob($jobId);
-        if (!$job || $job['status'] === 'running' || $job['status'] === 'pending') {
+        // Job still in flight — send to the progress page.
+        if ($job['status'] === 'running' || $job['status'] === 'pending') {
             return redirect()->to(base_url("analysis/anomalies/progress/{$jobId}"));
         }
 
@@ -315,16 +364,10 @@ class Anomalies extends BaseClientController
             $results = $this->anomalyModel->fetchJobResults($jobId, $this->userId);
         }
 
-        $engineLabels = [
-            'php'    => ['label' => 'PHP Engine',    'icon' => 'fab fa-php',    'badge' => 'primary'],
-            'python' => ['label' => 'Python Engine',  'icon' => 'fab fa-python', 'badge' => 'warning'],
-        ];
-        $engineMeta = $engineLabels[$selectedEngine] ?? $engineLabels['php'];
-
-        $data = $this->baseData();
+        $data['has_report']      = true;
         $data['results']         = $results;
         $data['selected_engine'] = $selectedEngine;
-        $data['engine_meta']     = $engineMeta;
+        $data['engine_meta']     = $engineLabels[$selectedEngine] ?? $engineLabels['php'];
         $data['severity_map']    = $this->anomalyModel->getSeverityMap();
         $data['severity_counts'] = $this->anomalyModel->getSeverityCounts($results);
         $data['selected_algs']   = $this->session->get('anomaly_algorithms') ?? [];
@@ -333,6 +376,48 @@ class Anomalies extends BaseClientController
         $data['job']             = $job;
 
         return $this->renderWizardView('analysis/results', $data);
+    }
+
+    /**
+     * Renders the upgrade page for advanced (Platinum) anomaly algorithms.
+     *
+     * URL: GET /analysis/anomalies/advanced
+     */
+    public function upgradeAdvanced()
+    {
+        $gate = new \App\Services\PlanGate();
+        $planKey = $gate->currentPlanKey($this->userId);
+
+        if ($planKey === 'platinum') {
+            return redirect()->to(base_url('analysis/anomalies'));
+        }
+
+        return $this->renderUpgrade(
+            'Advanced Anomaly Algorithms',
+            ['platinum'],
+            base_url('analysis/anomalies/results')
+        );
+    }
+
+    /**
+     * Renders the shared subscription-upgrade page.
+     *
+     * @param string $featureLabel
+     * @param array  $upgradePlans  Plan keys to show upgrade cards for
+     * @param string $redirectTo    URL to land on after a successful (simulated) upgrade
+     */
+    private function renderUpgrade(string $featureLabel, array $upgradePlans, string $redirectTo): string
+    {
+        $gate = new \App\Services\PlanGate();
+
+        return view('errors/custom_errors/subscription_upgrade', [
+            'feature'       => $featureLabel,
+            'upgradePlans'  => $upgradePlans,
+            'current_plan'  => $gate->currentPlanKey($this->userId),
+            'redirect_to'   => $redirectTo,
+            'pag'           => 'intelligence',
+            'sub_pag'       => 'anomalies',
+        ]);
     }
 
     // -------------------------------------------------------------------------
@@ -385,12 +470,12 @@ class Anomalies extends BaseClientController
             $gate = new \App\Services\PlanGate();
             $allowedIds = $gate->allowedAlgorithmIds($this->userId, $this->anomalyModel->getAlgorithmTiers());
             if (empty($allowedIds)) {
-                return $categories;
+                return [];
             }
             return $this->anomalyModel->filterByPlanAlgorithms($categories, $allowedIds);
         } catch (\Throwable $e) {
             log_message('error', 'PlanGate filterByPlan error: ' . $e->getMessage());
-            return $categories;
+            return [];
         }
     }
 
@@ -404,7 +489,7 @@ class Anomalies extends BaseClientController
             $gate = new \App\Services\PlanGate();
             $allowedIds = $gate->allowedAlgorithmIds($this->userId, $this->anomalyModel->getAlgorithmTiers());
             if (empty($allowedIds)) {
-                return $selectedAlgs;
+                return [];
             }
             $allowedSet = array_flip($allowedIds);
             foreach ($selectedAlgs as $catKey => $algList) {

@@ -1,6 +1,3 @@
-<?= $this->extend('users/layouts/main') ?>
-
-<?= $this->section('content') ?>
 <!-- Content Wrapper. Contains page content -->
 <div class="content-wrapper">
     <!-- Content Header (Page header) -->
@@ -196,4 +193,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <?php endif; ?>
-<?= $this->endSection() ?>

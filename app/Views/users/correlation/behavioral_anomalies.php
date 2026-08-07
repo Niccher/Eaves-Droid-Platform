@@ -26,7 +26,7 @@
             <!-- Summary info-boxes -->
             <div class="row">
                 <?php
-                $typeCounts = ['call' => 0, 'app_usage' => 0, 'location' => 0];
+                $typeCounts = ['call' => 0, 'app_usage' => 0, 'location' => 0, 'communication' => 0];
                 foreach ($anomalies as $a) {
                     if (isset($typeCounts[$a['type']])) $typeCounts[$a['type']]++;
                 }
@@ -102,16 +102,19 @@
                                 $sev   = $anomaly['severity'] ?? 'warning';
                                 $type  = $anomaly['type']     ?? 'other';
 
-                                $bgMap = [
-                                    'call'     => 'bg-danger',
-                                    'app_usage'=> 'bg-warning',
-                                    'location' => 'bg-danger',
-                                ];
-                                $iconMap = [
-                                    'call'     => 'fas fa-phone-slash',
-                                    'app_usage'=> 'fas fa-mobile-alt',
-                                    'location' => 'fas fa-map-marker-alt',
-                                ];
+                $bgMap = [
+                    'call'          => 'bg-danger',
+                    'app_usage'     => 'bg-warning',
+                    'location'      => 'bg-danger',
+                    'communication' => 'bg-purple',
+                    'medium'        => 'bg-secondary',
+                ];
+                $iconMap = [
+                    'call'          => 'fas fa-phone-slash',
+                    'app_usage'     => 'fas fa-mobile-alt',
+                    'location'      => 'fas fa-map-marker-alt',
+                    'communication' => 'fas fa-comments',
+                ];
                                 $bg   = $bgMap[$type]   ?? 'bg-secondary';
                                 $icon = $iconMap[$type]  ?? 'fas fa-question-circle';
 
@@ -127,7 +130,7 @@
                                     <div class="timeline-item">
                                         <span class="time"><i class="fas fa-clock"></i> <?= $timeStr ?></span>
                                         <h3 class="timeline-header">
-                                            <span class="badge badge-<?= $sev === 'danger' ? 'danger' : 'warning' ?> mr-2">
+                                            <span class="badge badge-<?= $sev === 'danger' ? 'danger' : ($sev === 'medium' ? 'secondary' : 'warning') ?> mr-2">
                                                 <i class="fas fa-exclamation-circle mr-1"></i><?= ucfirst($sev) ?>
                                             </span>
                                             <?= esc($anomaly['title']) ?>

@@ -88,6 +88,10 @@ class Account extends BaseClientController
             // Estimate storage per record count (rough bytes per type)
             $estimatedStorage = $this->estimateStorage($dataCounts);
 
+            // Get user's active subscription (if any)
+            $subscriptionModel = new \App\Models\SubscriptionModel();
+            $subscription = $subscriptionModel->getActivePlan($this->userId);
+
             $viewData = [
                 'pag' => 'account_profile',
                 'user_info' => $userData,
@@ -101,6 +105,7 @@ class Account extends BaseClientController
                 'last_exported_at' => $profileStats['last_exported_at'] ?? null,
                 'last_deleted_data_at' => $profileStats['last_deleted_data_at'] ?? null,
                 'estimated_storage' => $estimatedStorage,
+                'subscription' => $subscription,
             ];
 
             $viewData = array_merge($viewData, $dataCounts);

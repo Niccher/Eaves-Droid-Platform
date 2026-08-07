@@ -38,6 +38,11 @@ class BaseClientController extends BaseController
             throw new \RuntimeException('Authentication required');
         }
 
+        // Prevent caching of authenticated pages to ensure fresh subscription data
+        $response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $response->setHeader('Pragma', 'no-cache');
+        $response->setHeader('Expires', '0');
+
         // Initialize session service
         $this->session = Services::session();
 

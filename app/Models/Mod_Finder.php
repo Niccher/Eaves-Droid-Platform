@@ -4877,7 +4877,104 @@ class Mod_Finder extends Model
     {
         $anomalies = [];
 
-        // 1. Time Anomaly (Activity after midnight)
+        // Late-night window: 11:00 PM – 5:00 AM (hours 23..24 and 0..4)
+        $nightStart = 23;
+        $nightEnd   = 5;
+
+        $inNightWindow = static function (int $hour): bool {
+            return $hour >= 23 || $hour < 5;
+        };
+
+        $blockedCalls = $this->getBlockedIdentifiers($userId, 'call');
+        $blockedSms   = $this->getBlockedIdentifiers($userId, 'sms');
+        $blockedApps  = $this->getBlockedIdentifiers($userId, 'app_usage');
+
+        // 1. Late-night calls (tbl_logs).
+        $callBuilder = $this->db->table('tbl_logs')
+            ->select('counter, call_date, contact_name, phone_number, call_type, duration_seconds')
+            ->where('owner_id', $userId);
+        if (!empty($blockedCalls)) {
+            $callBuilder->whereNotIn('phone_number', $blockedCalls);
+        }
+        $nightCalls = $callBuilder
+            ->where('(HOUR(FROM_UNIXTIME(call_date/1000)) >= 23 OR HOUR(FROM_UNIXTIME(call_date/1000)) < 5)')
+            ->orderBy('call_date', 'DESC')
+            ->limit(10)
+            ->get()
+            ->getResultArray();
+
+        foreach ($nightCalls as $c) {
+            $hour = (int) date('H', (int) $c['call_date'] / 1000);
+            if (!$inNightWindow($hour)) {
+                continue;
+            }
+            $who = $c['contact_name'] ?: $c['phone_number'];
+            $who = $who ?: 'unknown number';
+            $dir = strtolower((string) $c['call_type']);
+            $anomalies[] = [
+                'type'        => 'call',
+                'severity'    => 'danger',
+                'timestamp'   => (int) $c['call_date'],
+                'title'       => 'Late-night call with ' . $who,
+                'description' => 'A ' . $dir . ' call occurred during the sleep window (11 PM – 5 AM).' .
+                                 (isset($c['duration_seconds']) && $c['duration_seconds'] ? ' Duration: ' . (int) $c['duration_seconds'] . 's.' : ''),
+            ];
+        }
+
+        // 2. Late-night app usage (tbl_app_usage).
+        $appBuilder = $this->db->table('tbl_app_usage')
+            ->select('id, last_time_used, app_name, package_name')
+            ->where('owner_id', $userId);
+        if (!empty($blockedApps)) {
+            $appBuilder->whereNotIn('package_name', $blockedApps);
+        }
+        $nightApps = $appBuilder
+            ->where('(HOUR(FROM_UNIXTIME(last_time_used/1000)) >= 23 OR HOUR(FROM_UNIXTIME(last_time_used/1000)) < 5)')
+            ->orderBy('last_time_used', 'DESC')
+            ->limit(10)
+            ->get()
+            ->getResultArray();
+
+        foreach ($nightApps as $a) {
+            $hour = (int) date('H', (int) $a['last_time_used'] / 1000);
+            if (!$inNightWindow($hour)) {
+                continue;
+            }
+            $anomalies[] = [
+                'type'        => 'app_usage',
+                'severity'    => 'warning',
+                'timestamp'   => (int) $a['last_time_used'],
+                'title'       => 'Late-night app use: ' . ($a['app_name'] ?: $a['package_name']),
+                'description' => 'Application was actively used during the sleep window (11 PM – 5 AM).',
+            ];
+        }
+
+        // 3. Late-night location movement (tbl_location).
+        $nightLoc = $this->db->table('tbl_location')
+            ->select('counter, location_time, provider, latitude, longitude')
+            ->where('owner_id', $userId)
+            ->where('(HOUR(FROM_UNIXTIME(location_time/1000)) >= 23 OR HOUR(FROM_UNIXTIME(location_time/1000)) < 5)')
+            ->orderBy('location_time', 'DESC')
+            ->limit(10)
+            ->get()
+            ->getResultArray();
+
+        foreach ($nightLoc as $l) {
+            $hour = (int) date('H', (int) $l['location_time'] / 1000);
+            if (!$inNightWindow($hour)) {
+                continue;
+            }
+            $anomalies[] = [
+                'type'        => 'location',
+                'severity'    => 'danger',
+                'timestamp'   => (int) $l['location_time'],
+                'title'       => 'Location change during sleep hours',
+                'description' => 'Device reported a location event during the sleep window (11 PM – 5 AM) via ' .
+                                 ($l['provider'] ?: 'an unknown provider') . '.',
+            ];
+        }
+
+        // 4. Unusual-hours movement baseline (tbl_activity, midnight – 4 AM).
         $midnightActivity = $this->db->table('tbl_activity')
             ->where('owner_id', $userId)
             ->where('activity_type !=', 'still')
@@ -4890,19 +4987,24 @@ class Mod_Finder extends Model
 
         foreach ($midnightActivity as $a) {
             $anomalies[] = [
-                'type' => 'Unusual Hours',
-                'severity' => 'Medium',
-                'desc' => 'Significant movement detected between 12 AM and 4 AM.',
-                'time' => (int) $a['activity_time']
+                'type'        => 'location',
+                'severity'    => 'medium',
+                'timestamp'   => (int) $a['activity_time'],
+                'title'       => 'Movement detected after midnight',
+                'description' => 'Significant movement detected between 12 AM and 4 AM, outside the expected sleep window.',
             ];
         }
 
-        // 2. High Frequency SMS (Burst detection)
+        // 5. High-frequency SMS burst (>50 in 24h) — Communication Burst.
         $last24h = (time() - 86400) * 1000;
         $burstSms = $this->db->table('tbl_sms')
             ->select('address, COUNT(*) as count')
             ->where('owner_id', $userId)
-            ->where('sms_date >', $last24h)
+            ->where('sms_date >', $last24h);
+        if (!empty($blockedSms)) {
+            $burstSms->whereNotIn('address', $blockedSms);
+        }
+        $burstSms = $burstSms
             ->groupBy('address')
             ->having('count >', 50)
             ->get()
@@ -4910,12 +5012,18 @@ class Mod_Finder extends Model
 
         foreach ($burstSms as $b) {
             $anomalies[] = [
-                'type' => 'Communication Burst',
-                'severity' => 'High',
-                'desc' => 'Unusually high volume of messages (>50) to ' . $b['address'] . ' in 24h.',
-                'time' => (int) $last24h
+                'type'        => 'communication',
+                'severity'    => 'danger',
+                'timestamp'   => (int) $last24h,
+                'title'       => 'Communication burst with ' . $b['address'],
+                'description' => 'Unusually high volume of messages (' . (int) $b['count'] . ') to ' . $b['address'] . ' within 24 hours.',
             ];
         }
+
+        // Sort newest-first by timestamp.
+        usort($anomalies, static function ($a, $b) {
+            return $b['timestamp'] <=> $a['timestamp'];
+        });
 
         return $anomalies;
     }

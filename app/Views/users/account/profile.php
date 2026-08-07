@@ -97,6 +97,60 @@
                             <div id="resetMessage" class="mt-2"></div>
                         </div>
                     </div>
+
+                    <!-- Subscription Info -->
+                    <?php if (!empty($subscription)): ?>
+                    <div class="card card-outline card-success mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-credit-card mr-2"></i>
+                                Subscription Details
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Plan:</strong>
+                                        <span class="badge badge-<?php echo $subscription['plan'] === 'free' ? 'secondary' : ($subscription['plan'] === 'gold' ? 'warning' : 'danger'); ?>">
+                                            <?php echo ucfirst($subscription['plan']); ?>
+                                        </span>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Status:</strong> <?php echo ucfirst($subscription['status']); ?>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Billing Cycle:</strong> <?php echo ucfirst($subscription['billing_cycle'] ?? '—'); ?>
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Payment Provider:</strong> <?php echo $subscription['payment_provider'] ? ucfirst($subscription['payment_provider']) : '—'; ?>
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Current Period:</strong> <?php echo $subscription['current_period_start'] ? date('M d, Y', strtotime($subscription['current_period_start'])) : '—'; ?> → <?php echo $subscription['current_period_end'] ? date('M d, Y', strtotime($subscription['current_period_end'])) : '—'; ?>
+                                    </p>
+                                    <?php if ($subscription['trial_ends_at']): ?>
+                                    <p class="mb-2">
+                                        <strong>Trial Ends:</strong> <?php echo date('M d, Y', strtotime($subscription['trial_ends_at'])); ?>
+                                    </p>
+                                    <?php endif; ?>
+                                    <?php if ($subscription['canceled_at']): ?>
+                                    <p class="mb-0">
+                                        <strong>Canceled At:</strong> <?php echo date('M d, Y', strtotime($subscription['canceled_at'])); ?>
+                                    </p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php else: ?>
+                    <div class="card card-outline card-secondary mt-4">
+                        <div class="card-body">
+                            <p class="mb-0">No active subscription. You are on the <strong>Free</strong> plan.</p>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Right Column - Tabs -->

@@ -27,6 +27,24 @@
     <section class="content">
         <div class="container-fluid">
 
+            <?php if (isset($has_algorithms) && !$has_algorithms): ?>
+            <!-- No algorithms available on the user's current plan -->
+            <div class="card shadow-lg">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-lock fa-4x text-warning mb-3"></i>
+                    <h3 class="font-weight-bold text-dark">Anomaly Detection is locked on your plan</h3>
+                    <p class="text-muted mx-auto" style="max-width:520px;">
+                        Your current plan (<strong><?= ucfirst($current_plan ?? 'free') ?></strong>) does not include anomaly
+                        detection algorithms. Upgrade to <strong>Gold</strong> for basic anomaly detection or
+                        <strong>Platinum</strong> for the full suite of advanced &amp; deep-learning algorithms.
+                    </p>
+                    <a href="<?= base_url('analysis/anomalies/advanced') ?>" class="btn btn-warning btn-lg font-weight-bold shadow-sm">
+                        <i class="fas fa-arrow-up mr-2"></i> Upgrade Subscription
+                    </a>
+                </div>
+            </div>
+            <?php else: ?>
+
             <!-- Instruction callout -->
             <?php 
                 $engineLabel = ($engine === 'python') ? 'Python (Docker Container)' : 'PHP (In-Process PHP-ML)';
@@ -146,6 +164,8 @@
                 </div>
 
             </form>
+
+            <?php endif; ?>
 
         </div>
     </section>

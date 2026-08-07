@@ -93,10 +93,33 @@
                     </a>
                 </li>
 
-                <!-- User Menu -->
+                    <!-- User Menu -->
                 <?php
+                // Force fresh subscription data - bypass any potential caching
+                if (auth()->loggedIn()) {
+                    $user = auth()->user();
+                    $userId = $user->id;
+                    // Force fresh DB query for subscription
+                    $db = \Config\Database::connect();
+                    $subscription = $db->table('user_subscriptions')
+                        ->select('plan, status, billing_cycle')
+                        ->where('user_id', $userId)
+                        ->where('status', 'active')
+                        ->where('current_period_end >=', date('Y-m-d H:i:s'))
+                        ->orderBy('current_period_end', 'DESC')
+                        ->limit(1)
+                        ->get()
+                        ->getRowArray();
+                    $subscription_plan = $subscription['plan'] ?? 'free';
+                } else {
+                    $subscription_plan = 'free';
+                }
+                
                 $avatar = isset($user_info['profile_image']) ? $user_info['profile_image'] : null;
                 $username = isset($user_info['username']) ? htmlspecialchars(ucwords($user_info['username'])) : 'User';
+                $plan_class = ($subscription_plan === 'free') ? 'badge-secondary' : (($subscription_plan === 'gold') ? 'badge-warning' : 'badge-danger');
+                $plan_icon = ($subscription_plan === 'gold') ? 'fa-crown' : (($subscription_plan === 'platinum') ? 'fa-gem' : 'fa-star');
+                $plan_label = ucfirst($subscription_plan);
                 ?>
                 <li class="nav-item dropdown user-menu">
                     <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
@@ -106,6 +129,9 @@
                              style="width: 32px; height: 32px; object-fit: cover;">
                         <span class="d-none d-md-inline ml-1">
                                 <?php echo $username; ?>
+                                <span class="badge badge-sm badge-<?php echo $plan_class; ?> ml-1">
+                                    <i class="fas <?php echo $plan_icon; ?> fa-xs"></i> <?php echo $plan_label; ?>
+                                </span>
                             </span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
@@ -115,6 +141,10 @@
                                  alt="User Image">
                             <p class="mt-2">
                                 <?php echo $username; ?>
+                                <br>
+                                <span class="badge badge-sm <?php echo $plan_class; ?>">
+                                    <i class="fas <?php echo $plan_icon; ?> fa-xs"></i> <?php echo $plan_label; ?> Subscriber
+                                </span>
                                 <small>Member</small>
                             </p>
                         </li>
@@ -321,20 +351,13 @@
                                     </a>
                                 </li>
 
-                                 <li class="nav-item">
-                                    <?php if (empty($anomalies ?? [])): ?>
-                                    <a href="<?php echo base_url('anomalies/run'); ?>"
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('analysis/anomalies/results'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
-                                        <i class="fas fa-play nav-icon"></i>
-                                        <p>Run Scanner</p>
+                                        <i class="fas fa-bug nav-icon"></i>
+                                        <p>Anomaly Scanner</p>
+                                        <span class="badge badge-danger float-right">Live</span>
                                     </a>
-                                    <?php else: ?>
-                                    <a href="<?php echo base_url('anomalies/results'); ?>"
-                                       class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'anomalies') ? 'active' : ''; ?>">
-                                        <i class="fas fa-chart-line nav-icon"></i>
-                                        <p>Results</p>
-                                    </a>
-                                    <?php endif; ?>
                                 </li>
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis/behavioral-anomalies'); ?>"
@@ -347,17 +370,15 @@
                                     <a href="<?php echo base_url('analysis/correlation-engine'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'correlation_engine') ? 'active' : ''; ?>">
                                         <i class="fas fa-project-diagram nav-icon"></i>
-                                        <p>Correlation Engine</p>
-                                        <span class="badge badge-danger float-right">Platinum</span>
-                                    </a>
+<p>Correlation Engine</p>
+                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('analysis/care-plan'); ?>"
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'risk_care_plan') ? 'active' : ''; ?>">
                                         <i class="fas fa-shield-alt nav-icon"></i>
-                                        <p>Care Plan</p>
-                                        <span class="badge badge-warning float-right">Gold+</span>
-                                    </a>
+<p>Care Plan</p>
+                                     </a>
                                 </li>
                             </ul>
                         </li>

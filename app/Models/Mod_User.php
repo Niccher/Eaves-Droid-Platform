@@ -44,6 +44,23 @@ class Mod_User extends Model
                     $userArray['profile_image'] = null;
                 }
 
+                // Fetch active subscription plan
+                $subscription = $this->db->table('user_subscriptions')
+                    ->select('plan, status, billing_cycle')
+                    ->where('user_id', $user->id)
+                    ->where('status', 'active')
+                    ->where('current_period_end >=', date('Y-m-d H:i:s'))
+                    ->orderBy('current_period_end', 'DESC')
+                    ->limit(1)
+                    ->get()
+                    ->getRowArray();
+
+                if ($subscription) {
+                    $userArray['plan'] = $subscription['plan'] ?? 'free';
+                } else {
+                    $userArray['plan'] = 'free';
+                }
+
                 return $userArray;
             }
             log_message('error', 'User not logged in');

@@ -224,6 +224,29 @@ $sevMap = $severity_map ?? [
     <section class="content">
         <div class="container-fluid">
 
+            <?php if (isset($can_see_advanced) && !$can_see_advanced): ?>
+            <!-- Advanced results are locked (Gold sees basic only) -->
+            <div class="callout callout-danger d-flex flex-wrap align-items-center">
+                <div class="mr-auto pr-3">
+                    <i class="fas fa-crown fa-lg text-danger mr-2"></i>
+                    <strong>You're viewing basic anomaly results.</strong>
+                    <span class="d-block text-muted small">Upgrade to <span class="badge badge-danger"><?= ucfirst($advanced_plan ?? 'platinum') ?></span> to unlock
+                    advanced &amp; deep-learning algorithms (BERT phishing, GCN graphs, isolation forests, LSTMs &amp; more).</span>
+                </div>
+                <a href="<?= esc($advanced_upgrade_url ?? '#') ?>" class="btn btn-secondary text-white font-weight-bold">
+                    <i class="fas fa-arrow-up mr-1"></i> See Advanced Results
+                </a>
+            </div>
+            <?php elseif (isset($can_see_advanced) && $can_see_advanced && ($current_plan ?? '') !== 'platinum'): ?>
+            <div class="alert alert-success d-flex flex-wrap align-items-center shadow-sm" role="alert">
+                <div class="mr-auto pr-3">
+                    <i class="fas fa-check-circle fa-lg text-success mr-2"></i>
+                    <strong>Advanced results unlocked.</strong>
+                    <span class="d-block text-muted small">Your plan includes advanced &amp; deep-learning anomaly algorithms.</span>
+                </div>
+                <span class="badge badge-success"><i class="fas fa-crown mr-1"></i>Platinum Intelligence</span>
+            </div>
+            <?php endif; ?>
 
 
             <div class="row mb-3">
@@ -266,8 +289,8 @@ $sevMap = $severity_map ?? [
             </div>
 
 
-            <?php if (empty($results)): ?>
-            <!-- Empty state -->
+            <?php if (empty($results) && !empty($has_report)): ?>
+            <!-- Empty state (report ran but no anomalies found) -->
             <div class="card shadow-sm">
                 <div class="card-body text-center py-5">
                     <i class="fas fa-shield-alt fa-4x text-primary mb-3"></i>
@@ -275,6 +298,25 @@ $sevMap = $severity_map ?? [
                     <p class="text-muted">All selected algorithms ran successfully and found no anomalies in your data. This is a great sign!</p>
                 </div>
             </div>
+
+            <?php elseif (empty($results)): ?>
+            <!-- No report run yet → prompt to run anomaly detection -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-bug fa-4x text-danger mb-3"></i>
+                    <h3 class="font-weight-bold text-dark">No Anomaly Report Yet</h3>
+                    <p class="text-muted mx-auto" style="max-width:560px;">
+                        Your anomaly report will appear here once a scan has been run.
+                        Kick off a scan now to detect suspicious activity in your SMS,
+                        calls, contacts, location, apps, files and device.
+                    </p>
+                    <a href="<?= esc($run_url ?? base_url('analysis/anomalies/run')) ?>"
+                       class="btn btn-danger btn-lg font-weight-bold shadow-sm mt-2">
+                        <i class="fas fa-play-circle mr-2"></i> Run Anomaly Detection
+                    </a>
+                </div>
+            </div>
+
             <?php else: ?>
 
             <!-- ── Category Nav Pills ── -->
