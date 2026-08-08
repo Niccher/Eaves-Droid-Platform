@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class Mod_Finder extends Model
 {
-    protected $table = 'tbl_users';
+    protected $table = 'users';
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
     protected $returnType = 'array';

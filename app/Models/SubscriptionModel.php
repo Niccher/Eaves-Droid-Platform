@@ -59,7 +59,7 @@ class SubscriptionModel extends Model
                 'correlation' => false,
                 'care_plan' => false,
             ],
-            'ml_algorithms' => [],
+            'ml_algorithms' => ['core'],
         ];
     }
 

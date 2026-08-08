@@ -1,0 +1,124 @@
+<?php
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+
+class CreateTblDeviceContext extends Migration
+{
+    public function up()
+    {
+        $this->forge->addField([
+            'id' => [
+                'type'       => 'INT',
+                'unsigned'   => true,
+                'null'       => false,
+                'auto_increment' => true,
+            ],
+            'owner_id' => [
+                'type'       => 'INT',
+                'unsigned'   => true,
+                'null'       => true,
+            ],
+            'device_id' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
+                'null'       => true,
+            ],
+            'battery_level_percent' => [
+                'type'       => 'FLOAT',
+                'null'       => true,
+            ],
+            'battery_is_charging' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'null'       => true,
+                'default'    => 0,
+            ],
+            'battery_plugged_usb' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'null'       => true,
+                'default'    => 0,
+            ],
+            'battery_plugged_ac' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'null'       => true,
+                'default'    => 0,
+            ],
+            'battery_temperature_celsius' => [
+                'type'       => 'FLOAT',
+                'null'       => true,
+            ],
+            'battery_voltage_mv' => [
+                'type'       => 'INT',
+                'null'       => true,
+            ],
+            'battery_health' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 50,
+                'null'       => true,
+            ],
+            'clipboard_text' => [
+                'type'       => 'TEXT',
+                'null'       => true,
+            ],
+            'locale_country' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 10,
+                'null'       => true,
+            ],
+            'locale_display_country' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
+                'null'       => true,
+            ],
+            'locale_language' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 10,
+                'null'       => true,
+            ],
+            'locale_display_language' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
+                'null'       => true,
+            ],
+            'locale_timezone' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
+                'null'       => true,
+            ],
+            'locale_timezone_offset_ms' => [
+                'type'       => 'BIGINT',
+                'null'       => true,
+            ],
+            'extracted_at' => [
+                'type'       => 'BIGINT',
+                'null'       => true,
+            ],
+            'created_at' => [
+                'type'       => 'DATETIME',
+                'null'       => true,
+            ],
+            'updated_at' => [
+                'type'       => 'DATETIME',
+                'null'       => true,
+            ],
+        ]);
+
+        $this->forge->addPrimaryKey('id');
+        $this->forge->addKey('owner_id', false, false, 'owner_id');
+        $this->forge->addKey('device_id', false, false, 'device_id');
+        $this->forge->addKey('extracted_at', false, false, 'extracted_at');
+        $this->forge->addKey('locale_timezone', false, false, 'locale_timezone');
+        $this->forge->addKey('created_at', false, false, 'idx_created_at');
+
+        $this->forge->createTable('tbl_device_context', true);
+    }
+
+    public function down()
+    {
+        $this->forge->dropTable('tbl_device_context', true);
+    }
+}

@@ -111,6 +111,16 @@ class Anomalies extends BaseClientController
         $categories = $this->filterByPlan($categories);
 
         $gate = new \App\Services\PlanGate();
+
+        // No algorithms available on this plan — hard block with upgrade page.
+        if (empty($categories)) {
+            return $this->renderUpgrade(
+                'Anomaly Detection',
+                $gate->upgradePlansForFeature($this->userId, 'risk_score'),
+                base_url('analysis/anomalies')
+            );
+        }
+
         $data = $this->baseData();
         $data['categories'] = $categories;
         $data['engine'] = $engine;
@@ -165,18 +175,26 @@ class Anomalies extends BaseClientController
         $selectedAlgs = $this->filterAlgs($selectedAlgs, $adminSettings);
         $selectedAlgs = $this->intersectWithPlan($selectedAlgs);
 
+        // No algorithms allowed by plan — redirect to upgrade page.
+        $algCount = 0;
+        foreach ($selectedAlgs as $algList) {
+            $algCount += count((array)$algList);
+        }
+        if ($algCount === 0) {
+            $gate = new \App\Services\PlanGate();
+            return $this->renderUpgrade(
+                'Anomaly Detection',
+                $gate->upgradePlansForFeature($this->userId, 'risk_score'),
+                base_url('analysis/anomalies')
+            );
+        }
+
         if ($adminSettings['default_engine'] !== 'both') {
             $selectedEngine = $adminSettings['default_engine'];
             $this->session->set('anomaly_engine', $selectedEngine);
         }
 
         $scope = $this->request->getGet('scope') ?? 'full';
-
-        // Count total algorithms
-        $algCount = 0;
-        foreach ($selectedAlgs as $algList) {
-            $algCount += count((array)$algList);
-        }
 
         // Create ml_jobs row
         $allAlgIds = [];
@@ -301,8 +319,9 @@ class Anomalies extends BaseClientController
         $gate = new \App\Services\PlanGate();
         $planKey = $gate->currentPlanKey($this->userId);
 
-        // Free users have no anomaly access — show upgrade page (Gold + Platinum).
-        if ($planKey === 'free') {
+        // Check if the user's plan has any ML algorithms configured.
+        $allowedIds = $gate->allowedAlgorithmIds($this->userId, $this->anomalyModel->getAlgorithmTiers());
+        if (empty($allowedIds)) {
             return $this->renderUpgrade(
                 'Anomaly Detection',
                 $gate->upgradePlansForFeature($this->userId, 'risk_score'),

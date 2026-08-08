@@ -178,7 +178,7 @@ class Mod_Receive extends Model
                 'token_format' => $var_format,
             ];
 
-            if ($this->db->table('tbl_Tokentest')->insert($data)) {
+            if ($this->db->table('tbl_tokentest')->insert($data)) {
                 log_message('info', 'Test token created: ' . $var_sent_token);
                 return true;
             }
@@ -235,18 +235,18 @@ class Mod_Receive extends Model
         try {
             $dated = date('Y-m-d H:i:s');
             $data = [
-                'Up_time' => $dated,
-                'Up_token' => $tr_token,
-                'Up_file_name' => $tr_namenew,
-                'Up_file_realname' => $tr_namereal,
-                'Up_file_size' => $tr_size,
-                'Up_file_extension' => $tr_ext,
-                'Up_file_text' => $tr_text,
-                'Up_file_viewed' => 0,
-                'Up_fille_downloaded' => 0,
+                'created_at' => $dated,
+                'token' => $tr_token,
+                'file_name' => $tr_namenew,
+                'file_realname' => $tr_namereal,
+                'file_size' => $tr_size,
+                'file_extension' => $tr_ext,
+                'file_text' => $tr_text,
+                'file_viewed' => 0,
+                'file_downloaded' => 0,
             ];
 
-            if ($this->db->table('tbl_Uploaded')->insert($data)) {
+            if ($this->db->table('tbl_uploaded')->insert($data)) {
                 log_message('info', 'Upload entry created: ' . $tr_namenew);
                 return true;
             }

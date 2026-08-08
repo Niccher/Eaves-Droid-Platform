@@ -94,7 +94,7 @@ class GeoTransitionDetector
             $inside = $dist <= (int)$zone['radius_m'];
             
             // Get last event for this zone/device
-            $lastEvent = $this->db->table('geo_events')
+            $lastEvent = $this->db->table('tbl_geo_events')
                 ->where('zone_id', $zone['id'])
                 ->where('device_id', $zone['device_id'])
                 ->orderBy('event_time', 'DESC')
@@ -155,7 +155,7 @@ class GeoTransitionDetector
                 // DWELL continuation - update last event's dwell time
                 if ($lastEvent) {
                     $dwellMs = $timeMs - (int)$lastEvent['dwell_start_ms'];
-                    $this->db->table('geo_events')
+                    $this->db->table('tbl_geo_events')
                         ->where('id', $lastEvent['id'])
                         ->update([
                             'dwell_ms' => $dwellMs,
@@ -178,7 +178,7 @@ class GeoTransitionDetector
         }
         
         try {
-            $this->db->table('geo_events')->insert($data);
+            $this->db->table('tbl_geo_events')->insert($data);
         } catch (\Exception $e) {
             log_message('error', 'GeoTransition: Failed to insert event: ' . $e->getMessage());
         }

@@ -2493,21 +2493,36 @@ class Mod_Anomalies extends Model
     public function getAlgorithmTiers(): array
     {
         return [
-            // Core (available on free and up)
-            'sms_freq' => 'core', 'sms_time' => 'core', 'sms_cluster' => 'core',
-            'contacts_freq' => 'core', 'contacts_dup' => 'core',
-            'calls_burst' => 'core', 'calls_night' => 'core',
-            'loc_geofence' => 'core', 'loc_speed' => 'core', 'loc_dbscan' => 'core',
-            'apps_rep' => 'core', 'apps_perm' => 'core',
-            'files_spike' => 'core', 'files_ext' => 'core',
-            'act_screen' => 'core', 'act_switch' => 'core',
-            'dev_hw' => 'core', 'dev_net' => 'core',
-            // Advanced
-            'files_entropy' => 'advanced',
-            // Deep (python models)
-            'sms_bert' => 'deep', 'contacts_graph' => 'deep',
-            'calls_isolation' => 'deep', 'apps_autoencoder' => 'deep',
-            'act_lstm' => 'deep', 'dev_oneclass' => 'deep',
+            // Core (Free) — simple threshold / statistical
+            'sms_freq'      => 'core',
+            'sms_time'      => 'core',
+            'contacts_freq' => 'core',
+            'calls_burst'   => 'core',
+            'calls_night'   => 'core',
+            'apps_rep'      => 'core',
+            'files_spike'   => 'core',
+            'dev_hw'        => 'core',
+
+            // Advanced (Gold) — PHP-ML / moderate complexity
+            'sms_cluster'   => 'advanced',
+            'contacts_dup'  => 'advanced',
+            'loc_geofence'  => 'advanced',
+            'loc_speed'     => 'advanced',
+            'loc_dbscan'    => 'advanced',
+            'apps_perm'     => 'advanced',
+            'files_ext'     => 'advanced',
+            'act_screen'    => 'advanced',
+            'act_switch'    => 'advanced',
+            'dev_net'       => 'advanced',
+
+            // Deep (Platinum) — full Python ML models
+            'sms_bert'         => 'deep',
+            'contacts_graph'   => 'deep',
+            'calls_isolation'  => 'deep',
+            'apps_autoencoder' => 'deep',
+            'files_entropy'    => 'deep',
+            'act_lstm'         => 'deep',
+            'dev_oneclass'     => 'deep',
         ];
     }
 

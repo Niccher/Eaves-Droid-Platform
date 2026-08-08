@@ -165,9 +165,9 @@ class Plans extends BaseSuperadminController
     private function getAlgorithmDefinitions(): array
     {
         return [
-            ['key' => 'core', 'label' => 'Core (KMeans, DBSCAN, NaiveBayes)', 'tier' => 'free'],
-            ['key' => 'advanced', 'label' => 'Advanced (IsolationForest, HMM, Prophet)', 'tier' => 'gold'],
-            ['key' => 'deep', 'label' => 'Deep Learning (LSTM, Transformers)', 'tier' => 'platinum'],
+            ['key' => 'core', 'label' => 'Core (8 algorithms) — Basic statistical detection', 'tier' => 'free'],
+            ['key' => 'advanced', 'label' => 'Advanced (10 algorithms) — PHP-ML pattern analysis', 'tier' => 'gold'],
+            ['key' => 'deep', 'label' => 'Deep (7 algorithms) — Full Python neural models', 'tier' => 'platinum'],
         ];
     }
 }

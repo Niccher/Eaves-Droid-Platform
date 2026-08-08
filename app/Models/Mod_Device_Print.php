@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class DeviceModel extends Model
 {
-    protected $table = 'tbl_Devices';
+    protected $table = 'tbl_devices';
     protected $primaryKey = 'id';
 
     protected $useAutoIncrement = true;

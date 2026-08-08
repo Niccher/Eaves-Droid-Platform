@@ -55,13 +55,13 @@ class Mod_Android extends Model
     {
         try {
             $data = [
-                'User_ID' => $user_id,
-                'Action' => $action,
-                'IP' => $ip_add,
-                'Timestamps' => $date,
+                'user_id' => $user_id,
+                'action' => $action,
+                'ip_address' => $ip_add,
+                'created_at' => $date,
             ];
 
-            $builder = $this->db->table('tbl_Interactions');
+            $builder = $this->db->table('tbl_interactions');
             if ($builder->insert($data)) {
                 log_message('info', 'Action registered: ' . $action . ' for user ' . $user_id);
                 return true;
