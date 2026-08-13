@@ -28,6 +28,9 @@ if (!function_exists('send_templated_email')) {
             return false;
         }
 
+        // Generate tracking Log ID
+        $emailTrackId = 'ED-' . strtoupper(bin2hex(random_bytes(4)));
+
         // Build security footer data from current request (if available)
         $request = service('request');
         $authUser = function_exists('auth') && auth()->loggedIn() ? auth()->user() : null;
@@ -40,6 +43,7 @@ if (!function_exists('send_templated_email')) {
             'securityBrowser'       => $data['securityBrowser'] ?? ($request ? $request->getUserAgent()->getAgentString() : ''),
             'securityBrowserIp'     => $data['securityBrowserIp'] ?? ($request ? $request->getIPAddress() : ''),
             'securityExecutedAt'    => $data['securityExecutedAt'] ?? date('Y-m-d H:i:s'),
+            'emailTrackId'          => $emailTrackId,
         ];
 
         // Merge security data into template data
@@ -50,6 +54,18 @@ if (!function_exists('send_templated_email')) {
             $content = view($template, $mergedData);
         } catch (\Throwable $e) {
             log_message('error', "send_templated_email: Failed to render template '$template': " . $e->getMessage());
+            
+            // Log rendering failure
+            $db->table('tbl_email_logs')->insert([
+                'email_id'      => $emailTrackId,
+                'to_email'      => $to,
+                'subject'       => $subject,
+                'template'      => $template,
+                'body'          => '',
+                'sent_at'       => date('Y-m-d H:i:s'),
+                'status'        => 'failed',
+                'error_message' => "Render template failed: " . $e->getMessage()
+            ]);
             return false;
         }
 
@@ -59,10 +75,24 @@ if (!function_exists('send_templated_email')) {
             $body = view($layout, $layoutData);
         } catch (\Throwable $e) {
             log_message('error', "send_templated_email: Failed to render layout '$layout': " . $e->getMessage());
+            
+            // Log layout rendering failure
+            $db->table('tbl_email_logs')->insert([
+                'email_id'      => $emailTrackId,
+                'to_email'      => $to,
+                'subject'       => $subject,
+                'template'      => $template,
+                'body'          => $content,
+                'sent_at'       => date('Y-m-d H:i:s'),
+                'status'        => 'failed',
+                'error_message' => "Render layout failed: " . $e->getMessage()
+            ]);
             return false;
         }
 
         // Send via SMTP
+        $status = 'failed';
+        $errorMessage = null;
         try {
             $email = \Config\Services::email();
             $email->initialize([
@@ -85,15 +115,35 @@ if (!function_exists('send_templated_email')) {
 
             $sent = $email->send();
             if (!$sent) {
-                log_message('error', "send_templated_email: Failed to send to $to (template: $template). Debug: " . json_encode($email->printDebugger(['headers'])));
+                $errorMessage = "SMTP Send failed. Debug: " . json_encode($email->printDebugger(['headers']));
+                log_message('error', "send_templated_email: Failed to send to $to (template: $template). Debug: " . $errorMessage);
             } else {
-                log_message('info', "send_templated_email: Sent to $to (template: $template)");
+                $status = 'sent';
+                log_message('info', "send_templated_email: Sent to $to (template: $template) [Log ID: $emailTrackId]");
             }
-            return $sent;
         } catch (\Throwable $e) {
-            log_message('error', "send_templated_email: Exception sending to $to: " . $e->getMessage());
-            return false;
+            $errorMessage = $e->getMessage();
+            log_message('error', "send_templated_email: Exception sending to $to: " . $errorMessage);
+            $sent = false;
         }
+
+        // Log final status in database
+        try {
+            $db->table('tbl_email_logs')->insert([
+                'email_id'      => $emailTrackId,
+                'to_email'      => $to,
+                'subject'       => $subject,
+                'template'      => $template,
+                'body'          => $body,
+                'sent_at'       => date('Y-m-d H:i:s'),
+                'status'        => $status,
+                'error_message' => $errorMessage
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', "send_templated_email: Failed to save email log to database: " . $e->getMessage());
+        }
+
+        return $sent;
     }
 }
 

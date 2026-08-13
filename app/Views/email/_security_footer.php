@@ -1,72 +1,69 @@
 <?php
 /**
  * _security_footer.php - Reusable Security & Audit Metadata Footer
- * 
- * Variables (all optional, auto-escaped):
- *   $action          - Human-readable action name (e.g., "Data Export", "Remote Command: Fetch SMS")
- *   $description     - Plain English explanation of what the action does
- *   $status          - 'success' | 'failed' | 'pending' | 'warning'
- *   $initiatedBy     - Who/what initiated (e.g., "Admin: john", "System (Cron)", "User: jane")
- *   $browser         - Full User-Agent string
- *   $browserIp       - IP address of the browser
- *   $executedAt      - Timestamp in Y-m-d H:i:s format
  */
 
-// Only render if there's meaningful data
-$hasData = !empty($action) || !empty($description) || !empty($browser) || !empty($browserIp) || !empty($initiatedBy);
+$act  = $action ?? $securityAction ?? '';
+$desc = $description ?? $securityDescription ?? '';
+$stat = $status ?? $securityStatus ?? 'success';
+$init = $initiatedBy ?? $securityInitiatedBy ?? '';
+$ip   = $browserIp ?? $securityBrowserIp ?? '';
+$time = $executedAt ?? $securityExecutedAt ?? '';
+$ua   = $browser ?? $securityBrowser ?? '';
+$trackId = $emailTrackId ?? ''; 
+
+$hasData = !empty($act) || !empty($ua) || !empty($ip) || !empty($init);
 if (!$hasData) return;
 ?>
 
 <!-- Security & Audit Footer -->
-<div style="background:#1a1a2e;border-left:4px solid #00d4aa;margin:24px 0;padding:20px;border-radius:10px;position:relative;overflow:hidden;">
-    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#00d4aa,transparent);"></div>
-    <h4 style="color:#00d4aa;margin:0 0 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:14px;">🔒</span> Security & Audit Information
+<div style="background:#1e293b;border-left:4px solid #00d4aa;margin:24px 0;padding:20px;border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <h4 style="color:#00d4aa;margin:0 0 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+        🔒 Security &amp; Audit Information
     </h4>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'SF Mono','Fira Code','Monaco',monospace;">
-        <?php if (!empty($action)): ?>
+    
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;font-size:12px;color:#cbd5e1;line-height:1.6;">
+        <!-- Row 1: Action + Status -->
         <tr>
-            <td style="padding:6px 10px;color:#777;font-weight:600;width:150px;">Action</td>
-            <td style="padding:6px 10px;color:#e8e8e8;font-weight:500;"><?= esc($action) ?></td>
-        </tr>
-        <?php endif; ?>
-        <?php if (!empty($description)): ?>
-        <tr>
-            <td style="padding:6px 10px;color:#777;font-weight:600;">What This Does</td>
-            <td style="padding:6px 10px;color:#999;line-height:1.5;"><?= esc($description) ?></td>
-        </tr>
-        <?php endif; ?>
-        <tr>
-            <td style="padding:6px 10px;color:#777;font-weight:600;">Status</td>
-            <td style="padding:6px 10px;">
-                <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:<?= $status === 'success' ? 'rgba(0,212,170,0.15)' : ($status === 'failed' ? 'rgba(255,71,87,0.15)' : ($status === 'warning' ? 'rgba(255,165,2,0.15)' : 'rgba(0,102,255,0.15)')) ?>;color:<?= $status === 'success' ? '#00d4aa' : ($status === 'failed' ? '#ff4757' : ($status === 'warning' ? '#ffa502' : '#0066ff')) ?>;">
-                    <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span>
-                    <?= esc(ucfirst($status ?? 'success')) ?>
+            <td style="padding:4px 0;width:50%;vertical-align:top;">
+                <span style="color:#94a3b8;font-weight:600;">Action:</span> 
+                <span style="color:#f1f5f9;font-weight:500;"><?= esc($act) ?></span>
+            </td>
+            <td style="padding:4px 0;width:50%;vertical-align:top;">
+                <span style="color:#94a3b8;font-weight:600;">Status:</span> 
+                <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase;background:<?= $stat === 'success' || strtolower($stat) === 'completed' ? 'rgba(0,212,170,0.15)' : 'rgba(255,71,87,0.15)' ?>;color:<?= $stat === 'success' || strtolower($stat) === 'completed' ? '#00d4aa' : '#ff4757' ?>;">
+                    <?= esc(ucfirst($stat)) ?>
                 </span>
             </td>
         </tr>
-        <?php if (!empty($initiatedBy)): ?>
+        
+        <!-- Row 2: Browser IP + Executed At -->
         <tr>
-            <td style="padding:6px 10px;color:#777;font-weight:600;">Initiated By</td>
-            <td style="padding:6px 10px;color:#e8e8e8;font-weight:500;"><?= esc($initiatedBy) ?></td>
+            <td style="padding:4px 0;width:50%;vertical-align:top;">
+                <span style="color:#94a3b8;font-weight:600;">Browser IP:</span> 
+                <span style="color:#f1f5f9;font-family:monospace;"><?= esc($ip) ?></span>
+            </td>
+            <td style="padding:4px 0;width:50%;vertical-align:top;">
+                <span style="color:#94a3b8;font-weight:600;">Executed At:</span> 
+                <span style="color:#f1f5f9;font-family:monospace;"><?= esc($time) ?></span>
+            </td>
+        </tr>
+        
+        <!-- Row 3: Browser User-Agent (Full width) -->
+        <?php if (!empty($ua)): ?>
+        <tr>
+            <td colspan="2" style="padding:6px 0 4px;border-top:1px solid #334155;margin-top:4px;word-break:break-all;font-family:monospace;font-size:11px;color:#94a3b8;">
+                <span style="font-weight:600;color:#64748b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">Browser:</span> <?= esc($ua) ?>
+            </td>
         </tr>
         <?php endif; ?>
-        <?php if (!empty($browser)): ?>
+
+        <!-- Subtle Tracking ID -->
+        <?php if (!empty($trackId)): ?>
         <tr>
-            <td style="padding:6px 10px;color:#777;font-weight:600;">Browser</td>
-            <td style="padding:6px 10px;color:#999;word-break:break-all;"><?= esc($browser) ?></td>
-        </tr>
-        <?php endif; ?>
-        <?php if (!empty($browserIp)): ?>
-        <tr>
-            <td style="padding:6px 10px;color:#777;font-weight:600;">Browser IP</td>
-            <td style="padding:6px 10px;color:#e8e8e8;font-weight:500;font-family:monospace;"><?= esc($browserIp) ?></td>
-        </tr>
-        <?php endif; ?>
-        <?php if (!empty($executedAt)): ?>
-        <tr>
-            <td style="padding:6px 10px;color:#777;font-weight:600;">Executed At</td>
-            <td style="padding:6px 10px;color:#e8e8e8;font-weight:500;font-family:monospace;"><?= esc($executedAt) ?></td>
+            <td colspan="2" style="padding:6px 0 0;text-align:right;font-size:10px;color:#475569;font-family:monospace;">
+                Log ID: <?= esc($trackId) ?>
+            </td>
         </tr>
         <?php endif; ?>
     </table>

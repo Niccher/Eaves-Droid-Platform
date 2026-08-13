@@ -885,24 +885,46 @@ class Advanced extends BaseClientController
     /** GET /advanced/hardware */
     public function hardware()
     {
+        $subModel = new \App\Models\SubscriptionModel();
+        $userTier = $subModel->getPlanTier($this->userId);
         $counts = $this->getUserDataCounts();
+        
+        $db = \Config\Database::connect();
+        $features = $db->table('tbl_feature_tiers')
+                       ->where('category_type', 'hardware')
+                       ->get()
+                       ->getResultArray();
+
         return $this->renderAppView('users/advanced/hardware', [
             'pag' => 'advanced',
             'active_tab' => 'hardware_landing',
             'title' => 'Hardware',
             'counts' => $counts,
+            'userTier' => $userTier,
+            'features' => $features,
         ]);
     }
 
     /** GET /advanced/software */
     public function software()
     {
+        $subModel = new \App\Models\SubscriptionModel();
+        $userTier = $subModel->getPlanTier($this->userId);
         $counts = $this->getUserDataCounts();
+
+        $db = \Config\Database::connect();
+        $features = $db->table('tbl_feature_tiers')
+                       ->where('category_type', 'software')
+                       ->get()
+                       ->getResultArray();
+
         return $this->renderAppView('users/advanced/software', [
             'pag' => 'advanced',
             'active_tab' => 'software_landing',
             'title' => 'Software',
             'counts' => $counts,
+            'userTier' => $userTier,
+            'features' => $features,
         ]);
     }
 
@@ -2278,22 +2300,11 @@ class Advanced extends BaseClientController
     private function sendDeleteNotificationEmail(int $userId, array $deleted, int $totalDeleted): void
     {
         try {
-            $email = \Config\Services::email();
-            $email->initialize([
-                'mailType'  => 'html',
-                'charset'   => 'UTF-8',
-                'wordWrap'  => true,
-            ]);
-
-            $sender = get_notification_sender();
-            $email->setFrom($sender['email'], $sender['name']);
-            $email->setTo($this->userData['email']);
-            $email->setSubject('Eaves Droid — Data Deletion Confirmation');
-
+            helper('email');
+            
             $username = $this->userData['username'] ?? 'User';
             $asAtTimestamp = date('Y-m-d H:i:s');
 
-            // Build detailed category data with table labels
             $categoryLabels = [
                 'sms' => 'SMS Messages',
                 'calls' => 'Call Logs',
@@ -2419,40 +2430,38 @@ class Advanced extends BaseClientController
 
             // Build detailed category data from deleted array
             $categoriesWithTables = [];
-            $model = new \App\Models\Mod_Finder();
             foreach (\App\Models\Mod_Finder::TABLE_REGISTRY as $catKey => $tables) {
                 $tableList = is_array($tables) ? $tables : [$tables];
-                $tables = [];
+                $tablesList = [];
                 foreach ($tableList as $table) {
                     if (!isset($deleted[$table])) continue;
-                    $tables[] = [
+                    $tablesList[] = [
                         'name'  => $table,
                         'count' => $deleted[$table],
                         'label' => $tableLabels[$table] ?? $table,
                     ];
                 }
-                if (!empty($tables)) {
+                if (!empty($tablesList)) {
                     $categoriesWithTables[$catKey] = [
-                        'tables'       => $tables,
-                        'total_rows'   => array_sum(array_column($tables, 'count')),
+                        'tables'       => $tablesList,
+                        'total_rows'   => array_sum(array_column($tablesList, 'count')),
                     ];
                 }
             }
 
-            $body = view('email/data_delete_notification', [
-                'username'           => $username,
-                'asAtTimestamp'      => date('Y-m-d H:i:s'),
-                'categories'         => $categoriesWithTables,
-                'categoryLabels'     => $categoryLabels,
-                'totalDeleted'       => $totalDeleted,
-                'browser'            => $this->request->getUserAgent()->getAgentString() ?: '',
-                'browserIp'          => $this->request->getIPAddress(),
-                'timestamp'          => date('Y-m-d H:i:s'),
-            ]);
+            $emailData = [
+                'username'             => $username,
+                'asAtTimestamp'        => $asAtTimestamp,
+                'categories'           => $categoriesWithTables,
+                'categoryLabels'       => $categoryLabels,
+                'totalDeleted'         => $totalDeleted,
+                // Security Audit Metadata
+                'securityAction'       => 'Data Deletion',
+                'securityDescription'  => 'Permanently deleted device logs and diagnostics',
+                'securityStatus'       => 'completed',
+            ];
 
-            $email->setMessage($body);
-            $email->send();
-
+            send_templated_email($this->userData['email'], 'Eaves Droid — Data Deletion Confirmation', 'email/data_delete_notification', $emailData);
             log_message('info', 'Delete notification email sent to user ' . $userId);
         } catch (\Exception $e) {
             log_message('error', 'Failed to send delete notification email to user ' . $userId . ' — ' . $e->getMessage());
@@ -2465,18 +2474,7 @@ class Advanced extends BaseClientController
     private function sendExportNotificationEmail(int $userId, array $data): void
     {
         try {
-            $email = \Config\Services::email();
-            $email->initialize([
-                'mailType'  => 'html',
-                'charset'   => 'UTF-8',
-                'wordWrap'  => true,
-            ]);
-
-            $sender = get_notification_sender();
-            $email->setFrom($sender['email'], $sender['name']);
-            $email->setTo($this->userData['email']);
-            $email->setSubject('Eaves Droid — Data Export Complete');
-
+            helper('email');
             $username = $this->userData['username'] ?? 'User';
 
             $categoryLabels = [
@@ -2620,21 +2618,20 @@ class Advanced extends BaseClientController
                 ];
             }
 
-            $body = view('email/data_export_notification', [
-                'username'           => $username,
-                'asAtTimestamp'      => date('Y-m-d H:i:s'),
-                'categories'         => $categoriesWithTables,
-                'categoryLabels'     => $categoryLabels,
-                'totalRows'          => $data['total_rows'],
-                'totalSizeHuman'     => $data['total_size_human'],
-                'browser'            => $this->request->getUserAgent()->getAgentString() ?: '',
-                'browserIp'          => $this->request->getIPAddress(),
-                'timestamp'          => date('Y-m-d H:i:s'),
-            ]);
+            $emailData = [
+                'username'             => $username,
+                'asAtTimestamp'        => date('Y-m-d H:i:s'),
+                'categories'           => $categoriesWithTables,
+                'categoryLabels'       => $categoryLabels,
+                'totalRows'            => $data['total_rows'],
+                'totalSizeHuman'       => $data['total_size_human'],
+                // Security Audit Metadata
+                'securityAction'       => 'Data Export',
+                'securityDescription'  => 'Requested backup copy of device logs and diagnostics',
+                'securityStatus'       => 'completed',
+            ];
 
-            $email->setMessage($body);
-            $email->send();
-
+            send_templated_email($this->userData['email'], 'Eaves Droid — Data Export Complete', 'email/data_export_notification', $emailData);
             log_message('info', 'Export notification email sent to user ' . $userId);
         } catch (\Exception $e) {
             log_message('error', 'Failed to send export notification email to user ' . $userId . ' — ' . $e->getMessage());

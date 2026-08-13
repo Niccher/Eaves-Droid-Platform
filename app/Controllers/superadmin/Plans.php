@@ -83,6 +83,9 @@ class Plans extends BaseSuperadminController
         foreach ($this->getFeatureDefinitions() as $feat) {
             $features[$feat['key']] = (bool)($data['feature_' . $feat['key']] ?? false);
         }
+        $features['hardware_profile'] = $data['hardware_profile'] ?? 'basic';
+        $features['software_profile'] = $data['software_profile'] ?? 'basic';
+
         $algorithms = [];
         foreach ($this->getAlgorithmDefinitions() as $algo) {
             if (!empty($data['algo_' . $algo['key']])) {

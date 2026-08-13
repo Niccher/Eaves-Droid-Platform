@@ -41,6 +41,74 @@ class Billing extends BaseClientController
     private const PLANS = ['gold', 'platinum'];
 
     /**
+     * GET /billing
+     *
+     * Standalone billing / upgrade page with plan comparison and a
+     * simulated checkout modal. Always reachable from the user sidebar,
+     * not just behind the 403 upgrade gate.
+     *
+     * @return string
+     */
+    public function index(): string
+    {
+        $gate = new PlanGate();
+        $current = $gate->currentPlanKey($this->userId);
+
+        // Load every plan's current version for the cards + comparison table.
+        $versions = $this->plans->getCurrentVersions(); // keyed by slug
+        $hierarchy = ['free', 'gold', 'platinum'];
+        $currentIdx = array_search($current, $hierarchy, true);
+        if ($currentIdx === false) {
+            $currentIdx = 0;
+        }
+
+        // Upgrade options = plans strictly higher than the current one.
+        $upgradePlans = array_values(array_filter($hierarchy, function ($p) use ($currentIdx) {
+            return array_search($p, ['free', 'gold', 'platinum'], true) > $currentIdx;
+        }));
+
+        // Feature labels shared by the comparison table.
+        $featureLabels = [
+            'geofencing'         => 'Geo-Fencing & Location Intelligence',
+            'risk_score'         => 'Anomaly Detection (Risk Scoring)',
+            'forensic_export'    => 'Forensic Export & Reports',
+            'push_notifications' => 'Real-time Push Alerts',
+            'wellbeing'          => 'Digital Wellbeing Analytics',
+            'correlation'        => 'Correlation Engine',
+            'care_plan'          => 'Risk Score & Care Plans',
+            'smart_timeline'     => 'Unified Smart Timeline',
+        ];
+
+        return $this->renderBillingView('users/billing/index', [
+            'pag'            => 'billing',
+            'current_plan'   => $current,
+            'plans'          => $versions,
+            'upgrade_plans'  => $upgradePlans,
+            'feature_labels' => $featureLabels,
+            'csrf_token'     => csrf_hash(),
+        ]);
+    }
+
+    /**
+     * Render an authenticated user view with the shared users layout.
+     *
+     * @param string $mainView
+     * @param array  $data
+     * @return string
+     */
+    private function renderBillingView(string $mainView, array $data = []): string
+    {
+        $data = array_merge([
+            'user_info' => $this->userData,
+        ], $this->getDeviceViewData(), $data);
+
+        return view('headers_footers/head_users', $data)
+            . view('headers_footers/sidebar_users', $data)
+            . view($mainView, $data)
+            . view('headers_footers/footer_users', $data);
+    }
+
+    /**
      * POST /billing/simulate
      *
      * Body: plan, billing (monthly|yearly), payment_method, redirect_to (optional)
@@ -85,10 +153,13 @@ class Billing extends BaseClientController
             return $this->fail('Could not update your subscription. Please try again.', 500);
         }
 
-        // Determine the payable amount for the receipt
+        // ── Determine the payable amount for the receipt ──
         $amountCents = $billing === 'monthly'
             ? (int) $version['price_monthly_cents']
             : (int) $version['price_yearly_cents'];
+
+        // ── Send a simulated "upgrade confirmed" email to the account holder ──
+        $this->sendUpgradeConfirmationEmail($current, $plan, $billing, $amountCents, $version);
 
         $this->response->setHeader('Cache-Control', 'no-store');
 
@@ -103,6 +174,134 @@ class Billing extends BaseClientController
             'plan_name'      => ucfirst($plan),
             'redirect_to'    => $redirectTo ?: base_url('home'),
         ], 200);
+    }
+
+    /**
+     * Compute the benefits gained when moving from $oldPlan to $newPlan:
+     * newly-unlocked features and newly-unlocked algorithm tiers.
+     *
+     * @param string $oldPlan
+     * @param string $newPlan
+     * @return array{features: array, tiers: array}
+     */
+    private function planUpgradeDiff(string $oldPlan, string $newPlan): array
+    {
+        $featureLabels = [
+            'geofencing'         => 'Geo-Fencing & Location Intelligence',
+            'risk_score'         => 'Anomaly Detection (Risk Scoring)',
+            'forensic_export'    => 'Forensic Export & Reports',
+            'push_notifications' => 'Real-time Push Alerts',
+            'wellbeing'          => 'Digital Wellbeing Analytics',
+            'correlation'        => 'Correlation Engine',
+            'care_plan'          => 'Risk Score & Care Plans',
+            'smart_timeline'     => 'Unified Smart Timeline',
+        ];
+
+        $tierLabels = [
+            'core'     => 'Core Algorithms',
+            'advanced' => 'Advanced Algorithms',
+            'deep'     => 'ML-Engine Detectors',
+        ];
+
+        $oldVer = $this->plans->getCurrentVersion($oldPlan);
+        $newVer = $this->plans->getCurrentVersion($newPlan);
+
+        $oldFeatures = is_array($oldVer['features'] ?? null) ? $oldVer['features'] : [];
+        $newFeatures = is_array($newVer['features'] ?? null) ? $newVer['features'] : [];
+        $oldTiers    = is_array($oldVer['ml_algorithms'] ?? null) ? $oldVer['ml_algorithms'] : [];
+        $newTiers    = is_array($newVer['ml_algorithms'] ?? null) ? $newVer['ml_algorithms'] : [];
+
+        // Features enabled in the new plan but not in the old plan.
+        $newFeatureKeys = array_keys(array_filter($newFeatures, function ($enabled) {
+            return $enabled === true;
+        }));
+        $oldFeatureKeys = array_keys(array_filter($oldFeatures, function ($enabled) {
+            return $enabled === true;
+        }));
+        $gainedFeatures = array_values(array_diff($newFeatureKeys, $oldFeatureKeys));
+        $gainedFeatureLabels = array_values(array_filter(array_map(
+            fn($k) => $featureLabels[$k] ?? null,
+            $gainedFeatures
+        )));
+
+        // Algorithm tiers gained.
+        $gainedTiers = array_values(array_diff($newTiers, $oldTiers));
+        $gainedTierLabels = array_values(array_filter(array_map(
+            fn($t) => $tierLabels[$t] ?? null,
+            $gainedTiers
+        )));
+
+        return [
+            'features' => $gainedFeatureLabels,
+            'tiers'    => $gainedTierLabels,
+        ];
+    }
+
+    /**
+     * Send the simulated "plan upgraded" email to the account holder.
+     */
+    private function sendUpgradeConfirmationEmail(string $oldPlan, string $newPlan, string $billing, int $amountCents, array $newVersion): void
+    {
+        try {
+            // Resolve the account holder's email from auth_identities.
+            $db = \Config\Database::connect();
+            $row = $db->table('auth_identities')
+                ->where('user_id', $this->userId)
+                ->where('type', 'email_password')
+                ->get()
+                ->getRowArray();
+            $email = $row['secret'] ?? '';
+
+            if (!$email) {
+                log_message('error', "Billing::sendUpgradeConfirmationEmail: no email identity for user #{$this->userId}");
+                return;
+            }
+
+            $diff = $this->planUpgradeDiff($oldPlan, $newPlan);
+
+            $periodEnd = $db->table('user_subscriptions')
+                ->where('user_id', $this->userId)
+                ->orderBy('current_period_end', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+            $periodEndStr = $periodEnd['current_period_end'] ?? null;
+            $periodEndDisplay = $periodEndStr ? date('F j, Y', strtotime($periodEndStr)) : date('F j, Y', strtotime("+{$this->subscriptionDays($billing)} days"));
+
+            helper('email');
+
+            $username = $this->userData['username'] ?? 'User';
+
+            send_templated_email(
+                $email,
+                "Your Eaves Droid plan has been upgraded to " . ucfirst($newPlan),
+                'email/user/subscription_upgraded',
+                [
+                    'username'       => $username,
+                    'oldPlan'        => $oldPlan,
+                    'oldPlanName'    => ucfirst($oldPlan),
+                    'newPlan'        => $newPlan,
+                    'newPlanName'    => ucfirst($newPlan),
+                    'billing'        => $billing,
+                    'amountCents'    => $amountCents,
+                    'currency'       => $newVersion['currency'] ?? 'USD',
+                    'periodEnd'      => $periodEndDisplay,
+                    'newFeatures'    => $diff['features'],
+                    'newTiers'       => $diff['tiers'],
+                    'dashboardUrl'   => base_url('billing'),
+                ]
+            );
+        } catch (\Throwable $e) {
+            log_message('error', "Billing::sendUpgradeConfirmationEmail exception: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Helper: days for a billing cycle.
+     */
+    private function subscriptionDays(string $billing): int
+    {
+        return $billing === 'monthly' ? 30 : 365;
     }
 
     /**

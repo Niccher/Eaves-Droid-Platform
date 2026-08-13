@@ -1102,6 +1102,11 @@ $routes->group('', [
     // =============================================================
     $routes->group('billing', static function ($routes) {
         /**
+         * Standalone billing / upgrade page (simulated checkout).
+         */
+        $routes->get('', 'Billing::index', ['as' => 'billing']);
+
+        /**
          * Simulates a subscription payment and self-upgrades the user's plan.
          *
          * @return \CodeIgniter\HTTP\ResponseInterface

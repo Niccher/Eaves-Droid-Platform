@@ -6,6 +6,7 @@ use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Services\PlanGate as PlanGateService;
+use App\Models\SubscriptionModel;
 
 /**
  * PlanGate — route-level plan feature enforcement.
@@ -84,7 +85,60 @@ class PlanGate implements FilterInterface
         }
 
         $userId = (int) auth()->id();
-        $gate   = new PlanGateService();
+        $subModel = new SubscriptionModel();
+        $limits = $subModel->getPlanLimits($userId);
+
+        $featuresArr = $limits['features'] ?? [];
+        if (is_string($featuresArr)) {
+            $featuresArr = json_decode($featuresArr, true) ?: [];
+        }
+
+        $allowedHardware = $featuresArr['hardware_profile'] ?? 'basic'; // basic | advanced | all
+        $allowedSoftware = $featuresArr['software_profile'] ?? 'basic'; // basic | advanced | all
+
+        // Query required tier dynamically from database
+        $slug = null;
+        if (str_starts_with($route, 'advanced/hardware/')) {
+            $parts = explode('/', substr($route, strlen('advanced/hardware/')));
+            $slug = $parts[0] ?? null;
+        } elseif (str_starts_with($route, 'advanced/software/')) {
+            $parts = explode('/', substr($route, strlen('advanced/software/')));
+            $slug = $parts[0] ?? null;
+        }
+
+        if ($slug) {
+            $db = \Config\Database::connect();
+            $feature = $db->table('tbl_feature_tiers')->where('slug', $slug)->get()->getRowArray();
+
+            if ($feature) {
+                $requiredTier = $feature['required_tier'];
+                $categoryType = $feature['category_type'];
+                $label = $feature['label'];
+
+                if ($categoryType === 'hardware') {
+                    if ($requiredTier === 'platinum' && $allowedHardware !== 'all') {
+                        session()->setFlashdata('error', "Upgrade your plan to access advanced {$label} telemetry.");
+                        return redirect()->to(base_url('billing'));
+                    }
+                    if ($requiredTier === 'gold' && $allowedHardware === 'basic') {
+                        session()->setFlashdata('error', "Upgrade your plan to access {$label} metrics.");
+                        return redirect()->to(base_url('billing'));
+                    }
+                } elseif ($categoryType === 'software') {
+                    if ($requiredTier === 'platinum' && $allowedSoftware !== 'all') {
+                        session()->setFlashdata('error', "Upgrade your plan to access advanced {$label} logs.");
+                        return redirect()->to(base_url('billing'));
+                    }
+                    if ($requiredTier === 'gold' && $allowedSoftware === 'basic') {
+                        session()->setFlashdata('error', "Upgrade your plan to access {$label} diagnostics.");
+                        return redirect()->to(base_url('billing'));
+                    }
+                }
+            }
+        }
+
+        // 3. Enforce Legacy Feature Gates (e.g. Geofencing, wellbeing, etc.)
+        $gate = new PlanGateService();
 
         foreach ($this->featureRoutes as $feature => $prefixes) {
             foreach ($prefixes as $prefix) {

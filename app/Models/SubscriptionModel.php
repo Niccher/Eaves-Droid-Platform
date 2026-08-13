@@ -19,6 +19,12 @@ class SubscriptionModel extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
 
+    public function getPlanTier(int $userId): string
+    {
+        $active = $this->getActivePlan($userId);
+        return !empty($active['plan']) ? strtolower($active['plan']) : 'free';
+    }
+
     public function getActivePlan(int $userId): ?array
     {
         $row = $this->where('user_id', $userId)

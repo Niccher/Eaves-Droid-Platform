@@ -258,7 +258,7 @@ $color = 'warning';
                             </div>
                             <?php if ($p['yearly_cents'] > 0 && $p['monthly_cents'] > 0): ?>
                             <div class="text-center small text-muted">
-                                <span class="save-badge">Save <?= round(100 - ($p['yearly_cents'] / 12 / $p['monthly_cents'] * 100)) ?>%</span>
+                                <span class="save-badge">or <?= esc($p['currency']) ?> <?= number_format($p['yearly_cents'] / 100, 2) ?> / year — save <?= round(100 - ($p['yearly_cents'] / 12 / $p['monthly_cents'] * 100)) ?>%</span>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -618,12 +618,21 @@ document.querySelectorAll('input[name="billing"]').forEach(function (r) {
     r.addEventListener('change', refreshPaySummary);
 });
 
-// Update card prices shown on the page when billing toggles
+// Update card prices shown on the page when billing toggles.
+// NOTE: bind to the radio inputs, not the labels (labels never fire 'change').
+function updateCardPrices() {
+    var yearly = getBilling() === 'yearly';
+    document.querySelectorAll('.price-monthly').forEach(function (el) { el.style.display = yearly ? 'none' : ''; });
+    document.querySelectorAll('.price-yearly').forEach(function (el) { el.style.display = yearly ? '' : 'none'; });
+}
+document.querySelectorAll('input[name="billing"]').forEach(function (r) {
+    r.addEventListener('change', updateCardPrices);
+});
 document.querySelectorAll('#lbl-monthly, #lbl-yearly').forEach(function (lbl) {
-    lbl.addEventListener('change', function () {
-        var yearly = getBilling() === 'yearly';
-        document.querySelectorAll('.price-monthly').forEach(function (el) { el.style.display = yearly ? 'none' : ''; });
-        document.querySelectorAll('.price-yearly').forEach(function (el) { el.style.display = yearly ? '' : 'none'; });
+    lbl.addEventListener('click', function () {
+        // Labels don't fire 'change' — apply the toggle on click too (safety).
+        updateCardPrices();
+        refreshPaySummary();
     });
 });
 
@@ -652,6 +661,8 @@ document.getElementById('btn-pay').addEventListener('click', function () {
         }
     }
 
+    var payBtnAmountText = document.getElementById('pay-btn-amount').textContent;
+
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span>Processing...';
 
@@ -670,7 +681,7 @@ document.getElementById('btn-pay').addEventListener('click', function () {
     .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, d: d }; }); })
     .then(function (r) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay <span id="pay-btn-amount">' + document.getElementById('pay-btn-amount').textContent + '</span>';
+        btn.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay <span id="pay-btn-amount">' + payBtnAmountText + '</span>';
         if (r.ok && r.d.success) {
             $('#paymentModal').modal('hide');
             Swal.fire({
@@ -688,7 +699,7 @@ document.getElementById('btn-pay').addEventListener('click', function () {
     })
     .catch(function (err) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay <span id="pay-btn-amount">' + document.getElementById('pay-btn-amount').textContent + '</span>';
+        btn.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay <span id="pay-btn-amount">' + payBtnAmountText + '</span>';
         Swal.fire('Error', 'Could not reach the server. Please try again.', 'error');
     });
 });

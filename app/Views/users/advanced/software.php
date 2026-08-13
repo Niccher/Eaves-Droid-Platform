@@ -1,4 +1,65 @@
-<?php /** @var array $counts */ ?>
+<?php 
+/** @var array $counts */ 
+/** @var string $userTier */ 
+/** @var array $features */ 
+
+$subModel = new \App\Models\SubscriptionModel();
+$limits = $subModel->getPlanLimits(auth()->id());
+$featuresArr = $limits['features'] ?? [];
+if (is_string($featuresArr)) {
+    $featuresArr = json_decode($featuresArr, true) ?: [];
+}
+$allowedSoftware = $featuresArr['software_profile'] ?? 'basic';
+
+function isLocked($requiredTier, $allowedSoftware) {
+    if ($requiredTier === 'free') return false;
+    if ($requiredTier === 'gold' && $allowedSoftware === 'basic') return true;
+    if ($requiredTier === 'platinum' && $allowedSoftware !== 'all') return true;
+    return false;
+}
+
+function getFeatureCount($slug, $counts) {
+    $map = [
+        'running_processes' => 'total_running_processes_detailed',
+        'app-usage'         => 'total_app_usage',
+        'email'             => 'total_email_accounts',
+        'calendar'          => 'total_calendar',
+    ];
+    $key = $map[$slug] ?? 'total_' . str_replace('-', '_', $slug);
+    return $counts[$key] ?? 0;
+}
+?>
+
+<style>
+    .card-locked-wrapper {
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s ease-in-out;
+    }
+    .card-locked-wrapper.locked {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    .locked-blur {
+        filter: grayscale(0.8) blur(0.5px);
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    .lock-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.15);
+    }
+</style>
+
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
@@ -13,429 +74,42 @@
 
     <section class="content">
         <div class="container-fluid">
+            <?php if (session()->getFlashdata('error')): ?>
+                <div class="alert alert-warning alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> <?php echo session()->getFlashdata('error'); ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+
             <div class="row">
-                <!-- Accounts -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-primary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-user-circle fa-2x text-white"></i>
+                <?php foreach ($features as $f): ?>
+                    <?php $isLock = isLocked($f['required_tier'], $allowedSoftware); ?>
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <div class="card card-outline <?php echo esc($f['color_class']); ?> shadow-sm h-100 card-locked-wrapper <?php echo $isLock ? 'locked' : ''; ?>">
+                            <?php if ($isLock): ?>
+                                <div class="lock-overlay">
+                                    <span class="badge <?php echo $f['required_tier'] === 'platinum' ? 'badge-danger' : 'badge-warning'; ?> shadow-sm mb-1 px-3 py-1">
+                                        <i class="fas fa-lock mr-1"></i> Unlock <?php echo ucfirst($f['required_tier']); ?>
+                                    </span>
+                                    <a href="<?php echo base_url('billing'); ?>" class="btn btn-xs <?php echo $f['required_tier'] === 'platinum' ? 'btn-outline-danger' : 'btn-outline-warning'; ?> font-weight-bold px-3">Upgrade Plan</a>
+                                </div>
+                            <?php endif; ?>
+                            <div class="card-body text-center py-4 <?php echo $isLock ? 'locked-blur' : ''; ?>">
+                                <div class="rounded-circle <?php echo esc($f['bg_class']); ?> d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                                    <i class="<?php echo esc($f['icon']); ?> fa-2x text-white"></i>
+                                </div>
+                                <h6 class="card-title mb-1 w-100 font-weight-bold"><?php echo esc($f['label']); ?></h6>
+                                <p class="text-muted small mb-2"><?php echo esc($f['description']); ?></p>
+                                <span class="badge badge-pill badge-primary"><?php echo getFeatureCount($f['slug'], $counts); ?> records</span>
+                                <?php if (!$isLock): ?>
+                                    <a href="<?php echo base_url('advanced/software/' . $f['slug']); ?>" class="stretched-link"></a>
+                                <?php endif; ?>
                             </div>
-                            <h6 class="card-title mb-1">Accounts</h6>
-                            <p class="text-muted small mb-2">User accounts, email addresses, and credentials</p>
-                            <span class="badge badge-pill badge-primary"><?php echo $counts['total_accounts'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/accounts'); ?>" class="stretched-link"></a>
                         </div>
                     </div>
-                </div>
-                <!-- Email Accounts -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-primary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-envelope fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Email Accounts</h6>
-                            <p class="text-muted small mb-2">Configured email accounts and providers</p>
-                            <span class="badge badge-pill badge-primary"><?php echo $counts['total_email_accounts'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/email'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Calendar -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-info shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-info d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-calendar-alt fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Calendar</h6>
-                            <p class="text-muted small mb-2">Calendar events, reminders, and schedule data</p>
-                            <span class="badge badge-pill badge-info"><?php echo $counts['total_calendar'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/calendar'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Alarms & Jobs -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-info shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-info d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-clock fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Alarms & Jobs</h6>
-                            <p class="text-muted small mb-2">Scheduled JobScheduler jobs and AlarmManager alarms</p>
-                            <span class="badge badge-pill badge-info"><?php echo $counts['total_alarms'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/alarms'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- App Usage -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-success shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-chart-pie fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">App Usage</h6>
-                            <p class="text-muted small mb-2">Application usage time and frequency statistics</p>
-                            <span class="badge badge-pill badge-success"><?php echo $counts['total_app_usage'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/app-usage'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Data Usage -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-success shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-chart-line fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Data Usage</h6>
-                            <p class="text-muted small mb-2">Per-app mobile and WiFi data usage</p>
-                            <span class="badge badge-pill badge-success"><?php echo $counts['total_data_usage'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/data_usage'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Digital Wellbeing -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-success shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-smile fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Digital Wellbeing</h6>
-                            <p class="text-muted small mb-2">Screen time, focus/bedtime modes, app timers</p>
-                            <span class="badge badge-pill badge-success"><?php echo $counts['total_digital_wellbeing'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/digital_wellbeing'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Health Data -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-success shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-heartbeat fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Health Data</h6>
-                            <p class="text-muted small mb-2">Steps, heart rate, sleep, and workouts</p>
-                            <span class="badge badge-pill badge-success"><?php echo $counts['total_health_data'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/health_data'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Screen State -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-success shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-desktop fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Screen State</h6>
-                            <p class="text-muted small mb-2">Screen on/off events and unlock attempts</p>
-                            <span class="badge badge-pill badge-success"><?php echo $counts['total_screen_state'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/screen_state'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Running Processes -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-success shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-cogs fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Running Processes</h6>
-                            <p class="text-muted small mb-2">Detailed process list with memory and CPU</p>
-                            <span class="badge badge-pill badge-success"><?php echo $counts['total_running_processes_detailed'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/running_processes'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Doze & Standby -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-info shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-info d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-battery-half fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Doze & Standby</h6>
-                            <p class="text-muted small mb-2">Doze state, battery saver, standby buckets</p>
-                            <span class="badge badge-pill badge-info"><?php echo $counts['total_doze_standby'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/doze_standby'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Notifications -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-purple shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-purple d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-bell fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Notifications</h6>
-                            <p class="text-muted small mb-2">Notifications from apps with timestamps and titles</p>
-                            <span class="badge badge-pill badge-purple"><?php echo $counts['total_notifications'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/notifications'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Clipboard -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-pink shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-pink d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-paste fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Clipboard</h6>
-                            <p class="text-muted small mb-2">Copied text, URIs, and source applications</p>
-                            <span class="badge badge-pill badge-pink"><?php echo $counts['total_clipboard'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/clipboard'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Browser History -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-orange shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-orange d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-globe fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Browser History</h6>
-                            <p class="text-muted small mb-2">Browsing history, bookmarks, and searches</p>
-                            <span class="badge badge-pill badge-orange"><?php echo $counts['total_browser_history'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/browser_history'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Security Audit -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-danger shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-danger d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-shield-alt fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Security Audit</h6>
-                            <p class="text-muted small mb-2">Security findings, permissions, and vulnerability data</p>
-                            <span class="badge badge-pill badge-danger"><?php echo $counts['total_security_audit'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/security_audit'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- App Security -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-danger shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-danger d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-user-shield fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">App Security</h6>
-                            <p class="text-muted small mb-2">Device admins, permission maps, running services</p>
-                            <span class="badge badge-pill badge-danger"><?php echo $counts['total_app_security'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/app_security'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Network Security -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-danger shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-danger d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-lock fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Network Security</h6>
-                            <p class="text-muted small mb-2">DNS config, VPN status, proxy settings</p>
-                            <span class="badge badge-pill badge-danger"><?php echo $counts['total_network_security'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/network_security'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- App Permissions -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-danger shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-danger d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-user-shield fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">App Permissions</h6>
-                            <p class="text-muted small mb-2">Requested/granted runtime permissions per app</p>
-                            <span class="badge badge-pill badge-danger"><?php echo $counts['total_app_permissions'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/app_permissions'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Keyguard Events -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-danger shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-danger d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-lock fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Keyguard Events</h6>
-                            <p class="text-muted small mb-2">Unlock/lock events and auth methods</p>
-                            <span class="badge badge-pill badge-danger"><?php echo $counts['total_keyguard_events'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/keyguard'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- VPN Configuration -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-danger shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-danger d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-network-wired fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">VPN Configuration</h6>
-                            <p class="text-muted small mb-2">Active VPN, protocol, DNS, and routes</p>
-                            <span class="badge badge-pill badge-danger"><?php echo $counts['total_vpn_config'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/vpn_config'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Crash Logs -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-danger shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-danger d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-bug fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Crash Logs</h6>
-                            <p class="text-muted small mb-2">Crashes, exceptions, and stack traces</p>
-                            <span class="badge badge-pill badge-danger"><?php echo $counts['total_crash_logs'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/crash_logs'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Remote Media -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-photo-video fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Remote Media</h6>
-                            <p class="text-muted small mb-2">Photos, videos, and media files on the device</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_media'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/media'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Accessibility -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-universal-access fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Accessibility</h6>
-                            <p class="text-muted small mb-2">Enabled accessibility services and settings</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_accessibility'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/accessibility'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Input Methods -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-keyboard fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Input Methods</h6>
-                            <p class="text-muted small mb-2">Active keyboards and input method engines</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_input_methods'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/input_methods'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Saved WiFi -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-wifi fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Saved WiFi</h6>
-                            <p class="text-muted small mb-2">Configured WiFi networks and security types</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_saved_wifi'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/saved_wifi'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Default Apps -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-cogs fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Default Apps</h6>
-                            <p class="text-muted small mb-2">Default browser, dialer, SMS, launcher handlers</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_default_apps'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/default_apps'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- System Locale -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-language fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">System Locale</h6>
-                            <p class="text-muted small mb-2">Locale, region, timezone, system fonts</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_system_locale'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/system_locale'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Keyboard Input -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-keyboard fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Keyboard Input</h6>
-                            <p class="text-muted small mb-2">Input methods, default keyboard, IME subtypes</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_keyboard_input'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/keyboard_input'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Content Providers -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-database fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Content Providers</h6>
-                            <p class="text-muted small mb-2">Provider authorities, permissions, exported flags</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_content_providers'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/content_providers'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Telephony Network -->
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                    <div class="card card-outline card-secondary shadow-sm h-100">
-                        <div class="card-body text-center py-4">
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
-                                <i class="fas fa-signal fa-2x text-white"></i>
-                            </div>
-                            <h6 class="card-title mb-1">Mobile Network</h6>
-                            <p class="text-muted small mb-2">IMS/VoLTE, data roaming, carrier config</p>
-                            <span class="badge badge-pill badge-secondary"><?php echo $counts['total_telephony_network'] ?? 0; ?> records</span>
-                            <a href="<?php echo base_url('advanced/software/telephony_network'); ?>" class="stretched-link"></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Mobile Network (duplicate? actually same as above) -->
-                <!-- The list already includes Mobile Network; we keep one entry. -->
+                <?php endforeach; ?>
             </div>
         </div>
     </section>

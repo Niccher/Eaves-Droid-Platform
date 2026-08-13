@@ -146,51 +146,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Right column: features + algorithms -->
-                    <div class="col-lg-5">
-                        <div class="card card-primary card-outline">
-                            <div class="card-header">
-                                <h3 class="card-title"><i class="fas fa-star text-warning mr-2"></i>Features</h3>
-                            </div>
-                            <div class="card-body p-3">
-                                <?php $featureDefaults = $current ? json_decode($current['features'], true) : []; ?>
-                                <?php foreach ($featuresList as $feat): ?>
-                                    <div class="form-check form-check-inline mb-2">
-                                        <input type="checkbox" name="feature_<?= $feat['key'] ?>"
-                                               id="feature_<?= $feat['key'] ?>" class="form-check-input"
-                                               value="1"
-                                               <?= (!empty($featureDefaults[$feat['key']])) ? 'checked' : '' ?>>
-                                        <label class="form-check-label font-weight-bold" for="feature_<?= $feat['key'] ?>">
-                                            <?= $feat['label'] ?>
-                                        </label>
-                                    </div>
-                                    <p class="text-muted small pl-4 mb-3 mt-0"><?= $feat['desc'] ?></p>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-
-                        <div class="card card-primary card-outline">
-                            <div class="card-header">
-                                <h3 class="card-title"><i class="fas fa-brain text-purple mr-2"></i>ML Algorithms</h3>
-                            </div>
-                            <div class="card-body p-3">
-                                <?php $algoDefaults = $current ? json_decode($current['ml_algorithms'], true) : []; ?>
-                                <?php foreach ($algorithmsList as $algo): ?>
-                                    <div class="form-check form-check-inline mb-2">
-                                        <input type="checkbox" name="algo_<?= $algo['key'] ?>"
-                                               id="algo_<?= $algo['key'] ?>" class="form-check-input"
-                                               value="1"
-                                               <?= in_array($algo['key'], $algoDefaults) ? 'checked' : '' ?>>
-                                        <label class="form-check-label font-weight-bold" for="algo_<?= $algo['key'] ?>">
-                                            <?= $algo['label'] ?>
-                                        </label>
-                                    </div>
-                                    <p class="text-muted small pl-4 mb-3 mt-0">Tier: <span class="badge <?= $algo['tier'] === 'free' ? 'badge-success' : ($algo['tier'] === 'gold' ? 'badge-warning' : 'badge-danger') ?>"><?= ucfirst($algo['tier']) ?></span> and above</p>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
 
                         <div class="card card-primary card-outline">
                             <div class="card-header">
@@ -236,6 +191,76 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Right column: features + algorithms -->
+                    <div class="col-lg-5">
+                        <?php $featureDefaults = $current ? json_decode($current['features'], true) : []; ?>
+                        <div class="card card-primary card-outline">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-microchip text-indigo mr-2"></i>Hardware & Software Profiles</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="hardware_profile" class="font-weight-bold">Allowed Hardware Profile</label>
+                                    <select name="hardware_profile" id="hardware_profile" class="form-control">
+                                        <option value="basic" <?= (($featureDefaults['hardware_profile'] ?? 'basic') === 'basic') ? 'selected' : '' ?>>Basic (Free: Locale, default apps, alarms)</option>
+                                        <option value="advanced" <?= (($featureDefaults['hardware_profile'] ?? 'basic') === 'advanced') ? 'selected' : '' ?>>Advanced (Gold: Storage, battery, cell towers, display, etc.)</option>
+                                        <option value="all" <?= (($featureDefaults['hardware_profile'] ?? 'basic') === 'all') ? 'selected' : '' ?>>All Hardware Configs (Platinum: Camera, sensors, biometric, etc.)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label for="software_profile" class="font-weight-bold">Allowed Software Profile</label>
+                                    <select name="software_profile" id="software_profile" class="form-control">
+                                        <option value="basic" <?= (($featureDefaults['software_profile'] ?? 'basic') === 'basic') ? 'selected' : '' ?>>Basic (Free: default apps, alarms, locale)</option>
+                                        <option value="advanced" <?= (($featureDefaults['software_profile'] ?? 'basic') === 'advanced') ? 'selected' : '' ?>>Advanced (Gold: data usage, saved wifi, accessibility, keyboards)</option>
+                                        <option value="all" <?= (($featureDefaults['software_profile'] ?? 'basic') === 'all') ? 'selected' : '' ?>>All Software Configs (Platinum: clipboard, screenshots, Wellbeing, VPN, health, etc.)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-primary card-outline">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-star text-warning mr-2"></i>Features</h3>
+                            </div>
+                            <div class="card-body p-3">
+                                <?php foreach ($featuresList as $feat): ?>
+                                    <div class="form-check form-check-inline mb-2">
+                                        <input type="checkbox" name="feature_<?= $feat['key'] ?>"
+                                               id="feature_<?= $feat['key'] ?>" class="form-check-input"
+                                               value="1"
+                                               <?= (!empty($featureDefaults[$feat['key']])) ? 'checked' : '' ?>>
+                                        <label class="form-check-label font-weight-bold" for="feature_<?= $feat['key'] ?>">
+                                            <?= $feat['label'] ?>
+                                        </label>
+                                    </div>
+                                    <p class="text-muted small pl-4 mb-3 mt-0"><?= $feat['desc'] ?></p>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <div class="card card-primary card-outline">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-brain text-purple mr-2"></i>ML Algorithms</h3>
+                            </div>
+                            <div class="card-body p-3">
+                                <?php $algoDefaults = $current ? json_decode($current['ml_algorithms'], true) : []; ?>
+                                <?php foreach ($algorithmsList as $algo): ?>
+                                    <div class="form-check form-check-inline mb-2">
+                                        <input type="checkbox" name="algo_<?= $algo['key'] ?>"
+                                               id="algo_<?= $algo['key'] ?>" class="form-check-input"
+                                               value="1"
+                                               <?= in_array($algo['key'], $algoDefaults) ? 'checked' : '' ?>>
+                                        <label class="form-check-label font-weight-bold" for="algo_<?= $algo['key'] ?>">
+                                            <?= $algo['label'] ?>
+                                        </label>
+                                    </div>
+                                    <p class="text-muted small pl-4 mb-3 mt-0">Tier: <span class="badge <?= $algo['tier'] === 'free' ? 'badge-success' : ($algo['tier'] === 'gold' ? 'badge-warning' : 'badge-danger') ?>"><?= ucfirst($algo['tier']) ?></span> and above</p>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 

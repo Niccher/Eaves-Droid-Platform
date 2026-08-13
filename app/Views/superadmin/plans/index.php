@@ -68,16 +68,31 @@
                                             <span><i class="fas fa-history text-warning mr-2"></i>History Retention</span>
                                             <span class="badge badge-warning"><?= $version['history_days'] ?> days</span>
                                         </li>
-                                        <li class="list-group-item">
-                                            <span class="d-block mb-2"><i class="fas fa-star text-warning mr-2"></i>Features</span>
-                                            <div>
-                                                <?php foreach (json_decode($version['features'], true) as $key => $enabled): ?>
-                                                    <span class="badge <?= $enabled ? 'badge-success' : 'badge-secondary' ?> mr-1 mb-1">
-                                                        <i class="fas fa-<?= $enabled ? 'check' : 'times' ?> mr-1"></i><?= ucfirst(str_replace('_', ' ', $key)) ?>
-                                                    </span>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </li>
+                                         <li class="list-group-item">
+                                             <span class="d-block mb-2"><i class="fas fa-star text-warning mr-2"></i>Features</span>
+                                             <div>
+                                                 <?php 
+                                                     $featArr = json_decode($version['features'], true) ?: []; 
+                                                     $hwProfile = $featArr['hardware_profile'] ?? 'basic';
+                                                     $swProfile = $featArr['software_profile'] ?? 'basic';
+                                                     unset($featArr['hardware_profile'], $featArr['software_profile']);
+                                                 ?>
+                                                 
+                                                 <!-- Display Profiles -->
+                                                 <span class="badge bg-indigo mr-1 mb-1">
+                                                     <i class="fas fa-microchip mr-1"></i>HW: <?= ucfirst($hwProfile) ?>
+                                                 </span>
+                                                 <span class="badge bg-navy mr-1 mb-1">
+                                                     <i class="fas fa-laptop-code mr-1"></i>SW: <?= ucfirst($swProfile) ?>
+                                                 </span>
+
+                                                 <?php foreach ($featArr as $key => $enabled): ?>
+                                                     <span class="badge <?= $enabled ? 'badge-success' : 'badge-secondary' ?> mr-1 mb-1">
+                                                         <i class="fas fa-<?= $enabled ? 'check' : 'times' ?> mr-1"></i><?= ucfirst(str_replace('_', ' ', $key)) ?>
+                                                     </span>
+                                                 <?php endforeach; ?>
+                                             </div>
+                                         </li>
                                         <li class="list-group-item">
                                             <span class="d-block mb-2"><i class="fas fa-brain text-purple mr-2"></i>ML Algorithms</span>
                                             <div>
