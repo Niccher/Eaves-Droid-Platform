@@ -150,14 +150,96 @@
             </div>
         </div>
     </section>
+
+    <?php if (!empty($can_reset)): ?>
+    <section class="content pt-1">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-12">
+                    <div class="card card-outline card-danger">
+                        <div class="card-header bg-danger">
+                            <h3 class="card-title mb-0 text-white">
+                                <i class="fas fa-bomb mr-2"></i>Danger Zone — Factory Reset
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Factory reset returns the platform to a fresh install state.</strong> This will:</p>
+                            <ul class="mb-3">
+                                <li>Keep <strong>all user accounts</strong> intact — users retain their logins, but their accounts become <strong>completely empty</strong>.</li>
+                                <li>Permanently delete <strong>all of every user's data</strong>: SMS, calls, contacts, locations, media, activity, app usage, uploads, captured media, exports, reports, backups and billing/subscription records.</li>
+                                <li>Reset every data table to defaults and clear the cache/temporary files.</li>
+                                <li>Keep system configuration (settings, cron jobs, subscription plans).</li>
+                            </ul>
+                            <p class="mb-2 text-danger"><strong>This action is IRREVERSIBLE.</strong> It is recommended to create a database backup first.</p>
+                            <form method="post" action="<?= base_url('admin/settings/retention/reset') ?>" id="factoryResetForm">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="confirm" id="factoryResetConfirm" value="">
+                                <button type="button" class="btn btn-danger btn-sm" id="factoryResetBtn">
+                                    <i class="fas fa-bomb mr-1"></i> Wipe Everything & Reset
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 </div>
 
 <script>
 $(function() {
+    // Proper confirmation popup for the retention purge.
     $('#purgeForm').on('submit', function(e) {
-        if (!confirm('This will PERMANENTLY DELETE data older than retention periods. This action cannot be undone. Are you sure?')) {
-            return false;
-        }
+        e.preventDefault();
+        var $form = this;
+        Swal.fire({
+            title: 'Run Purge Now?',
+            html: 'This will <strong>PERMANENTLY DELETE</strong> data older than the retention period for the selected categories.<br><br>This action <strong>cannot be undone</strong>.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Yes, purge it',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $form.submit();
+            }
+        });
+        return false;
+    });
+
+    // Proper confirmation popup for the factory reset.
+    $('#factoryResetBtn').on('click', function(e) {
+        Swal.fire({
+            title: 'Factory Reset',
+            html: 'This will <strong>PERMANENTLY DELETE all data</strong> for <strong>every user</strong> — SMS, calls, contacts, locations, media, app usage, uploaded files, reports, backups and billing records.<br><br>' +
+                  '<strong>User accounts are retained</strong> (everyone keeps their login), but become completely empty.<br><br>' +
+                  'Type <strong>RESET</strong> in the box below to confirm.',
+            icon: 'warning',
+            input: 'text',
+            inputPlaceholder: 'Type RESET to confirm',
+            inputAttributes: {
+                autocapitalize: 'off',
+                autocorrect: 'off'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Yes, wipe everything',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+            inputValidator: function(value) {
+                if (!value || value.toUpperCase() !== 'RESET') {
+                    return 'You must type "RESET" to confirm';
+                }
+            }
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $('#factoryResetConfirm').val('RESET');
+                $('#factoryResetForm')[0].submit();
+            }
+        });
     });
 });
 </script>

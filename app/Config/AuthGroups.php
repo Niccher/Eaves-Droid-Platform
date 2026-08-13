@@ -89,6 +89,7 @@ public array $permissions = [
         'forensics.export'    => 'Can export user data for forensic/legal handover',
         'system.maintenance'  => 'Can toggle system maintenance mode',
         'data.retention'      => 'Can configure data retention and run purges',
+        'system.reset'        => 'Can perform a factory reset of the system (wipes all user data and generated files)',
     ];
 
     /**

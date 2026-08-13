@@ -1626,6 +1626,14 @@ $routes->group('admin', [
         $routes->post('retention/purge', 'Settings::run_purge', ['as' => 'admin-retention-purge']);
 
         /**
+         * Performs a full factory reset: wipes all user data, uploaded files,
+         * generated reports and backups, then re-seeds default accounts.
+         *
+         * @return \CodeIgniter\HTTP\ResponseInterface
+         */
+        $routes->post('retention/reset', 'Settings::factory_reset', ['as' => 'admin-factory-reset']);
+
+        /**
          * Runs system maintenance.
          *
          * @return \CodeIgniter\HTTP\ResponseInterface

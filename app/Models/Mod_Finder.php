@@ -640,6 +640,34 @@ class Mod_Finder extends Model
     }
 
     /**
+     * Counts unique capture moments (distinct fetched_at) across both the
+     * location and activity tables. Each captured location+activity pair shares
+     * the same fetched_at, so this is the number of entries, not the raw row
+     * count (which would double-count every pair).
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public function get_count_LocationActivity(int $user_id): int
+    {
+        try {
+            $loc = $this->fq('tbl_location', $user_id)
+                ->select('fetched_at')
+                ->where('fetched_at IS NOT NULL')
+                ->getCompiledSelect();
+            $act = $this->fq('tbl_activity', $user_id)
+                ->select('fetched_at')
+                ->where('fetched_at IS NOT NULL')
+                ->getCompiledSelect();
+            $row = $this->db->query("SELECT COUNT(DISTINCT fetched_at) AS c FROM ({$loc} UNION {$act}) t")->getRow();
+            return $row ? (int)$row->c : 0;
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_LocationActivity error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Gets contact name by phone number (used by dashboard).
      *
      * @param string $nom
@@ -651,6 +679,7 @@ class Mod_Finder extends Model
             $user_id = auth()->user()->id;
             return $this->db->table('tbl_contacts')
                 ->select('display_name as Name')
+                ->where('owner_id', $user_id)
                 ->like('phone_numbers', $nom)
                 ->get()
                 ->getRowArray();
@@ -672,6 +701,7 @@ class Mod_Finder extends Model
             $user_id = auth()->user()->id;
             $builder = $this->db->table('tbl_contacts');
             $query_sent = $builder->select('*')
+                ->where('owner_id', $user_id)
                 ->like('phone_numbers', $contactNumber1)
                 ->limit(1)
                 ->get();
@@ -716,7 +746,15 @@ class Mod_Finder extends Model
             // Process phone numbers from JSON
             foreach ($results as &$row) {
                 $phoneNumbers = json_decode($row['phone_numbers'], true);
-                $row['Number'] = !empty($phoneNumbers) ? $phoneNumbers[0] : '';
+                $row['Number'] = '';
+                if (!empty($phoneNumbers) && is_array($phoneNumbers)) {
+                    $firstPhone = $phoneNumbers[0];
+                    if (is_array($firstPhone) && isset($firstPhone['number'])) {
+                        $row['Number'] = $firstPhone['number'];
+                    } elseif (is_string($firstPhone)) {
+                        $row['Number'] = $firstPhone;
+                    }
+                }
                 unset($row['phone_numbers']);
             }
 
@@ -771,7 +809,15 @@ class Mod_Finder extends Model
             // Process phone numbers from JSON
             foreach ($results as &$row) {
                 $phoneNumbers = json_decode($row['phone_numbers'], true);
-                $row['Number'] = !empty($phoneNumbers) ? $phoneNumbers[0] : '';
+                $row['Number'] = '';
+                if (!empty($phoneNumbers) && is_array($phoneNumbers)) {
+                    $firstPhone = $phoneNumbers[0];
+                    if (is_array($firstPhone) && isset($firstPhone['number'])) {
+                        $row['Number'] = $firstPhone['number'];
+                    } elseif (is_string($firstPhone)) {
+                        $row['Number'] = $firstPhone;
+                    }
+                }
                 // Keep the original phone numbers array for the modal
                 $row['phone_numbers_array'] = $phoneNumbers ?: [];
                 unset($row['phone_numbers']);
@@ -804,6 +850,9 @@ class Mod_Finder extends Model
 
             // Get total count for pagination
             $total = $this->get_count_Sms_category($user_id, $sms_type);
+
+            // Scope to this user (and active device) — never show another user's SMS.
+            $this->applyOwnerDeviceFilter($builder, $user_id);
 
             // Get page number from request
             $page = service('request')->getGet('page') ?? 1;
@@ -856,6 +905,9 @@ class Mod_Finder extends Model
 
             // Get total count for pagination
             $total = $this->get_count_Sms($user_id);
+
+            // Scope to this user (and active device) — never show another user's SMS.
+            $this->applyOwnerDeviceFilter($builder, $user_id);
 
             // Get page number from request
             $page = service('request')->getGet('page') ?? 1;
@@ -939,6 +991,10 @@ class Mod_Finder extends Model
             // Get total count for pagination
             $total = $this->get_count_Calls($user_id);
 
+            // Scope to this user (and active device) — the list MUST never show
+            // another user's call logs.
+            $this->applyOwnerDeviceFilter($builder, $user_id);
+
             // Get page number from request
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
@@ -987,10 +1043,13 @@ class Mod_Finder extends Model
         try {
             $builder = $this->db->table('tbl_logs');
 
-            // Get total count for this category
-            $total = $this->applyOwnerDeviceFilter($builder, $user_id)
-                ->where('call_type', $category)
-                ->countAllResults();
+            // Get total count for this category using a SEPARATE builder
+            // (countAllResults() would reset the shared builder and wipe the
+            // owner filter below).
+            $total = $this->get_count_Calls_by_type($user_id, $category);
+
+            // Scope to this user (and active device) — never show another user's calls.
+            $this->applyOwnerDeviceFilter($builder, $user_id);
 
             // Get page number from request
             $page = service('request')->getGet('page') ?? 1;
@@ -1073,6 +1132,9 @@ class Mod_Finder extends Model
             // Get total count for pagination
             $total = $this->get_count_Apps($user_id);
 
+            // Scope to this user (and active device) — never show another user's apps.
+            $this->applyOwnerDeviceFilter($builder, $user_id);
+
             // Get page number from request
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
@@ -1128,16 +1190,19 @@ class Mod_Finder extends Model
         try {
             $builder = $this->db->table('tbl_sms');
 
-            // Get total count for pagination
+            // Get total count with a SEPARATE builder (countAllResults() would
+            // reset the shared builder and wipe the owner filter below).
+            $countBuilder = $this->db->table('tbl_sms');
+            $this->applyOwnerDeviceFilter($countBuilder, $user_id);
             if (is_array($sender)) {
-                $total = $this->applyOwnerDeviceFilter($builder, $user_id)
-                    ->whereIn('address', $sender)
-                    ->countAllResults();
+                $countBuilder->whereIn('address', $sender);
             } else {
-                $total = $this->applyOwnerDeviceFilter($builder, $user_id)
-                    ->where('address', $sender)
-                    ->countAllResults();
+                $countBuilder->where('address', $sender);
             }
+            $total = $countBuilder->countAllResults();
+
+            // Scope to this user (and active device) — never show another user's SMS.
+            $this->applyOwnerDeviceFilter($builder, $user_id);
 
             // Get page number from request
             $page = service('request')->getGet('page') ?? 1;
@@ -1203,8 +1268,16 @@ class Mod_Finder extends Model
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
 
-            $builder->select('tbl_location.*, tbl_device_profile.device_model, tbl_device_profile.device_brand');
-            $builder->join('tbl_device_profile', 'tbl_device_profile.device_id = tbl_location.device_id', 'left');
+            $builder->select('tbl_location.*, device_profile.device_model, device_profile.device_brand');
+            $builder->join(
+                '(SELECT dp.device_id, dp.device_model, dp.device_brand, dp.android_version
+                    FROM tbl_device_profile dp
+                    INNER JOIN (SELECT device_id, MAX(counter) AS max_counter
+                                FROM tbl_device_profile GROUP BY device_id) m
+                      ON m.device_id = dp.device_id AND dp.counter = m.max_counter) device_profile',
+                'device_profile.device_id = tbl_location.device_id',
+                'left'
+            );
             $builder->where('tbl_location.owner_id', $user_id);
 
             if (!empty($this->deviceId) && $this->deviceId !== 'all') {
@@ -1249,8 +1322,16 @@ class Mod_Finder extends Model
             $offset = ($page - 1) * $perPage;
 
             $typeFilter = service('request')->getGet('type');
-            $builder->select('tbl_activity.*, tbl_device_profile.device_model, tbl_device_profile.device_brand, tbl_device_profile.android_version');
-            $builder->join('tbl_device_profile', 'tbl_device_profile.device_id = tbl_activity.device_id', 'left');
+            $builder->select('tbl_activity.*, device_profile.device_model, device_profile.device_brand, device_profile.android_version');
+            $builder->join(
+                '(SELECT dp.device_id, dp.device_model, dp.device_brand, dp.android_version
+                    FROM tbl_device_profile dp
+                    INNER JOIN (SELECT device_id, MAX(counter) AS max_counter
+                                FROM tbl_device_profile GROUP BY device_id) m
+                      ON m.device_id = dp.device_id AND dp.counter = m.max_counter) device_profile',
+                'device_profile.device_id = tbl_activity.device_id',
+                'left'
+            );
             $builder->where('tbl_activity.owner_id', $user_id);
 
             if (!empty($this->deviceId) && $this->deviceId !== 'all') {
@@ -2026,6 +2107,7 @@ class Mod_Finder extends Model
             $groupSql = $this->notificationGroupKeySql();
 
             $results = $this->db->table('tbl_notifications')
+                ->where('owner_id', $user_id)
                 ->select("{$groupSql} AS group_key", false)
                 ->select('MAX(app_name) AS app_name', false)
                 ->select('MAX(package_name) AS package_name', false)
@@ -2114,6 +2196,7 @@ class Mod_Finder extends Model
     {
         try {
             $builder = $this->db->table('tbl_notifications')
+                ->where('owner_id', $user_id)
                 ->select('MAX(app_name) AS app_name', false)
                 ->select('MAX(package_name) AS package_name', false)
                 ->select('MAX(sender) AS sender', false)
@@ -7043,6 +7126,7 @@ try {
         'bluetooth'         => 'tbl_bluetooth',
         'bluetooth_paired'  => 'tbl_bluetooth_paired',
         'sensors'           => 'tbl_sensor_profile',
+        'security_audit'    => 'tbl_security_audit',
         'device_profile'    => 'tbl_device_profile',
         'proc_info'         => 'tbl_proc_info',
         'running_processes' => 'tbl_running_processes',
@@ -7148,6 +7232,30 @@ try {
         'ml_jobs'           => 'ml_jobs',
         'ml_results'        => 'ml_results',
         'ml_analysis_tracking' => 'ml_analysis_tracking',
+
+        // Data types that were previously only referenced inside composite groups
+        'data_usage'        => 'tbl_data_usage',
+        'saved_wifi'        => 'tbl_saved_wifi',
+        'default_apps'      => 'tbl_default_apps',
+        'alarms'            => 'tbl_alarms',
+        'app_security'      => 'tbl_app_security',
+        'network_security'  => 'tbl_network_security',
+        'telephony_network' => 'tbl_telephony_network',
+        'system_locale'     => 'tbl_system_locale',
+
+        // Additional user-data tables that were missing from every delete path
+        'usage_stats_24h'   => 'tbl_usage_stats_24h',
+        'ui_scrape'         => 'tbl_ui_scrape',
+        'admin_reports'     => 'tbl_admin_reports',
+        'anomaly_alerts'    => 'tbl_anomaly_alerts',
+        'geo_events'        => 'tbl_geo_events',
+        'interactions'      => 'tbl_interactions',
+        'notification_digest' => 'notification_digest_queue',
+        'device_risk'       => ['device_risk', 'device_risk_history'],
+        'geo_places'        => 'geo_places',
+        'geo_zones'         => 'geo_zones',
+        'devices'           => 'tbl_devices',
+        'receive'           => 'tbl_receive',
     ];
 
     /**
@@ -7161,6 +7269,15 @@ try {
         'ml_jobs'               => 'user_id',
         'ml_results'            => 'user_id',
         'ml_analysis_tracking'  => 'user_id',
+        'tbl_admin_reports'     => 'user_id',
+        'tbl_anomaly_alerts'    => 'user_id',
+        'tbl_geo_events'        => 'user_id',
+        'tbl_interactions'      => 'user_id',
+        'notification_digest_queue' => 'user_id',
+        'device_risk'           => 'user_id',
+        'device_risk_history'   => 'user_id',
+        'geo_places'            => 'user_id',
+        'geo_zones'             => 'user_id',
     ];
 
     /**
@@ -7169,6 +7286,116 @@ try {
     public function ownerColumnForTable(string $table): string
     {
         return self::OWNER_COLUMN_OVERRIDES[$table] ?? 'owner_id';
+    }
+
+    /**
+     * Resolves device checksum IDs linked to a user via tbl_device_profile.
+     * Used for tbl_devices, which has no direct owner column.
+     */
+    private function resolveUserDeviceIds(int $userId): array
+    {
+        if (!$this->db->tableExists('tbl_device_profile')) {
+            return [];
+        }
+        $rows = $this->db->table('tbl_device_profile')
+            ->select('device_id')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getResultArray();
+        return array_values(array_unique(array_column($rows, 'device_id')));
+    }
+
+    /**
+     * Deletes all rows of a single registered data type for a user.
+     *
+     * @return array{success: bool, deleted: array<string, int>, total_deleted: int}
+     */
+    public function deleteUserDataType(string $typeKey, int $userId): array
+    {
+        $tables = self::TABLE_REGISTRY[$typeKey] ?? null;
+        if ($tables === null) {
+            return ['success' => false, 'deleted' => [], 'total_deleted' => 0];
+        }
+
+        $db = $this->db;
+        $deleted = [];
+        $totalDeleted = 0;
+        $tableList = is_array($tables) ? $tables : [$tables];
+
+        foreach ($tableList as $table) {
+            if (!$db->tableExists($table)) {
+                continue;
+            }
+
+            // tbl_devices has no owner column; resolve via tbl_device_profile.
+            if ($table === 'tbl_devices') {
+                $deviceIds = $this->resolveUserDeviceIds($userId);
+                if (!empty($deviceIds)) {
+                    $count = $db->table('tbl_devices')->whereIn('device_id', $deviceIds)->countAllResults(false);
+                    if ($count > 0) {
+                        $db->table('tbl_devices')->whereIn('device_id', $deviceIds)->delete();
+                        $deleted[$table] = $count;
+                        $totalDeleted += $count;
+                    }
+                }
+                continue;
+            }
+
+            $ownerColumn = $this->ownerColumnForTable($table);
+            $count = $db->table($table)->where($ownerColumn, $userId)->countAllResults(false);
+            if ($count > 0) {
+                $db->table($table)->where($ownerColumn, $userId)->delete();
+                $deleted[$table] = $count;
+                $totalDeleted += $count;
+            }
+        }
+
+        return ['success' => true, 'deleted' => $deleted, 'total_deleted' => $totalDeleted];
+    }
+
+    /**
+     * Returns per-table record counts for a user across every registered data type.
+     *
+     * @return array<int, array{key: string, table: string, label: string, count: int}>
+     */
+    public function getUserDataCountsAll(int $userId): array
+    {
+        $db = $this->db;
+        $rows = [];
+        $seenTables = [];
+
+        foreach (self::TABLE_REGISTRY as $key => $tables) {
+            $tableList = is_array($tables) ? $tables : [$tables];
+
+            foreach ($tableList as $table) {
+                if (!$db->tableExists($table) || isset($seenTables[$table])) {
+                    continue;
+                }
+                $seenTables[$table] = true;
+
+                if ($table === 'tbl_devices') {
+                    $deviceIds = $this->resolveUserDeviceIds($userId);
+                    $count = empty($deviceIds) ? 0 : (int) $db->table('tbl_devices')->whereIn('device_id', $deviceIds)->countAllResults(false);
+                    $rows[] = [
+                        'key'   => $key,
+                        'table' => $table,
+                        'label' => ucwords(str_replace('_', ' ', $key)),
+                        'count' => $count,
+                    ];
+                    continue;
+                }
+
+                $ownerColumn = $this->ownerColumnForTable($table);
+                $rows[] = [
+                    'key'   => $key,
+                    'table' => $table,
+                    'label' => ucwords(str_replace('_', ' ', $key)),
+                    'count' => (int) $db->table($table)->where($ownerColumn, $userId)->countAllResults(false),
+                ];
+            }
+        }
+
+        return $rows;
     }
 
     /**
@@ -7193,6 +7420,19 @@ try {
                 $totalDeleted += $fileCount;
             }
 
+            // Resolve device checksum IDs up front, before tbl_device_profile rows
+            // are deleted (tbl_devices has no owner column and must be matched via
+            // the profile linkage).
+            $deviceIds = [];
+            if ($db->tableExists('tbl_device_profile')) {
+                $deviceRows = $db->table('tbl_device_profile')
+                    ->select('device_id')
+                    ->where('owner_id', $userId)
+                    ->get()
+                    ->getResultArray();
+                $deviceIds = array_values(array_unique(array_column($deviceRows, 'device_id')));
+            }
+
             foreach (self::TABLE_REGISTRY as $category => $tables) {
                 $tableList = is_array($tables) ? $tables : [$tables];
 
@@ -7201,6 +7441,19 @@ try {
                         log_message('warning', 'deleteAllUserData: Table "{table}" does not exist, skipping.', ['table' => $table]);
                         continue;
                     }
+
+                    if ($table === 'tbl_devices') {
+                        if (!empty($deviceIds)) {
+                            $deviceCount = $db->table('tbl_devices')->whereIn('device_id', $deviceIds)->countAllResults(false);
+                            if ($deviceCount > 0) {
+                                $db->table('tbl_devices')->whereIn('device_id', $deviceIds)->delete();
+                                $deleted[$table] = $deviceCount;
+                                $totalDeleted += $deviceCount;
+                            }
+                        }
+                        continue;
+                    }
+
                     $ownerColumn = $this->ownerColumnForTable($table);
                     $count = $db->table($table)->where($ownerColumn, $userId)->countAllResults(false);
                     if ($count > 0) {

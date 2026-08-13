@@ -1410,6 +1410,7 @@ private function sendMaintenanceToggledEmail(string $mode, array $changes, array
             'pag' => 'admin-retention',
             'settings' => $saved,
             'stats' => $stats,
+            'can_reset' => auth()->user()->can('system.reset'),
         ]);
     }
 
@@ -1474,5 +1475,44 @@ private function sendMaintenanceToggledEmail(string $mode, array $changes, array
         cache()->delete('retention_stats_counts');
 
         return redirect()->to('admin/settings/retention')->with('message', "Retention configuration saved ({$updated} setting(s)).");
+    }
+
+    /**
+     * Factory reset: permanently wipes all user data, uploaded files, generated
+     * reports and database backups, then re-seeds the default accounts.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function factory_reset()
+    {
+        if ($denied = $this->requirePermission('system.reset')) {
+            return $denied;
+        }
+
+        if (!auth()->user()->inGroup('superadmin')) {
+            $this->logAdminAction('factory_reset_denied', 'critical', false, [
+                'new_values' => json_encode(['reason' => 'not_superadmin']),
+            ]);
+            return redirect()->to('admin/settings/retention')->with('error', 'Only super administrators can perform a factory reset.');
+        }
+
+        if (!$this->request->is('post')) {
+            return redirect()->to('admin/settings/retention')->with('error', 'Invalid request method.');
+        }
+
+        $confirm = strtoupper(trim((string) $this->request->getPost('confirm')));
+        if ($confirm !== 'RESET') {
+            return redirect()->to('admin/settings/retention')->with('error', 'Factory reset aborted: confirmation phrase did not match.');
+        }
+
+        $this->logAdminAction('factory_reset_run', 'critical', true, [
+            'new_values' => json_encode(['confirm' => $confirm]),
+        ]);
+
+        $stats = (new \App\Services\SystemResetService())->reset();
+
+        cache()->clean();
+
+        return redirect()->to('admin/settings/retention')->with('message', "Factory reset complete. Wiped {$stats['tables_wiped']} data table(s) and deleted {$stats['files_deleted']} file(s). All user accounts were retained but all of their data (device data, uploads, reports, backups, billing) was permanently removed.");
     }
 }

@@ -169,31 +169,33 @@ class Receive extends BaseController
             $queueModel->markProcessing($queueId);
             $devicePrintId = $this->request->getPost('device_print_id') ?? '';
             $processResult = $this->processQueueItemInline($queueId, $queueModel, $fileInfo['category'], $owner, $newName, $devicePrintId);
+
             if ($processResult['success']) {
                 $queueModel->markCompleted($queueId);
-            } else {
-                $queueModel->markFailed($queueId, $processResult['error'] ?? 'Processing failed');
-            }
-        }
-
-        if ($queueId !== null) {
-            return $this->respondCreated([
-                'status' => $processResult['success'] ? 'processed' : 'queued',
-                'message' => $processResult['success'] ? 'File uploaded and processed successfully' : 'File uploaded but processing encountered issues, queued for retry',
-                'file_id' => $newName,
-                'file_record_id' => null,
-                'queue_id' => $queueId,
-                'category' => $fileInfo['category'],
-                'record_count' => $processResult['record_count'] ?? 0,
-                'timestamp' => (string) (time() * 1000)
-            ]);
-        } else {
-            if ($fileRecordId > 0) {
-                $this->updateFileStatusViaModel($fileRecordId, 'failed', ['error' => 'Failed to enqueue upload']);
+                return $this->respondCreated([
+                    'status' => 'processed',
+                    'message' => 'File uploaded and processed successfully',
+                    'file_id' => $newName,
+                    'file_record_id' => null,
+                    'queue_id' => $queueId,
+                    'category' => $fileInfo['category'],
+                    'record_count' => $processResult['record_count'] ?? 0,
+                    'timestamp' => (string) (time() * 1000)
+                ]);
             }
 
-            return $this->fail('Failed to enqueue uploaded file for processing');
+            // Parse failed: keep the queue item in 'processing' so queue:cleanup
+            // resets it to 'pending' for queue:process to retry. Do NOT mark it
+            // failed here, and return a real 4xx so the client keeps its local
+            // copy instead of treating this upload as successful.
+            return $this->fail('Processing failed: ' . ($processResult['error'] ?? 'unknown'), 422);
         }
+
+        if ($fileRecordId > 0) {
+            $this->updateFileStatusViaModel($fileRecordId, 'failed', ['error' => 'Failed to enqueue upload']);
+        }
+
+        return $this->fail('Failed to enqueue uploaded file for processing');
     }
 
     /**
@@ -307,6 +309,7 @@ class Receive extends BaseController
 
         if ($queueId !== null) {
             $queueModel->markProcessing($queueId);
+            $devicePrintId = $this->request->getPost('device_print_id') ?? '';
             $result = $this->processQueueItemInline($queueId, $queueModel, $category, $owner, $newName, $devicePrintId);
 
             if ($result['success']) {
@@ -323,18 +326,11 @@ class Receive extends BaseController
                 ]);
             }
 
+            // Parse failed: leave the queue item 'processing' for a worker to retry
+            // (queue:cleanup resets it to 'pending'), and return a real error so the
+            // client retains its local copy. Never report success here.
             $errorMsg = $result['error'] ?? 'Processing failed';
-            $queueModel->markFailed($queueId, $errorMsg);
-            return $this->respondCreated([
-                'status' => 'queued',
-                'message' => 'File uploaded but processing failed, queued for retry',
-                'file_id' => $newName,
-                'file_record_id' => null,
-                'queue_id' => $queueId,
-                'category' => $category,
-                'error' => $errorMsg,
-                'timestamp' => (string) (time() * 1000)
-            ]);
+            return $this->fail('Processing failed: ' . $errorMsg, 422);
         }
 
         return $this->fail('Failed to enqueue uploaded file for processing');
