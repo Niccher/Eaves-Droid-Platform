@@ -32,7 +32,7 @@ class CallsIsolationDetector(BaseDetector):
         sql = text(f"""
             SELECT duration_seconds, call_type AS direction,
                    DATE_FORMAT(FROM_UNIXTIME(call_date/1000), '%Y-%m-%d %H:%i:%s') AS ts,
-                   network_type
+                   is_voip
             FROM tbl_logs
             WHERE {where}
             ORDER BY call_date DESC
@@ -58,7 +58,7 @@ class CallsIsolationDetector(BaseDetector):
                     hour = dt.hour
                 except Exception:
                     pass
-            network = 1 if row["network_type"] else 0
+            network = 1 if row["is_voip"] else 0
             features.append([duration, direction, hour, network, duration * direction])
             timestamps.append(ts)
 

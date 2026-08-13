@@ -41,13 +41,13 @@ def _check_database() -> str:
 
 
 _DETECTOR_MODULES = [
-    ("app.detectors.sms_bert",        "BERT Phishing"),
+    ("app.detectors.sms_bert",        "SMS Phishing Heuristic"),
     ("app.detectors.calls_isolation",  "Isolation Forest (Calls)"),
     ("app.detectors.device_oneclass",  "One-Class SVM (Device)"),
-    ("app.detectors.activity_lstm",    "LSTM Sequence (Activity)"),
-    ("app.detectors.apps_autoencoder", "Autoencoder (Apps)"),
-    ("app.detectors.contacts_graph",   "Graph (Contacts)"),
-    ("app.detectors.files_entropy",    "File Entropy"),
+    ("app.detectors.activity_lstm",    "Activity Sequence MLP"),
+    ("app.detectors.apps_autoencoder", "App Manifest PCA"),
+    ("app.detectors.contacts_graph",   "Contact Graph Outlier"),
+    ("app.detectors.files_entropy",    "Suspicious File Scanner"),
 ]
 
 

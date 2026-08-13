@@ -1,11 +1,13 @@
 """
-Neural Autoencoder App Classifier — uses PCA reconstruction error to flag
-apps with abnormal manifest features (package name patterns, permission
-counts, etc.).  PCA acts as a linear autoencoder: apps that deviate from
-the low-dimensional normal structure have high reconstruction error.
+App Manifest Anomaly Scanner — uses PCA reconstruction error to flag
+apps with abnormal manifest-style features (package name patterns,
+permission counts, etc.).  PCA acts as a linear autoencoder: apps that
+deviate from the low-dimensional normal structure have high
+reconstruction error.
 
-Replaces a full PyTorch autoencoder with sklearn's PCA to avoid the large
-torch dependency.
+Note: this is a PCA-based anomaly scanner, not a neural autoencoder.
+The ``algorithm_id`` (``apps_autoencoder``) is kept for backward
+compatibility with existing ``ml_results`` rows and webapp configuration.
 
 Queries ``tbl_apps`` directly from the shared MySQL database.
 """
@@ -30,9 +32,9 @@ SUSPICIOUS_PERMISSIONS = [
 ]
 
 
-class AutoencoderAppDetector(BaseDetector):
+class AppManifestAnomalyDetector(BaseDetector):
     algorithm_id = "apps_autoencoder"
-    algorithm_name = "Neural Autoencoder App Classifier"
+    algorithm_name = "App Manifest Anomaly Scanner (PCA)"
     category = "apps"
 
     async def detect(self, user_id: int, scope: str = "full",

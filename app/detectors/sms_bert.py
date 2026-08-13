@@ -1,6 +1,10 @@
 """
-BERT Semantic Phishing Classifier — analyses SMS message bodies for
-phishing indicators (urgent language, suspicious keywords, etc.).
+SMS Phishing Keyword Heuristic — scans SMS message bodies for phishing /
+social-engineering indicators (urgent language, suspicious keywords).
+
+This is a lightweight keyword heuristic, NOT a BERT transformer model.
+The ``algorithm_id`` (``sms_bert``) is kept for backward compatibility
+with existing ``ml_results`` rows and webapp configuration.
 
 Queries ``tbl_sms`` directly from the shared MySQL database.
 """
@@ -16,9 +20,9 @@ URGENCY_KEYWORDS = [
 ]
 
 
-class BERTPhishingDetector(BaseDetector):
+class SmsPhishingHeuristicDetector(BaseDetector):
     algorithm_id = "sms_bert"
-    algorithm_name = "BERT Semantic Phishing Classifier"
+    algorithm_name = "SMS Phishing Keyword Heuristic"
     category = "sms"
 
     async def detect(self, user_id: int, scope: str = "full",
@@ -55,7 +59,7 @@ class BERTPhishingDetector(BaseDetector):
             if not body:
                 continue
 
-            # Simple keyword-hit scoring (placeholder for a real BERT model)
+            # Keyword-hit scoring
             hits = sum(1 for kw in URGENCY_KEYWORDS if kw in body.lower())
             if hits < 2:
                 continue

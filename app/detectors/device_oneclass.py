@@ -47,7 +47,7 @@ class DeviceOneClassDetector(BaseDetector):
             params["since"] = incremental_since
 
         sql = text(f"""
-            SELECT cpu_usage, ram_usage, battery_temperature, active_radios,
+            SELECT system_load, memory_available_mb, battery_temperature_c, battery_charging,
                    extraction_timestamp
             FROM tbl_device_profile
             WHERE device_id IN ({placeholders}){where_extra}
@@ -63,12 +63,16 @@ class DeviceOneClassDetector(BaseDetector):
         features = []
         timestamps = []
         for row in rows:
-            cpu = float(row["cpu_usage"] or 0)
-            ram = float(row["ram_usage"] or 0)
-            batt = float(row["battery_temperature"] or 0)
-            radios = 1 if row["active_radios"] else 0
-            features.append([cpu, ram, batt, radios])
-            timestamps.append(str(row["extraction_timestamp"] or ""))
+            cpu = float(row["system_load"] or 0)
+            ram = float(row["memory_available_mb"] or 0)
+            batt = float(row["battery_temperature_c"] or 0)
+            charging = 1 if row["battery_charging"] else 0
+            features.append([cpu, ram, batt, charging])
+            ts = row["extraction_timestamp"]
+            if isinstance(ts, (int, float)) and ts > 0:
+                import datetime
+                ts = datetime.datetime.fromtimestamp(ts / 1000.0).strftime("%Y-%m-%d %H:%M:%S")
+            timestamps.append(str(ts or ""))
 
         X = np.array(features)
         X = np.nan_to_num(X)
@@ -86,23 +90,23 @@ class DeviceOneClassDetector(BaseDetector):
         results = []
         for idx in anomaly_indices[:10]:
             z = (scores[idx] - score_mean) / score_std
-            cpu, ram, batt, radios = features[idx]
+            cpu, ram, batt, charging = features[idx]
             results.append(AnomalyResult(
                 algorithm=self.algorithm_name,
                 algorithm_id=self.algorithm_id,
                 category=self.category,
                 severity="High" if z < -2 else "Medium",
                 anomaly=(
-                    f"Abnormal system state: CPU={cpu:.0f}%, RAM={ram:.0f}%, "
-                    f"battery={batt:.0f}°C, radios={'active' if radios else 'inactive'}"
+                    f"Abnormal system state: CPU={cpu:.0f}%, RAM available={ram:.0f}MB, "
+                    f"battery={batt:.0f}°C, charging={'yes' if charging else 'no'}"
                 ),
                 score=round(float(scores[idx]), 4),
                 event_timestamp=timestamps[idx] if idx < len(timestamps) else "",
                 details={
-                    "cpu_percent": round(cpu, 1),
-                    "ram_percent": round(ram, 1),
-                    "battery_temperature": round(batt, 1),
-                    "active_radios": bool(radios),
+                    "system_load": round(cpu, 1),
+                    "memory_available_mb": round(ram, 1),
+                    "battery_temperature_c": round(batt, 1),
+                    "charging": bool(charging),
                     "anomaly_score": float(scores[idx]),
                 },
             ))

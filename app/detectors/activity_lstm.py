@@ -1,11 +1,11 @@
 """
-Sequence Pattern Predictor — trains a small MLP on app-switch timestamps to
-model normal activity rhythms, then flags windows where the actual activity
-time deviates significantly from the prediction.
+Activity Sequence Predictor — trains a small scikit-learn MLP on
+app-usage timestamps to model normal activity rhythms, then flags windows
+where the actual activity time deviates significantly from the prediction.
 
-Uses sklearn's MLPRegressor instead of a PyTorch LSTM to avoid the large
-torch dependency.  The model is still a non-linear sequence predictor:
-given the last N hourly-normalised timestamps it predicts the next one.
+Note: this uses sklearn's MLPRegressor, not a PyTorch LSTM.  The
+``algorithm_id`` (``act_lstm``) is kept for backward compatibility with
+existing ``ml_results`` rows and webapp configuration.
 
 Queries ``tbl_app_usage`` directly from the shared MySQL database.
 """
@@ -16,9 +16,9 @@ from app.detectors.base import BaseDetector
 from app.models.schemas import AnomalyResult
 
 
-class LSTMSequenceDetector(BaseDetector):
+class ActivitySequenceDetector(BaseDetector):
     algorithm_id = "act_lstm"
-    algorithm_name = "LSTM Sequence Pattern Predictor"
+    algorithm_name = "Activity Sequence Predictor (MLP)"
     category = "activity"
 
     async def detect(self, user_id: int, scope: str = "full",
@@ -64,7 +64,7 @@ class LSTMSequenceDetector(BaseDetector):
         hour_arr = (hour_arr - 12.0) / 12.0
 
         seq_len_param = int(params.get('ml_python_lstm_sequence', 20)) if params else 20
-        lstm_units_param = int(params.get('ml_python_lstm_units', 32)) if params else 32
+        mlp_units_param = int(params.get('ml_python_lstm_units', 32)) if params else 32
         seq_len = seq_len_param if len(hour_arr) > seq_len_param + 1 else max(3, len(hour_arr) // 2)
         X, y = [], []
         for i in range(len(hour_arr) - seq_len):
@@ -77,7 +77,7 @@ class LSTMSequenceDetector(BaseDetector):
         y_arr = np.array(y, dtype=np.float32)
 
         model = MLPRegressor(
-            hidden_layer_sizes=(lstm_units_param,),
+            hidden_layer_sizes=(mlp_units_param,),
             activation="relu",
             solver="adam",
             max_iter=30,

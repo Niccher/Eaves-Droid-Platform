@@ -7,11 +7,30 @@ these functions directly (no need for async since the number of queries
 per job is small and the GIL releases during I/O wait).
 """
 
+import json
+import numpy as np
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from app.config import settings
 
 _engine: Engine | None = None
+
+
+def json_safe(obj):
+    """Recursively convert numpy/pandas scalars to plain Python types."""
+    if isinstance(obj, dict):
+        return {k: json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [json_safe(v) for v in obj]
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
 
 
 def get_engine() -> Engine:
@@ -90,7 +109,7 @@ def insert_result(job_id: int, user_id: int, category: str, algorithm: str,
             "anomaly": anomaly,
             "score": score,
             "event_timestamp": event_timestamp,
-            "details": __import__("json").dumps(details or {}),
+            "details": json.dumps(json_safe(details or {})),
         })
         conn.commit()
 

@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS ml_results (
     user_id         INT UNSIGNED NOT NULL,
 
     category        VARCHAR(50)  NOT NULL COMMENT 'sms | contacts | call_logs | locations | apps | files | activity | device_info',
-    algorithm       VARCHAR(100) NOT NULL COMMENT 'Display name: LSTM Sequence Pattern Predictor',
+    algorithm       VARCHAR(100) NOT NULL COMMENT 'Display name: Activity Sequence Predictor (MLP)',
     algorithm_id    VARCHAR(50)  NOT NULL COMMENT 'Machine name: act_lstm',
     severity        ENUM('High','Medium','Low') NOT NULL,
     anomaly         TEXT         NOT NULL COMMENT 'Human-readable description of the finding',

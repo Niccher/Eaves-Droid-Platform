@@ -1,13 +1,14 @@
 """
-File Entropy & Encryption Scanner — flags files whose metadata
-(extension, path depth, location in Android data directories, etc.)
-suggests they may be encrypted payloads, ransomware artefacts, or
-hidden executables.
+Suspicious File Metadata Scanner — flags files whose metadata
+(extension, path depth, location in Android data directories, hidden
+names) suggests they may be encrypted payloads, ransomware artefacts,
+or hidden executables.
 
-NOTE: Actual byte-level Shannon entropy scanning is not possible here
-because the PHP side only sends file *metadata* (name, path, timestamp)
-from tbl_device_files.  If raw file access is needed in the future, add
-a volume mount and scan via ``os.path.getsize()`` / ``open()``.
+Note: byte-level Shannon entropy scanning is not performed because the
+PHP side only sends file *metadata* (name, path, timestamp) from
+tbl_device_files.  The ``algorithm_id`` (``files_entropy``) is kept for
+backward compatibility with existing ``ml_results`` rows and webapp
+configuration.
 
 Queries ``tbl_device_files`` directly from the shared MySQL database.
 """
@@ -28,9 +29,9 @@ SUSPICIOUS_KEYWORDS = [
 ]
 
 
-class FileEntropyDetector(BaseDetector):
+class SuspiciousFileScanner(BaseDetector):
     algorithm_id = "files_entropy"
-    algorithm_name = "File Entropy & Encryption Scanner"
+    algorithm_name = "Suspicious File Metadata Scanner"
     category = "files"
 
     async def detect(self, user_id: int, scope: str = "full",

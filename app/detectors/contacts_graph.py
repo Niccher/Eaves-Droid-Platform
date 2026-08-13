@@ -1,7 +1,11 @@
 """
-Graph Relation Outlier Model — builds a NetworkX graph from the user's
+Contact Graph Outlier Model — builds a NetworkX graph from the user's
 contacts where edges represent shared phone-number prefixes or name
 similarity, then flags orphaned (degree 0) and low-connectivity nodes.
+
+Note: this is a graph-heuristic outlier model, not a Graph Convolutional
+Network.  The ``algorithm_id`` (``contacts_graph``) is kept for backward
+compatibility with existing ``ml_results`` rows and webapp configuration.
 
 Queries ``tbl_contacts`` directly from the shared MySQL database.
 """
@@ -15,7 +19,7 @@ from app.models.schemas import AnomalyResult
 
 class GraphContactDetector(BaseDetector):
     algorithm_id = "contacts_graph"
-    algorithm_name = "Graph Relation Outlier Model (GCN)"
+    algorithm_name = "Contact Graph Outlier Model"
     category = "contacts"
 
     async def detect(self, user_id: int, scope: str = "full",
@@ -51,11 +55,21 @@ class GraphContactDetector(BaseDetector):
             if isinstance(numbers_raw, str):
                 try:
                     nums = json.loads(numbers_raw)
-                    phone = str(nums[0]) if isinstance(nums, list) and nums else ""
+                    if isinstance(nums, list) and nums:
+                        first = nums[0]
+                        if isinstance(first, dict):
+                            phone = str(first.get("number") or first.get("normalized_number") or "")
+                        else:
+                            phone = str(first)
                 except Exception:
                     phone = numbers_raw
             elif isinstance(numbers_raw, (list, tuple)):
-                phone = str(numbers_raw[0]) if numbers_raw else ""
+                if numbers_raw:
+                    first = numbers_raw[0]
+                    if isinstance(first, dict):
+                        phone = str(first.get("number") or first.get("normalized_number") or "")
+                    else:
+                        phone = str(first)
 
             node_id = phone if phone else f"no-phone-{len(G.nodes)}"
             G.add_node(node_id, label=name, phone=phone)

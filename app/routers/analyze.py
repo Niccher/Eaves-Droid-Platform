@@ -36,14 +36,14 @@ router = APIRouter(tags=["analyze"])
 DETECTOR_MAP: dict[str, str] = {}
 
 CATEGORY_TABLE: dict[str, tuple[str, str]] = {
-    "sms":         ("tbl_sms",         "id"),
-    "contacts":    ("tbl_contacts",    "id"),
-    "call_logs":   ("tbl_logs",        "id"),
-    "locations":   ("tbl_location",    "id"),
-    "apps":        ("tbl_apps",        "id"),
+    "sms":         ("tbl_sms",         "counter"),
+    "contacts":    ("tbl_contacts",    "counter"),
+    "call_logs":   ("tbl_logs",        "counter"),
+    "locations":   ("tbl_location",    "counter"),
+    "apps":        ("tbl_apps",        "counter"),
     "files":       ("tbl_device_files","id"),
     "activity":    ("tbl_app_usage",   "id"),
-    "device_info": ("tbl_device_profile", "id"),
+    "device_info": ("tbl_device_profile", "counter"),
 }
 
 
@@ -54,22 +54,22 @@ def load_detectors():
     ``DETECTOR_MAP`` keyed by its ``algorithm_id`` so the analyze endpoint
     can dispatch work by algorithm name.
     """
-    from app.detectors.sms_bert import BERTPhishingDetector
+    from app.detectors.sms_bert import SmsPhishingHeuristicDetector
     from app.detectors.calls_isolation import CallsIsolationDetector
     from app.detectors.device_oneclass import DeviceOneClassDetector
-    from app.detectors.activity_lstm import LSTMSequenceDetector
-    from app.detectors.apps_autoencoder import AutoencoderAppDetector
+    from app.detectors.activity_lstm import ActivitySequenceDetector
+    from app.detectors.apps_autoencoder import AppManifestAnomalyDetector
     from app.detectors.contacts_graph import GraphContactDetector
-    from app.detectors.files_entropy import FileEntropyDetector
+    from app.detectors.files_entropy import SuspiciousFileScanner
 
     for d in [
-        BERTPhishingDetector(),
+        SmsPhishingHeuristicDetector(),
         CallsIsolationDetector(),
         DeviceOneClassDetector(),
-        LSTMSequenceDetector(),
-        AutoencoderAppDetector(),
+        ActivitySequenceDetector(),
+        AppManifestAnomalyDetector(),
         GraphContactDetector(),
-        FileEntropyDetector(),
+        SuspiciousFileScanner(),
     ]:
         DETECTOR_MAP[d.algorithm_id] = d
     logger.info("Loaded %d detectors", len(DETECTOR_MAP))
