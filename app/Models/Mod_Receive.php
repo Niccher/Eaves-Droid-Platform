@@ -56,6 +56,9 @@ class Mod_Receive extends Model
                     }
                 }
 
+                if (!isset($print_dump['created_at']) || empty($print_dump['created_at'])) {
+                    $print_dump['created_at'] = date('Y-m-d H:i:s');
+                }
                 $builder->insert($print_dump);
                 $action = 'created';
             }

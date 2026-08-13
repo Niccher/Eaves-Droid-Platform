@@ -36,7 +36,7 @@
                     <div class="col-md-6">
                         <div class="d-flex align-items-center mb-2">
                             <span class="badge badge-warning mr-2 px-3 py-2"><i class="fab fa-python mr-1"></i> Python</span>
-                            <span class="text-muted small">External Python microservice (Docker) &mdash; scikit-learn, TensorFlow, GPU acceleration. Accessed via REST API.</span>
+                            <span class="text-muted small">External Python microservice (Docker) &mdash; scikit-learn &amp; networkx models, CPU-only. Accessed via REST API.</span>
                         </div>
                     </div>
                 </div>
@@ -222,7 +222,7 @@
                             <div class="tab-pane fade" id="pane-python" role="tabpanel">
                                 <div class="callout callout-warning bg-light py-2 px-3 mb-3 small">
                                     <i class="fas fa-exclamation-triangle text-warning mr-1"></i>
-                                    <strong>Requires a running Python backend service.</strong> Deploy via Docker with the required Python dependencies (scikit-learn, TensorFlow/PyTorch, Flask/FastAPI). The Python backend provides GPU acceleration, deep learning models, and advanced algorithms not available in PHP-ML. Use it for production-scale deployments with &gt;50k records.
+                                    <strong>Requires a running Python backend service.</strong> Deploy via Docker (FastAPI + scikit-learn). The Python backend provides the 7 detector models — Isolation Forest, One-Class SVM, PCA anomaly scanner, contact-graph outlier, activity MLP, phishing keyword heuristic, and suspicious-file scanner — that extend beyond PHP-ML. All detectors are CPU-only sklearn/networkx models; no GPU or deep-learning framework required.
                                 </div>
                                 <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
                                     <i class="fas fa-database text-info mr-1"></i>
@@ -306,56 +306,44 @@
                                     </div>
                                 </div>
 
-                                <!-- Autoencoder -->
+                                <!-- App Manifest Anomaly Scanner -->
                                 <div class="card card-outline card-info shadow-sm mb-3">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-network-wired mr-1"></i> Autoencoder Neural Network</h3></div>
+                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-network-wired mr-1"></i> App Manifest Anomaly Scanner (PCA)</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Latent Dimensions <small class="text-muted">(default: 16)</small></label>
+                                            <label class="col-sm-2 col-form-label">Latent Dimensions <small class="text-muted">(default: 2)</small></label>
                                             <div class="col-sm-10">
-                                                <input type="number" name="ml_python_autoencoder_latent" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_latent'] ?? '16') ?>" min="2" max="128">
+                                                <input type="number" name="ml_python_autoencoder_latent" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_latent'] ?? '2') ?>" min="2" max="128">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
                                                     <i class="fas fa-book-open text-info mr-1"></i>
-                                                    <strong>How it works:</strong> The autoencoder learns to compress input features through a bottleneck (latent space) and reconstruct them. Anomalies produce high reconstruction error because they deviate from learned normal patterns.
+                                                    <strong>How it works:</strong> Extracts manifest-style features (package-name patterns, sensitive permissions, name length) and fits a PCA model. PCA acts as a linear autoencoder &mdash; apps whose features are poorly reconstructed have high reconstruction error and are flagged.
                                                     <br><br>
-                                                    <strong>Low (2&ndash;8):</strong> High compression &mdash; captures only the strongest patterns. Faster training. May miss subtle anomalies.
+                                                    <strong>Low (2&ndash;8):</strong> High compression &mdash; captures only the strongest patterns. Faster, may miss subtle anomalies.
                                                     <br>
-                                                    <strong>High (32+):</strong> Low compression &mdash; captures finer details. Higher fidelity but may overfit and miss generalised anomalies.
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Training Epochs <small class="text-muted">(default: 50)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" name="ml_python_autoencoder_epochs" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_epochs'] ?? '50') ?>" min="10" max="500">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    <strong>Low (10&ndash;20):</strong> Fast training, lower resource usage &mdash; risk of underfitting on complex patterns.
-                                                    <br>
-                                                    <strong>High (100+):</strong> Better convergence to data distribution &mdash; higher training time and resource usage. Risk of overfitting on small datasets.
+                                                    <strong>High (32+):</strong> Low compression &mdash; captures finer details. Higher fidelity but may overfit.
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Anomaly Threshold (&sigma;) <small class="text-muted">(default: 3.0)</small></label>
+                                            <label class="col-sm-2 col-form-label">Anomaly Threshold (&sigma;) <small class="text-muted">(default: 2.0)</small></label>
                                             <div class="col-sm-10">
-                                                <input type="number" step="0.1" name="ml_python_autoencoder_threshold" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_threshold'] ?? '3.0') ?>" min="1.0" max="6.0">
+                                                <input type="number" step="0.1" name="ml_python_autoencoder_threshold" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_threshold'] ?? '2.0') ?>" min="1.0" max="6.0">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
                                                     <i class="fas fa-book-open text-info mr-1"></i>
                                                     Reconstruction error cutoff in standard deviations from the mean.
                                                     <br><br>
-                                                    <strong>Low (2&sigma;):</strong> More sensitive &mdash; flags more points as anomalies. Higher recall, lower precision.
+                                                    <strong>Low (2&sigma;):</strong> More sensitive &mdash; flags more apps. Higher recall, lower precision.
                                                     <br>
-                                                    <strong>High (4&sigma;+):</strong> Very strict &mdash; only flags extreme deviations. Higher precision, may miss subtle anomalies.
+                                                    <strong>High (4&sigma;+):</strong> Very strict &mdash; only flags extreme deviations. Higher precision.
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- LSTM -->
+                                <!-- Activity Sequence Predictor -->
                                 <div class="card card-outline card-info shadow-sm mb-3">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> LSTM Sequence Predictor</h3></div>
+                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> Activity Sequence Predictor (MLP)</h3></div>
                                     <div class="card-body">
                                         <div class="form-group row">
                                             <label class="col-sm-2 col-form-label">Sequence Length <small class="text-muted">(default: 20)</small></label>
@@ -363,25 +351,25 @@
                                                 <input type="number" name="ml_python_lstm_sequence" class="form-control" value="<?= htmlspecialchars($settings['ml_python_lstm_sequence'] ?? '20') ?>" min="5" max="100">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
                                                     <i class="fas fa-book-open text-info mr-1"></i>
-                                                    <strong>How it works:</strong> LSTM (Long Short-Term Memory) networks model sequential user behaviour &mdash; app switch patterns, location sequences, call timing. The network predicts the next event; high prediction error signals anomalous behaviour.
+                                                    <strong>How it works:</strong> Trains a small multi-layer perceptron (MLP) on chronologically ordered app-usage timestamps to model normal activity rhythms. The model predicts the next usage time; a large prediction error signals an anomalous transition.
                                                     <br><br>
-                                                    <strong>Low (5&ndash;10):</strong> Short memory window &mdash; faster training, less contextual awareness. May miss long-term pattern deviations.
+                                                    <strong>Low (5&ndash;10):</strong> Short memory window &mdash; faster training, less contextual awareness.
                                                     <br>
-                                                    <strong>High (50+):</strong> Extended memory &mdash; captures long-range dependencies. More accurate pattern modelling but slower training and higher memory usage.
+                                                    <strong>High (50+):</strong> Extended memory &mdash; captures longer-range patterns. Slower training.
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">LSTM Units <small class="text-muted">(default: 64)</small></label>
+                                            <label class="col-sm-2 col-form-label">Hidden Units <small class="text-muted">(default: 32)</small></label>
                                             <div class="col-sm-10">
-                                                <input type="number" name="ml_python_lstm_units" class="form-control" value="<?= htmlspecialchars($settings['ml_python_lstm_units'] ?? '64') ?>" min="16" max="256">
+                                                <input type="number" name="ml_python_lstm_units" class="form-control" value="<?= htmlspecialchars($settings['ml_python_lstm_units'] ?? '32') ?>" min="16" max="256">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
                                                     <i class="fas fa-book-open text-info mr-1"></i>
-                                                    Size of the LSTM hidden state. Controls the network's capacity to learn complex patterns.
+                                                    Size of the MLP hidden layer. Controls the model's capacity to learn usage rhythms.
                                                     <br><br>
-                                                    <strong>Low (16&ndash;32):</strong> Simple patterns, fast inference, minimal GPU/CPU load.
+                                                    <strong>Low (16&ndash;32):</strong> Simple patterns, fast inference.
                                                     <br>
-                                                    <strong>High (128+):</strong> Complex pattern recognition, higher accuracy potential. Requires significantly more GPU memory and longer training.
+                                                    <strong>High (128+):</strong> Complex pattern recognition, higher accuracy potential. More compute required.
                                                 </div>
                                             </div>
                                         </div>
@@ -603,7 +591,7 @@
                                                         <td>256 MB</td>
                                                         <td>Not required</td>
                                                         <td>~1.2 GB (slim)</td>
-                                                        <td>scikit-learn, numpy, Flask</td>
+                                                        <td>scikit-learn, numpy, FastAPI</td>
                                                         <td>Overkill for this size. PHP-ML sufficient. Runs on any Docker host.</td>
                                                     </tr>
                                                     <tr>
@@ -612,8 +600,8 @@
                                                         <td>512 MB</td>
                                                         <td>Not required</td>
                                                         <td>~1.5 GB</td>
-                                                        <td>+ pandas, scipy</td>
-                                                        <td>Autoencoder &amp; LSTM train in seconds. No GPU needed.</td>
+                                                        <td>+ pandas, scipy, networkx</td>
+                                                        <td>All 7 detectors finish in seconds. No GPU needed.</td>
                                                     </tr>
                                                     <tr class="table-warning">
                                                         <td><strong>&lt; 10k entries</strong></td>
@@ -621,35 +609,35 @@
                                                         <td>1 GB</td>
                                                         <td>Optional</td>
                                                         <td>~1.8 GB</td>
-                                                        <td>+ TensorFlow CPU or PyTorch CPU</td>
-                                                        <td>Isolation Forest, One-Class SVM complete in &lt;10s. GPU optional for faster Autoencoder training.</td>
+                                                        <td>+ onnxruntime (optional)</td>
+                                                        <td>Isolation Forest, One-Class SVM complete in &lt;10s. All detectors are CPU-only sklearn models.</td>
                                                     </tr>
                                                     <tr>
                                                         <td><strong>&lt; 20k entries</strong></td>
                                                         <td>2&ndash;4 vCPU</td>
                                                         <td>2&ndash;4 GB</td>
-                                                        <td>Recommended (4 GB+ VRAM)</td>
-                                                        <td>~2.5 GB (with CUDA)</td>
-                                                        <td>+ TensorFlow GPU / PyTorch CUDA</td>
-                                                        <td>GPU accelerates Autoencoder &amp; LSTM training 5&ndash;10x. 4 GB VRAM sufficient for batch sizes up to 64.</td>
+                                                        <td>Not required</td>
+                                                        <td>~2.0 GB</td>
+                                                        <td>+ onnxruntime (optional)</td>
+                                                        <td>Detectors scale on CPU; use Redis-like caching (model cache) to avoid recomputation.</td>
                                                     </tr>
                                                     <tr class="table-danger">
                                                         <td><strong>&lt; 50k entries</strong></td>
                                                         <td>4+ vCPU</td>
                                                         <td>4&ndash;8 GB</td>
-                                                        <td>Strongly recommended (8 GB+ VRAM)</td>
-                                                        <td>~3.5 GB (full CUDA toolkit)</td>
-                                                        <td>+ TensorFlow GPU, CUDA 11+, cuDNN</td>
-                                                        <td>Recommended production target for Python backend. All models complete within 60s with GPU. Use batch prediction for API responses.</td>
+                                                        <td>Not required</td>
+                                                        <td>~2.5 GB</td>
+                                                        <td>+ onnxruntime (optional)</td>
+                                                        <td>Recommended production target for the Python backend. All 7 detectors complete within 60s on CPU. Use the model cache to avoid recomputation.</td>
                                                     </tr>
                                                     <tr class="table-danger">
                                                         <td><strong>50k+ entries</strong></td>
                                                         <td>8+ vCPU</td>
                                                         <td>16&ndash;32 GB</td>
-                                                        <td>Required (16 GB+ VRAM)</td>
-                                                        <td>~4.5 GB + model storage</td>
-                                                        <td>+ TensorFlow GPU, CUDA 12+, cuDNN, Rapids cuML</td>
-                                                        <td>Large-scale production. Use Rapids cuML for GPU-accelerated DBSCAN &amp; LOF. Implement async job queue (Celery/Redis) with model caching. LSTM training may take several minutes.</td>
+                                                        <td>Not required</td>
+                                                        <td>~3.0 GB + model storage</td>
+                                                        <td>+ onnxruntime (optional)</td>
+                                                        <td>Large-scale production. Implement an async job queue with the model cache to avoid recomputation. All detectors are CPU-only sklearn models.</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -657,7 +645,7 @@
                                     </div>
                                     <div class="card-footer small text-muted">
                                         <i class="fas fa-info-circle mr-1"></i>
-                                        Python backend runs as a separate Docker container, communicating via HTTP REST. It does NOT share PHP server resources. GPU acceleration requires <code>nvidia-docker</code> runtime and compatible NVIDIA drivers on the host.
+                                        The Python backend runs as a separate Docker container communicating via HTTP REST. It does NOT share PHP server resources. All detectors are CPU-only sklearn/networkx models — no GPU or nvidia-docker runtime is required.
                                     </div>
                                 </div>
 
@@ -670,50 +658,34 @@
                                         </div>
                                         <pre class="bg-dark text-light p-3 rounded" style="overflow-x: auto; font-size: 0.85rem; line-height: 1.5;">
 <code>services:
-  ml-backend:
-    image: eavesdroid/ml-backend:latest
-    build: ./ml-backend
+  ml-eaves-droid:
+    build: ./ML Eaves Droid
+    image: ml-eaves-droid:latest
     ports:
-      - "5000:5000"
-    environment:
-      - MODEL_DIR=/models
-      - LOG_LEVEL=info
-      - CUDA_VISIBLE_DEVICES=0  # GPU device ID, remove for CPU-only
+      - "9071:9070"   # FastAPI (external : internal)
+    env_file:
+      - .env
     volumes:
-      - ./models:/models
-      - ./data:/data
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 8G
-        reservations:
-          cpus: '2'
-          memory: 4G
-    runtime: nvidia  # Remove for CPU-only deployments
+      - ./ML Eaves Droid:/app
+    restart: unless-stopped
     networks:
-      - app-network
+      - hosts-shared-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:9070/api/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
 
 networks:
-  app-network:
-    driver: bridge</code>
+  hosts-shared-network:
+    name: hosts-shared-network
+    external: true</code>
                                         </pre>
                                         <div class="row mt-2">
-                                            <div class="col-md-6">
+                                            <div class="col-md-12">
                                                 <div class="small">
-                                                    <strong class="text-success"><i class="fas fa-check-circle mr-1"></i>CPU-only deployment:</strong><br>
-                                                    Remove <code>runtime: nvidia</code>, remove <code>CUDA_VISIBLE_DEVICES</code>, reduce memory limits. Works on any Docker host.
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="small">
-                                                    <strong class="text-warning"><i class="fas fa-exclamation-triangle mr-1"></i>GPU deployment prerequisites:</strong><br>
-                                                    NVIDIA drivers &ge; 525, Docker 19.03+, <code>nvidia-docker2</code> package, NVIDIA container toolkit.
+                                                    <strong class="text-success"><i class="fas fa-check-circle mr-1"></i>Deployment:</strong><br>
+                                                    The backend listens on port <code>9070</code> internally (mapped to <code>9071</code> externally) and exposes <code>/api/health</code>, <code>/api/models</code>, and <code>/api/analyze</code>. All detectors are CPU-only sklearn/networkx models — no GPU, TensorFlow, or PyTorch required. Point the webapp at <code>http://ml-eaves-droid:9070</code> (internal) or <code>http://&lt;host&gt;:9071</code>.
                                                 </div>
                                             </div>
                                         </div>

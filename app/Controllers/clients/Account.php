@@ -702,8 +702,11 @@ class Account extends BaseClientController
 
                 // Get first contact date (when device was first registered)
                 $firstContactTime = null;
-                if (!empty($device['created_at'])) {
-                    $firstContactTime = strtotime($device['created_at']);
+                if (!empty($device['created_at']) && strpos($device['created_at'], '0000-00-00') !== 0) {
+                    $parsed = strtotime($device['created_at']);
+                    if ($parsed !== false && $parsed > 0) {
+                        $firstContactTime = $parsed;
+                    }
                 }
 
                 $formattedDevices[] = [

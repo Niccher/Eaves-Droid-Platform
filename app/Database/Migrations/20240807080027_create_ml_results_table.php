@@ -35,7 +35,7 @@ class CreateMlResults extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
                 'null'       => false,
-                'comment'    => 'Display name: LSTM Sequence Pattern Predictor',
+                'comment'    => 'Display name: Activity Sequence Predictor (MLP)',
             ],
             'algorithm_id' => [
                 'type'       => 'VARCHAR',

@@ -55,8 +55,9 @@
             });
         });
     });
+    </script>
 
-    // Auto-stop impersonation when page is closed
+    <!-- Auto-stop impersonation when page is closed -->
     <?php if (session()->get('impersonated_by')): ?>
     <script>
     window.addEventListener('beforeunload', function() {

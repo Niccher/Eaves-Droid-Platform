@@ -73,7 +73,7 @@
                                     </span>
                                     <div>
                                         <strong>SMS Messages</strong>
-                                        <small class="d-block text-muted">Frequency spikes, time anomalies, BERT semantic phishing classifiers</small>
+                                        <small class="d-block text-muted">Frequency spikes, time anomalies, phishing keyword heuristics</small>
                                     </div>
                                 </li>
                                 <li class="list-group-item d-flex align-items-center">
@@ -82,7 +82,7 @@
                                     </span>
                                     <div>
                                         <strong>Contacts &amp; Graph Relations</strong>
-                                        <small class="d-block text-muted">Sudden additions, duplicates, graph convolutional network relationships</small>
+                                        <small class="d-block text-muted">Sudden additions, duplicates, graph-based outlier relationships</small>
                                     </div>
                                 </li>
                                 <li class="list-group-item d-flex align-items-center">

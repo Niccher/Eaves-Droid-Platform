@@ -88,7 +88,15 @@ class Mod_Extract extends Model
                 // Handle new schema phone numbers (stored as JSON)
                 if (isset($result['phone_numbers'])) {
                     $phoneNumbers = json_decode($result['phone_numbers'], true);
-                    $result['Number'] = !empty($phoneNumbers) && is_array($phoneNumbers) ? $phoneNumbers[0] : '';
+                    $result['Number'] = '';
+                    if (!empty($phoneNumbers) && is_array($phoneNumbers)) {
+                        $firstPhone = $phoneNumbers[0];
+                        if (is_array($firstPhone) && isset($firstPhone['number'])) {
+                            $result['Number'] = $firstPhone['number'];
+                        } elseif (is_string($firstPhone)) {
+                            $result['Number'] = $firstPhone;
+                        }
+                    }
                 } else {
                     $result['Number'] = '';
                 }

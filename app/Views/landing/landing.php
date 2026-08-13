@@ -30,16 +30,16 @@
                         <div class="card-body">
                             <div class="row text-center">
                                 <div class="col-6 mb-3">
-                                    <h4 class="text-primary font-weight-bold mb-0">5K+</h4>
-                                    <small class="text-muted">Active Users</small>
+                                    <h4 class="text-primary font-weight-bold mb-0">60+</h4>
+                                    <small class="text-muted">Data Extractors</small>
                                 </div>
                                 <div class="col-6 mb-3">
-                                    <h4 class="text-success font-weight-bold mb-0">150K+</h4>
-                                    <small class="text-muted">Files Analyzed</small>
+                                    <h4 class="text-success font-weight-bold mb-0">3</h4>
+                                    <small class="text-muted">Open-Source Repos</small>
                                 </div>
                                 <div class="col-6">
-                                    <h4 class="text-info font-weight-bold mb-0">99.7%</h4>
-                                    <small class="text-muted">ML Accuracy</small>
+                                    <h4 class="text-info font-weight-bold mb-0">17</h4>
+                                    <small class="text-muted">Anomaly Detectors</small>
                                 </div>
                                 <div class="col-6">
                                     <h4 class="text-warning font-weight-bold mb-0">24/7</h4>
@@ -141,7 +141,7 @@
             <div class="bg-light p-4 p-md-5 rounded shadow-sm mt-4">
                 <div class="text-center mb-5">
                     <h2 class="font-weight-light mb-2"><i class="fas fa-brain text-primary mr-2"></i>Powered By AI / ML</h2>
-                    <p class="text-muted lead">Built on PHP-ML — production-grade machine learning in your pocket</p>
+                    <p class="text-muted lead">A two-engine analysis stack — PHP-ML in the webapp, plus a dedicated Python ML engine</p>
                 </div>
 
                 <div class="row">
@@ -150,7 +150,7 @@
                             <div class="card-body">
                                 <span class="badge badge-primary badge-pill float-right">Unsupervised</span>
                                 <h5 class="text-bold text-primary"><i class="fas fa-project-diagram mr-2"></i>KMeans Clustering</h5>
-                                <p class="text-muted small mb-0">Groups contacts and communication patterns into behavioral clusters. Identifies who you talk to most and when, revealing natural social circles.</p>
+                                <p class="text-muted small mb-0">Groups contacts and communication patterns into behavioral clusters (PHP-ML). Identifies who you talk to most and when, revealing natural social circles.</p>
                             </div>
                         </div>
                     </div>
@@ -158,17 +158,17 @@
                         <div class="card h-100 shadow-sm border-success">
                             <div class="card-body">
                                 <span class="badge badge-success badge-pill float-right">Anomaly</span>
-                                <h5 class="text-bold text-success"><i class="fas fa-exclamation-triangle mr-2"></i>DBSCAN Anomaly Detection</h5>
-                                <p class="text-muted small mb-0">Flags unusual call/SMS patterns, unexpected locations, and outlier behaviors that deviate from established baselines.</p>
+                                <h5 class="text-bold text-success"><i class="fas fa-tree mr-2"></i>Isolation Forest</h5>
+                                <p class="text-muted small mb-0">The Python ML engine flags multidimensional call anomalies — duration, hour, direction, and network combined — that single-threshold rules would miss.</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-4 col-md-6 mb-4">
                         <div class="card h-100 shadow-sm border-info">
                             <div class="card-body">
-                                <span class="badge badge-info badge-pill float-right">Classification</span>
-                                <h5 class="text-bold text-info"><i class="fas fa-tag mr-2"></i>NaiveBayes Classification</h5>
-                                <p class="text-muted small mb-0">Categorizes SMS messages and communication types automatically. Separates personal, work, spam, and transactional messages.</p>
+                                <span class="badge badge-info badge-pill float-right">Anomaly</span>
+                                <h5 class="text-bold text-info"><i class="fas fa-microchip mr-2"></i>One-Class SVM</h5>
+                                <p class="text-muted small mb-0">Models normal CPU, RAM, battery and radio states, then flags abnormal system behaviour — a hallmark of background malware or covert processes.</p>
                             </div>
                         </div>
                     </div>
@@ -177,28 +177,34 @@
                             <div class="card-body">
                                 <span class="badge badge-warning badge-pill float-right">NLP</span>
                                 <h5 class="text-bold text-warning"><i class="fas fa-file-alt mr-2"></i>TF-IDF Text Analysis</h5>
-                                <p class="text-muted small mb-0">Extracts key terms and topics from SMS conversations. Measures term importance to summarize what your communications are about.</p>
+                                <p class="text-muted small mb-0">Extracts key terms and topics from SMS conversations and measures term importance to summarise what your communications are about.</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-4 col-md-6 mb-4">
                         <div class="card h-100 shadow-sm border-danger">
                             <div class="card-body">
-                                <span class="badge badge-danger badge-pill float-right">Statistics</span>
-                                <h5 class="text-bold text-danger"><i class="fas fa-chart-line mr-2"></i>Z-Score Outlier Detection</h5>
-                                <p class="text-muted small mb-0">Identifies statistical outliers in call duration, message frequency, and location data using standard deviation analysis.</p>
+                                <span class="badge badge-danger badge-pill float-right">Graph</span>
+                                <h5 class="text-bold text-danger"><i class="fas fa-share-alt mr-2"></i>Contact Graph Outlier</h5>
+                                <p class="text-muted small mb-0">Builds a relationship graph from your contacts and flags orphaned or isolated numbers that sit outside your normal social network.</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-4 col-md-6 mb-4">
                         <div class="card h-100 shadow-sm border-secondary">
                             <div class="card-body">
-                                <span class="badge badge-secondary badge-pill float-right">Correlation</span>
-                                <h5 class="text-bold text-secondary"><i class="fas fa-link mr-2"></i>Call-SMS Correlation</h5>
-                                <p class="text-muted small mb-0">Maps relationships between calls and SMS to/from the same contacts. Builds a unified communication graph across all channels.</p>
+                                <span class="badge badge-secondary badge-pill float-right">Sequence</span>
+                                <h5 class="text-bold text-secondary"><i class="fas fa-chart-line mr-2"></i>Activity Sequence Predictor</h5>
+                                <p class="text-muted small mb-0">Learns your app-usage rhythms and flags activity at times that deviate from your normal daily pattern.</p>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <a href="<?= base_url('aboutus') ?>" class="btn btn-outline-primary btn-lg px-4 shadow-sm">
+                        <i class="fas fa-brain mr-2"></i>See the Full ML Engine
+                    </a>
                 </div>
             </div>
 
@@ -247,7 +253,7 @@
                                 <div class="h1 text-warning font-weight-bold mb-3" style="opacity: 0.25; position: absolute; top: 8px; right: 16px;">04</div>
                                 <div class="mb-3"><span class="btn btn-warning btn-lg rounded-circle shadow-sm" style="width: 60px; height: 60px; line-height: 44px;"><i class="fas fa-chart-pie fa-lg"></i></span></div>
                                 <h5 class="text-bold">AI Analysis</h5>
-                                <p class="text-muted small mb-0">KMeans clustering, DBSCAN anomaly detection, NaiveBayes classification, and TF-IDF analysis run automatically against your data.</p>
+                                <p class="text-muted small mb-0">KMeans and DBSCAN cluster your data, while the Python ML engine runs Isolation Forest, One-Class SVM, and more against your calls, SMS, contacts, apps, files, and activity.</p>
                             </div>
                         </div>
                     </div>
@@ -275,14 +281,14 @@
                                 <h4 class="mb-0 text-bold">Docker</h4>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted">One-command deployment with docker-compose. Includes web server, PHP, database, and all dependencies.</p>
-                                <pre class="bg-dark text-light p-3 rounded small mb-0"><code>docker-compose up -d</code></pre>
+                                <p class="text-muted">One-command deployment with docker-compose. Includes the web app, PHP, MySQL, and the Python ML engine.</p>
+                                <pre class="bg-dark text-light p-3 rounded small mb-0"><code>docker compose up --build -d</code></pre>
                                 <hr>
                                 <ul class="list-unstyled small text-muted mb-0">
-                                    <li><i class="fas fa-check text-success mr-1"></i> Nginx + PHP 8.x</li>
-                                    <li><i class="fas fa-check text-success mr-1"></i> MariaDB / PostgreSQL</li>
-                                    <li><i class="fas fa-check text-success mr-1"></i> Redis caching</li>
-                                    <li><i class="fas fa-check text-success mr-1"></i> Auto HTTPS (Let's Encrypt)</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Apache + PHP 8.3</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> MySQL 8.4</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Python ML engine (FastAPI)</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> phpMyAdmin</li>
                                     <li><i class="fas fa-check text-success mr-1"></i> Volume persistence</li>
                                 </ul>
                             </div>
@@ -300,8 +306,8 @@
 php spark serve</code></pre>
                                 <hr>
                                 <ul class="list-unstyled small text-muted mb-0">
-                                    <li><i class="fas fa-check text-success mr-1"></i> PHP 8.0+ required</li>
-                                    <li><i class="fas fa-check text-success mr-1"></i> MySQL / SQLite</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> PHP 8.3+ required</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> MySQL 8.4</li>
                                     <li><i class="fas fa-check text-success mr-1"></i> Apache / Nginx</li>
                                     <li><i class="fas fa-check text-success mr-1"></i> PHP-ML included</li>
                                     <li><i class="fas fa-check text-success mr-1"></i> No Docker dependencies</li>
@@ -327,7 +333,7 @@ php spark serve</code></pre>
                 <p class="text-white-50 small mt-4 mb-0">
                     <i class="fas fa-lock mr-1"></i> Fully self-hosted &bull;
                     <i class="fas fa-code mr-1"></i> Open source &bull;
-                    <i class="fas fa-heart mr-1"></i> Built with PHP-ML
+                    <i class="fas fa-android mr-1"></i> Android + PHP + Python ML engine
                 </p>
             </div>
 

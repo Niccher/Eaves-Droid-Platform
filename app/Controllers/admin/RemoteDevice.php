@@ -240,6 +240,8 @@ class RemoteDevice extends BaseAdminController
                 'cmd_uninstall_wipe' => 'Uninstall (Wipe All)',
                 'cmd_update_prefs' => 'Update Settings',
                 'cmd_open_permission' => 'Open Permission',
+                'cmd_misc_hardware' => 'Fetch Misc Hardware',
+                'cmd_misc_software' => 'Fetch Misc Software',
             ];
             $label = $commandLabels[$command] ?? str_replace('_', ' ', str_replace('cmd_', '', $command));
 
@@ -278,6 +280,8 @@ class RemoteDevice extends BaseAdminController
                 'cmd_uninstall_wipe' => 'Uninstalls the app and wipes all collected data from the device.',
                 'cmd_update_prefs' => 'Updates device settings and preferences remotely.',
                 'cmd_open_permission' => 'Triggers the device to open a specific permission settings screen.',
+                'cmd_misc_hardware' => 'Requests the device to upload auxiliary hardware diagnostic data (sensors, network interfaces, Bluetooth connections).',
+                'cmd_misc_software' => 'Requests the device to upload auxiliary software data (calendar events, configured system accounts, locales).',
             ];
             $description = $commandDescriptions[$command] ?? '';
 

@@ -270,16 +270,16 @@
                                     </a>
                                 </li>
 
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('location'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag == 'location') ? 'active' : ''; ?>">
-                                        <i class="fas fa-map-pin nav-icon"></i>
-                                        <p>Location &amp; Activity</p>
-                                        <span class="badge badge-success float-right"><?php echo isset($total_locations) ? ($total_locations + ($total_activities ?? 0)) : 0; ?></span>
-                                    </a>
-                                </li>
+                                    <li class="nav-item">
+                                     <a href="<?php echo base_url('location'); ?>"
+                                        class="nav-link <?php echo (isset($pag) && ($pag == 'location' || $pag == 'activities')) ? 'active' : ''; ?>">
+                                         <i class="fas fa-map-pin nav-icon"></i>
+                                         <p>Location &amp; Activity</p>
+                                         <span class="badge badge-success float-right"><?php echo isset($total_location_activity) ? $total_location_activity : (($total_locations ?? 0) + ($total_activities ?? 0)); ?></span>
+                                     </a>
+                                 </li>
 
-</ul>
+ </ul>
                         </li>
 
 <!-- Remote Device Button -->
@@ -426,6 +426,14 @@
                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'blocklist') ? 'active' : ''; ?>">
                                         <i class="fas fa-ban nav-icon"></i>
                                         <p>Blocklist</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('billing'); ?>"
+                                       class="nav-link <?php echo (isset($pag) && $pag == 'billing') ? 'active' : ''; ?>">
+                                        <i class="fas fa-credit-card nav-icon"></i>
+                                        <p>Billing / Upgrade</p>
                                     </a>
                                 </li>
 

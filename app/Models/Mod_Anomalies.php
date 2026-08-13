@@ -213,12 +213,12 @@ class Mod_Anomalies extends Model
                     ],
                     [
                         'id'          => 'sms_bert',
-                        'name'        => 'BERT Semantic Phishing Classifier',
+                        'name'        => 'SMS Phishing Keyword Heuristic',
                         'default'     => false,
                         'compat'      => 'python',
-                        'description' => 'Uses deep learning NLP (Transformer model) to analyze SMS message content for phishing semantics and intent.',
-                        'strengths'   => 'Extremely high accuracy at detecting sophisticated social engineering.',
-                        'weaknesses'  => 'Requires Python GPU/CPU acceleration; slow startup time.',
+                        'description' => 'Scans SMS message bodies for phishing / social-engineering keyword indicators (urgency, impersonation, credential requests).',
+                        'strengths'   => 'Fast, deterministic, no model download needed; catches common smishing language.',
+                        'weaknesses'  => 'Keyword-based — no deep semantic understanding; can miss novel phrasings.',
                     ],
                 ],
             ],
@@ -248,12 +248,12 @@ class Mod_Anomalies extends Model
                     ],
                     [
                         'id'          => 'contacts_graph',
-                        'name'        => 'Graph Relation Outlier Model (GCN)',
+                        'name'        => 'Contact Graph Outlier Model',
                         'default'     => false,
                         'compat'      => 'python',
-                        'description' => 'Maps contact relationships into a graph network database to identify structural anomalies and orphaned contacts.',
-                        'strengths'   => 'Identifies hidden syndicates and spoofed hierarchies.',
-                        'weaknesses'  => 'High computation overhead; memory intensive.',
+                        'description' => 'Maps contact relationships into a graph (shared number prefixes / name similarity) and flags orphaned or low-connectivity contacts.',
+                        'strengths'   => 'Identifies isolated or synthetic contacts and unusual relationship structures.',
+                        'weaknesses'  => 'Graph heuristic — does not train a neural network; result quality depends on contact-list density.',
                     ],
                 ],
             ],
@@ -353,12 +353,12 @@ class Mod_Anomalies extends Model
                     ],
                     [
                         'id'          => 'apps_autoencoder',
-                        'name'        => 'Neural Autoencoder App Classifier',
+                        'name'        => 'App Manifest Anomaly Scanner (PCA)',
                         'default'     => false,
                         'compat'      => 'python',
-                        'description' => 'Trains an Autoencoder network on APK manifest components. Reconstructs features to find apps with abnormal configuration.',
-                        'strengths'   => 'Detects zero-day custom spyware masquerading as benign utilities.',
-                        'weaknesses'  => 'Blackbox model; difficult to interpret reasons behind alerts.',
+                        'description' => 'Uses PCA reconstruction error over package name, permission, and manifest-style features to find apps with abnormal configurations.',
+                        'strengths'   => 'Detects over-privileged or suspiciously-named apps without a curated signature list.',
+                        'weaknesses'  => 'PCA is a linear model — captures feature deviance, not true deep semantics.',
                     ],
                 ],
             ],
@@ -388,12 +388,12 @@ class Mod_Anomalies extends Model
                     ],
                     [
                         'id'          => 'files_entropy',
-                        'name'        => 'File Entropy & Encryption Scanner',
+                        'name'        => 'Suspicious File Metadata Scanner',
                         'default'     => false,
                         'compat'      => 'python',
-                        'description' => 'Calculates shannon entropy of file bytes to find encrypted archives or payload assets hidden in assets/ directories.',
-                        'strengths'   => 'Reliable detection of packed payloads, ransomware outputs, or hidden executables.',
-                        'weaknesses'  => 'Requires reading binary files, leading to high disk read execution times.',
+                        'description' => 'Flags files whose metadata (extension, path depth, location in Android data dirs, hidden names) suggests encrypted payloads, ransomware artefacts, or hidden executables.',
+                        'strengths'   => 'Reliable indicator of packed payloads or disguised executables from stored metadata.',
+                        'weaknesses'  => 'Metadata-only — does not read file bytes; byte-level entropy scanning requires raw file access.',
                     ],
                 ],
             ],
@@ -423,12 +423,12 @@ class Mod_Anomalies extends Model
                     ],
                     [
                         'id'          => 'act_lstm',
-                        'name'        => 'LSTM Sequence Pattern Predictor',
+                        'name'        => 'Activity Sequence Predictor (MLP)',
                         'default'     => false,
                         'compat'      => 'python',
-                        'description' => 'Deep LSTM model predicting subsequent user interaction events. Reports high prediction error as abnormal.',
-                        'strengths'   => 'Captures context-sensitive user behaviour flows.',
-                        'weaknesses'  => 'High CPU usage during sequence inference.',
+                        'description' => 'Trains a small scikit-learn MLP on app-usage timestamps to model normal activity rhythms; flags windows where actual activity deviates from the prediction.',
+                        'strengths'   => 'Captures non-linear usage rhythms without a heavy deep-learning stack.',
+                        'weaknesses'  => 'MLP regression on timestamps — simpler than a recurrent sequence model.',
                     ],
                 ],
             ],
@@ -1987,7 +1987,16 @@ class Mod_Anomalies extends Model
             
             foreach ($rows as &$row) {
                 $numbers = json_decode($row['phone_numbers'] ?? '', true);
-                $row['phone_number'] = (!empty($numbers) && is_array($numbers)) ? $numbers[0] : '';
+                if (!empty($numbers) && is_array($numbers)) {
+                    $first = $numbers[0];
+                    if (is_array($first)) {
+                        $row['phone_number'] = $first['number'] ?? $first['normalized_number'] ?? '';
+                    } else {
+                        $row['phone_number'] = $first;
+                    }
+                } else {
+                    $row['phone_number'] = '';
+                }
             }
             return $rows;
         } catch (\Throwable $e) {
@@ -2318,12 +2327,12 @@ class Mod_Anomalies extends Model
             'dev_net'       => ['Device Info', 'fas fa-microchip', 'Connected to unknown Wi-Fi SSID "Guest_Open_5G" at 03:12 AM', 'Medium', 'Network Profile Monitor', '2026-07-08 03:12:00', 'Demo data – SSID not in known-safe list'],
 
             // ── Python-only algorithm fallbacks ──────────────────────────────
-            'sms_bert'        => ['SMS', 'fas fa-sms', 'BERT classifier flagged a message with high phishing probability (92%)', 'High', 'BERT Semantic Phishing Classifier', '2026-07-12 03:12:00', 'Python demo – BERT transformer model (threshold: 0.85)'],
-            'contacts_graph'  => ['Contacts', 'fas fa-address-book', 'Graph model found 4 orphaned contacts with no relational edges', 'Medium', 'Graph Relation Outlier Model (GCN)', '2026-07-10 14:55:22', 'Python demo – GCN embedding anomaly score: 2.3 σ'],
+            'sms_bert'        => ['SMS', 'fas fa-sms', 'Phishing keyword heuristic flagged a message with 5 social-engineering indicators', 'High', 'SMS Phishing Keyword Heuristic', '2026-07-12 03:12:00', 'Python demo – keyword hits (threshold: 2)'],
+            'contacts_graph'  => ['Contacts', 'fas fa-address-book', 'Graph model found 4 orphaned contacts with no relational edges', 'Medium', 'Contact Graph Outlier Model', '2026-07-10 14:55:22', 'Python demo – graph degree anomaly: 2.3 σ'],
             'calls_isolation' => ['Call Log', 'fas fa-phone', 'Isolation Forest flagged an anomalous short incoming call at 03:47 AM from international number', 'High', 'Isolation Forest Outlier Detection', '2026-07-13 02:30:00', 'Python demo – iForest contamination: 0.05, score: -0.32'],
-            'apps_autoencoder' => ['Installed Apps', 'fas fa-th-large', 'Autoencoder detected app "com.security.fake" with abnormal manifest structure', 'High', 'Neural Autoencoder App Classifier', '2026-07-11 02:17:43', 'Python demo – reconstruction error: 4.2 σ above mean'],
-            'files_entropy'   => ['Files', 'fas fa-folder-open', 'High-entropy file (7.6 b/byte) found in /sdcard/Download – possible encrypted payload', 'Medium', 'File Entropy & Encryption Scanner', '2026-07-12 22:41:10', 'Python demo – Shannon entropy threshold: 7.2'],
-            'act_lstm'        => ['Activity', 'fas fa-heartbeat', 'LSTM prediction error spike at 22:00 – 87 app switches deviated from learned sequence pattern', 'Medium', 'LSTM Sequence Pattern Predictor', '2026-07-10 22:00:00', 'Python demo – prediction error: 3.1 σ above baseline'],
+            'apps_autoencoder' => ['Installed Apps', 'fas fa-th-large', 'PCA anomaly scanner detected app "com.security.fake" with abnormal manifest features', 'High', 'App Manifest Anomaly Scanner (PCA)', '2026-07-11 02:17:43', 'Python demo – PCA reconstruction error: 4.2 σ above mean'],
+            'files_entropy'   => ['Files', 'fas fa-folder-open', 'Suspicious file metadata (.enc) found in /sdcard/Download – possible encrypted payload', 'Medium', 'Suspicious File Metadata Scanner', '2026-07-12 22:41:10', 'Python demo – high-risk extension in Android data dir'],
+            'act_lstm'        => ['Activity', 'fas fa-heartbeat', 'MLP prediction error spike at 22:00 – 87 app switches deviated from learned activity rhythm', 'Medium', 'Activity Sequence Predictor (MLP)', '2026-07-10 22:00:00', 'Python demo – prediction error: 3.1 σ above baseline'],
             'dev_oneclass'    => ['Device Info', 'fas fa-microchip', 'One-Class SVM detected abnormal system state: CPU 97%, RAM 89%, battery 43 °C', 'High', 'One-Class SVM System-State Profiler', '2026-07-09 08:00:00', 'Python demo – nu=0.05, gamma=0.01, boundary distance: -0.41'],
         ];
 
@@ -3133,6 +3142,7 @@ class Mod_Anomalies extends Model
                 'categorySummary' => $categorySummary,
                 'topFindings'     => $topFindings,
                 'resultsUrl'      => $resultsUrl,
+                'analysis_counts' => $this->getAnalysisCounts($userId),
                 'securityAction'        => 'Anomaly Analysis Complete',
                 'securityDescription'   => 'Scheduled ML anomaly detection job finished. Results available for review.',
                 'securityStatus'        => 'success',

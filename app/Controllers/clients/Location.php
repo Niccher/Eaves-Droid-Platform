@@ -9,10 +9,18 @@ class Location extends BaseClientController
     use ResponseTrait;
 
     /**
-     * Display merged location + activity timeline.
+     * Redirect to simplified timeline.
      * Route: /location
      */
     public function index()
+    {
+        return redirect()->to(base_url('location'));
+    }
+
+    /**
+     * Display merged location + activity simplified timeline.
+     */
+    public function simplified()
     {
         $hasCoords = $this->request->getGet('has_coords') === '1';
 
@@ -32,42 +40,170 @@ class Location extends BaseClientController
             'has_coords_filter'  => $hasCoords,
         ]);
 
-        return $this->renderAppView('users/location_all', $data);
+        return $this->renderAppView('users/location_simplified', $data);
     }
 
     /**
-     * Legacy route - redirect to merged view.
-     * Route: /activities
+     * Display locations on Leaflet interactive map.
+     */
+    public function map()
+    {
+        $locations = $this->finderModel->get_locations($this->userId, $this->perPage, true);
+
+        $commonData = $this->getLocationCommonData('location');
+
+        $data = array_merge($commonData, [
+            'locations'         => $locations,
+            'pager'             => $this->finderModel->getPager(),
+            'totalLocations'    => $this->finderModel->get_count_Location($this->userId, true),
+            'current_type'      => 'map',
+        ]);
+
+        return $this->renderAppView('users/location_map', $data);
+    }
+
+    /**
+     * Display detailed activity recognition timeline & charts.
      */
     public function activities()
     {
-        return redirect()->to(base_url('location'));
+        $activities = $this->finderModel->get_activities($this->userId, $this->perPage);
+
+        $db = \Config\Database::connect();
+        $typesQuery = $db->table('tbl_activity')
+            ->select('activity_type, COUNT(*) as count')
+            ->where('owner_id', $this->userId)
+            ->groupBy('activity_type')
+            ->get()
+            ->getResultArray();
+
+        $avgBattery = $db->table('tbl_activity')
+            ->selectAvg('battery_level', 'avg_batt')
+            ->where('owner_id', $this->userId)
+            ->get()
+            ->getRowArray();
+
+        $commonData = $this->getLocationCommonData('activities');
+        $data = array_merge($commonData, [
+            'activities'         => $activities,
+            'pager'              => $this->finderModel->getPager(),
+            'totalActivities'    => $this->finderModel->get_count_Activity($this->userId),
+            'activity_stats'     => [
+                'types'          => $typesQuery,
+                'avg_battery'    => round($avgBattery['avg_batt'] ?? 0),
+            ],
+            'current_type'       => 'activities',
+        ]);
+
+        return $this->renderAppView('users/activity_details', $data);
     }
 
     /**
-     * Merge locations and activities into a single time-sorted array.
+     * Merge locations and activities into unified cards so a location and the
+     * activity captured at the same moment appear together.
+     *
+     * Pairing priority (each activity is consumed at most once):
+     *   1. exact `fetched_at` match  — the device records location + activity at
+     *      the same millisecond, so this is the precise "same time" join;
+     *   2. nearest activity within ±5 min of the location fix time;
+     *   3. same extraction batch (`extracted_at`) fallback — highest confidence.
+     *
+     * Unmatched activities still render as activity-only cards.
+     *
+     * @return array[] list of unified cards
      */
     private function mergeTimeline(array $locations, array $activities): array
     {
-        $locs = array_map(function ($loc) {
-            $loc['_type'] = 'location';
-            $loc['_sort_time'] = (int)($loc['activity_time'] ?? $loc['extracted_at'] ?? $loc['location_time'] ?? 0);
-            return $loc;
-        }, $locations);
+        $windowMs = 5 * 60 * 1000;
 
-        $acts = array_map(function ($act) {
-            $act['_type'] = 'activity';
-            $act['_sort_time'] = (int)($act['activity_time'] ?? $act['extracted_at'] ?? 0);
-            return $act;
-        }, $activities);
+        // Index activities by primary key so each is consumed at most once.
+        $actsById = [];
+        foreach ($activities as $act) {
+            $key = (string)($act['counter'] ?? '');
+            if ($key === '') {
+                $key = spl_object_hash((object)$act);
+            }
+            $actsById[$key] = $act;
+        }
+        $used = [];
 
-        $merged = array_merge($locs, $acts);
+        $cards = [];
+        foreach ($locations as $loc) {
+            $bestKey   = null;
+            $locFetched = (string)($loc['fetched_at'] ?? '');
+            $locTime   = (int)($loc['location_time'] ?? 0);
+            $locBatch  = (string)($loc['extracted_at'] ?? '');
 
-        usort($merged, function ($a, $b) {
-            return $b['_sort_time'] - $a['_sort_time'];
-        });
+            // Pass 1: exact same-moment match on fetched_at.
+            if ($bestKey === null && $locFetched !== '') {
+                foreach ($actsById as $key => $act) {
+                    if (isset($used[$key])) continue;
+                    if ((string)($act['fetched_at'] ?? '') === $locFetched) {
+                        $bestKey = $key;
+                        break;
+                    }
+                }
+            }
 
-        return $merged;
+            // Pass 2: nearest activity within the time window of the location fix.
+            if ($bestKey === null && $locTime > 0) {
+                $bestDist = PHP_INT_MAX;
+                foreach ($actsById as $key => $act) {
+                    if (isset($used[$key])) continue;
+                    $actTime = (int)($act['activity_time'] ?? 0);
+                    if ($actTime <= 0) continue;
+                    $dist = abs($actTime - $locTime);
+                    if ($dist <= $windowMs && $dist < $bestDist) {
+                        $bestDist = $dist;
+                        $bestKey  = $key;
+                    }
+                }
+            }
+
+            // Pass 3: same extraction batch fallback — highest confidence.
+            if ($bestKey === null && $locBatch !== '') {
+                $batchActs = [];
+                foreach ($actsById as $key => $act) {
+                    if (isset($used[$key])) continue;
+                    if ((string)($act['extracted_at'] ?? '') === $locBatch) {
+                        $batchActs[$key] = $act;
+                    }
+                }
+                if (!empty($batchActs)) {
+                    uasort($batchActs, function ($a, $b) {
+                        return (int)($b['confidence'] ?? 0) <=> (int)($a['confidence'] ?? 0);
+                    });
+                    $bestKey = array_key_first($batchActs);
+                }
+            }
+
+            $cards[] = [
+                'type'    => 'merged',
+                'loc'     => $loc,
+                'act'     => $bestKey !== null ? $actsById[$bestKey] : null,
+                'sort_ts' => (int)($loc['location_time'] ?? $loc['extracted_at'] ?? 0),
+            ];
+
+            if ($bestKey !== null) {
+                $used[$bestKey] = true;
+            }
+        }
+
+        // Activities that could not be attached to any location on this page
+        // still need to be visible — render them as activity-only cards.
+        foreach ($actsById as $key => $act) {
+            if (isset($used[$key])) continue;
+            $cards[] = [
+                'type'    => 'merged',
+                'loc'     => null,
+                'act'     => $act,
+                'sort_ts' => (int)($act['activity_time'] ?? $act['extracted_at'] ?? 0),
+            ];
+        }
+
+        usort($cards, fn($a, $b) => $b['sort_ts'] - $a['sort_ts']);
+
+        return $cards;
     }
 
     /**

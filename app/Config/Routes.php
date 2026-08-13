@@ -430,8 +430,10 @@ $routes->group('', [
     // =============================================================
     // Location Routes
     $routes->group('location', static function ($routes) {
-        $routes->get('/', 'Location::index', ['as' => 'location-all']);
-        $routes->get('(:num)', 'Location::index/$1');
+        $routes->get('/', 'Location::simplified', ['as' => 'location-all']);
+        $routes->get('map', 'Location::map', ['as' => 'location-map']);
+        $routes->get('map/(:num)', 'Location::map/$1');
+        $routes->get('(:num)', 'Location::simplified/$1');
         $routes->post('delete/(:num)', 'Location::delete/$1');
     });
 

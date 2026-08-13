@@ -209,11 +209,90 @@ class CorrelationService
 
     private function getSocialGraphSeeds(int $userId, int $limit): array
     {
-        return $this->db->table('tbl_sms')
-            ->select('address, COUNT(*) as count')
+        // Aggregate communication volume per contact from SMS + call logs,
+        // and map numbers to contact display names where available.
+        $sms = $this->db->table('tbl_sms')
+            ->select('address, COUNT(*) as sms')
             ->where('owner_id', $userId)
             ->groupBy('address')
             ->get()->getResultArray();
+
+        $calls = $this->db->table('tbl_logs')
+            ->select('phone_number, COUNT(*) as calls')
+            ->where('owner_id', $userId)
+            ->groupBy('phone_number')
+            ->get()->getResultArray();
+
+        $volumes = [];
+        foreach ($sms as $s) {
+            $num = (string)($s['address'] ?? '');
+            if ($num === '') continue;
+            $volumes[$num] = [
+                'number' => $num,
+                'name'   => $num,
+                'sms'    => (int)$s['sms'],
+                'calls'  => 0,
+            ];
+        }
+        foreach ($calls as $c) {
+            $num = (string)($c['phone_number'] ?? '');
+            if ($num === '') continue;
+            if (!isset($volumes[$num])) {
+                $volumes[$num] = ['number' => $num, 'name' => $num, 'sms' => 0, 'calls' => 0];
+            }
+            $volumes[$num]['calls'] = (int)$c['calls'];
+        }
+
+        if (empty($volumes)) {
+            return [];
+        }
+
+        // Resolve display names from the contacts table.
+        $numbers = array_keys($volumes);
+        $contacts = $this->db->table('tbl_contacts')
+            ->select('display_name, phone_numbers')
+            ->where('owner_id', $userId)
+            ->get()->getResultArray();
+
+        $nameByNumber = [];
+        foreach ($contacts as $ct) {
+            $nums = $ct['phone_numbers'] ?? '';
+            if (is_string($nums)) {
+                $decoded = json_decode($nums, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $n) {
+                        if (is_string($n) && $n !== '') $nameByNumber[$n] = $ct['display_name'] ?? $n;
+                    }
+                }
+            } elseif (is_array($nums)) {
+                foreach ($nums as $n) {
+                    if (is_string($n) && $n !== '') $nameByNumber[$n] = $ct['display_name'] ?? $n;
+                }
+            }
+        }
+
+        // Sort by combined volume, take top-N, and score on a 0-100 scale.
+        uasort($volumes, fn($a, $b) => ($b['sms'] + $b['calls']) <=> ($a['sms'] + $a['calls']));
+        $seeds = array_slice($volumes, 0, $limit, true);
+
+        $maxVol = 1;
+        foreach ($seeds as $s) {
+            $maxVol = max($maxVol, $s['sms'] + $s['calls']);
+        }
+
+        $result = [];
+        foreach ($seeds as $num => $s) {
+            $total = $s['sms'] + $s['calls'];
+            $result[] = [
+                'number' => $num,
+                'name'   => $nameByNumber[$num] ?? $s['name'],
+                'sms'    => $s['sms'],
+                'calls'  => $s['calls'],
+                'score'  => (int)round(($total / $maxVol) * 100),
+            ];
+        }
+
+        return $result;
     }
 
     private function getCoLocationPairs(int $userId, array $contactNumbers, int $limit): array
@@ -308,41 +387,71 @@ class CorrelationService
         }
 
         $appUsage = $this->db->table('tbl_app_usage')
-            ->select('package_name, foreground_time_ms, usage_date')
+            ->select('package_name, foreground_time_ms, last_time_used')
             ->where('owner_id', $userId)
-            ->where('usage_date >=', $cutoff)
+            ->where('last_time_used >=', strtotime($cutoff) * 1000)
             ->get()->getResultArray();
 
         $toleranceMs = $this->locationToleranceSec * 1000;
+
+        // Pre-sort app-usage timestamps once so per-contact lookups use
+        // binary search instead of O(contacts² × usage × timestamps).
+        $appTimes = [];
+        foreach ($appUsage as $app) {
+            $t = (int)($app['last_time_used'] ?? 0);
+            if ($t > 0) {
+                $appTimes[] = ['ts' => $t, 'pkg' => $app['package_name']];
+            }
+        }
+        usort($appTimes, fn($a, $b) => $a['ts'] <=> $b['ts']);
+        $appTimeStamps = array_column($appTimes, 'ts');
+
+        // Map a contact's interaction timestamps to the set of apps used
+        // within the tolerance window of each timestamp.
+        $contactApps = [];
+        foreach ($contactNumbers as $num) {
+            $times = $contactTimestamps[$num] ?? [];
+            if (empty($times)) {
+                $contactApps[$num] = [];
+                continue;
+            }
+            $apps = [];
+            foreach ($times as $t) {
+                $t = (int)$t;
+                // binary search for the first timestamp >= t - tolerance
+                $lo = 0;
+                $hi = count($appTimeStamps);
+                while ($lo < $hi) {
+                    $mid = intdiv($lo + $hi, 2);
+                    if ($appTimeStamps[$mid] < $t - $toleranceMs) {
+                        $lo = $mid + 1;
+                    } else {
+                        $hi = $mid;
+                    }
+                }
+                for ($i = $lo, $n = count($appTimeStamps); $i < $n; $i++) {
+                    if ($appTimeStamps[$i] > $t + $toleranceMs) {
+                        break;
+                    }
+                    $apps[$appTimes[$i]['pkg']] = true;
+                }
+            }
+            $contactApps[$num] = $apps;
+        }
 
         foreach ($contactNumbers as $numA) {
             foreach ($contactNumbers as $numB) {
                 if ($numA >= $numB) {
                     continue;
                 }
-                $timesA = $contactTimestamps[$numA] ?? [];
-                $timesB = $contactTimestamps[$numB] ?? [];
-                if (empty($timesA) || empty($timesB)) {
+                $appsA = $contactApps[$numA] ?? [];
+                $appsB = $contactApps[$numB] ?? [];
+                if (empty($appsA) || empty($appsB)) {
                     continue;
                 }
 
-                $sharedApps = [];
-                foreach ($timesA as $tA) {
-                    foreach ($appUsage as $app) {
-                        if (abs($tA - (int)$app['usage_date']) <= $toleranceMs) {
-                            $sharedApps[$app['package_name']] = ($sharedApps[$app['package_name']] ?? 0) + 1;
-                        }
-                    }
-                }
-                foreach ($timesB as $tB) {
-                    foreach ($appUsage as $app) {
-                        if (abs($tB - (int)$app['usage_date']) <= $toleranceMs) {
-                            $sharedApps[$app['package_name']] = ($sharedApps[$app['package_name']] ?? 0) + 1;
-                        }
-                    }
-                }
-
-                $coAppCount = count(array_filter($sharedApps, fn($c) => $c >= 2));
+                $shared = array_intersect_key($appsA, $appsB);
+                $coAppCount = count($shared);
                 if ($coAppCount > 0) {
                     $key = $numA . '|' . $numB;
                     $pairs[$key] = $coAppCount;

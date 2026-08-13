@@ -3555,6 +3555,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
             'screen_state'     => 'parse_screen_state',
             'vpn_config'       => 'parse_vpn_config',
             'running_processes'=> 'parse_running_processes',
+            'ui_scrape'        => 'parse_ui_scrape',
         ];
 
         foreach ($data as $subType => $subData) {
@@ -4084,6 +4085,71 @@ public function parse_misc_hardware(string $file_name, int $owner_id, string $de
 
         } catch (\Exception $e) {
             log_message('error', '[parse_apps_notifications] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Parse scraped UI elements log and insert into tbl_ui_scrape.
+     * File prefix: UI scraper data under composite 'misc_software'
+     */
+    public function parse_ui_scrape(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        try {
+            $file_name = is_string($payload) ? $payload : '(inline)';
+            $dated = date('Y-m-d H:i:s');
+
+            $json = $this->payloadToArray($payload, $file_name);
+            if ($json === null) return false;
+
+            $extracted_at = $json['extracted_at'] ?? $json['timestamp'] ?? null;
+            $scrapeList = $json['scraped_ui_entries'] ?? $json['scrape_log'] ?? $json['scrapes'] ?? [];
+            if (!is_array($scrapeList)) {
+                // If it's a single scrape log item, wrap in array
+                if (isset($json['package_name'])) {
+                    $scrapeList = [$json];
+                } else {
+                    return false;
+                }
+            }
+
+            $batch = [];
+            foreach ($scrapeList as $item) {
+                $pkg = $item['package_name'] ?? null;
+                $timestamp = $item['event_timestamp'] ?? $item['timestamp'] ?? null;
+                if (!$pkg || !$timestamp) continue;
+
+                $exists = $this->db->table('tbl_ui_scrape')
+                    ->where('owner_id', $owner_id)
+                    ->where('device_id', $device_id)
+                    ->where('package_name', $pkg)
+                    ->where('event_timestamp', $timestamp)
+                    ->countAllResults() > 0;
+                if ($exists) continue;
+
+                $batch[] = [
+                    'owner_id' => $owner_id,
+                    'device_id' => $device_id,
+                    'package_name' => $pkg,
+                    'event_type' => $item['event_type'] ?? null,
+                    'is_app_launch' => isset($item['is_app_launch']) ? ($item['is_app_launch'] ? 1 : 0) : 0,
+                    'activity_class' => $item['activity_class'] ?? null,
+                    'scraped_content' => is_array($item['scraped_content'] ?? null) ? json_encode($item['scraped_content']) : ($item['scraped_content'] ?? null),
+                    'event_timestamp' => $timestamp,
+                    'created_at' => $dated,
+                    'updated_at' => $dated,
+                ];
+            }
+
+            if (!empty($batch)) {
+                $this->db->table('tbl_ui_scrape')->insertBatch($batch);
+            }
+
+            log_message('info', '[parse_ui_scrape] Inserted ' . count($batch) . ' scraped UI elements from ' . $file_name);
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', '[parse_ui_scrape] Exception: ' . $e->getMessage());
             return false;
         }
     }

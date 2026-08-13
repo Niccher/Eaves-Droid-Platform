@@ -82,10 +82,10 @@
                             <h3 class="card-title text-bold"><i class="fab fa-android mr-2 text-success"></i>2. Install Android Client</h3>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small">Download the Eaves Droid APK and install it on your Android device (Android 8+). Launch the app, enter your verification token to authenticate, and grant the required permissions (calls, SMS, contacts, location, files, and usage access) to enable full data collection.</p>
+                            <p class="text-muted small">Download the Eaves Droid APK and install it on your Android device (Android 7.0+). Launch the app, enter your verification token to authenticate, and grant the required permissions (calls, SMS, contacts, location, files, and usage access) to enable full data collection.</p>
                             <div class="mt-2">
-                                <span class="badge badge-info">15MB APK</span>
-                                <span class="badge badge-warning">Android 8+</span>
+                                <span class="badge badge-info">Lightweight APK</span>
+                                <span class="badge badge-warning">Android 7.0+</span>
                                 <span class="badge badge-danger">Token Auth</span>
                             </div>
                         </div>
@@ -98,10 +98,10 @@
                             <h3 class="card-title text-bold"><i class="fas fa-database mr-2 text-info"></i>3. Data Collection & Sync</h3>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small">The Android client runs in the background collecting calls, SMS, contacts, locations, files, and activity data. All data is encrypted and uploaded over Wi-Fi to our backend, where Docker containers process and store it for analysis.</p>
+                            <p class="text-muted small">The Android client runs in the background collecting calls, SMS, contacts, locations, files, and activity data. All data is encrypted before upload and synced to your self-hosted backend, where Docker containers process and store it for analysis.</p>
                             <div class="mt-2">
                                 <span class="badge badge-success">Encrypted Uploads</span>
-                                <span class="badge badge-primary">Wi-Fi Only</span>
+                                <span class="badge badge-primary">Offline Queue</span>
                                 <span class="badge badge-dark">Docker Backend</span>
                             </div>
                         </div>
@@ -114,10 +114,10 @@
                             <h3 class="card-title text-bold"><i class="fas fa-brain mr-2 text-warning"></i>4. AI Analysis & Insights</h3>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small">PHP-ML algorithms analyze your data — KMeans and DBSCAN for clustering, NaiveBayes for classification, TF-IDF for text analysis, and Z-Score for anomaly detection. Results are compiled into a 15-section PDF report and displayed on an interactive dashboard with charts and tables.</p>
+                            <p class="text-muted small">PHP-ML runs KMeans and DBSCAN clustering plus TF-IDF and Z-Score analysis in the webapp, while the Python ML engine adds Isolation Forest, One-Class SVM, contact-graph outliers, activity prediction, phishing heuristics, and suspicious-file scanning. Results are compiled into a PDF intelligence report and displayed on an interactive dashboard with charts and tables.</p>
                             <div class="mt-2">
-                                <span class="badge badge-danger">KMeans & DBSCAN</span>
-                                <span class="badge badge-info">NaiveBayes & TF-IDF</span>
+                                <span class="badge badge-danger">PHP-ML &amp; Python ML</span>
+                                <span class="badge badge-info">Isolation Forest &amp; One-Class SVM</span>
                                 <span class="badge badge-success">15-Section PDF</span>
                             </div>
                         </div>

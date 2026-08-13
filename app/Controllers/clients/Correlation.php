@@ -312,24 +312,6 @@ class Correlation extends BaseClientController{
 
         // Financial Intelligence data
         $transactions = $this->finderModel->get_financial_transactions($this->userId);
-        
-        // Extract unique senders for the filter
-        $senders = [];
-        foreach ($transactions as $tx) {
-            $senders[] = $tx['sender'];
-        }
-        $data['senders'] = array_unique($senders);
-        asort($data['senders']);
-
-        // Handle filtering
-        $selectedSender = $this->request->getGet('sender');
-        $data['selected_sender'] = $selectedSender;
-
-        if ($selectedSender) {
-            $transactions = array_filter($transactions, function($tx) use ($selectedSender) {
-                return $tx['sender'] === $selectedSender;
-            });
-        }
 
         // Group by month and type for charts
         $spendingByMonth = [];

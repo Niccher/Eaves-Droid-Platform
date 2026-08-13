@@ -106,15 +106,15 @@ $algMeta = [
 
     // ── Python-only algorithms ──
 
-    'BERT Semantic Phishing Classifier' => [
-        'how'    => 'Uses a pre-trained transformer-based NLP model (BERT) to embed SMS message text into high-dimensional semantic vectors. A classifier head trained on phishing corpora scores each message for deceptive intent.',
-        'means'  => 'A high phishing score indicates the message uses social-engineering language patterns — urgency, impersonation of trusted entities, suspicious shortened URLs, or requests for credentials. These are hallmarks of targeted SMS phishing (smishing) attacks.',
+    'SMS Phishing Keyword Heuristic' => [
+        'how'    => 'Scans each SMS body against a curated list of phishing / social-engineering keyword indicators (urgency, impersonation, credential requests, unusual links). A message is flagged once it accumulates enough keyword hits.',
+        'means'  => 'A high score indicates the message uses language patterns typical of smishing attacks — urgency, impersonation of trusted entities, suspicious links, or credential requests. Because it is keyword-based, novel phrasings may slip through.',
         'icon'   => 'fas fa-brain',
         'color'  => 'danger',
     ],
-    'Graph Relation Outlier Model (GCN)' => [
-        'how'    => 'Builds a directed graph where contacts are nodes and communication frequency/direction are edge weights. A Graph Convolutional Network (GCN) learns embeddings for each node; nodes with high reconstruction error or anomalous degree centrality are flagged.',
-        'means'  => 'Contacts flagged by this model exhibit unusual relational patterns — they connect to many otherwise-isolated nodes, appear in unexpected hierarchical positions, or have no reciprocal communication. This can reveal synthetic contacts or covert command nodes in a social network.',
+    'Contact Graph Outlier Model' => [
+        'how'    => 'Builds a graph where contacts are nodes and shared phone-number prefixes / name similarity are edges. Contacts with degree 0 (orphaned) or unusually low connectivity are flagged.',
+        'means'  => 'Flagged contacts are structurally isolated from the rest of the network — they share no number or name relationship with anyone else. This can reveal synthetic contacts, newly-added numbers, or covert nodes in a social network.',
         'icon'   => 'fas fa-share-alt',
         'color'  => 'success',
     ],
@@ -124,21 +124,21 @@ $algMeta = [
         'icon'   => 'fas fa-tree',
         'color'  => 'warning',
     ],
-    'Neural Autoencoder App Classifier' => [
-        'how'    => 'Trains an undercomplete autoencoder on feature vectors extracted from APK manifest data (permissions, intents, services, receivers, providers). Apps with high reconstruction error have configurations far from the norm for their category.',
-        'means'  => 'A flagged app contains a combination of manifest declarations rarely seen in legitimate apps of its type — for example, a calculator requesting SMS permissions and a background locating service. This is a hallmark of repackaged trojans.',
+    'App Manifest Anomaly Scanner (PCA)' => [
+        'how'    => 'Extracts manifest-style features from each app (package-name patterns, sensitive permissions, name length) and fits a PCA model. Apps whose features are poorly reconstructed by the low-dimensional model have high reconstruction error and are flagged.',
+        'means'  => 'A flagged app combines declarations rarely seen in the rest of the fleet — for example, a calculator requesting SMS permissions and background location. PCA captures feature deviance without needing a curated signature list.',
         'icon'   => 'fas fa-network-wired',
         'color'  => 'info',
     ],
-    'File Entropy & Encryption Scanner' => [
-        'how'    => 'Reads file byte streams in chunks and computes Shannon entropy per chunk using H(x) = −Σ p(i)·log₂(p(i)). Files with average entropy > 0.85 bits across all chunks are flagged as encrypted/compressed. Metadata anomalies (hidden names, asset-dir location) compound severity.',
-        'means'  => 'High-entropy files packaged as media (images, audio) are a standard malware delivery technique — the payload is encrypted to evade signature scanning, then decrypted at runtime. Such files warrant immediate manual review.',
+    'Suspicious File Metadata Scanner' => [
+        'how'    => 'Flags files whose metadata (high-risk extension, location inside Android data directories, deep paths, hidden names, suspicious keywords) suggests encrypted payloads, ransomware artefacts, or hidden executables. Works on stored metadata only.',
+        'means'  => 'Encrypted or disguised payloads often use high-risk extensions in app-private directories. Because this runs on metadata alone, it cannot verify byte-level entropy — a file with raw content may warrant manual review.',
         'icon'   => 'fas fa-file-contract',
         'color'  => 'secondary',
     ],
-    'LSTM Sequence Pattern Predictor' => [
-        'how'    => 'A long short-term memory (LSTM) recurrent neural network is trained on chronologically ordered user interaction events. At inference, the model predicts the next event type and timestamp; a large prediction error (MSE > threshold) flags the transition as unexpected.',
-        'means'  => 'An unexpected interaction sequence — e.g. switching to an obscure settings menu at 2 AM, then immediately to the dialler — does not match the user\'s learned behaviour profile. This may indicate remote control by an attacker or automated spyware activity.',
+    'Activity Sequence Predictor (MLP)' => [
+        'how'    => 'Trains a small multi-layer perceptron (MLP) on chronologically ordered app-usage timestamps to model normal activity rhythms. At inference the model predicts the next usage time; a large prediction error flags the transition as unexpected.',
+        'means'  => 'An unexpected activity sequence — e.g. heavy usage at an atypical hour — does not match the user\'s learned behaviour profile. The MLP is a lightweight non-linear sequence predictor, not a recurrent LSTM network.',
         'icon'   => 'fas fa-chart-line',
         'color'  => 'danger',
     ],

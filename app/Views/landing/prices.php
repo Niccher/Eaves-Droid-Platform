@@ -90,7 +90,7 @@
                             <ul class="list-unstyled mb-4 text-left flex-grow-1">
                                 <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> Up to <?= $devices($plat, 'platinum') ?> connected devices</li>
                                 <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <?= $history($plat, 'platinum') ?> days of data history</li>
-                                <li class="mb-2 <?= $hasAlgo($plat, 'deep') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $hasAlgo($plat, 'deep') ? 'check text-success' : 'times' ?> mr-2"></i> All ML algorithms (deep learning)</li>
+                                <li class="mb-2 <?= $hasAlgo($plat, 'deep') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $hasAlgo($plat, 'deep') ? 'check text-success' : 'times' ?> mr-2"></i> All ML algorithms (engine detectors)</li>
                                 <li class="mb-2 <?= ($plat['alert_email'] ?? 0) || ($plat['alert_push'] ?? 0) ? '' : 'text-muted' ?>"><i class="fas fa-<?= (($plat['alert_email'] ?? 0) || ($plat['alert_push'] ?? 0)) ? 'check text-success' : 'times' ?> mr-2"></i> Real-time alerts (<?= $alertLine($plat) ?>)</li>
                                 <li class="mb-2 <?= $f($plat, 'risk_score') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($plat, 'risk_score') ? 'check text-success' : 'times' ?> mr-2"></i> Device risk score &amp; correlation</li>
                                 <li class="mb-2 <?= $f($plat, 'wellbeing') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($plat, 'wellbeing') ? 'check text-success' : 'times' ?> mr-2"></i> <?= $wellbeingLine($plat) ?> wellbeing trends</li>

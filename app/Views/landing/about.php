@@ -24,10 +24,10 @@
                                 <div class="col-md-8">
                                     <p class="text-muted" style="font-size: 1.1rem; line-height: 1.8;">
                                         <strong class="text-primary">Eaves Droid</strong> is a comprehensive mobile data intelligence platform
-                                        that collects Android device data via a native APK client, processes it with
-                                        <strong>PHP-ML</strong> machine learning algorithms, and presents actionable insights
-                                        through an interactive web dashboard. The entire stack is fully containerized with
-                                        <strong>Docker</strong> for seamless deployment and scalability.
+                                        that collects Android device data via a native APK client, processes it with a
+                                        <strong>two-engine ML stack</strong> (PHP-ML in the webapp, plus a dedicated Python ML
+                                        engine), and presents actionable insights through an interactive web dashboard. The
+                                        entire stack is fully containerized with <strong>Docker</strong> for seamless deployment.
                                     </p>
                                     <p class="text-muted" style="font-size: 1.1rem; line-height: 1.8;">
                                         From call logs and SMS messages to file metadata and app usage statistics —
@@ -62,8 +62,8 @@
                         <div class="card-body">
                             <i class="fab fa-android fa-3x text-primary mb-3"></i>
                             <h5 class="text-bold">Android Client</h5>
-                            <p class="text-muted small">Native APK data collector that extracts call logs, SMS, contacts, files, and app usage from Android devices with secure sync.</p>
-                            <span class="badge badge-primary">Kotlin / Java</span>
+                            <p class="text-muted small">Native APK data collector that extracts 60+ types of data from Android devices with secure, AES-encrypted sync.</p>
+                            <span class="badge badge-primary">Java 17</span>
                         </div>
                     </div>
                 </div>
@@ -74,7 +74,7 @@
                             <i class="fas fa-tachometer-alt fa-3x text-success mb-3"></i>
                             <h5 class="text-bold">Web Dashboard</h5>
                             <p class="text-muted small">CodeIgniter 4 + AdminLTE interface providing real-time visualizations, user management, and export capabilities.</p>
-                            <span class="badge badge-success">PHP 8 / CI4</span>
+                            <span class="badge badge-success">PHP 8.3 / CI4</span>
                         </div>
                     </div>
                 </div>
@@ -84,8 +84,8 @@
                         <div class="card-body">
                             <i class="fas fa-brain fa-3x text-info mb-3"></i>
                             <h5 class="text-bold">ML Engine</h5>
-                            <p class="text-muted small">PHP-ML algorithms including KMeans clustering, DBSCAN, NaiveBayes classification, TF-IDF vectorization, and Z-Score anomaly detection.</p>
-                            <span class="badge badge-info">PHP-ML</span>
+                            <p class="text-muted small">Python FastAPI service running 7 anomaly detectors — Isolation Forest, One-Class SVM, PCA app scanning, contact-graph outliers, activity prediction, phishing heuristics, and suspicious-file scanning.</p>
+                            <span class="badge badge-info">Python + scikit-learn</span>
                         </div>
                     </div>
                 </div>
@@ -95,8 +95,8 @@
                         <div class="card-body">
                             <i class="fab fa-docker fa-3x text-warning mb-3"></i>
                             <h5 class="text-bold">Docker Deployment</h5>
-                            <p class="text-muted small">Fully containerized via docker-compose with Apache web server and MariaDB database for reproducible production environments.</p>
-                            <span class="badge badge-warning text-white">Apache + MariaDB</span>
+                            <p class="text-muted small">Fully containerized via docker-compose with Apache + PHP 8.3, MySQL 8.4, and the Python ML engine for reproducible production environments.</p>
+                            <span class="badge badge-warning text-white">Apache + MySQL 8.4</span>
                         </div>
                     </div>
                 </div>
@@ -202,12 +202,14 @@
                 <div class="col-12">
                     <div class="card card-outline card-warning shadow-sm">
                         <div class="card-body text-center py-4">
-                            <span class="badge badge-primary px-3 py-2 m-1" style="font-size: 0.95rem;">PHP 8</span>
+                            <span class="badge badge-primary px-3 py-2 m-1" style="font-size: 0.95rem;">PHP 8.3</span>
                             <span class="badge badge-success px-3 py-2 m-1" style="font-size: 0.95rem;">CodeIgniter 4</span>
-                            <span class="badge badge-info px-3 py-2 m-1" style="font-size: 0.95rem;">MariaDB</span>
+                            <span class="badge badge-info px-3 py-2 m-1" style="font-size: 0.95rem;">MySQL 8.4</span>
                             <span class="badge badge-secondary px-3 py-2 m-1" style="font-size: 0.95rem;">Apache</span>
                             <span class="badge badge-warning text-white px-3 py-2 m-1" style="font-size: 0.95rem;">Docker</span>
                             <span class="badge badge-danger px-3 py-2 m-1" style="font-size: 0.95rem;">PHP-ML</span>
+                            <span class="badge badge-dark px-3 py-2 m-1" style="font-size: 0.95rem;">Python / FastAPI</span>
+                            <span class="badge badge-info px-3 py-2 m-1" style="font-size: 0.95rem;">scikit-learn</span>
                             <span class="badge badge-dark px-3 py-2 m-1" style="font-size: 0.95rem;">AdminLTE</span>
                             <span class="badge badge-primary px-3 py-2 m-1" style="font-size: 0.95rem;">Bootstrap 4</span>
                             <span class="badge badge-success px-3 py-2 m-1" style="font-size: 0.95rem;">FontAwesome</span>

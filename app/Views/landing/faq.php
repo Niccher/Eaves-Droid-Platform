@@ -62,7 +62,7 @@
                         </div>
                         <div id="collapseGenTwo" class="collapse" data-parent="#faqGeneral">
                             <div class="card-body">
-                                <p class="mb-0">Yes. Eaves Droid is completely free for personal use and is released as open-source software. You can use all features, including the Android client, web dashboard, and ML analysis engine, without any cost or subscription.</p>
+                                <p class="mb-0">Eaves Droid is open-source and self-hostable at no cost. The <strong>Free plan</strong> covers one device with core analysis. Paid tiers (<strong>Gold</strong> and <strong>Platinum</strong>) unlock more devices, longer history, and the full set of ML-engine detectors — see the <a href="<?= base_url('pricing') ?>" class="text-primary">pricing page</a> for details.</p>
                             </div>
                         </div>
                     </div>
@@ -164,7 +164,7 @@
                         </div>
                         <div id="collapseAndThree" class="collapse" data-parent="#faqAndroid">
                             <div class="card-body">
-                                <p class="mb-0">No. Eaves Droid is optimized for minimal power consumption. It uses Android's <code>JobScheduler</code> to batch data collection during idle periods, Wi-Fi-optimized uploads to avoid mobile data, and minimal CPU usage in the background. Most users report no noticeable impact on battery life.</p>
+                                <p class="mb-0">No. Eaves Droid is optimized for minimal power consumption. It uses Android's <code>WorkManager</code> to schedule periodic data collection, batches uploads to avoid constant network wake-ups, and keeps CPU usage low in the background. Most users report no noticeable impact on battery life.</p>
                             </div>
                         </div>
                     </div>
@@ -179,7 +179,7 @@
                         </div>
                         <div id="collapseAndFour" class="collapse" data-parent="#faqAndroid">
                             <div class="card-body">
-                                <p class="mb-0">Yes. All data collected by the Android client is encrypted using <strong>AES-256</strong> before it is uploaded to the server. This ensures that even if the device is compromised, your collected data remains secure and unreadable without the encryption key.</p>
+                                <p class="mb-0">Yes. All data collected by the Android client is encrypted with AES using a user-supplied key before it leaves the device. This ensures that even if the device is compromised, your collected data remains unreadable without the encryption key. You self-host the backend, so no third party stores your data.</p>
                             </div>
                         </div>
                     </div>
@@ -202,19 +202,21 @@
                         </div>
                         <div id="collapseMlOne" class="collapse show" data-parent="#faqMl">
                             <div class="card-body">
-                                <p>Eaves Droid leverages PHP-ML to run several algorithms for deep data analysis:</p>
+                                <p>Eaves Droid runs a two-engine analysis stack. The webapp uses <strong>PHP-ML</strong> (KMeans clustering, DBSCAN, TF-IDF, Z-Score), and the dedicated <strong>Python ML engine</strong> adds seven detectors:</p>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <ul class="mb-0">
-                                            <li><strong>KMeans</strong> — clusters call and SMS patterns</li>
-                                            <li><strong>DBSCAN</strong> — detects anomalies in behavior</li>
-                                            <li><strong>NaiveBayes</strong> — classifies message content</li>
+                                            <li><strong>Isolation Forest</strong> — call-log anomalies</li>
+                                            <li><strong>One-Class SVM</strong> — system-state profiler</li>
+                                            <li><strong>Contact Graph Outlier</strong> — relationship network</li>
+                                            <li><strong>PCA Anomaly Scanner</strong> — app manifest checks</li>
                                         </ul>
                                     </div>
                                     <div class="col-md-6">
                                         <ul class="mb-0">
-                                            <li><strong>TF-IDF</strong> — analyzes text frequency and relevance</li>
-                                            <li><strong>Z-Score</strong> — identifies outlier data points</li>
+                                            <li><strong>SMS Phishing Heuristic</strong> — social-engineering language</li>
+                                            <li><strong>Activity Sequence Predictor</strong> — usage-rhythm deviations</li>
+                                            <li><strong>Suspicious File Scanner</strong> — hidden/encrypted payloads</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -270,7 +272,7 @@
                         </div>
                         <div id="collapseDocOne" class="collapse show" data-parent="#faqDocker">
                             <div class="card-body">
-                                <p class="mb-0">Yes. Eaves Droid provides a production-ready Docker image. Deployment is as simple as running <code>docker-compose up -d</code> in the project root. The image includes all necessary dependencies and services, giving you full control over your instance.</p>
+                                <p class="mb-0">Yes. Eaves Droid provides a production-ready Docker image. Deployment is as simple as running <code>docker compose up --build -d</code> in the parent directory of the three repos. The stack includes all necessary dependencies and services, giving you full control over your instance.</p>
                             </div>
                         </div>
                     </div>
@@ -287,9 +289,9 @@
                             <div class="card-body">
                                 <p>The Docker stack includes everything needed to run Eaves Droid:</p>
                                 <ul class="mb-0">
-                                    <li><strong>Apache + PHP 8</strong> — serves the web dashboard and API</li>
-                                    <li><strong>MariaDB</strong> — relational database for all collected data</li>
-                                    <li><strong>Background workers</strong> — process data analysis and report generation asynchronously</li>
+                                    <li><strong>Apache + PHP 8.3</strong> — serves the web dashboard and API</li>
+                                    <li><strong>MySQL 8.4</strong> — relational database for all collected data</li>
+                                    <li><strong>Python ML engine</strong> — FastAPI service running the 7 anomaly detectors</li>
                                 </ul>
                             </div>
                         </div>
@@ -305,7 +307,7 @@
                         </div>
                         <div id="collapseDocThree" class="collapse" data-parent="#faqDocker">
                             <div class="card-body">
-                                <p class="mb-0">Yes. If you prefer not to use Docker, Eaves Droid can be deployed natively on any server running <strong>PHP 8</strong> with <strong>MariaDB</strong> and <strong>Composer</strong>. Clone the repository, run <code>composer install</code>, configure your <code>.env</code> file, and set up the database migrations.</p>
+                                <p class="mb-0">Yes. If you prefer not to use Docker, Eaves Droid can be deployed natively on any server running <strong>PHP 8.3</strong> with <strong>MySQL 8.4</strong> and <strong>Composer</strong>. Clone the repository, run <code>composer install</code>, configure your <code>.env</code> file, and set up the database migrations. The Python ML engine can be run separately with <code>uvicorn app.main:app</code>.</p>
                             </div>
                         </div>
                     </div>
@@ -330,9 +332,9 @@
                             <div class="card-body">
                                 <p>Eaves Droid uses multiple layers of protection:</p>
                                 <ul class="mb-0">
-                                    <li><strong>In transit:</strong> All communication uses HTTPS/TLS encryption</li>
-                                    <li><strong>At rest:</strong> Data is stored using AES-256 encryption on the server</li>
-                                    <li><strong>On device:</strong> Data is encrypted before leaving the Android client</li>
+                                    <li><strong>In transit:</strong> uploads are encrypted with AES (user-supplied key) before leaving the device; use HTTPS/TLS on your server for transport encryption</li>
+                                    <li><strong>On device:</strong> data is encrypted before leaving the Android client</li>
+                                    <li><strong>Self-hosted:</strong> data is stored on infrastructure you control — never sent to third parties</li>
                                 </ul>
                             </div>
                         </div>

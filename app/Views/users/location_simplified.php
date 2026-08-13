@@ -159,7 +159,13 @@ function actMeta(array $e): array {
           </div>
         </div>
         <div class="col-lg-4 text-right mt-2 mt-lg-0">
-          <button class="btn btn-success btn-sm" id="pdfExport">
+          <div class="btn-group btn-group-sm mb-2" role="group">
+            <a href="<?= base_url('location') ?>" class="btn btn-primary"><i class="fas fa-route mr-1"></i> Timeline</a>
+            <a href="<?= base_url('location/map') ?>" class="btn btn-outline-primary"><i class="fas fa-map-marked-alt mr-1"></i> Map View</a>
+            <a href="<?= base_url('activities') ?>" class="btn btn-outline-primary"><i class="fas fa-running mr-1"></i> Activities</a>
+          </div>
+          &nbsp;&nbsp;
+          <button class="btn btn-success btn-sm mb-2" id="pdfExport">
             <i class="fas fa-file-pdf mr-1"></i>Export PDF
           </button>
         </div>

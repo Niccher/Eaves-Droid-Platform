@@ -1,9 +1,10 @@
 <div class="content-wrapper">
+    <!-- Page Header -->
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row mb-2">
+            <div class="row mb-2 align-items-center">
                 <div class="col-sm-6">
-                    <h1><i class="fas fa-mobile-alt text-primary mr-1"></i> Remote Device Management</h1>
+                    <h1><i class="fas fa-mobile-alt text-primary mr-2"></i>Remote Device Management</h1>
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
@@ -18,24 +19,28 @@
     <section class="content">
         <div class="container-fluid">
 
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Remote Device Console</h5>
-                        <p class="mb-0 small text-muted">Send commands to connected Android devices remotely — trigger data syncs, configure settings, push notifications, and view device status.</p>
-                    </div>
-                </div>
+            <!-- Page Callout -->
+            <div class="callout callout-info">
+                <h5><i class="fas fa-satellite-dish mr-2"></i>Remote Device Control Console</h5>
+                <p class="mb-0 text-muted small">
+                    Send push commands to connected Android client devices to extract logs, change configurations, query status,
+                    or manage the app installation lifecycle. Select a target user below, then choose a command.
+                </p>
             </div>
 
-            <div class="card card-info shadow-sm">
+            <!-- Target Selection Card -->
+            <div class="card card-outline card-info shadow-sm mb-4">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-users mr-2"></i>Target Selection</h3>
+                    <h3 class="card-title font-weight-bold">
+                        <i class="fas fa-users text-info mr-2"></i>Target Selection
+                    </h3>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row align-items-end">
                         <div class="col-md-8">
-                            <label><i class="fas fa-user mr-1"></i> Apply to</label>
+                            <label class="font-weight-600">
+                                <i class="fas fa-user text-muted mr-1"></i> Apply to Device(s)
+                            </label>
                             <select class="form-control" id="targetUserId">
                                 <option value="all">All Users (Broadcast to all registered devices)</option>
                                 <?php if (!empty($users)): ?>
@@ -44,15 +49,17 @@
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
-                            <small class="text-muted">Choose a specific user or broadcast the same command to all devices.</small>
+                            <small class="text-muted d-block mt-1">Choose a specific user or broadcast the same command to all active devices.</small>
                         </div>
-                        <div class="col-md-4">
-                            <label><i class="fas fa-info-circle mr-1"></i> Status</label>
-                            <div class="form-control bg-light" id="currentTargetDisplay" readonly>
+                        <div class="col-md-4 mt-3 mt-md-0">
+                            <label class="font-weight-600">
+                                <i class="fas fa-dot-circle text-muted mr-1"></i> Selection Status
+                            </label>
+                            <div class="form-control bg-light" id="currentTargetDisplay" style="min-height:38px; display:flex; align-items:center;">
                                 <?php if (empty($users)): ?>
-                                    <span class="text-warning">No registered devices found.</span>
+                                    <span class="text-warning font-weight-600"><i class="fas fa-exclamation-triangle mr-1"></i> No registered devices</span>
                                 <?php else: ?>
-                                    <span class="text-success"><i class="fas fa-check-circle mr-1"></i> <?= count($users) ?> user(s) available</span>
+                                    <span class="text-success font-weight-600"><i class="fas fa-check-circle mr-1"></i> <?= count($users) ?> user(s) available</span>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -60,213 +67,213 @@
                 </div>
             </div>
 
-            <ul class="nav nav-tabs" id="adminRemoteTabs">
-                <li class="nav-item">
-                    <a class="nav-link active" data-toggle="tab" href="#tab-fetch"><i class="fas fa-database mr-2"></i>Data Fetch</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-mgmt"><i class="fas fa-cogs mr-2"></i>Device Management</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-perms"><i class="fas fa-shield-alt mr-2"></i>Permissions</a>
-                </li>
-            </ul>
+            <!-- Main Tab Card -->
+            <div class="card card-primary card-outline shadow-sm">
+                <div class="card-header p-0 pt-1 border-bottom-0">
+                    <ul class="nav nav-tabs" id="adminRemoteTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-toggle="tab" href="#tab-fetch" role="tab">
+                                <i class="fas fa-database mr-1"></i> Data Fetch
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#tab-mgmt" role="tab">
+                                <i class="fas fa-cogs mr-1"></i> Device Management
+                            </a>
+                        </li>
 
-            <div class="tab-content border border-top-0 p-3 bg-white shadow-sm">
-                <!-- DATA FETCH -->
-                <div class="tab-pane fade show active" id="tab-fetch">
-                    <div class="alert alert-info">Commands fetch data from the selected user's device(s). Each device must be online to receive commands.</div>
-                    <div class="row text-center" id="admin-fetch-grid">
-                        <?php
-                        $fetchCmds = [
-                            ['id' => 'sms','label'=>'Fetch SMS','icon'=>'fa-sms','color'=>'#007bff','desc'=>'All SMS messages'],
-                            ['id' => 'calls','label'=>'Call Logs','icon'=>'fa-phone-alt','color'=>'#28a745','desc'=>'Full history'],
-                            ['id' => 'contacts','label'=>'Contacts','icon'=>'fa-address-book','color'=>'#17a2b8','desc'=>'Full contact list'],
-                            ['id' => 'search_data','label'=>'Keyword Search','icon'=>'fa-search','color'=>'#00acc1','desc'=>'Search SMS/Call data'],
-                            ['id' => 'capture_photo','label'=>'Camera Snap','icon'=>'fa-camera','color'=>'#d81b60','desc'=>'Remote photo'],
-                            ['id' => 'record_audio','label'=>'Ambient Audio','icon'=>'fa-microphone','color'=>'#ff8f00','desc'=>'Record audio'],
-                            ['id' => 'files','label'=>'File List','icon'=>'fa-file-alt','color'=>'#20c997','desc'=>'Recent files'],
-                            ['id' => 'fetch_file','label'=>'Targeted File','icon'=>'fa-file-download','color'=>'#00897b','desc'=>'Fetch specific file'],
-                            ['id' => 'location','label'=>'GPS Location','icon'=>'fa-map-marker-alt','color'=>'#dc3545','desc'=>'Precise location'],
-                            ['id' => 'start_tracking','label'=>'Live Tracking','icon'=>'fa-route','color'=>'#e53935','desc'=>'Real-time GPS'],
-                            ['id' => 'context','label'=>'Context','icon'=>'fa-walking','color'=>'#e83e8c','desc'=>'Motion & state'],
-                            ['id' => 'apps','label'=>'Apps List','icon'=>'fa-th-large','color'=>'#6f42c1','desc'=>'Installed apps'],
-                            ['id' => 'usage','label'=>'App Usage','icon'=>'fa-chart-pie','color'=>'#6610f2','desc'=>'Screen-time stats'],
-                            ['id' => 'notifications','label'=>'Alerts','icon'=>'fa-bell','color'=>'#ffc107','desc'=>'Notifications'],
-                            ['id' => 'device_info','label'=>'Device Info','icon'=>'fa-info-circle','color'=>'#6c757d','desc'=>'Hardware & build'],
-                            ['id' => 'sensors','label'=>'Sensors','icon'=>'fa-microchip','color'=>'#117a8b','desc'=>'Sensor profile'],
-                            ['id' => 'network','label'=>'Network','icon'=>'fa-wifi','color'=>'#0056b3','desc'=>'WiFi & connection'],
-                            ['id' => 'bluetooth','label'=>'Bluetooth','icon'=>'fab fa-bluetooth-b','color'=>'#4e73df','desc'=>'Nearby devices'],
-                            ['id' => 'calendar','label'=>'Calendar','icon'=>'fa-calendar-alt','color'=>'#fd7e14','desc'=>'Events'],
-                            ['id' => 'accounts','label'=>'Accounts','icon'=>'fa-user-circle','color'=>'#343a40','desc'=>'System accounts'],
-                            ['id' => 'beep','label'=>'Test Beep','icon'=>'fa-volume-up','color'=>'#8e44ad','desc'=>'Play beep'],
-                            ['id' => 'all','label'=>'Sync All','icon'=>'fa-sync-alt','color'=>'#b21f2d','desc'=>'Full extraction'],
-                        ];
-                        foreach ($fetchCmds as $c):
-                        ?>
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-4">
-                            <button class="btn btn-block btn-admin-fetch p-3 shadow-sm border h-100 d-flex flex-column align-items-center justify-content-center" data-cmd="<?= $c['id'] ?>" style="border-radius:12px;background:#fff;">
-                                <div class="mb-2" style="color:<?= $c['color'] ?>;font-size:2rem;"><i class="fas <?= $c['icon'] ?>"></i></div>
-                                <h6 class="font-weight-bold mb-1 text-dark"><?= $c['label'] ?></h6>
-                                <small class="text-muted d-none d-sm-block"><?= $c['desc'] ?></small>
-                            </button>
+                    </ul>
+                </div>
+
+                <div class="card-body">
+                    <div class="tab-content">
+
+                        <!-- ====================== TAB 1: DATA FETCH ====================== -->
+                        <div class="tab-pane fade show active" id="tab-fetch" role="tabpanel">
+                            <div class="alert alert-light border-left-primary border mb-4">
+                                <i class="fas fa-info-circle text-primary mr-2"></i>
+                                Commands fetch telemetry and forensic data from the selected user's device(s). Each device must be online to receive commands.
+                            </div>
+                            <div class="row" id="admin-fetch-grid">
+                                <?php
+                                $fetchCmds = [
+                                    ['id' => 'sms',           'label' => 'Fetch SMS',      'icon' => 'fa-sms',            'color' => '#007bff', 'desc' => 'All SMS messages'],
+                                    ['id' => 'calls',         'label' => 'Call Logs',      'icon' => 'fa-phone-alt',      'color' => '#28a745', 'desc' => 'Full call history'],
+                                    ['id' => 'contacts',      'label' => 'Contacts',       'icon' => 'fa-address-book',   'color' => '#17a2b8', 'desc' => 'Full contact list'],
+                                    ['id' => 'search_data',   'label' => 'Keyword Search', 'icon' => 'fa-search',         'color' => '#00acc1', 'desc' => 'Search SMS/Call data'],
+                                    ['id' => 'capture_photo', 'label' => 'Camera Snap',    'icon' => 'fa-camera',         'color' => '#d81b60', 'desc' => 'Remote photo capture'],
+                                    ['id' => 'record_audio',  'label' => 'Ambient Audio',  'icon' => 'fa-microphone',     'color' => '#ff8f00', 'desc' => 'Record environment audio'],
+                                    ['id' => 'files',         'label' => 'File List',      'icon' => 'fa-file-alt',       'color' => '#20c997', 'desc' => 'Recent files'],
+                                    ['id' => 'fetch_file',    'label' => 'Targeted File',  'icon' => 'fa-file-download',  'color' => '#00897b', 'desc' => 'Fetch specific file'],
+                                    ['id' => 'location',      'label' => 'GPS Location',   'icon' => 'fa-map-marker-alt', 'color' => '#dc3545', 'desc' => 'Precise location'],
+                                    ['id' => 'start_tracking','label' => 'Live Tracking',  'icon' => 'fa-route',          'color' => '#e53935', 'desc' => 'Real-time GPS'],
+                                    ['id' => 'context',       'label' => 'Context',        'icon' => 'fa-walking',        'color' => '#e83e8c', 'desc' => 'Motion & state'],
+                                    ['id' => 'apps',          'label' => 'Apps List',      'icon' => 'fa-th-large',       'color' => '#6f42c1', 'desc' => 'Installed apps'],
+                                    ['id' => 'usage',         'label' => 'App Usage',      'icon' => 'fa-chart-pie',      'color' => '#6610f2', 'desc' => 'Screen-time stats'],
+                                    ['id' => 'notifications', 'label' => 'Notifications',  'icon' => 'fa-bell',           'color' => '#ffc107', 'desc' => 'Status bar alerts'],
+                                    ['id' => 'device_info',   'label' => 'Device Info',    'icon' => 'fa-info-circle',    'color' => '#6c757d', 'desc' => 'Hardware & build'],
+                                    ['id' => 'misc_hardware', 'label' => 'Misc Hardware',  'icon' => 'fa-microchip',      'color' => '#117a8b', 'desc' => 'Sensors, network, Bluetooth'],
+                                    ['id' => 'misc_software', 'label' => 'Misc Software',  'icon' => 'fa-calendar-alt',   'color' => '#fd7e14', 'desc' => 'Calendar, locale, accounts'],
+                                    ['id' => 'beep',          'label' => 'Test Beep',      'icon' => 'fa-volume-up',      'color' => '#8e44ad', 'desc' => 'Play a beep sound'],
+                                    ['id' => 'all',           'label' => 'Sync All',       'icon' => 'fa-sync-alt',       'color' => '#b21f2d', 'desc' => 'Full extraction'],
+                                ];
+                                foreach ($fetchCmds as $c):
+                                ?>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3 text-center">
+                                    <button class="btn btn-block btn-admin-fetch p-3 shadow-sm border h-100 d-flex flex-column align-items-center justify-content-center"
+                                            data-cmd="<?= $c['id'] ?>"
+                                            style="border-radius:10px; background:#fff; transition:all 0.25s ease-in-out; cursor:pointer;">
+                                        <div class="mb-2" style="color:<?= $c['color'] ?>; font-size:1.9rem; width:52px; height:52px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.03); border-radius:50%;">
+                                            <i class="fas <?= $c['icon'] ?>"></i>
+                                        </div>
+                                        <span class="font-weight-bold text-dark mb-1" style="font-size:13px;"><?= $c['label'] ?></span>
+                                        <small class="text-muted d-none d-sm-block" style="font-size:10.5px; line-height:1.3;"><?= $c['desc'] ?></small>
+                                    </button>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
-                        <?php endforeach; ?>
+
+                        <!-- ====================== TAB 2: DEVICE MANAGEMENT ====================== -->
+                        <div class="tab-pane fade" id="tab-mgmt" role="tabpanel">
+                            <div class="alert alert-warning mb-4">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                <strong>Critical Operations:</strong> These commands force irreversible actions on client devices. Confirm target inputs before proceeding.
+                            </div>
+                            <div class="row">
+
+                                <!-- Reset App -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card card-outline card-warning h-100 shadow-sm">
+                                        <div class="card-body text-center p-4">
+                                            <div class="mb-3"><i class="fas fa-undo fa-3x text-warning"></i></div>
+                                            <h5 class="card-title text-warning font-weight-bold">Reset App</h5>
+                                            <p class="text-muted small mb-4">Restores default app icon/disguise, resets emergency access launch code to factory default.</p>
+                                            <button class="btn btn-warning btn-block font-weight-bold btn-admin-mgmt" data-cmd="reset_app">
+                                                <i class="fas fa-undo mr-1"></i> Execute Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Deactivate App -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card card-outline card-secondary h-100 shadow-sm">
+                                        <div class="card-body text-center p-4">
+                                            <div class="mb-3"><i class="fas fa-eye-slash fa-3x text-secondary"></i></div>
+                                            <h5 class="card-title text-secondary font-weight-bold">Deactivate App</h5>
+                                            <p class="text-muted small mb-4">Replaces the active user interface with a dummy screen lock. Suspends extraction logging.</p>
+                                            <button class="btn btn-secondary btn-block font-weight-bold btn-admin-mgmt" data-cmd="deactivate">
+                                                <i class="fas fa-eye-slash mr-1"></i> Deactivate Screen
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Logout User -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card card-outline card-info h-100 shadow-sm">
+                                        <div class="card-body text-center p-4">
+                                            <div class="mb-3"><i class="fas fa-sign-out-alt fa-3x text-info"></i></div>
+                                            <h5 class="card-title text-info font-weight-bold">Logout User</h5>
+                                            <p class="text-muted small mb-4">Clears authorization tokens on the device immediately and stops all periodic background services.</p>
+                                            <button class="btn btn-info btn-block font-weight-bold btn-admin-mgmt" data-cmd="logout">
+                                                <i class="fas fa-sign-out-alt mr-1"></i> Force Logout
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Uninstall Keep Data -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card card-outline card-danger h-100 shadow-sm">
+                                        <div class="card-body text-center p-4">
+                                            <div class="mb-3"><i class="fas fa-archive fa-3x text-danger"></i></div>
+                                            <h5 class="card-title text-danger font-weight-bold">Uninstall (Keep Data)</h5>
+                                            <p class="text-muted small mb-4">Backs up unsaved records, then opens system uninstallation wizard. Data remains in cloud logs.</p>
+                                            <button class="btn btn-danger btn-block font-weight-bold btn-admin-mgmt" data-cmd="uninstall_preserve">
+                                                <i class="fas fa-archive mr-1"></i> Uninstall &amp; Preserve
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Uninstall Wipe All -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card card-outline card-dark h-100 shadow-sm">
+                                        <div class="card-body text-center p-4">
+                                            <div class="mb-3"><i class="fas fa-trash-alt fa-3x text-dark"></i></div>
+                                            <h5 class="card-title font-weight-bold">Uninstall (Wipe All)</h5>
+                                            <p class="text-muted small mb-4">Clears offline SQLite databases, purges backups, and triggers complete system package removal.</p>
+                                            <button class="btn btn-dark btn-block font-weight-bold btn-admin-mgmt" data-cmd="uninstall_wipe">
+                                                <i class="fas fa-trash-alt mr-1"></i> Uninstall &amp; Wipe All
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div><!-- /.row -->
+                        </div><!-- /.tab-pane#tab-mgmt -->
+
+
+
+                    </div><!-- /.tab-content -->
+                </div><!-- /.card-body -->
+
+                <div class="card-footer bg-light">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle text-muted mr-2"></i>
+                        <small class="text-muted">Commands are sent via Firebase Cloud Messaging (FCM). Devices must be online to receive them. Some actions require Device Admin privileges.</small>
                     </div>
                 </div>
 
-                <!-- DEVICE MANAGEMENT -->
-                <div class="tab-pane fade" id="tab-mgmt">
-                    <div class="alert alert-info"><i class="fas fa-info-circle mr-2"></i><strong>Note:</strong> These commands make permanent changes. Confirm each action before proceeding.</div>
-                    <div class="row">
-                        <div class="col-lg-4 mb-4">
-                            <div class="card h-100 border border-warning">
-                                <div class="card-body text-center">
-                                    <div class="mb-3"><i class="fas fa-undo fa-3x text-warning"></i></div>
-                                    <h5 class="card-title text-warning font-weight-bold">Reset App</h5>
-                                    <p class="text-muted small">Restore default icon, clear stealth disguise, reset launch codes.</p>
-                                    <button class="btn btn-warning btn-block btn-admin-mgmt" data-cmd="reset_app">Reset App</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 mb-4">
-                            <div class="card h-100 border border-secondary">
-                                <div class="card-body text-center">
-                                    <div class="mb-3"><i class="fas fa-eye-slash fa-3x text-secondary"></i></div>
-                                    <h5 class="card-title text-secondary font-weight-bold">Deactivate App</h5>
-                                    <p class="text-muted small">Replace UI with static dummy screen.</p>
-                                    <button class="btn btn-secondary btn-block btn-admin-mgmt" data-cmd="deactivate">Deactivate</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 mb-4">
-                            <div class="card h-100 border border-info">
-                                <div class="card-body text-center">
-                                    <div class="mb-3"><i class="fas fa-sign-out-alt fa-3x text-info"></i></div>
-                                    <h5 class="card-title text-info font-weight-bold">Logout User</h5>
-                                    <p class="text-muted small">Clear auth token, stop sync, return to login.</p>
-                                    <button class="btn btn-info btn-block btn-admin-mgmt" data-cmd="logout">Logout</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 mb-4">
-                            <div class="card h-100 border border-danger">
-                                <div class="card-body text-center">
-                                    <div class="mb-3"><i class="fas fa-archive fa-3x text-danger"></i></div>
-                                    <h5 class="card-title text-danger font-weight-bold">Uninstall (Keep Data)</h5>
-                                    <p class="text-muted small">Back up data, uninstall. Reinstall restores config.</p>
-                                    <button class="btn btn-danger btn-block btn-admin-mgmt" data-cmd="uninstall_preserve">Uninstall (Keep Data)</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 mb-4">
-                            <div class="card h-100 border border-dark">
-                                <div class="card-body text-center">
-                                    <div class="mb-3"><i class="fas fa-trash-alt fa-3x text-dark"></i></div>
-                                    <h5 class="card-title">Uninstall (Wipe All)</h5>
-                                    <p class="text-muted small">Remove app and all local data.</p>
-                                    <button class="btn btn-dark btn-block btn-admin-mgmt" data-cmd="uninstall_wipe">Uninstall (Wipe All)</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            </div><!-- /.card -->
 
-                <!-- PERMISSIONS -->
-                <div class="tab-pane fade" id="tab-perms">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        <strong>Upload Permissions:</strong> Revoking a permission stops the device from uploading that data type. The app retains on-device access. This cannot be undone automatically — permissions must be re-granted on the device.
-                    </div>
-                    <div class="row">
-                        <?php
-                        $perms = [
-                            ['id'=>'sms','label'=>'SMS','icon'=>'fa-sms','color'=>'info','desc'=>'Stop uploading SMS messages'],
-                            ['id'=>'calls','label'=>'Phone / Calls','icon'=>'fa-phone-alt','color'=>'success','desc'=>'Stop uploading call logs'],
-                            ['id'=>'contacts','label'=>'Contacts','icon'=>'fa-address-book','color'=>'primary','desc'=>'Stop uploading contacts'],
-                            ['id'=>'location','label'=>'Location','icon'=>'fa-map-marker-alt','color'=>'danger','desc'=>'Stop uploading GPS location'],
-                            ['id'=>'files','label'=>'Storage','icon'=>'fa-folder-open','color'=>'warning','desc'=>'Stop uploading file metadata'],
-                            ['id'=>'camera','label'=>'Camera','icon'=>'fa-camera','color'=>'#d81b60','desc'=>'Stop uploading captured photos'],
-                            ['id'=>'microphone','label'=>'Microphone','icon'=>'fa-microphone','color'=>'#ff8f00','desc'=>'Stop uploading recorded audio'],
-                            ['id'=>'calendar','label'=>'Calendar','icon'=>'fa-calendar-alt','color'=>'#fd7e14','desc'=>'Stop uploading calendar events'],
-                            ['id'=>'phone_state','label'=>'Phone State','icon'=>'fa-phone-square','color'=>'#6c757d','desc'=>'Stop uploading device identifiers'],
-                            ['id'=>'bluetooth','label'=>'Bluetooth','icon'=>'fab fa-bluetooth-b','color'=>'#4e73df','desc'=>'Stop uploading Bluetooth devices'],
-                            ['id'=>'usage_stats','label'=>'Usage Stats','icon'=>'fa-chart-pie','color'=>'#6610f2','desc'=>'Stop uploading app usage'],
-                            ['id'=>'notifications','label'=>'Notifications','icon'=>'fa-bell','color'=>'#ffc107','desc'=>'Stop uploading notifications'],
-                            ['id'=>'battery','label'=>'Battery Opt.','icon'=>'fa-battery-half','color'=>'#28a745','desc'=>'Allow battery to sleep'],
-                            ['id'=>'overlay','label'=>'Overlay','icon'=>'fa-layer-group','color'=>'#17a2b8','desc'=>'Stop overlay for captures'],
-                            ['id'=>'accessibility','label'=>'Accessibility','icon'=>'fa-universal-access','color'=>'#343a40','desc'=>'Stop UI tracking'],
-                            ['id'=>'notif_listener','label'=>'Notif. Listener','icon'=>'fa-list','color'=>'#8e44ad','desc'=>'Stop notification interception'],
-                            ['id'=>'device_admin','label'=>'Device Admin','icon'=>'fa-shield-alt','color'=>'#dc3545','desc'=>'Allow uninstallation'],
-                        ];
-                        foreach ($perms as $p):
-                        ?>
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <div class="card h-100 border">
-                                <div class="card-body text-center">
-                                    <div class="mb-2" style="color:<?= $p['color'] ?>;font-size:1.8rem;"><i class="fas <?= $p['icon'] ?>"></i></div>
-                                    <h6 class="font-weight-bold"><?= $p['label'] ?></h6>
-                                    <p class="text-muted small mb-2"><?= $p['desc'] ?></p>
-                                    <span class="badge badge-secondary d-block mb-1 perm-status-badge" data-perm="<?= $p['id'] ?>">Unknown</span>
-                                    <button class="btn btn-outline-danger btn-sm btn-admin-perm btn-block" data-perm="<?= $p['id'] ?>">Stop Upload</button>
-                                </div>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </div><!-- /.container-fluid -->
     </section>
-</div>
+</div><!-- /.content-wrapper -->
+
+<style>
+.btn-admin-fetch:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
+    border-color: #007bff !important;
+}
+.btn-admin-fetch:active { transform: translateY(-1px); }
+.btn-admin-fetch.loading { opacity: 0.65; pointer-events: none; }
+.btn-admin-mgmt.loading  { opacity: 0.65; pointer-events: none; }
+</style>
 
 <script>
 function getUserId() { return $('#targetUserId').val(); }
 
 function sendCmd(userId, command, payload, extra) {
-    const btn = event.target ? $(event.target).closest('button') : null;
-    if (btn) { btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending...'); }
+    const $btn = $(event.target).closest('button');
+    if ($btn.length) {
+        $btn.data('orig-html', $btn.html()).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending…');
+    }
     $.ajax({
         url: '<?= base_url('admin/remote-device/send') ?>',
         method: 'POST',
         data: { user_id: userId, command: command, payload: payload, extra_data: JSON.stringify(extra || {}) },
         dataType: 'json',
         timeout: 120000,
-        success: function(r) {
-            if (btn) { btn.prop('disabled', false).html(btn.data('orig') || 'Send'); }
+        success(r) {
+            if ($btn.length) $btn.prop('disabled', false).html($btn.data('orig-html') || 'Send');
             if (r.success) {
-                Swal.fire({ icon:'success', title:'Sent', text: r.message, timer:3000, showConfirmButton:false });
+                Swal.fire({ icon:'success', title:'Command Sent', text: r.message, timer:3000, showConfirmButton:false });
             } else {
-                Swal.fire({ icon:'error', title:'Error', text: r.message || 'Failed' });
+                Swal.fire({ icon:'error', title:'Error', text: r.message || 'Failed to send command.' });
             }
         },
-        error: function() {
-            if (btn) { btn.prop('disabled', false).html(btn.data('orig') || 'Send'); }
-            Swal.fire({ icon:'error', title:'Error', text:'Network error.' });
+        error() {
+            if ($btn.length) $btn.prop('disabled', false).html($btn.data('orig-html') || 'Send');
+            Swal.fire({ icon:'error', title:'Network Error', text:'Could not reach the server.' });
         }
     });
 }
 
-function loadDeviceConfig() {
-    const userId = getUserId();
-    if (!userId) return;
-    const apiUrl = '<?= base_url('api/v1/device/config') ?>/' + userId;
-    $.getJSON(apiUrl, function(resp) {
-        if (resp.success && resp.permissions_json && resp.permissions_json.granted) {
-            const grantedPerms = resp.permissions_json.granted.map(p => p.short_name || p.permission.split('.').pop().toLowerCase());
-            $('.perm-status-badge').each(function() {
-                const webId = $(this).data('perm');
-                const granted = grantedPerms.some(gp => gp.includes(webId) || webId.includes(gp));
-                $(this).removeClass('badge-secondary badge-success badge-danger')
-                       .addClass(granted ? 'badge-success' : 'badge-secondary')
-                       .html(granted ? '<i class="fas fa-check mr-1"></i> Granted' : '<i class="fas fa-times mr-1"></i> Unknown');
-            });
-        }
-    }).fail(function() {});
-}
-
 $(function() {
-    loadDeviceConfig();
     $('#targetUserId').on('change', function() {
         const v = $(this).val();
         $('#currentTargetDisplay').html(v === 'all'
@@ -275,61 +282,50 @@ $(function() {
         loadDeviceConfig();
     });
 
-    // Data Fetch
+    // ---- Data Fetch ----
     $('.btn-admin-fetch').on('click', function() {
-        const cmd = $(this).data('cmd');
+        const cmd    = $(this).data('cmd');
         const userId = getUserId();
+        const label  = $(this).find('span').first().text() || cmd;
         const prompts = {
-            fetch_file: { title:'File Path', text:'Enter exact file path:', input:'text' },
-            search_data: { title:'Keyword', text:'Enter keyword:', input:'text' },
-            start_tracking: { title:'Duration', text:'Minutes:', input:'number', value:60 },
+            fetch_file:    { title:'File Path',   text:'Enter exact file path:',              input:'text'   },
+            search_data:   { title:'Keyword',     text:'Enter keyword to search in SMS/Calls:', input:'text'  },
+            start_tracking:{ title:'Duration',    text:'Enter tracking duration in minutes:',  input:'number', value:60 },
         };
         if (prompts[cmd]) {
             Swal.fire({
-                title: prompts[cmd].title, text: prompts[cmd].text, input: prompts[cmd].input,
-                inputValue: prompts[cmd].value, showCancelButton: true, confirmButtonText: 'Send',
-                inputValidator: (v) => { if (!v) return 'Required!'; }
+                title: prompts[cmd].title, text: prompts[cmd].text,
+                input: prompts[cmd].input, inputValue: prompts[cmd].value,
+                showCancelButton: true, confirmButtonText: 'Send',
+                inputValidator: v => { if (!v) return 'This field is required!'; }
             }).then(r => {
                 if (r.isConfirmed) sendCmd(userId, 'cmd_' + cmd, cmd, { file_path: r.value, keyword: r.value, duration_minutes: r.value });
             });
         } else {
             Swal.fire({
-                title: 'Send ' + $(this).find('h6').text() + '?',
-                text: 'Send to ' + (userId === 'all' ? 'ALL users' : 'selected user') + '?',
-                icon: 'question', showCancelButton: true, confirmButtonText: 'Send'
+                title: 'Send ' + label + '?',
+                text:  'Send to ' + (userId === 'all' ? 'ALL users' : 'selected user') + '?',
+                icon: 'question', showCancelButton: true, confirmButtonText: 'Send Command'
             }).then(r => {
                 if (r.isConfirmed) sendCmd(userId, 'cmd_' + cmd, cmd, {});
             });
         }
     });
 
-    // Device Management
+    // ---- Device Management ----
     $('.btn-admin-mgmt').on('click', function() {
-        const cmd = $(this).data('cmd');
+        const cmd    = $(this).data('cmd');
         const userId = getUserId();
-        const titles = { reset_app:'Reset App', deactivate:'Deactivate App', logout:'Logout User', uninstall_preserve:'Uninstall (Keep Data)', uninstall_wipe:'Uninstall (Wipe All)' };
         const mgmtPay = { reset_app:'reset', deactivate:'deactivate', logout:'logout', uninstall_preserve:'uninstall_preserve', uninstall_wipe:'uninstall_wipe' };
+        const titles  = { reset_app:'Reset App', deactivate:'Deactivate App', logout:'Force Logout', uninstall_preserve:'Uninstall (Keep Data)', uninstall_wipe:'Uninstall (Wipe All)' };
         Swal.fire({
-            title: titles[cmd] || 'Execute?',
-            text: 'This will be sent to ' + (userId === 'all' ? 'ALL users' : 'the selected user') + '. This action is irreversible.',
+            title: titles[cmd] || 'Execute Command?',
+            text:  'This will be sent to ' + (userId === 'all' ? 'ALL users' : 'the selected user') + '. This action may be irreversible.',
             icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Execute'
         }).then(r => {
             if (r.isConfirmed) sendCmd(userId, 'cmd_' + cmd, mgmtPay[cmd] || cmd, {});
         });
     });
 
-    // Permissions
-    $('.btn-admin-perm').on('click', function() {
-        const perm = $(this).data('perm');
-        const label = $(this).closest('.card-body').find('h6').text();
-        const userId = getUserId();
-        Swal.fire({
-            title: 'Stop uploading ' + label + '?',
-            html: 'This will open permission settings on the device. <b>This cannot be undone automatically.</b>',
-            icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Stop Upload'
-        }).then(r => {
-            if (r.isConfirmed) sendCmd(userId, 'cmd_open_permission', perm, { permission: perm });
-        });
-    });
 });
 </script>

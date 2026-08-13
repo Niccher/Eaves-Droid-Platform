@@ -14,9 +14,9 @@
                         </a>
                     </div>
                     <div class="d-flex flex-wrap small opacity-75">
-                        <span class="mr-3 mb-2"><i class="fas fa-shield-alt mr-1"></i> AES-256 Encrypted</span>
-                        <span class="mr-3 mb-2"><i class="fas fa-bolt mr-1"></i> Lightweight 15MB</span>
-                        <span class="mr-3 mb-2"><i class="fas fa-sync-alt mr-1"></i> Auto Wi-Fi Sync</span>
+                        <span class="mr-3 mb-2"><i class="fas fa-shield-alt mr-1"></i> AES-Encrypted Payloads</span>
+                        <span class="mr-3 mb-2"><i class="fas fa-bolt mr-1"></i> Lightweight</span>
+                        <span class="mr-3 mb-2"><i class="fas fa-sync-alt mr-1"></i> Automated Sync</span>
                         <span><i class="fas fa-battery-three-quarters mr-1"></i> Battery Efficient</span>
                     </div>
                 </div>
@@ -28,21 +28,17 @@
                         <div class="card-body">
                             <div class="row text-center">
                                 <div class="col-6 mb-3">
-                                    <h4 class="text-primary font-weight-bold mb-0">4.7</h4>
-                                    <div class="text-warning small mb-1">
-                                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                                    </div>
-                                    <small class="text-muted">Rating</small>
+                                    <h4 class="text-primary font-weight-bold mb-0">60+</h4>
+                                    <small class="text-muted">Data Extractors</small>
                                 </div>
                                 <div class="col-6 mb-3">
-                                    <h4 class="text-success font-weight-bold mb-0">15MB</h4>
-                                    <i class="fas fa-file-archive text-success small"></i>
-                                    <small class="text-muted d-block">App Size</small>
+                                    <h4 class="text-success font-weight-bold mb-0">17</h4>
+                                    <small class="text-muted">Anomaly Detectors</small>
                                 </div>
                                 <div class="col-6">
-                                    <h4 class="text-info font-weight-bold mb-0">50K+</h4>
-                                    <i class="fas fa-download text-info small"></i>
-                                    <small class="text-muted d-block">Downloads</small>
+                                    <h4 class="text-info font-weight-bold mb-0">AES</h4>
+                                    <i class="fas fa-shield-alt text-info small"></i>
+                                    <small class="text-muted d-block">Encrypted Sync</small>
                                 </div>
                                 <div class="col-6">
                                     <h4 class="text-warning font-weight-bold mb-0">7.0+</h4>
@@ -74,8 +70,8 @@
                                 <i class="fas fa-shield-alt fa-3x text-primary"></i>
                             </div>
                             <h5 class="text-primary text-bold">Security</h5>
-                            <p class="text-muted small">All data encrypted with AES-256 before leaving the device. End-to-end encryption for every payload.</p>
-                            <span class="badge badge-primary px-3">AES-256</span>
+                            <p class="text-muted small">All data encrypted with AES using a user-supplied key before leaving the device. No payload ever travels in plaintext.</p>
+                            <span class="badge badge-primary px-3">AES</span>
                         </div>
                     </div>
                 </div>
@@ -87,8 +83,8 @@
                                 <i class="fas fa-feather-alt fa-3x text-success"></i>
                             </div>
                             <h5 class="text-success text-bold">Lightweight</h5>
-                            <p class="text-muted small">Only 15MB APK. Runs as a background service with minimal memory footprint.</p>
-                            <span class="badge badge-success px-3">15MB</span>
+                            <p class="text-muted small">Runs as a background service with a minimal memory footprint and no root required.</p>
+                            <span class="badge badge-success px-3">Low Overhead</span>
                         </div>
                     </div>
                 </div>
@@ -100,7 +96,7 @@
                                 <i class="fas fa-wifi fa-3x text-info"></i>
                             </div>
                             <h5 class="text-info text-bold">Auto-Sync</h5>
-                            <p class="text-muted small">Wi-Fi optimized batch upload with resume support. Never loses data on connectivity loss.</p>
+                            <p class="text-muted small">Scheduled batch uploads with an offline queue — data is retried until it reaches your server, so nothing is lost.</p>
                             <span class="badge badge-info px-3">Batch Upload</span>
                         </div>
                     </div>
@@ -113,8 +109,8 @@
                                 <i class="fas fa-battery-three-quarters fa-3x text-warning"></i>
                             </div>
                             <h5 class="text-warning text-bold">Battery Efficient</h5>
-                            <p class="text-muted small">Uses Android JobScheduler for deferred, batched work. Minimal CPU wake-ups.</p>
-                            <span class="badge badge-warning px-3">JobScheduler</span>
+                            <p class="text-muted small">Uses AndroidX WorkManager for deferred, batched work. Minimal CPU wake-ups.</p>
+                            <span class="badge badge-warning px-3">WorkManager</span>
                         </div>
                     </div>
                 </div>
@@ -247,12 +243,12 @@
                             <div class="card-body text-white">
                                 <i class="fab fa-android fa-5x mb-4"></i>
                                 <h3 class="text-bold mb-2">Eaves Droid Client</h3>
-                                <p class="mb-4 opacity-75">Version 2.1 &bull; 15MB &bull; Android 7.0+</p>
-                                <a href="#" class="btn btn-warning btn-lg btn-block shadow text-bold">
+                                <p class="mb-4 opacity-75">Version 1.1 &bull; Android 7.0+ (API 25)</p>
+                                <a href="<?= base_url('downloads/eaves_droid_v1.1.apk') ?>" class="btn btn-warning btn-lg btn-block shadow text-bold" <?php if (!is_file(ROOTPATH . 'public/downloads/eaves_droid_v1.1.apk')): ?>data-toggle="tooltip" title="APK will be available after a release build is published"<?php endif; ?>>
                                     <i class="fas fa-download mr-2"></i>DOWNLOAD APK
                                 </a>
                                 <p class="mt-3 mb-0 small opacity-75">
-                                    <i class="fas fa-shield-alt mr-1"></i>Signed APK &bull; SHA-256 verified
+                                    <i class="fas fa-shield-alt mr-1"></i>APK built from source &mdash; see the README for checksum
                                 </p>
                             </div>
                         </div>
@@ -269,9 +265,9 @@
                     <div class="card-body">
                         <div class="row align-items-center">
                             <div class="col-lg-8">
-                                <p class="mb-2"><strong>Prefer to self-host?</strong> Deploy the full Eaves Droid stack with Docker in seconds. Includes the web dashboard, API server, database, and background workers.</p>
+                                <p class="mb-2"><strong>Prefer to self-host?</strong> Deploy the full Eaves Droid stack with Docker in seconds. Includes the web dashboard, API server, MySQL, and the Python ML engine.</p>
                                 <div class="bg-dark text-light p-3 rounded">
-                                    <code class="text-warning">docker-compose up -d</code>
+                                    <code class="text-warning">docker compose up --build -d</code>
                                 </div>
                                 <p class="text-muted small mt-2 mb-lg-0 mb-3">
                                     <i class="fas fa-info-circle mr-1"></i>Requires Docker &amp; Docker Compose installed on your server.

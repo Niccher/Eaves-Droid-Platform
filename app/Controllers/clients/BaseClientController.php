@@ -124,6 +124,7 @@ protected function getUserDataCounts(): array
             'total_calls'            => $this->finderModel->get_count_Calls($this->userId),
             'total_locations'        => $this->finderModel->get_count_Location($this->userId),
             'total_activities'       => $this->finderModel->get_count_Activity($this->userId),
+            'total_location_activity' => $this->finderModel->get_count_LocationActivity($this->userId),
             'total_device'           => $this->finderModel->get_count_DeviceContext($this->userId),
             'total_network'          => $this->finderModel->get_count_NetworkInfo($this->userId),
             'total_accounts'         => $this->finderModel->get_count_Accounts($this->userId),
