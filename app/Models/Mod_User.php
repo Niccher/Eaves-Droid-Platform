@@ -199,7 +199,7 @@ class Mod_User extends Model
                 'android_id' => null // Can be set later when device connects
             ];
 
-            if ($this->db->table('tbl_tokens')->insert($data)) {
+            if ($this->db->table('tbl_user_api_tokens')->insert($data)) {
                 $logData = new Mod_Access_Logs();
                 // Log action
                 $logData->logAction([
@@ -239,7 +239,7 @@ class Mod_User extends Model
     public function token_mark(int $token_owner, string $token, int $token_id): bool
     {
         try {
-            $builder = $this->db->table('tbl_tokens');
+            $builder = $this->db->table('tbl_user_api_tokens');
             $builder->set('status', "11")
                 ->set('last_used_at', date('Y-m-d H:i:s'))
                 ->where('token', $token)
@@ -268,7 +268,7 @@ class Mod_User extends Model
     public function get_token(int $user_id)
     {
         try {
-            $result = $this->db->table('tbl_tokens')
+            $result = $this->db->table('tbl_user_api_tokens')
                 ->where('owner_id', $user_id)
                 ->where('status', '00')
                 ->orderBy('counter', 'DESC')  // Using 'counter' as the primary key
@@ -304,7 +304,7 @@ class Mod_User extends Model
 
             if (empty($data)) return true;
 
-            return $this->db->table('tbl_tokens')
+            return $this->db->table('tbl_user_api_tokens')
                 ->where('token', $token)
                 ->update($data);
         } catch (\Exception $e) {
@@ -474,10 +474,10 @@ class Mod_User extends Model
     {
         try {
             // Step 1: Get device hardware IDs linked to this user
-            // We check tbl_tokens, uploaded_files, and direct owner_id on device_profile
+            // We check tbl_user_api_tokens, tbl_uploaded_files, and direct owner_id on device_profile
             
             // From tokens
-            $tokenChecksums = $this->db->table('tbl_tokens')
+            $tokenChecksums = $this->db->table('tbl_user_api_tokens')
                 ->select('device_checksum')
                 ->where('owner_id', $user_id)
                 ->where('device_checksum !=', '')
@@ -487,7 +487,7 @@ class Mod_User extends Model
                 ->getResultArray();
 
             // From uploaded files
-            $uploadChecksums = $this->db->table('uploaded_files')
+            $uploadChecksums = $this->db->table('tbl_uploaded_files')
                 ->select('device_checksum')
                 ->where('token_owner_id', $user_id)
                 ->where('device_checksum !=', '')
@@ -502,7 +502,7 @@ class Mod_User extends Model
             ));
 
             // Step 2: Fetch device profiles using checksums OR direct owner_id
-            $builder = $this->db->table('tbl_device_profile');
+            $builder = $this->db->table('tbl_device_profiles');
 
             if (!empty($allChecksums)) {
                 $builder->whereIn('device_id', $allChecksums);
@@ -512,8 +512,8 @@ class Mod_User extends Model
             }
 
             $devices = $builder
-                ->select('tbl_device_profile.*, tbl_device_profile.created_at')
-                ->groupBy('tbl_device_profile.device_id')
+                ->select('tbl_device_profiles.*, tbl_device_profiles.created_at')
+                ->groupBy('tbl_device_profiles.device_id')
                 ->orderBy('extraction_timestamp', 'DESC')
                 ->get()
                 ->getResultArray();
@@ -529,7 +529,7 @@ class Mod_User extends Model
     public function get_used_tokens(int $user_id): array
     {
         try {
-            return $this->db->table('tbl_tokens')
+            return $this->db->table('tbl_user_api_tokens')
                 ->where('owner_id', $user_id)
                 ->where('status', '11')
                 ->orderBy('counter', 'DESC')

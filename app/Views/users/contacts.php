@@ -97,8 +97,7 @@
                                         $encrypter = model('Mod_Crypt');
                                         foreach ($contacts_dump as $contact):
                                             // Use counter as ID for encryption
-                                            $id = $encrypter->var_crypt($contact['ID'] ?? $contact['counter'] ?? '', "encrypt");
-                                            $enc_id = $encrypter->base64url_encode($id);
+                                            $enc_id = $encrypter->encrypt_id($contact['ID'] ?? $contact['counter'] ?? '');
 
                                             // Determine contact avatar background color based on name
                                             $initial = strtoupper(substr(($contact['Name'] ?? '?'), 0, 1));

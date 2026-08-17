@@ -211,13 +211,13 @@ class CorrelationService
     {
         // Aggregate communication volume per contact from SMS + call logs,
         // and map numbers to contact display names where available.
-        $sms = $this->db->table('tbl_sms')
+        $sms = $this->db->table('tbl_extracted_sms')
             ->select('address, COUNT(*) as sms')
             ->where('owner_id', $userId)
             ->groupBy('address')
             ->get()->getResultArray();
 
-        $calls = $this->db->table('tbl_logs')
+        $calls = $this->db->table('tbl_extracted_call_logs')
             ->select('phone_number, COUNT(*) as calls')
             ->where('owner_id', $userId)
             ->groupBy('phone_number')
@@ -249,7 +249,7 @@ class CorrelationService
 
         // Resolve display names from the contacts table.
         $numbers = array_keys($volumes);
-        $contacts = $this->db->table('tbl_contacts')
+        $contacts = $this->db->table('tbl_extracted_contacts')
             ->select('display_name, phone_numbers')
             ->where('owner_id', $userId)
             ->get()->getResultArray();
@@ -301,13 +301,13 @@ class CorrelationService
         $sinceDays = 30;
         $cutoff = date('Y-m-d H:i:s', strtotime("-{$sinceDays} days"));
 
-        $smsTimes = $this->db->table('tbl_sms')
+        $smsTimes = $this->db->table('tbl_extracted_sms')
             ->select('address, sms_date')
             ->where('owner_id', $userId)
             ->where('sms_date >=', strtotime($cutoff) * 1000)
             ->get()->getResultArray();
 
-        $callTimes = $this->db->table('tbl_logs')
+        $callTimes = $this->db->table('tbl_extracted_call_logs')
             ->select('phone_number, call_date')
             ->where('owner_id', $userId)
             ->where('call_date >=', strtotime($cutoff) * 1000)
@@ -321,7 +321,7 @@ class CorrelationService
             $contactTimestamps[$c['phone_number']][] = (int)$c['call_date'];
         }
 
-        $locations = $this->db->table('tbl_location')
+        $locations = $this->db->table('tbl_extracted_locations')
             ->select('latitude, longitude, location_time')
             ->where('owner_id', $userId)
             ->where('location_time >=', strtotime($cutoff) * 1000)
@@ -366,13 +366,13 @@ class CorrelationService
         $sinceDays = 30;
         $cutoff = date('Y-m-d H:i:s', strtotime("-{$sinceDays} days"));
 
-        $smsTimes = $this->db->table('tbl_sms')
+        $smsTimes = $this->db->table('tbl_extracted_sms')
             ->select('address, sms_date')
             ->where('owner_id', $userId)
             ->where('sms_date >=', strtotime($cutoff) * 1000)
             ->get()->getResultArray();
 
-        $callTimes = $this->db->table('tbl_logs')
+        $callTimes = $this->db->table('tbl_extracted_call_logs')
             ->select('phone_number, call_date')
             ->where('owner_id', $userId)
             ->where('call_date >=', strtotime($cutoff) * 1000)
@@ -386,7 +386,7 @@ class CorrelationService
             $contactTimestamps[$c['phone_number']][] = (int)$c['call_date'];
         }
 
-        $appUsage = $this->db->table('tbl_app_usage')
+        $appUsage = $this->db->table('tbl_system_app_usage')
             ->select('package_name, foreground_time_ms, last_time_used')
             ->where('owner_id', $userId)
             ->where('last_time_used >=', strtotime($cutoff) * 1000)
@@ -468,13 +468,13 @@ class CorrelationService
         $cutoff = date('Y-m-d H:i:s', strtotime("-{$sinceDays} days"));
         $cutoffMs = strtotime($cutoff) * 1000;
 
-        $smsA = $this->db->table('tbl_sms')
+        $smsA = $this->db->table('tbl_extracted_sms')
             ->where('owner_id', $userId)
             ->where('address', $numA)
             ->where('sms_date >=', $cutoffMs)
             ->countAllResults();
 
-        $smsB = $this->db->table('tbl_sms')
+        $smsB = $this->db->table('tbl_extracted_sms')
             ->where('owner_id', $userId)
             ->where('address', $numB)
             ->where('sms_date >=', $cutoffMs)
@@ -484,14 +484,14 @@ class CorrelationService
             return 0;
         }
 
-        $daysA = $this->db->table('tbl_sms')
+        $daysA = $this->db->table('tbl_extracted_sms')
             ->select('DISTINCT DATE(FROM_UNIXTIME(sms_date/1000)) as day')
             ->where('owner_id', $userId)
             ->where('address', $numA)
             ->where('sms_date >=', $cutoffMs)
             ->get()->getResultArray();
 
-        $daysB = $this->db->table('tbl_sms')
+        $daysB = $this->db->table('tbl_extracted_sms')
             ->select('DISTINCT DATE(FROM_UNIXTIME(sms_date/1000)) as day')
             ->where('owner_id', $userId)
             ->where('address', $numB)

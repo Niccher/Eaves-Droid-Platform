@@ -87,15 +87,15 @@ class Blocklist extends BaseClientController
     }
 
     /**
-     * Ensure tbl_blocklist exists; create it on-the-fly if missing.
+     * Ensure tbl_user_blocklists exists; create it on-the-fly if missing.
      */
     private function ensureTable(): void
     {
         try {
             $db = \Config\Database::connect();
-            if (!$db->tableExists('tbl_blocklist')) {
+            if (!$db->tableExists('tbl_user_blocklists')) {
                 $db->query("
-                    CREATE TABLE IF NOT EXISTS `tbl_blocklist` (
+                    CREATE TABLE IF NOT EXISTS `tbl_user_blocklists` (
                         `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
                         `owner_id` INT(11) UNSIGNED NOT NULL,
                         `category` ENUM('sms','call','notification','app_usage','location') NOT NULL,

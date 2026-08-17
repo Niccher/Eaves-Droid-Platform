@@ -152,7 +152,7 @@ class Files extends BaseClientController
 
         try {
             $db = \Config\Database::connect();
-            $query = $db->table('tbl_device_files')
+            $query = $db->table('tbl_extracted_device_files')
                 ->select('category, COUNT(*) AS total')
                 ->groupBy('category');
             $this->applyExclusionFilters($query);
@@ -217,7 +217,7 @@ class Files extends BaseClientController
     }
 
     /**
-     * Apply shared exclusion filters to a query on tbl_device_files:
+     * Apply shared exclusion filters to a query on tbl_extracted_device_files:
      *  - skip app-internal paths under /data/user/0/
      *  - skip hidden files/dirs (name starts with '.', e.g. .nomedia, .database_uuid)
      *  - skip 0-byte files (directories are kept)
@@ -248,7 +248,7 @@ class Files extends BaseClientController
     {
         try {
             $db = \Config\Database::connect();
-            $query = $db->table('tbl_device_files');
+            $query = $db->table('tbl_extracted_device_files');
 
             $query->select('
                 id,

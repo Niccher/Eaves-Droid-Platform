@@ -211,7 +211,7 @@
 
                         <!-- Data Section (Collapsible) -->
                         <?php 
-                            $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity'];
+                            $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'sms_analyse'];
                             $data_sub_pages = [];
                             $is_data_open   = (isset($pag) && in_array($pag, $data_pages))
                                            || (isset($sub_pag) && in_array($sub_pag, $data_sub_pages));
@@ -245,7 +245,7 @@
 
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('contacts'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag == 'contacts') ? 'active' : ''; ?>">
+                                       class="nav-link <?php echo (isset($pag) && ($pag == 'contacts' || $pag == 'sms_analyse')) ? 'active' : ''; ?>">
                                         <i class="fas fa-address-book nav-icon"></i>
                                         <p>Contacts</p>
                                         <span class="badge badge-success float-right"><?php echo isset($total_contacts) ? $total_contacts : 0; ?></span>
@@ -385,7 +385,7 @@
 
                         <!-- Account Section (Collapsible) -->
                         <?php 
-                            $account_pages = ['account_profile', 'account_setting', 'account_devices', 'account_logs'];
+                            $account_pages = ['account_profile', 'account_setting', 'account_devices', 'account_logs', 'billing'];
                             $is_account_open = (isset($pag) && in_array($pag, $account_pages)) || (isset($sub_pag) && $sub_pag == 'blocklist');
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_account_open ? 'menu-open' : ''; ?>">

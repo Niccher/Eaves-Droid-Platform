@@ -22,6 +22,7 @@ class Filters extends BaseConfig
         'impersonate'   => \App\Filters\ImpersonateFilter::class,
         'role'          => \App\Filters\RoleFilter::class,
         'planGate'      => \App\Filters\PlanGate::class,
+        'apiAuth'       => \App\Filters\ApiAuthFilter::class,
         'session'       => \CodeIgniter\Shield\Filters\SessionAuth::class,
     ];
 

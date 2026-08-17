@@ -16,46 +16,42 @@
         </div>
       </div>
 
-      <!-- AdminLTE Small Boxes -->
-      <div class="row">
-        <div class="col-lg-4 col-6">
-          <div class="small-box bg-info">
-            <div class="inner">
-              <h3><?= number_format($totalActivities) ?></h3>
-              <p>Total Recorded Events</p>
+      <!-- AdminLTE Info Boxes -->
+      <div class="row mt-2">
+        <div class="col-md-4 col-sm-6">
+          <div class="info-box shadow-sm">
+            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-walking"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Paired Events</span>
+              <span class="info-box-number"><?= number_format($totalActivities) ?></span>
             </div>
-            <div class="icon"><i class="fas fa-walking"></i></div>
           </div>
         </div>
-
-        <div class="col-lg-4 col-6">
-          <div class="small-box bg-success">
-            <div class="inner">
-              <h3>
+        <div class="col-md-4 col-sm-6">
+          <div class="info-box shadow-sm">
+            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-heartbeat"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Dominant State</span>
+              <span class="info-box-number" style="font-size:1.2rem;">
                 <?php
-                $topType = 'STILL'; $max = 0;
+                $topType = '—'; $maxHits = 0;
                 foreach (($activity_stats['types'] ?? []) as $t) {
-                    if ($t['count'] > $max) {
-                        $max = $t['count'];
-                        $topType = $t['activity_type'];
-                    }
+                    if ($t['count'] > $maxHits) { $maxHits = $t['count']; $topType = $t['activity_type']; }
                 }
                 echo htmlspecialchars(strtoupper($topType));
                 ?>
-              </h3>
-              <p>Dominant State (<?= $max ?> hits)</p>
+              </span>
+              <span class="progress-description"><?= $maxHits ?> hits</span>
             </div>
-            <div class="icon"><i class="fas fa-heartbeat"></i></div>
           </div>
         </div>
-
-        <div class="col-lg-4 col-6">
-          <div class="small-box bg-warning">
-            <div class="inner">
-              <h3><?= $activity_stats['avg_battery'] ?? 0 ?>%</h3>
-              <p>Average Battery Level</p>
+        <div class="col-md-4 col-sm-6">
+          <div class="info-box shadow-sm">
+            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-battery-half"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Avg Battery</span>
+              <span class="info-box-number"><?= $activity_stats['avg_battery'] ?? 0 ?>%</span>
             </div>
-            <div class="icon"><i class="fas fa-battery-half"></i></div>
           </div>
         </div>
       </div>
@@ -93,99 +89,168 @@
           </div>
         </div>
 
-        <!-- Native AdminLTE Timeline -->
+        <!-- ── User Behavioral & Power Diagnostics Dashboard ──────────────── -->
+        <?php
+        $screenOn = $screenOff = 0;
+        $charging = $discharging = 0;
+        $netCounts = [];
+        $confSum = $confCount = 0;
+
+        foreach ($activities as $a) {
+            // Screen state
+            if (($a['screen_on'] ?? 0) == 1) $screenOn++; else $screenOff++;
+
+            // Charging state
+            $cs = strtolower($a['charging_status'] ?? '');
+            if ($cs === 'charging' || $cs === '1' || $cs === 'true') $charging++;
+            else $discharging++;
+
+            // Network
+            $nt = strtoupper($a['network_type'] ?? 'UNKNOWN');
+            if ($nt === '' || $nt === 'UNKNOWN' || $nt === 'NONE') $nt = 'OFFLINE';
+            $netCounts[$nt] = ($netCounts[$nt] ?? 0) + 1;
+
+            // Confidence
+            if (isset($a['confidence']) && (int)$a['confidence'] > 0) {
+                $confSum += (int)$a['confidence'];
+                $confCount++;
+            }
+        }
+        arsort($netCounts);
+        $total = count($activities);
+        $avgConf = $confCount > 0 ? round($confSum / $confCount) : 0;
+        $screenPct  = $total > 0 ? round($screenOn  / $total * 100) : 0;
+        $chargingPct = $total > 0 ? round($charging / $total * 100) : 0;
+        ?>
+
+        <!-- Row 1: Screen + Charging + Confidence + Network overview -->
         <div class="col-12 mt-4">
-          <div class="card card-secondary shadow-sm">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-clock mr-2"></i>Chronological Activity Timeline</h3>
-            </div>
-            <div class="card-body">
-              <div class="timeline timeline-inverse px-3 pt-3">
-                <?php if (empty($activities)): ?>
-                  <div class="text-center py-5">
-                    <i class="fas fa-running fa-3x text-muted mb-3 d-block"></i>
-                    <h5 class="text-muted">No activity logs recorded</h5>
+          <div class="row">
+            <!-- Screen State -->
+            <div class="col-md-3 col-sm-6">
+              <div class="info-box shadow-sm" style="border-left:4px solid #28a745!important;">
+                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-sun"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Screen Active</span>
+                  <span class="info-box-number"><?= $screenOn ?></span>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-success" style="width:<?= $screenPct ?>%"></div>
                   </div>
-                <?php else: ?>
-                  <?php
-                  $lastDayLabel = '';
-                  foreach ($activities as $act):
-                      $ts = (int)($act['activity_time'] ?? $act['extracted_at'] ?? 0);
-                      $tsSec = $ts > 1_000_000_000_000 ? (int)($ts / 1000) : $ts;
-                      $dayLabel = $tsSec > 0 ? date('M d, Y', $tsSec) : 'Unknown date';
-                      $timeLabel = $tsSec > 0 ? date('H:i:s', $tsSec) : '—';
-                      
-                      $activityType = strtoupper($act['activity_type'] ?? $act['status'] ?? 'UNKNOWN');
-                      $confidence = $act['confidence'] ?? 0;
-                      $battery = $act['battery_level'] ?? null;
-                      $screenOn = ($act['screen_on'] ?? 0) == 1;
-
-                      // Styles
-                      $icon = 'fa-question'; $color = 'bg-secondary';
-                      if (str_contains($activityType, 'WALK') || str_contains($activityType, 'RUN')) {
-                          $icon = 'fa-running'; $color = 'bg-success';
-                      } elseif (str_contains($activityType, 'STILL') || str_contains($activityType, 'IDLE')) {
-                          $icon = 'fa-stop'; $color = 'bg-gray';
-                      } elseif (str_contains($activityType, 'VEHICLE') || str_contains($activityType, 'DRIV')) {
-                          $icon = 'fa-car'; $color = 'bg-info';
-                      } elseif (str_contains($activityType, 'BICYCLE')) {
-                          $icon = 'fa-bicycle'; $color = 'bg-warning';
-                      }
-                      
-                      if ($dayLabel !== $lastDayLabel):
-                          $lastDayLabel = $dayLabel;
-                  ?>
-                    <div class="time-label">
-                      <span class="bg-primary text-white"><?= esc($dayLabel) ?></span>
-                    </div>
-                  <?php endif; ?>
-
-                  <div>
-                    <i class="fas <?= $icon ?> <?= $color ?> text-white"></i>
-                    <div class="timeline-item shadow-sm border mb-3">
-                      <span class="time"><i class="fas fa-clock mr-1"></i><?= $timeLabel ?></span>
-                      <h3 class="timeline-header font-weight-bold">
-                        <?= esc($activityType) ?> 
-                        <?php if ($confidence > 0): ?>
-                          <span class="badge badge-light border ml-2"><?= esc($confidence) ?>% Confidence</span>
-                        <?php endif; ?>
-                      </h3>
-                      <div class="timeline-body py-2">
-                        <div class="row">
-                          <div class="col-sm-4">
-                            <i class="fas fa-battery-half text-muted mr-1"></i> 
-                            <b>Battery:</b> <?= $battery !== null ? esc($battery) . '%' : '—' ?>
-                          </div>
-                          <div class="col-sm-4">
-                            <i class="fas fa-desktop text-muted mr-1"></i> 
-                            <b>Screen State:</b> <span class="badge badge-<?= $screenOn ? 'success' : 'secondary' ?>"><?= $screenOn ? 'ON' : 'OFF' ?></span>
-                          </div>
-                          <div class="col-sm-4">
-                            <i class="fas fa-signal text-muted mr-1"></i> 
-                            <b>Network:</b> <?= strtoupper(esc($act['network_type'] ?? '—')) ?>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="timeline-footer py-1 px-3 d-flex justify-content-between align-items-center">
-                        <small class="text-muted"><i class="fas fa-mobile-alt mr-1"></i><?= esc($act['device_model'] ?? 'N/A') ?></small>
-                        <button type="button" class="btn btn-xs btn-outline-danger delete-row"
-                                data-id="<?= $act['counter'] ?? $act['id'] ?? '' ?>"
-                                data-url="<?= base_url('activities/delete') ?>"
-                                title="Delete event">
-                          <i class="fas fa-trash"></i> Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <?php endforeach; ?>
-                <?php endif; ?>
+                  <span class="progress-description"><?= $screenPct ?>% of sessions &bull; <?= $screenOff ?> background</span>
+                </div>
               </div>
             </div>
-            <div class="card-footer">
-              <div class="float-right my-2">
-                <?php if (isset($pager)): ?>
-                  <?= $pager->links('default', 'bootstrap5_full') ?>
-                <?php endif; ?>
+            <!-- Charging State -->
+            <div class="col-md-3 col-sm-6">
+              <div class="info-box shadow-sm" style="border-left:4px solid #ffc107!important;">
+                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-bolt"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Charging</span>
+                  <span class="info-box-number"><?= $charging ?></span>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-warning" style="width:<?= $chargingPct ?>%"></div>
+                  </div>
+                  <span class="progress-description"><?= $chargingPct ?>% charging &bull; <?= $discharging ?> discharging</span>
+                </div>
+              </div>
+            </div>
+            <!-- Avg Confidence -->
+            <div class="col-md-3 col-sm-6">
+              <div class="info-box shadow-sm" style="border-left:4px solid #17a2b8!important;">
+                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-percentage"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Avg Confidence</span>
+                  <span class="info-box-number"><?= $avgConf ?>%</span>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-info" style="width:<?= $avgConf ?>%"></div>
+                  </div>
+                  <span class="progress-description">Sensor engine reliability score</span>
+                </div>
+              </div>
+            </div>
+            <!-- Total Records -->
+            <div class="col-md-3 col-sm-6">
+              <div class="info-box shadow-sm" style="border-left:4px solid #6c757d!important;">
+                <span class="info-box-icon bg-secondary elevation-1"><i class="fas fa-database"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Paired Records</span>
+                  <span class="info-box-number"><?= number_format($total) ?></span>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-secondary" style="width:100%"></div>
+                  </div>
+                  <span class="progress-description">Matched w/ GPS fix</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Network Connectivity Profile + Charts -->
+        <div class="col-12 mt-3">
+          <div class="row">
+            <!-- Network Connectivity Profile -->
+            <div class="col-md-4">
+              <div class="card card-outline card-primary shadow-sm h-100">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="fas fa-signal mr-2"></i>Network Profile</h3>
+                </div>
+                <div class="card-body p-0">
+                  <?php if (empty($netCounts)): ?>
+                    <div class="text-center py-4 text-muted"><i class="fas fa-wifi fa-2x mb-2 d-block"></i>No data</div>
+                  <?php else: ?>
+                    <ul class="list-group list-group-flush">
+                      <?php foreach ($netCounts as $net => $cnt): ?>
+                        <?php
+                          $pct = $total > 0 ? round($cnt / $total * 100) : 0;
+                          if (str_contains($net, 'WIFI') || str_contains($net, 'WI-FI')) {
+                              $ic = 'fa-wifi'; $bc = 'bg-primary'; $tc = 'text-primary';
+                          } elseif (str_contains($net, 'LTE') || str_contains($net, '4G') || str_contains($net, '5G')) {
+                              $ic = 'fa-signal'; $bc = 'bg-success'; $tc = 'text-success';
+                          } elseif (str_contains($net, '3G')) {
+                              $ic = 'fa-signal'; $bc = 'bg-info'; $tc = 'text-info';
+                          } elseif (str_contains($net, '2G') || str_contains($net, 'EDGE') || str_contains($net, 'GPRS')) {
+                              $ic = 'fa-signal'; $bc = 'bg-warning'; $tc = 'text-warning';
+                          } else {
+                              $ic = 'fa-times-circle'; $bc = 'bg-secondary'; $tc = 'text-secondary';
+                          }
+                        ?>
+                        <li class="list-group-item px-3 py-2">
+                          <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="<?= $tc ?>"><i class="fas <?= $ic ?> mr-2"></i><strong><?= esc($net) ?></strong></span>
+                            <span class="badge badge-light border"><?= $cnt ?> <small class="text-muted">(<?= $pct ?>%)</small></span>
+                          </div>
+                          <div class="progress" style="height:4px;">
+                            <div class="progress-bar <?= $bc ?>" style="width:<?= $pct ?>%"></div>
+                          </div>
+                        </li>
+                      <?php endforeach; ?>
+                    </ul>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+
+            <!-- Activity Distribution Chart -->
+            <div class="col-md-4">
+              <div class="card card-outline card-info shadow-sm h-100">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i>Activity Distribution</h3>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                  <canvas id="activityPieChart" style="min-height:220px;height:220px;max-height:220px;max-width:100%;"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Battery Telemetry Chart -->
+            <div class="col-md-4">
+              <div class="card card-outline card-warning shadow-sm h-100">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="fas fa-battery-half mr-2"></i>Battery Telemetry</h3>
+                </div>
+                <div class="card-body d-flex align-items-center">
+                  <canvas id="batteryLineChart" style="min-height:220px;height:220px;max-height:220px;max-width:100%;"></canvas>
+                </div>
               </div>
             </div>
           </div>

@@ -7,84 +7,89 @@ use CodeIgniter\Model;
 class Mod_Receive extends Model
 {
     /**
-     * Creates or gets device print ID.
+     * Creates or updates a device profile — idempotent upsert.
+     * The table has UNIQUE KEY uq_device_fcm (device_id, fcm_token_hash) so
+     * repeated registration calls with the same device + FCM token are safe.
      *
      * @param array $print_dump
-     * @return string|false
+     * @return string|false  JSON string
      */
     public function make_device_print(array $print_dump)
     {
         try {
-            $builder = $this->db->table('tbl_device_profile');
-            $deviceChecksum = $print_dump['device_checksum'];
-            
-            // Map input field 'device_checksum' to database column 'device_id'
-            // and ensure we don't try to insert non-existent columns
-            $print_dump['device_id'] = $deviceChecksum;
+            $db = \Config\Database::connect();
+
+            // Normalise field name: input uses 'device_checksum', table uses 'device_id'
+            $deviceChecksum = $print_dump['device_checksum'] ?? ($print_dump['device_id'] ?? '');
             unset($print_dump['device_checksum']);
-            
-            // Also handle fcm_token if it's optional/missing in input but table might have it
-            // if input doesn't have it, we shouldn't try to update it to null necessarily,
-            // or maybe we should? For now, let's just stick to the checksum fix.
+            $print_dump['device_id'] = $deviceChecksum;
 
-            // Always use update - will insert if not exists in some databases
-            // But for MySQL with InnoDB, we need to check first
+            // Ensure created_at is set (used during first insert)
+            if (empty($print_dump['created_at'])) {
+                $print_dump['created_at'] = date('Y-m-d H:i:s');
+            }
+            $print_dump['updated_at'] = date('Y-m-d H:i:s');
 
-            $existing = $builder->select('1')
+            // Check if this exact (device_id + fcm_token) already exists
+            $fcmToken = $print_dump['fcm_token'] ?? null;
+            $existing = $db->table('tbl_device_profiles')
+                ->select('counter, owner_id')
                 ->where('device_id', $deviceChecksum)
+                ->where('fcm_token', $fcmToken)
                 ->get()
-                ->getRow();
+                ->getRowArray();
 
             if ($existing) {
-                // Update existing
-                $builder->where('device_id', $deviceChecksum)
-                    ->update($print_dump);
+                // Exact match — just update metadata, never create a new row
+                $updateData = $print_dump;
+                unset($updateData['created_at'], $updateData['device_id'], $updateData['fcm_token']);
+                $db->table('tbl_device_profiles')
+                    ->where('counter', $existing['counter'])
+                    ->update($updateData);
                 $action = 'updated';
             } else {
-                // Insert new — enforce plan device limit before creating a new device
+                // New (device_id + fcm_token) pair — enforce plan device limit
                 $ownerId = $print_dump['owner_id'] ?? 0;
                 if ($ownerId) {
                     $currentCount = $this->countDevicesForOwner($ownerId);
                     $gate = new \App\Services\PlanGate();
                     if (!$gate->canAddDevice($ownerId, $currentCount)) {
-                        log_message('info', "PlanGate: user #{$ownerId} device limit reached ({$currentCount}), rejecting new device {$deviceChecksum}");
+                        log_message('info', "PlanGate: user #{$ownerId} device limit reached ({$currentCount}), rejecting {$deviceChecksum}");
                         return json_encode([
-                            'success' => false,
-                            'message' => 'Device limit reached for your current plan. Upgrade to add more devices.',
+                            'success'              => false,
+                            'message'              => 'Device limit reached for your current plan. Upgrade to add more devices.',
                             'device_limit_reached' => true,
                         ]);
                     }
                 }
 
-                if (!isset($print_dump['created_at']) || empty($print_dump['created_at'])) {
-                    $print_dump['created_at'] = date('Y-m-d H:i:s');
-                }
-                $builder->insert($print_dump);
+                $db->table('tbl_device_profiles')->insert($print_dump);
                 $action = 'created';
-            }
 
-            // Send device paired email for new devices
-            $ownerId = $print_dump['owner_id'] ?? 0;
-            if ($ownerId && $action === 'created') {
-                $this->sendDevicePairedEmail($print_dump, $ownerId, $action);
+                // Send paired-device email only on genuine first registration
+                if ($ownerId) {
+                    $this->sendDevicePairedEmail($print_dump, $ownerId, $action);
+                }
             }
 
             return json_encode([
-                'success' => true,
-                'dev_chck_sum' => $deviceChecksum,
-                'dev_adr_id' => $print_dump['android_id'] ?? null,
+                'success'         => true,
+                'dev_chck_sum'    => $deviceChecksum,
+                'dev_adr_id'      => $print_dump['android_id'] ?? null,
                 'fcm_token_saved' => isset($print_dump['fcm_token']),
-                'action' => $action,
-                'is_new' => ($action === 'created')
+                'action'          => $action,
+                'is_new'          => ($action === 'created'),
             ]);
 
         } catch (\Exception $e) {
+            log_message('error', 'make_device_print error: ' . $e->getMessage());
             return json_encode([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
         }
     }
+
 
     /**
      * Count devices currently linked to an owner.
@@ -162,7 +167,8 @@ class Mod_Receive extends Model
     }
 
     /**
-     * Makes a test token entry.
+     * Logs a token verification attempt.
+     * Note: tbl_tokentest was removed in migration 20260815123000. Audit is now log-only.
      *
      * @param string $var_sent_token
      * @param string $var_time
@@ -172,26 +178,8 @@ class Mod_Receive extends Model
      */
     public function make_test_token(string $var_sent_token, string $var_time, string $var_ip, string $var_format): bool
     {
-        try {
-            $data = [
-                'token_submitted' => $var_sent_token,
-                'token_senttime' => $var_time,
-                'token_received' => time(),
-                'token_ip' => $var_ip,
-                'token_format' => $var_format,
-            ];
-
-            if ($this->db->table('tbl_tokentest')->insert($data)) {
-                log_message('info', 'Test token created: ' . $var_sent_token);
-                return true;
-            }
-
-            log_message('error', 'Failed to insert test token');
-            return false;
-        } catch (\Exception $e) {
-            log_message('error', 'make_test_token error: ' . $e->getMessage());
-            return false;
-        }
+        log_message('info', "Token verify attempt | token={$var_sent_token} | ip={$var_ip} | format={$var_format} | sent_time={$var_time}");
+        return true;
     }
 
     /**
@@ -203,7 +191,7 @@ class Mod_Receive extends Model
     public function get_token_owner(string $token)
     {
         try {
-            $result = $this->db->table('tbl_tokens')
+            $result = $this->db->table('tbl_user_api_tokens')
                 ->where('token', $token)
                 ->limit(1)
                 ->get()

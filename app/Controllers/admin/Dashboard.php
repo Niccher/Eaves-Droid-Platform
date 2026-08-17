@@ -23,9 +23,9 @@ class Dashboard extends BaseAdminController
             }
         }
         $totalUsers = $totalUsersBuilder->countAllResults();
-        $totalDevices = $db->table('tbl_devices')->countAllResults();
-        $totalUploads = $db->table('uploaded_files')->countAllResults();
-        $storageUsed = $db->table('uploaded_files')
+        $totalDevices = $db->table('tbl_devices_raw')->countAllResults();
+        $totalUploads = $db->table('tbl_uploaded_files')->countAllResults();
+        $storageUsed = $db->table('tbl_uploaded_files')
             ->selectSum('file_size_bytes')
             ->get()
             ->getRow()
@@ -41,7 +41,7 @@ class Dashboard extends BaseAdminController
             ->get()
             ->getResultArray();
 
-        $uploadsPerDay = $db->table('uploaded_files')
+        $uploadsPerDay = $db->table('tbl_uploaded_files')
             ->select("DATE(uploaded_at) as date, COUNT(*) as count")
             ->where('uploaded_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)')
             ->groupBy('DATE(uploaded_at)')
@@ -57,7 +57,7 @@ class Dashboard extends BaseAdminController
             ->get()
             ->getResultArray();
 
-        $totalUsersWithData = $db->table('uploaded_files')
+        $totalUsersWithData = $db->table('tbl_uploaded_files')
             ->select('token_owner_id')
             ->groupBy('token_owner_id')
             ->countAllResults();
@@ -113,10 +113,10 @@ class Dashboard extends BaseAdminController
             ->where('created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)')
             ->countAllResults();
 
-        $uploadsToday = $db->table('uploaded_files')
+        $uploadsToday = $db->table('tbl_uploaded_files')
             ->where('uploaded_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)')
             ->countAllResults();
-        $pendingParsing = $db->table('uploaded_files')
+        $pendingParsing = $db->table('tbl_uploaded_files')
             ->where('upload_status', 'uploaded')
             ->countAllResults();
 

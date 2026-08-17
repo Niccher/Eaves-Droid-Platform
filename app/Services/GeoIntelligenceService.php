@@ -83,11 +83,11 @@ class GeoIntelligenceService
     }
     
     /**
-     * Fetch valid location points from tbl_location.
+     * Fetch valid location points from tbl_extracted_locations.
      */
     private function fetchLocationPoints(?int $userId, ?string $deviceId, int $days): array
     {
-        $builder = $this->db->table('tbl_location')
+        $builder = $this->db->table('tbl_extracted_locations')
             ->select('counter, owner_id, device_id, latitude, longitude, location_time, 
                       extracted_at, is_home, is_work, is_saved_place')
             ->where('latitude IS NOT NULL')
@@ -104,8 +104,8 @@ class GeoIntelligenceService
             // Exclude points already associated with a place
             $builder->where('counter NOT IN (
                 SELECT DISTINCT counter FROM geo_places 
-                WHERE user_id = tbl_location.owner_id 
-                AND device_id = tbl_location.device_id
+                WHERE user_id = tbl_extracted_locations.owner_id 
+                AND device_id = tbl_extracted_locations.device_id
             )', null, false);
         }
         

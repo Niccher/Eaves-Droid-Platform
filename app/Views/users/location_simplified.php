@@ -144,12 +144,9 @@ function actMeta(array $e): array {
           </div>
           <p class="text-muted mb-2">Chronological forensic feed — each card combines the GPS fix with the activity state recorded at the same extraction</p>
           <div class="d-flex flex-wrap" style="gap:8px;">
-            <span class="stat-pill"><i class="fas fa-map-marker-alt text-primary"></i><?= number_format($totalLocations) ?> Locations</span>
-            <span class="stat-pill"><i class="fas fa-walking text-success"></i><?= number_format($totalActivities) ?> Activities</span>
+            <span class="stat-pill"><i class="fas fa-map-marker-alt text-primary"></i><?= number_format(count($timeline)) ?> Locations</span>
+            <span class="stat-pill"><i class="fas fa-walking text-success"></i><?= number_format(count($timeline)) ?> Activities</span>
             <span class="stat-pill"><i class="fas fa-crosshairs text-info"></i><?= $locWithCoords ?> w/ Coords</span>
-            <?php if ($topAct !== '—'): ?>
-              <span class="stat-pill"><i class="fas fa-chart-bar text-warning"></i><?= esc($topAct) ?> (<?= $actTypes[$topAct] ?>)</span>
-            <?php endif; ?>
             <?php if ($lastLat !== null): ?>
               <a href="https://www.google.com/maps?q=<?= $lastLat ?>,<?= $lastLng ?>" target="_blank"
                  class="stat-pill text-decoration-none" style="border-color:#c3d6ff;color:#007bff;">
@@ -182,19 +179,7 @@ function actMeta(array $e): array {
           <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-search"></i></span></div>
           <input id="tlSearch" type="text" class="form-control" placeholder="Search entries…">
         </div>
-        <select id="typeFilter" class="form-control form-control-sm" style="max-width:190px;">
-          <option value="all">All Entries</option>
-          <option value="both">Location + Activity</option>
-          <option value="location">Location Only</option>
-          <option value="activity">Activity Only</option>
-        </select>
-        <div class="custom-control custom-switch ml-auto">
-          <input type="checkbox" class="custom-control-input" id="hasCoordsToggle"
-            <?= !empty($has_coords_filter) ? 'checked' : '' ?>
-            onchange="window.location.href='<?= current_url() ?>?has_coords='+(this.checked?'1':'0')">
-          <label class="custom-control-label" for="hasCoordsToggle"><small>Coords only</small></label>
-        </div>
-        <span class="text-muted small ml-2"><i class="fas fa-layer-group mr-1"></i><?= count($timeline) ?> cards</span>
+
       </div>
 
       <!-- ── Timeline ────────────────────────────────────────────────────── -->
@@ -216,7 +201,7 @@ function actMeta(array $e): array {
             $tsS = tsSec((int)$cardTs);
             $dayKey   = $tsS > 0 ? date('Y-m-d', $tsS)   : '0000-00-00';
             $dayLabel = $tsS > 0 ? date('l, M j Y', $tsS) : 'Unknown date';
-            $timeStr  = $tsS > 0 ? date('H:i:s', $tsS)   : '—';
+            $timeStr  = $tsS > 0 ? date('M jS D Y h:i:s A', $tsS) : '—';
 
             $hasLoc = $loc !== null;
             $hasAct = $act !== null;
@@ -288,18 +273,14 @@ function actMeta(array $e): array {
                       <i class="fas fa-map-marked-alt"></i>Maps
                     </a>
                   <?php endif; ?>
-                  <?php if ($hasLoc && $locId !== ''): ?>
+                  <?php $fetchedVal = $loc['fetched_at'] ?? $act['fetched_at'] ?? ''; ?>
+                  <?php if ($fetchedVal !== ''): ?>
                     <button class="btn btn-sm btn-outline-danger py-0 px-2 delete-row"
-                      data-type="location" data-id="<?= $locId ?>"
-                      data-url="<?= base_url('location/delete') ?>" title="Delete location">
-                      <i class="fas fa-map-marker-alt"></i><i class="fas fa-times ml-1"></i>
-                    </button>
-                  <?php endif; ?>
-                  <?php if ($hasAct && $actId !== ''): ?>
-                    <button class="btn btn-sm btn-outline-danger py-0 px-2 delete-row"
-                      data-type="activity" data-id="<?= $actId ?>"
-                      data-url="<?= base_url('activities/delete') ?>" title="Delete activity">
-                      <i class="fas fa-running"></i><i class="fas fa-times ml-1"></i>
+                      data-id="<?= $fetchedVal ?>"
+                      data-url="<?= base_url('location/delete-paired') ?>"
+                      data-delete-title="Location & Activity entry"
+                      title="Delete entry">
+                      <i class="fas fa-trash-alt"></i>
                     </button>
                   <?php endif; ?>
                 </div>
@@ -332,7 +313,7 @@ function actMeta(array $e): array {
                   <div class="kv"><span class="k"><i class="fas fa-<?= $locStatus==='success'?'check-circle text-success':'exclamation-circle text-warning' ?> mr-1"></i>Status</span><span class="v">
                     <span class="badge badge-<?= $locStatus==='success'?'success':'warning' ?>"><?= esc($locStatus) ?></span>
                   </span></div>
-                  <div class="kv"><span class="k"><i class="fas fa-cloud-upload-alt text-muted mr-1"></i>Uploaded</span><span class="v" style="font-size:10px;"><?= $locUpload ?></span></div>
+
                 </div>
                 <?php else: ?>
                 <div class="card-section">
@@ -374,7 +355,7 @@ function actMeta(array $e): array {
                       <i class="fas fa-info-circle mr-1"></i><?= esc(mb_substr($info,0,90)) ?><?= mb_strlen($info)>90?'…':'' ?>
                     </div>
                   <?php endif; ?>
-                  <div class="kv"><span class="k"><i class="fas fa-cloud-upload-alt text-muted mr-1"></i>Uploaded</span><span class="v" style="font-size:10px;"><?= $actUpload ?></span></div>
+
                 </div>
                 <?php else: ?>
                 <div class="card-section">
@@ -409,15 +390,7 @@ document.getElementById('tlSearch').addEventListener('keyup', function () {
     hideSeparators();
 });
 
-/* ── Type filter ──────────────────────────────────────────────── */
-document.getElementById('typeFilter').addEventListener('change', function () {
-    var val = this.value;
-    document.querySelectorAll('#tlFeed .tl-item').forEach(function (el) {
-        var show = (val === 'all') || (el.dataset.type === val);
-        el.style.display = show ? '' : 'none';
-    });
-    hideSeparators();
-});
+
 
 /* ── Hide empty day separators ────────────────────────────────── */
 function hideSeparators() {

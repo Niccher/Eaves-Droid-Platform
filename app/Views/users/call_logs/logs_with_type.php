@@ -251,10 +251,25 @@
                                             }
 
                                             // Contact name
-                                            if (empty($call_log['Saved'])) {
+                                            $callerNum = $call_log['Caller'];
+                                            $cleanCaller = preg_replace('/[^0-9+]/', '', $callerNum);
+                                            $contactInfo = null;
+                                            if (isset($contactMap[$cleanCaller])) {
+                                                $contactInfo = $contactMap[$cleanCaller];
+                                            } elseif (isset($contactMap[$callerNum])) {
+                                                $contactInfo = $contactMap[$callerNum];
+                                            }
+
+                                            $displayName = !empty($call_log['Saved']) ? $call_log['Saved'] : ($contactInfo ? $contactInfo['name'] : '');
+
+                                            if (empty($displayName)) {
                                                 $name = '<span class="text-danger"><i>Unsaved Contact</i></span>';
                                             } else {
-                                                $name = '<span class="text-dark font-weight-bold">' . htmlspecialchars($call_log['Saved']) . '</span>';
+                                                if ($contactInfo) {
+                                                    $name = '<a href="' . base_url('contacts/analyze/calls/' . $contactInfo['enc_id']) . '" class="font-weight-bold">' . htmlspecialchars($displayName) . '</a>';
+                                                } else {
+                                                    $name = '<span class="text-dark font-weight-bold">' . htmlspecialchars($displayName) . '</span>';
+                                                }
                                             }
 
                                              ?>

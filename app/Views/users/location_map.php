@@ -90,73 +90,180 @@
           </div>
         </div>
 
-        <!-- Coordinates Data Table -->
+        <!-- ── Map Diagnostics & Path Analytics ──────────────────────────── -->
+        <?php
+        // Pre-compute all stats from $locations array
+        $high = $med = $low = 0;
+        $speedSum = $speedCount = 0;
+        $maxSpeed = 0;
+        $providers = [];
+        $hotspots = [];
+
+        foreach ($locations as $l) {
+            // Accuracy precision tiers
+            $acc = isset($l['accuracy']) ? (float)$l['accuracy'] : null;
+            if ($acc !== null) {
+                if ($acc <= 15)      $high++;
+                elseif ($acc <= 50)  $med++;
+                else                 $low++;
+            }
+
+            // Speed
+            $spd = isset($l['speed']) ? (float)$l['speed'] * 3.6 : null;
+            if ($spd !== null && $spd >= 0) {
+                $speedSum += $spd;
+                $speedCount++;
+                if ($spd > $maxSpeed) $maxSpeed = $spd;
+            }
+
+            // Provider footprint
+            $prov = strtolower($l['provider'] ?? 'unknown');
+            $providers[$prov] = ($providers[$prov] ?? 0) + 1;
+            arsort($providers);
+
+            // Hotspots
+            $lat4 = $l['latitude']  !== null ? round((float)$l['latitude'],  4) : null;
+            $lng4 = $l['longitude'] !== null ? round((float)$l['longitude'], 4) : null;
+            if ($lat4 !== null && $lng4 !== null) {
+                $key = $lat4 . ',' . $lng4;
+                $hotspots[$key] = ($hotspots[$key] ?? 0) + 1;
+            }
+        }
+        arsort($hotspots);
+        $avgSpeed = $speedCount > 0 ? round($speedSum / $speedCount, 1) : null;
+        $maxSpeed = $maxSpeed > 0 ? round($maxSpeed, 1) : null;
+        $topHotspots = array_slice($hotspots, 0, 5, true);
+        $total = count($locations);
+        ?>
+
+        <!-- Row 1: Precision Spectrum (3 info-boxes) + Velocity -->
         <div class="col-12 mt-4">
-          <div class="card card-secondary shadow-sm">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-list mr-2"></i>Location Coordinate Logs</h3>
-            </div>
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table table-hover table-striped table-bordered mb-0">
-                  <thead class="thead-light">
-                    <tr>
-                      <th>Coordinates</th>
-                      <th>Accuracy</th>
-                      <th>Provider</th>
-                      <th>Speed</th>
-                      <th>Altitude</th>
-                      <th>Timestamp</th>
-                      <th class="text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php if (empty($locations)): ?>
-                      <tr>
-                        <td colspan="7" class="text-center py-5">
-                          <i class="fas fa-map-marker-alt fa-3x text-muted mb-3 d-block"></i>
-                          <h5 class="text-muted">No coordinate logs found</h5>
-                        </td>
-                      </tr>
-                    <?php else: ?>
-                      <?php foreach ($locations as $l): ?>
-                        <tr>
-                          <td>
-                            <code class="text-dark bg-light p-2 rounded d-inline-block font-weight-bold">
-                              <?= esc($l['latitude']) ?>, <?= esc($l['longitude']) ?>
-                            </code>
-                          </td>
-                          <td>
-                            <span class="badge badge-<?= isset($l['accuracy']) && $l['accuracy'] <= 50 ? 'success' : 'warning' ?>">
-                              <?= isset($l['accuracy']) ? esc($l['accuracy']) . ' m' : '—' ?>
-                            </span>
-                          </td>
-                          <td>
-                            <span class="badge badge-info text-uppercase"><?= esc($l['provider'] ?? 'unknown') ?></span>
-                          </td>
-                          <td><?= isset($l['speed']) ? round((float)$l['speed']*3.6, 1) . ' km/h' : '—' ?></td>
-                          <td><?= isset($l['altitude']) ? round((float)$l['altitude'], 1) . ' m' : '—' ?></td>
-                          <td><?= !empty($l['location_time']) ? date('D, M d, Y H:i:s', (int)($l['location_time'] / 1000)) : '—' ?></td>
-                          <td class="text-center">
-                            <button type="button" class="btn btn-sm btn-outline-danger delete-row"
-                                    data-id="<?= $l['counter'] ?? $l['id'] ?? '' ?>"
-                                    data-url="<?= base_url('location/delete') ?>"
-                                    title="Delete coordinate">
-                              <i class="fas fa-trash"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      <?php endforeach; ?>
-                    <?php endif; ?>
-                  </tbody>
-                </table>
+          <div class="row">
+            <!-- High Precision -->
+            <div class="col-md-3 col-sm-6">
+              <div class="info-box shadow-sm" style="border-left:4px solid #28a745!important;">
+                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-crosshairs"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">High Precision</span>
+                  <span class="info-box-number"><?= $high ?></span>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-success" style="width:<?= $total > 0 ? round($high/$total*100) : 0 ?>%"></div>
+                  </div>
+                  <span class="progress-description">&le; 15 m accuracy</span>
+                </div>
               </div>
             </div>
-            <div class="card-footer">
-              <div class="float-right my-2">
-                <?php if (isset($pager)): ?>
-                  <?= $pager->links('default', 'bootstrap5_full') ?>
-                <?php endif; ?>
+            <!-- Medium Precision -->
+            <div class="col-md-3 col-sm-6">
+              <div class="info-box shadow-sm" style="border-left:4px solid #ffc107!important;">
+                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-bullseye"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Medium Precision</span>
+                  <span class="info-box-number"><?= $med ?></span>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-warning" style="width:<?= $total > 0 ? round($med/$total*100) : 0 ?>%"></div>
+                  </div>
+                  <span class="progress-description">16 – 50 m accuracy</span>
+                </div>
+              </div>
+            </div>
+            <!-- Low Precision -->
+            <div class="col-md-3 col-sm-6">
+              <div class="info-box shadow-sm" style="border-left:4px solid #dc3545!important;">
+                <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-map-pin"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Low Precision</span>
+                  <span class="info-box-number"><?= $low ?></span>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-danger" style="width:<?= $total > 0 ? round($low/$total*100) : 0 ?>%"></div>
+                  </div>
+                  <span class="progress-description">&gt; 50 m accuracy</span>
+                </div>
+              </div>
+            </div>
+            <!-- Avg & Max Speed -->
+            <div class="col-md-3 col-sm-6">
+              <div class="info-box shadow-sm" style="border-left:4px solid #17a2b8!important;">
+                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-tachometer-alt"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Velocity</span>
+                  <span class="info-box-number"><?= $avgSpeed !== null ? $avgSpeed . ' km/h' : '—' ?></span>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-info" style="width:<?= $maxSpeed !== null && $maxSpeed > 0 ? min(100, round($avgSpeed/$maxSpeed*100)) : 0 ?>%"></div>
+                  </div>
+                  <span class="progress-description">avg &bull; max <?= $maxSpeed !== null ? $maxSpeed . ' km/h' : '—' ?></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Provider Footprint + Top Hotspots -->
+        <div class="col-12 mt-3">
+          <div class="row">
+            <!-- Provider Footprint -->
+            <div class="col-md-6">
+              <div class="card card-outline card-primary shadow-sm">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="fas fa-satellite-dish mr-2"></i>Provider Footprint</h3>
+                </div>
+                <div class="card-body p-0">
+                  <?php if (empty($providers)): ?>
+                    <div class="text-center py-4 text-muted"><i class="fas fa-satellite fa-2x mb-2 d-block"></i>No data</div>
+                  <?php else: ?>
+                    <ul class="list-group list-group-flush">
+                      <?php foreach ($providers as $prov => $cnt): ?>
+                        <?php
+                          $pct = $total > 0 ? round($cnt / $total * 100) : 0;
+                          $icon = $prov === 'gps' ? 'fa-satellite text-success' : ($prov === 'network' ? 'fa-wifi text-info' : 'fa-broadcast-tower text-secondary');
+                          $bar  = $prov === 'gps' ? 'bg-success' : ($prov === 'network' ? 'bg-info' : 'bg-secondary');
+                        ?>
+                        <li class="list-group-item px-3 py-2">
+                          <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span><i class="fas <?= $icon ?> mr-2"></i><strong><?= strtoupper(esc($prov)) ?></strong></span>
+                            <span class="badge badge-light border"><?= $cnt ?> <small class="text-muted">(<?= $pct ?>%)</small></span>
+                          </div>
+                          <div class="progress" style="height:5px;">
+                            <div class="progress-bar <?= $bar ?>" style="width:<?= $pct ?>%"></div>
+                          </div>
+                        </li>
+                      <?php endforeach; ?>
+                    </ul>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Hotspots -->
+            <div class="col-md-6">
+              <div class="card card-outline card-success shadow-sm">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="fas fa-map-marked-alt mr-2"></i>Top Visited Hotspots</h3>
+                  <small class="card-subtitle text-muted ml-2">&approx; 10 m radius clusters</small>
+                </div>
+                <div class="card-body p-0">
+                  <?php if (empty($topHotspots)): ?>
+                    <div class="text-center py-4 text-muted"><i class="fas fa-map-marker fa-2x mb-2 d-block"></i>No data</div>
+                  <?php else: ?>
+                    <ul class="list-group list-group-flush">
+                      <?php $rank = 1; foreach ($topHotspots as $coords => $visits): ?>
+                        <?php [$hlat, $hlng] = explode(',', $coords); ?>
+                        <li class="list-group-item px-3 py-2">
+                          <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                              <span class="badge badge-secondary mr-2">#<?= $rank ?></span>
+                              <a href="https://www.google.com/maps?q=<?= $hlat ?>,<?= $hlng ?>" target="_blank"
+                                 class="text-primary" style="font-size:12px;font-family:monospace;">
+                                <?= $hlat ?>, <?= $hlng ?>
+                              </a>
+                            </div>
+                            <span class="badge badge-success"><?= $visits ?> visit<?= $visits > 1 ? 's' : '' ?></span>
+                          </div>
+                        </li>
+                      <?php $rank++; endforeach; ?>
+                    </ul>
+                  <?php endif; ?>
+                </div>
               </div>
             </div>
           </div>

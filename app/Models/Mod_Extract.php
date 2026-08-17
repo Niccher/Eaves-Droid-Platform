@@ -17,7 +17,7 @@ class Mod_Extract extends Model
     public function get_sms_between_contacts(int $user_id, array $numbers): array
     {
         try {
-            $builder = $this->db->table('tbl_sms')
+            $builder = $this->db->table('tbl_extracted_sms')
                 ->select('*, address as sms_number, body as sms_body, sms_date as sms_time')
                 ->where('owner_id', $user_id)
                 ->groupStart();
@@ -46,7 +46,7 @@ class Mod_Extract extends Model
     public function get_logs_between_contacts(int $user_id, array $numbers): array
     {
         try {
-            $builder = $this->db->table('tbl_logs')
+            $builder = $this->db->table('tbl_extracted_call_logs')
                 ->select('*, call_type as Type, phone_number as Caller, call_date as Timestamp, duration_seconds as Durations')
                 ->where('owner_id', $user_id)
                 ->groupStart();
@@ -78,7 +78,7 @@ class Mod_Extract extends Model
     public function get_contact_at(int $contact_id)
     {
         try {
-            $result = $this->db->table('tbl_contacts')
+            $result = $this->db->table('tbl_extracted_contacts')
                 ->select('*, display_name as Name')
                 ->where('counter', $contact_id)
                 ->get()
@@ -120,7 +120,7 @@ class Mod_Extract extends Model
     public function get_sms_from(int $user_id, string $sender): array
     {
         try {
-            return $this->db->table('tbl_sms')
+            return $this->db->table('tbl_extracted_sms')
                 ->select('*, address as sms_number, body as sms_body, sms_date as sms_time')
                 ->where('owner_id', $user_id)
                 ->where('address', $sender)

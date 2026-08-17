@@ -10,16 +10,24 @@ class DeviceConfigController extends BaseController
     use ResponseTrait;
 
     /**
-     * POST /api/v1/device/config/sync
+     * POST/PUT /api/v1/devices/config/sync
      * Device uploads its current config + permissions state.
      */
     public function sync()
     {
-        $token = $this->request->getPost('token');
-        $configJson = $this->request->getPost('config_json');
-        $permissionsJson = $this->request->getPost('permissions_json');
-        $deviceInfoJson = $this->request->getPost('device_info_json');
-        $metadataJson = $this->request->getPost('metadata_json');
+        $json = $this->request->getJSON(true) ?? [];
+        $post = $this->request->getPost() ?? [];
+
+        $token = $json['token'] ?? $post['token'] ?? null;
+        $configRaw = $json['config'] ?? $json['config_json'] ?? $post['config_json'] ?? null;
+        $permissionsRaw = $json['permissions'] ?? $json['permissions_json'] ?? $post['permissions_json'] ?? null;
+        $deviceInfoRaw = $json['device_info'] ?? $json['device_info_json'] ?? $post['device_info_json'] ?? null;
+        $metadataRaw = $json['metadata'] ?? $json['metadata_json'] ?? $post['metadata_json'] ?? null;
+
+        $configJson = is_array($configRaw) ? json_encode($configRaw) : $configRaw;
+        $permissionsJson = is_array($permissionsRaw) ? json_encode($permissionsRaw) : $permissionsRaw;
+        $deviceInfoJson = is_array($deviceInfoRaw) ? json_encode($deviceInfoRaw) : $deviceInfoRaw;
+        $metadataJson = is_array($metadataRaw) ? json_encode($metadataRaw) : $metadataRaw;
 
         if (!$token) {
             return $this->fail('Device token is required.', 400);
@@ -28,7 +36,7 @@ class DeviceConfigController extends BaseController
         try {
             $db = \Config\Database::connect();
 
-            $profile = $db->table('tbl_device_profile')
+            $profile = $db->table('tbl_device_profiles')
                 ->select('counter, device_id')
                 ->where('fcm_token', $token)
                 ->get()
@@ -43,7 +51,7 @@ class DeviceConfigController extends BaseController
                 $userId = (int) auth()->user()->id;
             }
 
-            $existing = $db->table('tbl_device_config')
+            $existing = $db->table('tbl_device_configs')
                 ->where('device_profile_id', $profile['counter'])
                 ->get()
                 ->getRowArray();
@@ -59,12 +67,12 @@ class DeviceConfigController extends BaseController
             ];
 
             if ($existing) {
-                $db->table('tbl_device_config')
+                $db->table('tbl_device_configs')
                     ->where('device_profile_id', $profile['counter'])
                     ->update($data);
             } else {
                 $data['created_at'] = date('Y-m-d H:i:s');
-                $db->table('tbl_device_config')->insert($data);
+                $db->table('tbl_device_configs')->insert($data);
             }
 
             return $this->respond([
@@ -78,7 +86,7 @@ class DeviceConfigController extends BaseController
     }
 
     /**
-     * GET /api/v1/device/config/(:any)
+     * GET /api/v1/devices/config/(:any)
      * Fetch the last known config for a device by FCM token.
      */
     public function fetch($token = null)
@@ -90,10 +98,10 @@ class DeviceConfigController extends BaseController
         try {
             $db = \Config\Database::connect();
 
-            $config = $db->table('tbl_device_config')
-                ->select('tbl_device_config.*, tbl_device_profile.device_model, tbl_device_profile.fcm_token')
-                ->join('tbl_device_profile', 'tbl_device_profile.counter = tbl_device_config.device_profile_id')
-                ->where('tbl_device_profile.fcm_token', $token)
+            $config = $db->table('tbl_device_configs')
+                ->select('tbl_device_configs.*, tbl_device_profiles.device_model, tbl_device_profiles.fcm_token')
+                ->join('tbl_device_profiles', 'tbl_device_profiles.counter = tbl_device_configs.device_profile_id')
+                ->where('tbl_device_profiles.fcm_token', $token)
                 ->get()
                 ->getRowArray();
 
@@ -121,14 +129,14 @@ class DeviceConfigController extends BaseController
     }
 
     /**
-     * GET /api/v1/device/defaults
+     * GET /api/v1/devices/defaults
      * Returns current app defaults for Android devices.
      */
     public function defaults()
     {
         try {
             $db = \Config\Database::connect();
-            $row = $db->table('tbl_app_defaults')
+            $row = $db->table('tbl_system_default_apps')
                 ->orderBy('version', 'DESC')
                 ->limit(1)
                 ->get()

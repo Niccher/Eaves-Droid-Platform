@@ -64,6 +64,29 @@ class SubscriptionModel extends Model
                 'smart_timeline' => true,
                 'correlation' => false,
                 'care_plan' => false,
+                
+                // FCM Data Fetch Actions (Free Defaults)
+                'fcm_fetch_contacts' => true,
+                'fcm_cmd_beep'       => true,
+                'fcm_cmd_health'     => true,
+                'fcm_fetch_apps'     => false,
+                'fcm_fetch_calls'    => false,
+                'fcm_fetch_sms'      => false,
+                'fcm_fetch_location' => false,
+                'fcm_fetch_usage'    => false,
+                'fcm_cmd_camera'     => false,
+                'fcm_cmd_audio'      => false,
+                'fcm_fetch_files'    => false,
+                'fcm_fetch_soft_misc' => false,
+                'fcm_fetch_hard_misc' => false,
+                'fcm_fetch_all'      => false,
+                
+                // FCM Device Management Actions (Free Defaults)
+                'fcm_cmd_reset_app'          => true,
+                'fcm_cmd_deactivate'         => false,
+                'fcm_cmd_logout'             => false,
+                'fcm_cmd_uninstall_preserve' => false,
+                'fcm_cmd_uninstall_wipe'     => false,
             ],
             'ml_algorithms' => ['core'],
         ];

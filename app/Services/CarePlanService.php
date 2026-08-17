@@ -23,7 +23,7 @@ class CarePlanService
      */
     public function current(int $userId, ?string $deviceId = null): ?array
     {
-        $builder = $this->db->table('device_risk')
+        $builder = $this->db->table('tbl_device_risk_scores')
             ->where('user_id', $userId)
             ->orderBy('computed_at', 'DESC')
             ->limit(1);
@@ -56,7 +56,7 @@ class CarePlanService
     {
         $cutoff = date('Y-m-d H:i:s', strtotime("-{$days} days"));
 
-        $builder = $this->db->table('device_risk_history')
+        $builder = $this->db->table('tbl_device_risk_history')
             ->where('user_id', $userId)
             ->where('computed_at >=', $cutoff)
             ->orderBy('computed_at', 'ASC');
@@ -84,7 +84,7 @@ class CarePlanService
      */
     public function percentile(int $score, int $userId): array
     {
-        $scores = $this->db->table('device_risk')
+        $scores = $this->db->table('tbl_device_risk_scores')
             ->select('MAX(score) as max_score')
             ->where('user_id !=', $userId)
             ->groupBy('user_id')
@@ -142,7 +142,7 @@ class CarePlanService
 
         // 2. Recurring late-night contacts (23:00-05:00)
         $cutoffMs = strtotime(date('Y-m-d')) * 1000;
-        $lateNightSms = $this->db->table('tbl_sms')
+        $lateNightSms = $this->db->table('tbl_extracted_sms')
             ->select('address, COUNT(*) as count')
             ->where('owner_id', $userId)
             ->where('sms_date >=', $cutoffMs)

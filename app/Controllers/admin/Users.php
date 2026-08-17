@@ -352,7 +352,7 @@ class Users extends BaseAdminController
             (new Mod_Finder())->deleteAllUserData($id);
 
             // Delete token-related data
-            $db->table('tbl_tokens')->where('owner_id', $id)->delete();
+            $db->table('tbl_user_api_tokens')->where('owner_id', $id)->delete();
             $db->table('tbl_user_actions')->where('user_id', $id)->delete();
 
             // Finally, soft delete the user record
@@ -459,7 +459,7 @@ class Users extends BaseAdminController
         $result = $finder->deleteAllUserData($id);
         $totalDeleted = $result['total_deleted'] ?? 0;
 
-        $db->table('tbl_tokens')->where('owner_id', $id)->delete();
+        $db->table('tbl_user_api_tokens')->where('owner_id', $id)->delete();
         $db->table('tbl_user_actions')->where('user_id', $id)->delete();
 
         $this->logAdminAction('admin_clear_user_data', 'critical', true, [
@@ -477,7 +477,7 @@ class Users extends BaseAdminController
         $aliases = [
             'locations'  => 'location',
             'activities' => 'activity',
-            'uploads'    => 'uploaded_files',
+            'uploads'    => 'tbl_uploaded_files',
             'device'     => 'device_context',
             'network'    => 'network_info',
             'security'   => 'security_audit',

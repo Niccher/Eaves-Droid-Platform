@@ -63,7 +63,7 @@ class FleetController extends BaseSuperadminController
 
         // Get latest extraction per device_id (deduplication)
         // Use a simpler approach: get max timestamp per device, then fetch matching rows
-        $latestTimestamps = $db->table('tbl_device_profile')
+        $latestTimestamps = $db->table('tbl_device_profiles')
             ->select('device_id, MAX(extraction_timestamp) as max_ts')
             ->groupBy('device_id')
             ->get()
@@ -76,7 +76,7 @@ class FleetController extends BaseSuperadminController
         // Build where conditions for each device_id + max_ts pair
         $devices = [];
         foreach ($latestTimestamps as $lt) {
-            $device = $db->table('tbl_device_profile')
+            $device = $db->table('tbl_device_profiles')
                 ->where('device_id', $lt['device_id'])
                 ->where('extraction_timestamp', $lt['max_ts'])
                 ->where('device_id IS NOT NULL')
@@ -136,8 +136,8 @@ class FleetController extends BaseSuperadminController
     {
         $db = $this->getDb();
 
-        $filesSize = $db->table('tbl_device_files')->selectSum('size_bytes')->get()->getRow()->size_bytes ?? 0;
-        $appsSize = $db->table('tbl_apps')->selectSum('app_size')->get()->getRow()->app_size ?? 0;
+        $filesSize = $db->table('tbl_extracted_device_files')->selectSum('size_bytes')->get()->getRow()->size_bytes ?? 0;
+        $appsSize = $db->table('tbl_extracted_installed_apps')->selectSum('app_size')->get()->getRow()->app_size ?? 0;
         $totalBytes = $filesSize + $appsSize;
 
         return [
@@ -152,7 +152,7 @@ class FleetController extends BaseSuperadminController
         $db = $this->getDb();
 
         // Sync success rate (last 24h)
-        $queueStats = $db->table('upload_queue')
+        $queueStats = $db->table('tbl_upload_queue')
             ->select("
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as success,
@@ -168,19 +168,19 @@ class FleetController extends BaseSuperadminController
             : 100;
 
         // Failed uploads count
-        $failedCount = $db->table('upload_queue')
+        $failedCount = $db->table('tbl_upload_queue')
             ->where('status', 'failed')
             ->where('queued_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)')
             ->countAllResults();
 
         // Devices with low storage
-        $lowStorage = $db->table('tbl_device_profile')
+        $lowStorage = $db->table('tbl_device_profiles')
             ->where('internal_storage_free_gb <', 1)
             ->where('internal_storage_free_gb >', 0)
             ->countAllResults();
 
         // Battery health (average level)
-        $avgBattery = $db->table('tbl_device_profile')
+        $avgBattery = $db->table('tbl_device_profiles')
             ->selectAvg('battery_level')
             ->where('battery_level >', 0)
             ->get()
@@ -200,18 +200,18 @@ class FleetController extends BaseSuperadminController
     {
         $db = $this->getDb();
 
-        $rooted = $db->table('tbl_device_profile')->where('is_rooted', 1)->countAllResults();
-        $debuggable = $db->table('tbl_device_profile')->where('is_debuggable', 1)->countAllResults();
+        $rooted = $db->table('tbl_device_profiles')->where('is_rooted', 1)->countAllResults();
+        $debuggable = $db->table('tbl_device_profiles')->where('is_debuggable', 1)->countAllResults();
 
         // Sideloaded apps (not from Play Store)
-        $sideloaded = $db->table('tbl_device_profile')
+        $sideloaded = $db->table('tbl_device_profiles')
             ->where('app_installer !=', 'com.android.vending')
             ->where('app_installer !=', '')
             ->where('app_installer IS NOT NULL')
             ->countAllResults();
 
         // OS patch compliance (< 90 days)
-        $patched = $db->table('tbl_device_profile')
+        $patched = $db->table('tbl_device_profiles')
             ->where('android_security_patch >=', date('Y-m-d', strtotime('-90 days')))
             ->where('android_security_patch !=', '')
             ->where('android_security_patch IS NOT NULL')
@@ -231,7 +231,7 @@ class FleetController extends BaseSuperadminController
     private function getLatestDeviceProfilesCount(): int
     {
         $db = $this->getDb();
-        return $db->table('tbl_device_profile')
+        return $db->table('tbl_device_profiles')
             ->select('COUNT(DISTINCT device_id) as cnt')
             ->get()
             ->getRow()
@@ -322,7 +322,7 @@ class FleetController extends BaseSuperadminController
     {
         $db = $this->getDb();
 
-        $daily = $db->table('tbl_device_profile')
+        $daily = $db->table('tbl_device_profiles')
             ->select("DATE(FROM_UNIXTIME(extraction_timestamp / 1000)) as date, COUNT(DISTINCT device_id) as syncs")
             ->where('extraction_timestamp >', (time() - 604800) * 1000) // last 7 days in ms
             ->groupBy('DATE(FROM_UNIXTIME(extraction_timestamp / 1000))')
@@ -414,7 +414,7 @@ class FleetController extends BaseSuperadminController
         $db = $this->getDb();
 
         // Hourly heatmap for last 7 days
-        $hourly = $db->table('tbl_device_profile')
+        $hourly = $db->table('tbl_device_profiles')
             ->select("
                 HOUR(FROM_UNIXTIME(extraction_timestamp / 1000)) as hour,
                 DATE(FROM_UNIXTIME(extraction_timestamp / 1000)) as date,
@@ -529,7 +529,7 @@ class FleetController extends BaseSuperadminController
     {
         $db = $this->getDb();
 
-        $countries = $db->table('tbl_device_profile')
+        $countries = $db->table('tbl_device_profiles')
             ->select('country, COUNT(DISTINCT device_id) as device_count')
             ->where('country IS NOT NULL')
             ->where('country !=', '')
@@ -538,7 +538,7 @@ class FleetController extends BaseSuperadminController
             ->get()
             ->getResultArray();
 
-        $carriers = $db->table('tbl_device_profile')
+        $carriers = $db->table('tbl_device_profiles')
             ->select('network_operator, COUNT(DISTINCT device_id) as device_count')
             ->where('network_operator IS NOT NULL')
             ->where('network_operator !=', '')
@@ -559,7 +559,7 @@ class FleetController extends BaseSuperadminController
     {
         $db = $this->getDb();
 
-        $device = $db->table('tbl_device_profile')
+        $device = $db->table('tbl_device_profiles')
             ->where('device_id', $deviceId)
             ->orderBy('extraction_timestamp', 'DESC')
             ->limit(1)
@@ -571,7 +571,7 @@ class FleetController extends BaseSuperadminController
         }
 
         // Get upload history
-        $uploads = $db->table('upload_queue')
+        $uploads = $db->table('tbl_upload_queue')
             ->where('device_print_id', $deviceId)
             ->orderBy('queued_at', 'DESC')
             ->limit(50)
@@ -580,12 +580,12 @@ class FleetController extends BaseSuperadminController
 
         // Get data counts
         $dataCounts = [
-            'sms' => $db->table('tbl_sms')->where('device_id', $deviceId)->countAllResults(),
-            'calls' => $db->table('tbl_logs')->where('device_id', $deviceId)->countAllResults(),
-            'contacts' => $db->table('tbl_contacts')->where('device_id', $deviceId)->countAllResults(),
-            'locations' => $db->table('tbl_location')->where('device_id', $deviceId)->countAllResults(),
-            'apps' => $db->table('tbl_apps')->where('device_id', $deviceId)->countAllResults(),
-            'files' => $db->table('tbl_device_files')->where('device_id', $deviceId)->countAllResults(),
+            'sms' => $db->table('tbl_extracted_sms')->where('device_id', $deviceId)->countAllResults(),
+            'calls' => $db->table('tbl_extracted_call_logs')->where('device_id', $deviceId)->countAllResults(),
+            'contacts' => $db->table('tbl_extracted_contacts')->where('device_id', $deviceId)->countAllResults(),
+            'locations' => $db->table('tbl_extracted_locations')->where('device_id', $deviceId)->countAllResults(),
+            'apps' => $db->table('tbl_extracted_installed_apps')->where('device_id', $deviceId)->countAllResults(),
+            'files' => $db->table('tbl_extracted_device_files')->where('device_id', $deviceId)->countAllResults(),
         ];
 
         return $this->renderView('superadmin/fleet/device_detail', [

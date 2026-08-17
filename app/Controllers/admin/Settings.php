@@ -705,7 +705,7 @@ $allowedMap = [
         $disks = $this->getDiskUsage();
 
         $allFilesSize = 0;
-        $fileRows = $db->table('uploaded_files')->select('SUM(file_size_bytes) AS total_size')->get()->getRowArray();
+        $fileRows = $db->table('tbl_uploaded_files')->select('SUM(file_size_bytes) AS total_size')->get()->getRowArray();
         $allFilesSize = (int)($fileRows['total_size'] ?? 0);
 
         $dbSize = 0;
@@ -746,7 +746,7 @@ $allowedMap = [
         $disks = $this->getDiskUsage();
 
         $allFilesSize = 0;
-        $fileRows = $db->table('uploaded_files')->select('SUM(file_size_bytes) AS total_size')->get()->getRowArray();
+        $fileRows = $db->table('tbl_uploaded_files')->select('SUM(file_size_bytes) AS total_size')->get()->getRowArray();
         $allFilesSize = (int)($fileRows['total_size'] ?? 0);
 
         $dbSize = 0;

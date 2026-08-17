@@ -14,7 +14,7 @@ class ProcessUploadQueue extends BaseCommand
 {
     protected $group       = 'Queue';
     protected $name        = 'queue:process';
-    protected $description = 'Process pending uploads from the upload_queue table.';
+    protected $description = 'Process pending uploads from the tbl_upload_queue table.';
 
     private array $legacyMethodMap = [
         'contacts' => 'get_contacts',

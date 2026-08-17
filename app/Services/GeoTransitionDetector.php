@@ -52,7 +52,7 @@ class GeoTransitionDetector
         $since = time() - ($lookbackHours * 3600);
         $sinceMs = $since * 1000;
         
-        $points = $this->db->table('tbl_location')
+        $points = $this->db->table('tbl_extracted_locations')
             ->select('counter, latitude, longitude, location_time, extracted_at')
             ->where('owner_id', $userId)
             ->where('device_id', $deviceId)

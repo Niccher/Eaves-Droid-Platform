@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class Mod_Blocklist extends Model
 {
-    protected $table = 'tbl_blocklist';
+    protected $table = 'tbl_user_blocklists';
     protected $primaryKey = 'id';
     protected $returnType = 'array';
     protected $useSoftDeletes = false;

@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class Mod_Upload_Queue extends Model
 {
-    protected $table = 'upload_queue';
+    protected $table = 'tbl_upload_queue';
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
 

@@ -38,7 +38,7 @@ class CleanupUploadQueue extends BaseCommand
             $queueModel = new Mod_Upload_Queue();
             $cutoff = date('Y-m-d H:i:s', strtotime("-{$timeoutHours} hours"));
 
-            $stuckItems = $db->table('upload_queue')
+            $stuckItems = $db->table('tbl_upload_queue')
                 ->where('status', 'processing')
                 ->where('updated_at <', $cutoff)
                 ->get()
@@ -63,7 +63,7 @@ class CleanupUploadQueue extends BaseCommand
                         CLI::write(" [{$item['id']}] Marked as failed ({$attempts} attempts, timeout {$timeoutHours}h)", 'red');
                         $output .= "[{$item['id']}] Marked as failed ({$attempts} attempts, timeout {$timeoutHours}h)" . PHP_EOL;
                     } else {
-                        $db->table('upload_queue')
+                        $db->table('tbl_upload_queue')
                             ->where('id', (int)$item['id'])
                             ->update([
                                 'status' => 'pending',

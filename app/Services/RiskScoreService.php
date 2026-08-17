@@ -185,7 +185,7 @@ class RiskScoreService
     private function saveScore(array $result): bool
     {
         try {
-            $this->db->table('device_risk')->insert([
+            $this->db->table('tbl_device_risk_scores')->insert([
                 'user_id' => $result['user_id'],
                 'device_id' => $result['device_id'],
                 'score' => $result['score'],
@@ -196,7 +196,7 @@ class RiskScoreService
                 'computed_at' => $result['computed_at'],
             ], true); // true = ON DUPLICATE KEY UPDATE
 
-            $this->db->table('device_risk_history')->insert([
+            $this->db->table('tbl_device_risk_history')->insert([
                 'user_id' => $result['user_id'],
                 'device_id' => $result['device_id'],
                 'score' => $result['score'],
@@ -217,7 +217,7 @@ class RiskScoreService
         // Find devices that exist but have no ML findings in window
         $cutoff = date('Y-m-d', strtotime("-{$windowDays} days"));
         
-        $devices = $this->db->table('tbl_device_profile dp')
+        $devices = $this->db->table('tbl_device_profiles dp')
             ->select('dp.owner_id, dp.device_id')
             ->where('dp.device_id NOT IN (
                 SELECT DISTINCT device_id FROM ml_results WHERE created_at >= ?

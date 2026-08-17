@@ -500,7 +500,7 @@ class Advanced extends BaseClientController
 
         if (!empty($deviceIds)) {
             $db = \Config\Database::connect();
-            $targetDevice = $db->table('tbl_device_profile')
+            $targetDevice = $db->table('tbl_device_profiles')
                 ->whereIn('device_id', $deviceIds)
                 ->where('fcm_token !=', '')
                 ->where('fcm_token IS NOT NULL')
@@ -512,7 +512,7 @@ class Advanced extends BaseClientController
         $recentUploadSources = [];
         if ($targetDevice) {
             $db = \Config\Database::connect();
-            $recentUploadSources = $db->table('uploaded_files')
+            $recentUploadSources = $db->table('tbl_uploaded_files')
                 ->select('upload_source, COUNT(*) as count')
                 ->where('token_owner_id', $this->userId)
                 ->where('uploaded_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)')
@@ -536,7 +536,7 @@ class Advanced extends BaseClientController
     public function remote_media()
     {
         [$rows, $pager, $total] = $this->paginate(
-            $this->finderModel->tableQuery('tbl_captured_media', $this->userId, 'created_at', 'DESC')
+            $this->finderModel->tableQuery('tbl_extracted_media_files', $this->userId, 'created_at', 'DESC')
         );
 
         foreach ($rows as &$r) {
@@ -1325,7 +1325,7 @@ class Advanced extends BaseClientController
     private function getTimestampColumn(string $table): string
     {
         return match ($table) {
-            'tbl_device_profile' => 'extraction_timestamp',
+            'tbl_device_profiles' => 'extraction_timestamp',
             default => 'extracted_at',
         };
     }
@@ -1394,21 +1394,21 @@ class Advanced extends BaseClientController
     public function hardware_dashboard()
     {
         $userId = $this->userId;
-        $latest_dc = $this->getLatestRecord('tbl_device_context', $userId);
-        $latest_bs = $this->getLatestRecord('tbl_battery_stats', $userId);
-        $latest_th = $this->getLatestRecord('tbl_thermal', $userId);
-        $latest_st = $this->getLatestRecord('tbl_storage', $userId);
-        $latest_ni = $this->getLatestRecord('tbl_network_info', $userId);
+        $latest_dc = $this->getLatestRecord('tbl_device_hardware_contexts', $userId);
+        $latest_bs = $this->getLatestRecord('tbl_telemetry_battery_stats', $userId);
+        $latest_th = $this->getLatestRecord('tbl_telemetry_thermal', $userId);
+        $latest_st = $this->getLatestRecord('tbl_telemetry_storage_stats', $userId);
+        $latest_ni = $this->getLatestRecord('tbl_system_network_info', $userId);
 
-        $history = $this->getMergedHistory('tbl_device_context', [
-            'dc' => 'tbl_device_context',
-            'bs' => 'tbl_battery_stats',
-            'th' => 'tbl_thermal',
-            'st' => 'tbl_storage',
-            'ni' => 'tbl_network_info',
+        $history = $this->getMergedHistory('tbl_device_hardware_contexts', [
+            'dc' => 'tbl_device_hardware_contexts',
+            'bs' => 'tbl_telemetry_battery_stats',
+            'th' => 'tbl_telemetry_thermal',
+            'st' => 'tbl_telemetry_storage_stats',
+            'ni' => 'tbl_system_network_info',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_device_context', $userId);
+        $total = $this->getMergedHistoryCount('tbl_device_hardware_contexts', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1430,15 +1430,15 @@ class Advanced extends BaseClientController
     public function battery_power()
     {
         $userId = $this->userId;
-        $latest_dc = $this->getLatestRecord('tbl_device_context', $userId);
-        $latest_bs = $this->getLatestRecord('tbl_battery_stats', $userId);
+        $latest_dc = $this->getLatestRecord('tbl_device_hardware_contexts', $userId);
+        $latest_bs = $this->getLatestRecord('tbl_telemetry_battery_stats', $userId);
 
-        $history = $this->getMergedHistory('tbl_device_context', [
-            'dc' => 'tbl_device_context',
-            'bs' => 'tbl_battery_stats',
+        $history = $this->getMergedHistory('tbl_device_hardware_contexts', [
+            'dc' => 'tbl_device_hardware_contexts',
+            'bs' => 'tbl_telemetry_battery_stats',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_device_context', $userId);
+        $total = $this->getMergedHistoryCount('tbl_device_hardware_contexts', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1461,17 +1461,17 @@ class Advanced extends BaseClientController
     public function system_performance()
     {
         $userId = $this->userId;
-        $latest_pi = $this->getLatestRecord('tbl_proc_info', $userId);
-        $latest_th = $this->getLatestRecord('tbl_thermal', $userId);
-        $latest_pr = $this->getLatestRecord('tbl_power_rails', $userId);
+        $latest_pi = $this->getLatestRecord('tbl_system_running_processes', $userId);
+        $latest_th = $this->getLatestRecord('tbl_telemetry_thermal', $userId);
+        $latest_pr = $this->getLatestRecord('tbl_telemetry_power_rails', $userId);
 
-        $history = $this->getMergedHistory('tbl_proc_info', [
-            'pi' => 'tbl_proc_info',
-            'th' => 'tbl_thermal',
-            'pr' => 'tbl_power_rails',
+        $history = $this->getMergedHistory('tbl_system_running_processes', [
+            'pi' => 'tbl_system_running_processes',
+            'th' => 'tbl_telemetry_thermal',
+            'pr' => 'tbl_telemetry_power_rails',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_proc_info', $userId);
+        $total = $this->getMergedHistoryCount('tbl_system_running_processes', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1496,17 +1496,17 @@ class Advanced extends BaseClientController
     public function network_connectivity()
     {
         $userId = $this->userId;
-        $latest_ni = $this->getLatestRecord('tbl_network_info', $userId);
+        $latest_ni = $this->getLatestRecord('tbl_system_network_info', $userId);
         $latest_nh = $this->getLatestRecord('tbl_hardware_network', $userId);
-        $latest_ct = $this->getLatestRecord('tbl_cell_towers', $userId);
+        $latest_ct = $this->getLatestRecord('tbl_telemetry_cell_towers', $userId);
 
-        $history = $this->getMergedHistory('tbl_network_info', [
-            'ni' => 'tbl_network_info',
+        $history = $this->getMergedHistory('tbl_system_network_info', [
+            'ni' => 'tbl_system_network_info',
             'nh' => 'tbl_hardware_network',
-            'ct' => 'tbl_cell_towers',
+            'ct' => 'tbl_telemetry_cell_towers',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_network_info', $userId);
+        $total = $this->getMergedHistoryCount('tbl_system_network_info', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1531,15 +1531,15 @@ class Advanced extends BaseClientController
     public function display_graphics()
     {
         $userId = $this->userId;
-        $latest_di = $this->getLatestRecord('tbl_display_info', $userId);
+        $latest_di = $this->getLatestRecord('tbl_telemetry_display_info', $userId);
         $latest_hg = $this->getLatestRecord('tbl_hardware_graphics', $userId);
 
-        $history = $this->getMergedHistory('tbl_display_info', [
-            'di' => 'tbl_display_info',
+        $history = $this->getMergedHistory('tbl_telemetry_display_info', [
+            'di' => 'tbl_telemetry_display_info',
             'hg' => 'tbl_hardware_graphics',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_display_info', $userId);
+        $total = $this->getMergedHistoryCount('tbl_telemetry_display_info', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1558,17 +1558,17 @@ class Advanced extends BaseClientController
     public function sensors_location()
     {
         $userId = $this->userId;
-        $latest_sp = $this->getLatestRecord('tbl_sensor_profile', $userId);
-        $latest_gh = $this->getLatestRecord('tbl_gnss_hardware', $userId);
-        $latest_vb = $this->getLatestRecord('tbl_vibration', $userId);
+        $latest_sp = $this->getLatestRecord('tbl_telemetry_sensors', $userId);
+        $latest_gh = $this->getLatestRecord('tbl_telemetry_gnss_hardware', $userId);
+        $latest_vb = $this->getLatestRecord('tbl_telemetry_vibration', $userId);
 
-        $history = $this->getMergedHistory('tbl_sensor_profile', [
-            'sp' => 'tbl_sensor_profile',
-            'gh' => 'tbl_gnss_hardware',
-            'vb' => 'tbl_vibration',
+        $history = $this->getMergedHistory('tbl_telemetry_sensors', [
+            'sp' => 'tbl_telemetry_sensors',
+            'gh' => 'tbl_telemetry_gnss_hardware',
+            'vb' => 'tbl_telemetry_vibration',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_sensor_profile', $userId);
+        $total = $this->getMergedHistoryCount('tbl_telemetry_sensors', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1588,15 +1588,15 @@ class Advanced extends BaseClientController
     public function media_hardware()
     {
         $userId = $this->userId;
-        $latest_ci = $this->getLatestRecord('tbl_camera_info', $userId);
-        $latest_ad = $this->getLatestRecord('tbl_audio_devices', $userId);
+        $latest_ci = $this->getLatestRecord('tbl_telemetry_cameras', $userId);
+        $latest_ad = $this->getLatestRecord('tbl_telemetry_audio_devices', $userId);
 
-        $history = $this->getMergedHistory('tbl_camera_info', [
-            'ci' => 'tbl_camera_info',
-            'ad' => 'tbl_audio_devices',
+        $history = $this->getMergedHistory('tbl_telemetry_cameras', [
+            'ci' => 'tbl_telemetry_cameras',
+            'ad' => 'tbl_telemetry_audio_devices',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_camera_info', $userId);
+        $total = $this->getMergedHistoryCount('tbl_telemetry_cameras', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1615,15 +1615,15 @@ class Advanced extends BaseClientController
     public function storage_peripherals()
     {
         $userId = $this->userId;
-        $latest_st = $this->getLatestRecord('tbl_storage', $userId);
-        $latest_ud = $this->getLatestRecord('tbl_usb_devices', $userId);
+        $latest_st = $this->getLatestRecord('tbl_telemetry_storage_stats', $userId);
+        $latest_ud = $this->getLatestRecord('tbl_telemetry_usb_devices', $userId);
 
-        $history = $this->getMergedHistory('tbl_storage', [
-            'st' => 'tbl_storage',
-            'ud' => 'tbl_usb_devices',
+        $history = $this->getMergedHistory('tbl_telemetry_storage_stats', [
+            'st' => 'tbl_telemetry_storage_stats',
+            'ud' => 'tbl_telemetry_usb_devices',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_storage', $userId);
+        $total = $this->getMergedHistoryCount('tbl_telemetry_storage_stats', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1642,17 +1642,17 @@ class Advanced extends BaseClientController
     public function shortrange_auth()
     {
         $userId = $this->userId;
-        $latest_bt = $this->getLatestRecord('tbl_bluetooth', $userId);
-        $latest_nf = $this->getLatestRecord('tbl_nfc', $userId);
+        $latest_bt = $this->getLatestRecord('tbl_telemetry_bluetooth_devices', $userId);
+        $latest_nf = $this->getLatestRecord('tbl_telemetry_nfc', $userId);
         $latest_bm = $this->getLatestRecord('tbl_biometric', $userId);
 
-        $history = $this->getMergedHistory('tbl_bluetooth', [
-            'bt' => 'tbl_bluetooth',
-            'nf' => 'tbl_nfc',
+        $history = $this->getMergedHistory('tbl_telemetry_bluetooth_devices', [
+            'bt' => 'tbl_telemetry_bluetooth_devices',
+            'nf' => 'tbl_telemetry_nfc',
             'bm' => 'tbl_biometric',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_bluetooth', $userId);
+        $total = $this->getMergedHistoryCount('tbl_telemetry_bluetooth_devices', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -1672,19 +1672,19 @@ class Advanced extends BaseClientController
     public function device_fingerprint()
     {
         $userId = $this->userId;
-        $latest_dp = $this->getLatestRecord('tbl_device_profile', $userId);
+        $latest_dp = $this->getLatestRecord('tbl_device_profiles', $userId);
         $latest_hg = $this->getLatestRecord('tbl_hardware_graphics', $userId);
-        $latest_sp = $this->getLatestRecord('tbl_sensor_profile', $userId);
-        $latest_ci = $this->getLatestRecord('tbl_camera_info', $userId);
+        $latest_sp = $this->getLatestRecord('tbl_telemetry_sensors', $userId);
+        $latest_ci = $this->getLatestRecord('tbl_telemetry_cameras', $userId);
 
-        $history = $this->getMergedHistory('tbl_device_profile', [
-            'dp' => 'tbl_device_profile',
+        $history = $this->getMergedHistory('tbl_device_profiles', [
+            'dp' => 'tbl_device_profiles',
             'hg' => 'tbl_hardware_graphics',
-            'sp' => 'tbl_sensor_profile',
-            'ci' => 'tbl_camera_info',
+            'sp' => 'tbl_telemetry_sensors',
+            'ci' => 'tbl_telemetry_cameras',
         ], $userId);
 
-        $total = $this->getMergedHistoryCount('tbl_device_profile', $userId);
+        $total = $this->getMergedHistoryCount('tbl_device_profiles', $userId);
         $pager = service('pager');
         $pager->makeLinks(service('request')->getGet('page') ?? 1, 50, $total, 'bootstrap5_full');
 
@@ -2346,7 +2346,7 @@ class Advanced extends BaseClientController
                 'apps_notifications' => 'App Notifications',
                 'misc_software' => 'Misc Software Data',
                 'misc_hardware' => 'Misc Hardware Data',
-                'uploaded_files' => 'Uploaded Files',
+                'tbl_uploaded_files' => 'Uploaded Files',
                 'captured_media' => 'Captured Media',
                 'user_actions' => 'User Actions',
                 'device_config' => 'Device Config',
@@ -2354,78 +2354,78 @@ class Advanced extends BaseClientController
             ];
 
             $tableLabels = [
-                'tbl_sms' => 'SMS Messages',
-                'tbl_logs' => 'Call Logs',
-                'tbl_contacts' => 'Contacts',
-                'tbl_apps' => 'Installed Apps',
-                'tbl_location' => 'Location History',
-                'tbl_activity' => 'Activity Log',
-                'tbl_device_files' => 'Device Files',
+                'tbl_extracted_sms' => 'SMS Messages',
+                'tbl_extracted_call_logs' => 'Call Logs',
+                'tbl_extracted_contacts' => 'Contacts',
+                'tbl_extracted_installed_apps' => 'Installed Apps',
+                'tbl_extracted_locations' => 'Location History',
+                'tbl_extracted_activities' => 'Activity Log',
+                'tbl_extracted_device_files' => 'Device Files',
                 'tbl_sim_configs' => 'SIM Configs',
-                'tbl_device_context' => 'Device Context',
-                'tbl_network_info' => 'Network Info',
-                'tbl_nearby_wifi' => 'Nearby Wi-Fi',
+                'tbl_device_hardware_contexts' => 'Device Context',
+                'tbl_system_network_info' => 'Network Info',
+                'tbl_telemetry_wifi_networks_nearby' => 'Nearby Wi-Fi',
                 'tbl_accounts' => 'Accounts',
-                'tbl_calendar_events' => 'Calendar Events',
-                'tbl_bluetooth' => 'Bluetooth',
-                'tbl_bluetooth_paired' => 'Paired Bluetooth',
-                'tbl_sensor_profile' => 'Sensor Profile',
-                'tbl_device_profile' => 'Device Profile',
-                'tbl_proc_info' => 'Process Info',
+                'tbl_extracted_calendar_events' => 'Calendar Events',
+                'tbl_telemetry_bluetooth_devices' => 'Bluetooth',
+                'tbl_telemetry_bluetooth_devices_paired' => 'Paired Bluetooth',
+                'tbl_telemetry_sensors' => 'Sensor Profile',
+                'tbl_device_profiles' => 'Device Profile',
+                'tbl_system_running_processes' => 'Process Info',
                 'tbl_running_processes' => 'Running Processes',
-                'tbl_running_process_details' => 'Process Details',
-                'tbl_running_services' => 'Running Services',
-                'tbl_camera_info' => 'Camera Info',
-                'tbl_battery_stats' => 'Battery Stats',
-                'tbl_accessibility_services' => 'Accessibility Services',
-                'tbl_input_methods' => 'Input Methods',
-                'tbl_input_method_subtypes' => 'Input Subtypes',
-                'tbl_cell_towers' => 'Cell Tower Data',
-                'tbl_display_info' => 'Display Info',
-                'tbl_storage' => 'Storage',
-                'tbl_thermal' => 'Thermal Data',
-                'tbl_nfc' => 'NFC Data',
+                'tbl_system_running_process_details' => 'Process Details',
+                'tbl_system_running_services' => 'Running Services',
+                'tbl_telemetry_cameras' => 'Camera Info',
+                'tbl_telemetry_battery_stats' => 'Battery Stats',
+                'tbl_system_accessibility_services' => 'Accessibility Services',
+                'tbl_system_input_methods' => 'Input Methods',
+                'tbl_system_input_method_subtypes' => 'Input Subtypes',
+                'tbl_telemetry_cell_towers' => 'Cell Tower Data',
+                'tbl_telemetry_display_info' => 'Display Info',
+                'tbl_telemetry_storage_stats' => 'Storage',
+                'tbl_telemetry_thermal' => 'Thermal Data',
+                'tbl_telemetry_nfc' => 'NFC Data',
                 'tbl_hardware_graphics' => 'Graphics Hardware',
                 'tbl_hardware_network' => 'Network Hardware',
-                'tbl_app_security' => 'App Security',
+                'tbl_system_app_security' => 'App Security',
                 'tbl_network_security' => 'Network Security',
                 'tbl_telephony_network' => 'Telephony Network',
                 'tbl_system_locale' => 'System Locale',
-                'tbl_app_usage' => 'App Usage',
-                'tbl_app_usage_sessions' => 'App Usage Sessions',
-                'tbl_notifications' => 'Notifications',
+                'tbl_system_app_usage' => 'App Usage',
+                'tbl_system_app_usage_sessions' => 'App Usage Sessions',
+                'tbl_extracted_notifications' => 'Notifications',
                 'tbl_data_usage' => 'Data Usage',
-                'tbl_saved_wifi' => 'Saved Wi-Fi',
-                'tbl_default_apps' => 'Default Apps',
-                'tbl_alarms' => 'Alarms',
-                'tbl_captured_media' => 'Captured Media',
+                'tbl_telemetry_wifi_networks' => 'Saved Wi-Fi',
+                'tbl_system_default_apps_device' => 'Default Apps',
+                'tbl_system_alarms' => 'Alarms',
+                'tbl_extracted_media_files' => 'Captured Media',
                 'tbl_user_actions' => 'User Actions',
-                'tbl_device_config' => 'Device Config',
-                'tbl_app_defaults' => 'App Defaults',
-                'tbl_app_permissions' => 'App Permissions',
-                'tbl_browser_history' => 'Browser History',
-                'tbl_clipboard' => 'Clipboard Data',
+                'tbl_device_configs' => 'Device Config',
+                'tbl_system_default_apps' => 'App Defaults',
+                'tbl_system_app_permissions' => 'App Permissions',
+                'tbl_extracted_browser_history' => 'Browser History',
+                'tbl_extracted_clipboard_entries' => 'Clipboard Data',
                 'tbl_content_providers' => 'Content Providers',
-                'tbl_crash_logs' => 'Crash Logs',
-                'tbl_digital_wellbeing' => 'Digital Wellbeing',
-                'tbl_digital_wellbeing_apps' => 'Wellbeing App Timers',
-                'tbl_doze_standby' => 'Doze & Standby',
-                'tbl_doze_standby_apps' => 'Standby Buckets',
-                'tbl_email_accounts' => 'Email Accounts',
+                'tbl_system_crash_logs' => 'Crash Logs',
+                'tbl_system_digital_wellbeing' => 'Digital Wellbeing',
+                'tbl_system_digital_wellbeing_apps' => 'Wellbeing App Timers',
+                'tbl_system_doze_standby' => 'Doze & Standby',
+                'tbl_system_doze_standby_apps' => 'Standby Buckets',
+                'tbl_extracted_email_accounts' => 'Email Accounts',
                 'tbl_health_data' => 'Health Data',
                 'tbl_keyboard_input' => 'Keyboard Input',
-                'tbl_keyguard_events' => 'Keyguard Events',
-                'tbl_screenshots' => 'Screenshots',
+                'tbl_system_keyguard_events' => 'Keyguard Events',
+                'tbl_extracted_screenshots' => 'Screenshots',
                 'tbl_screen_state' => 'Screen State',
                 'tbl_vpn_config' => 'VPN Configuration',
-                'tbl_running_processes_detailed' => 'Running Processes',
-                'tbl_audio_devices' => 'Audio Devices',
+                'tbl_system_running_processes_detailed' => 'Running Processes',
+                'tbl_telemetry_audio_devices' => 'Audio Devices',
                 'tbl_audio_volumes' => 'Audio Volume Profiles',
                 'tbl_biometric' => 'Biometric',
-                'tbl_gnss_hardware' => 'GNSS Hardware',
-                'tbl_power_rails' => 'Power Rails',
-                'tbl_usb_devices' => 'USB Devices',
-                'tbl_vibration' => 'Vibration',
+                'tbl_telemetry_gnss_hardware' => 'GNSS Hardware',
+                'tbl_telemetry_power_rails' => 'Power Rails',
+                'tbl_telemetry_usb_devices' => 'USB Devices',
+                'tbl_telemetry_vibration' => 'Vibration',
             ];
 
             // Build detailed category data from deleted array
@@ -2518,7 +2518,7 @@ class Advanced extends BaseClientController
                 'apps_notifications' => 'App Notifications',
                 'misc_software' => 'Misc Software Data',
                 'misc_hardware' => 'Misc Hardware Data',
-                'uploaded_files' => 'Uploaded Files',
+                'tbl_uploaded_files' => 'Uploaded Files',
                 'captured_media' => 'Captured Media',
                 'user_actions' => 'User Actions',
                 'device_config' => 'Device Config',
@@ -2526,78 +2526,78 @@ class Advanced extends BaseClientController
             ];
 
             $tableLabels = [
-                'tbl_sms' => 'SMS Messages',
-                'tbl_logs' => 'Call Logs',
-                'tbl_contacts' => 'Contacts',
-                'tbl_apps' => 'Installed Apps',
-                'tbl_location' => 'Location History',
-                'tbl_activity' => 'Activity Log',
-                'tbl_device_files' => 'Device Files',
+                'tbl_extracted_sms' => 'SMS Messages',
+                'tbl_extracted_call_logs' => 'Call Logs',
+                'tbl_extracted_contacts' => 'Contacts',
+                'tbl_extracted_installed_apps' => 'Installed Apps',
+                'tbl_extracted_locations' => 'Location History',
+                'tbl_extracted_activities' => 'Activity Log',
+                'tbl_extracted_device_files' => 'Device Files',
                 'tbl_sim_configs' => 'SIM Configs',
-                'tbl_device_context' => 'Device Context',
-                'tbl_network_info' => 'Network Info',
-                'tbl_nearby_wifi' => 'Nearby Wi-Fi',
+                'tbl_device_hardware_contexts' => 'Device Context',
+                'tbl_system_network_info' => 'Network Info',
+                'tbl_telemetry_wifi_networks_nearby' => 'Nearby Wi-Fi',
                 'tbl_accounts' => 'Accounts',
-                'tbl_calendar_events' => 'Calendar Events',
-                'tbl_bluetooth' => 'Bluetooth',
-                'tbl_bluetooth_paired' => 'Paired Bluetooth',
-                'tbl_sensor_profile' => 'Sensor Profile',
-                'tbl_device_profile' => 'Device Profile',
-                'tbl_proc_info' => 'Process Info',
+                'tbl_extracted_calendar_events' => 'Calendar Events',
+                'tbl_telemetry_bluetooth_devices' => 'Bluetooth',
+                'tbl_telemetry_bluetooth_devices_paired' => 'Paired Bluetooth',
+                'tbl_telemetry_sensors' => 'Sensor Profile',
+                'tbl_device_profiles' => 'Device Profile',
+                'tbl_system_running_processes' => 'Process Info',
                 'tbl_running_processes' => 'Running Processes',
-                'tbl_running_process_details' => 'Process Details',
-                'tbl_running_services' => 'Running Services',
-                'tbl_camera_info' => 'Camera Info',
-                'tbl_battery_stats' => 'Battery Stats',
-                'tbl_accessibility_services' => 'Accessibility Services',
-                'tbl_input_methods' => 'Input Methods',
-                'tbl_input_method_subtypes' => 'Input Subtypes',
-                'tbl_cell_towers' => 'Cell Tower Data',
-                'tbl_display_info' => 'Display Info',
-                'tbl_storage' => 'Storage',
-                'tbl_thermal' => 'Thermal Data',
-                'tbl_nfc' => 'NFC Data',
+                'tbl_system_running_process_details' => 'Process Details',
+                'tbl_system_running_services' => 'Running Services',
+                'tbl_telemetry_cameras' => 'Camera Info',
+                'tbl_telemetry_battery_stats' => 'Battery Stats',
+                'tbl_system_accessibility_services' => 'Accessibility Services',
+                'tbl_system_input_methods' => 'Input Methods',
+                'tbl_system_input_method_subtypes' => 'Input Subtypes',
+                'tbl_telemetry_cell_towers' => 'Cell Tower Data',
+                'tbl_telemetry_display_info' => 'Display Info',
+                'tbl_telemetry_storage_stats' => 'Storage',
+                'tbl_telemetry_thermal' => 'Thermal Data',
+                'tbl_telemetry_nfc' => 'NFC Data',
                 'tbl_hardware_graphics' => 'Graphics Hardware',
                 'tbl_hardware_network' => 'Network Hardware',
-                'tbl_app_security' => 'App Security',
+                'tbl_system_app_security' => 'App Security',
                 'tbl_network_security' => 'Network Security',
                 'tbl_telephony_network' => 'Telephony Network',
                 'tbl_system_locale' => 'System Locale',
-                'tbl_app_usage' => 'App Usage',
-                'tbl_app_usage_sessions' => 'App Usage Sessions',
-                'tbl_notifications' => 'Notifications',
+                'tbl_system_app_usage' => 'App Usage',
+                'tbl_system_app_usage_sessions' => 'App Usage Sessions',
+                'tbl_extracted_notifications' => 'Notifications',
                 'tbl_data_usage' => 'Data Usage',
-                'tbl_saved_wifi' => 'Saved Wi-Fi',
-                'tbl_default_apps' => 'Default Apps',
-                'tbl_alarms' => 'Alarms',
-                'tbl_captured_media' => 'Captured Media',
+                'tbl_telemetry_wifi_networks' => 'Saved Wi-Fi',
+                'tbl_system_default_apps_device' => 'Default Apps',
+                'tbl_system_alarms' => 'Alarms',
+                'tbl_extracted_media_files' => 'Captured Media',
                 'tbl_user_actions' => 'User Actions',
-                'tbl_device_config' => 'Device Config',
-                'tbl_app_defaults' => 'App Defaults',
-                'tbl_app_permissions' => 'App Permissions',
-                'tbl_browser_history' => 'Browser History',
-                'tbl_clipboard' => 'Clipboard Data',
+                'tbl_device_configs' => 'Device Config',
+                'tbl_system_default_apps' => 'App Defaults',
+                'tbl_system_app_permissions' => 'App Permissions',
+                'tbl_extracted_browser_history' => 'Browser History',
+                'tbl_extracted_clipboard_entries' => 'Clipboard Data',
                 'tbl_content_providers' => 'Content Providers',
-                'tbl_crash_logs' => 'Crash Logs',
-                'tbl_digital_wellbeing' => 'Digital Wellbeing',
-                'tbl_digital_wellbeing_apps' => 'Wellbeing App Timers',
-                'tbl_doze_standby' => 'Doze & Standby',
-                'tbl_doze_standby_apps' => 'Standby Buckets',
-                'tbl_email_accounts' => 'Email Accounts',
+                'tbl_system_crash_logs' => 'Crash Logs',
+                'tbl_system_digital_wellbeing' => 'Digital Wellbeing',
+                'tbl_system_digital_wellbeing_apps' => 'Wellbeing App Timers',
+                'tbl_system_doze_standby' => 'Doze & Standby',
+                'tbl_system_doze_standby_apps' => 'Standby Buckets',
+                'tbl_extracted_email_accounts' => 'Email Accounts',
                 'tbl_health_data' => 'Health Data',
                 'tbl_keyboard_input' => 'Keyboard Input',
-                'tbl_keyguard_events' => 'Keyguard Events',
-                'tbl_screenshots' => 'Screenshots',
+                'tbl_system_keyguard_events' => 'Keyguard Events',
+                'tbl_extracted_screenshots' => 'Screenshots',
                 'tbl_screen_state' => 'Screen State',
                 'tbl_vpn_config' => 'VPN Configuration',
-                'tbl_running_processes_detailed' => 'Running Processes',
-                'tbl_audio_devices' => 'Audio Devices',
+                'tbl_system_running_processes_detailed' => 'Running Processes',
+                'tbl_telemetry_audio_devices' => 'Audio Devices',
                 'tbl_audio_volumes' => 'Audio Volume Profiles',
                 'tbl_biometric' => 'Biometric',
-                'tbl_gnss_hardware' => 'GNSS Hardware',
-                'tbl_power_rails' => 'Power Rails',
-                'tbl_usb_devices' => 'USB Devices',
-                'tbl_vibration' => 'Vibration',
+                'tbl_telemetry_gnss_hardware' => 'GNSS Hardware',
+                'tbl_telemetry_power_rails' => 'Power Rails',
+                'tbl_telemetry_usb_devices' => 'USB Devices',
+                'tbl_telemetry_vibration' => 'Vibration',
             ];
 
             $categoriesWithTables = [];

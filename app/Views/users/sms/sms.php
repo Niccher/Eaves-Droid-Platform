@@ -268,26 +268,35 @@
                                                 <tr class="accordion-toggle expandable-row <?php echo $rowBgClass; ?> <?php echo $typeInfo['row_color']; ?>"
                                                     data-target="#sms-details-<?php echo $index; ?>">
                                                     <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="mr-3">
-                                                                <div class="avatar-circle-sm <?php echo $avatarBg; ?> <?php echo $avatarTextColor; ?> shadow-sm">
-                                                                    <?php echo $avatarText; ?>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <div class="text-dark font-weight-bold">
-                                                                    <?php
-                                                                    if (!empty($smsinfo['contact_name'])) {
-                                                                        echo htmlspecialchars($smsinfo['contact_name']);
-                                                                    } else {
-                                                                        echo htmlspecialchars($contactName);
-                                                                    }
-                                                                    ?>
-                                                                </div>
-                                                                <small class="text-muted"><?php echo $smsinfo['sms_number']; ?></small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
+                                                         <div class="d-flex align-items-center">
+                                                             <div class="mr-3">
+                                                                 <div class="avatar-circle-sm <?php echo $avatarBg; ?> <?php echo $avatarTextColor; ?> shadow-sm">
+                                                                     <?php echo $avatarText; ?>
+                                                                 </div>
+                                                             </div>
+                                                             <div>
+                                                                 <div class="text-dark font-weight-bold">
+                                                                     <?php
+                                                                     $smsNumber = $smsinfo['sms_number'];
+                                                                     $cleanNum = preg_replace('/[^0-9+]/', '', $smsNumber);
+                                                                     $contactInfo = null;
+                                                                     if (isset($contactMap[$cleanNum])) {
+                                                                         $contactInfo = $contactMap[$cleanNum];
+                                                                     } elseif (isset($contactMap[$smsNumber])) {
+                                                                         $contactInfo = $contactMap[$smsNumber];
+                                                                     }
+                                                                     $displayName = !empty($smsinfo['contact_name']) ? $smsinfo['contact_name'] : ($contactInfo ? $contactInfo['name'] : $contactName);
+                                                                     if ($contactInfo) {
+                                                                         echo '<a href="' . base_url('contacts/analyze/sms/' . $contactInfo['enc_id']) . '">' . htmlspecialchars($displayName) . '</a>';
+                                                                     } else {
+                                                                         echo htmlspecialchars($displayName);
+                                                                     }
+                                                                     ?>
+                                                                 </div>
+                                                                 <small class="text-muted"><?php echo $smsinfo['sms_number']; ?></small>
+                                                             </div>
+                                                         </div>
+                                                     </td>
                                                     <td>
                                                         <span class="badge <?php echo $typeInfo['bg']; ?> text-white p-2 <?php echo $typeInfo['pulse']; ?>">
                                                             <i class="fas fa-<?php echo $typeInfo['icon']; ?> mr-1"></i>
@@ -333,44 +342,46 @@
                                                         <div id="sms-details-<?php echo $index; ?>" style="display: none;">
                                                             <div class="card card-body bg-light border-0 m-0 p-3">
                                                                 <div class="row">
-                                                                    <div class="col-md-3">
+                                                                    <div class="col-md-4">
                                                                         <h6 class="text-muted mb-2">Message Details:</h6>
                                                                         <div class="small">
                                                                             <div class="mb-1">
-                                                                                <i class="fas fa-hashtag mr-2"></i>
                                                                                 <strong>ID:</strong> <?php echo $smsinfo['id'] ?? 'N/A'; ?>
                                                                             </div>
                                                                             <div class="mb-1">
-                                                                                <i class="fas fa-thread mr-2"></i>
-                                                                                <strong>Thread
-                                                                                    ID:</strong> <?php echo $smsinfo['sms_thread_id'] ?? 'N/A'; ?>
+                                                                                <strong>Thread ID:</strong> <?php echo $smsinfo['sms_thread_id'] ?? 'N/A'; ?>
                                                                             </div>
                                                                             <div class="mb-1">
-                                                                                <i class="fas fa-phone mr-2"></i>
                                                                                 <strong>Number:</strong> <?php echo $smsinfo['sms_number']; ?>
                                                                             </div>
                                                                             <div class="mb-1">
-                                                                                <i class="fas fa-ruler mr-2"></i>
                                                                                 <strong>Length:</strong> <?php echo $msgLength; ?> characters
                                                                             </div>
                                                                             <div class="mb-1">
-                                                                                <i class="fas fa-envelope mr-2"></i>
                                                                                 <strong>Type:</strong>
                                                                                 <span class="badge <?php echo $typeInfo['bg']; ?> text-white">
                                                                                     <?php echo $typeInfo['label']; ?>
                                                                                 </span>
                                                                             </div>
                                                                             <div class="mb-1 mt-3">
-                                                                                 <button class="btn btn-sm btn-outline-danger delete-row"
-                                                                                         data-id="<?php echo $smsinfo['id'] ?? ''; ?>"
-                                                                                         data-url="<?= base_url('sms/delete') ?>"
-                                                                                         title="Delete this message">
+                                                                                <?php if ($contactInfo): ?>
+                                                                                    <a href="<?= base_url('contacts/analyze/sms/' . $contactInfo['enc_id']) ?>" class="btn btn-sm btn-info text-white btn-block mb-2" title="Analyze SMS conversation">
+                                                                                        <i class="fas fa-comments mr-1"></i> All SMS Convos
+                                                                                    </a>
+                                                                                    <a href="<?= base_url('contacts/analyze/calls/' . $contactInfo['enc_id']) ?>" class="btn btn-sm btn-success text-white btn-block mb-2" title="Analyze call logs">
+                                                                                        <i class="fas fa-phone-alt mr-1"></i> All Call Logs
+                                                                                    </a>
+                                                                                <?php endif; ?>
+                                                                                <button class="btn btn-sm btn-outline-danger btn-block delete-row"
+                                                                                        data-id="<?php echo $smsinfo['id'] ?? ''; ?>"
+                                                                                        data-url="<?= base_url('sms/delete') ?>"
+                                                                                        title="Delete this message">
                                                                                     <i class="fas fa-trash mr-1"></i> Delete
                                                                                 </button>
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                    <div class="col-md-9">
+                                                                    <div class="col-md-8">
                                                                         <h6 class="text-muted mb-2">Full Message:</h6>
                                                                         <div class="message-content-full <?php echo $messagePreviewBg; ?> <?php echo $messagePreviewText; ?> border rounded p-3">
                                                                             <p class="mb-0"><?php echo nl2br(htmlspecialchars($msg)); ?></p>

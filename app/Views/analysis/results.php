@@ -1,728 +1,1081 @@
 <?php
-// ── Algorithm metadata: explanation + result meaning ────────────────────────
-$algMeta = [
-    'Frequency Spike Detector' => [
-        'how'    => 'Uses Z-Score statistical analysis. All messages are bucketed into 15-minute windows and a mean + standard deviation is computed. Any window whose count exceeds mean + 2.5 σ is flagged as a spike.',
-        'means'  => 'A flagged window means an unusually high number of messages arrived in a short period — consistent with bulk SMS campaigns, spyware exfiltration triggers, or social-engineering attacks.',
-        'icon'   => 'fas fa-chart-line',
-        'color'  => 'danger',
-    ],
-    'Time-Pattern Analyser' => [
-        'how'    => 'Scans each message timestamp and flags any that fall inside the night window (23:00 – 05:00). No training data required; purely rule-based.',
-        'means'  => 'Messages at off-hours may indicate covert communication, automated exfiltration, or contact with actors in distant time-zones.',
-        'icon'   => 'fas fa-moon',
-        'color'  => 'warning',
-    ],
-    'Sender Cluster Analysis (K-Means)' => [
-        'how'    => 'Feature-engineers each sender into a 3-dimensional vector [message count, night activity ratio, average body length], normalises features to [0,1], then runs PHP-ML K-Means (k=3). Senders landing in singleton or very small clusters are flagged as outliers.',
-        'means'  => 'A flagged sender exhibits a combination of volume, timing, and message-length that is distinctly different from all other senders — a strong indicator of automated/scripted senders or unknown threat actors.',
-        'icon'   => 'fas fa-project-diagram',
-        'color'  => 'danger',
-    ],
-    'New-Contact Frequency Monitor' => [
-        'how'    => 'Counts contacts added per day and computes a 30-day rolling mean. Any day exceeding 3× the mean (minimum threshold: 3) is flagged.',
-        'means'  => 'A sudden burst of new contact additions often signals data harvesting (bulk-export from another device), social engineering preparation, or malware syncing a remote contact list.',
-        'icon'   => 'fas fa-user-plus',
-        'color'  => 'success',
-    ],
-    'Duplicate & Anomaly Detector' => [
-        'how'    => 'Strips all non-digit characters from each phone number and builds a hash-map. When a second contact shares the exact same normalised number, a collision is recorded.',
-        'means'  => 'Duplicate numbers can indicate impersonation — an attacker adding a contact with a trusted person\'s number under a different name to intercept routed messages or calls.',
-        'icon'   => 'fas fa-copy',
-        'color'  => 'success',
-    ],
-    'Short-Call Burst Detector' => [
-        'how'    => 'Filters calls shorter than 10 seconds, sorts them chronologically, and uses a sliding window (30 minutes) to find windows containing ≥ 3 such calls.',
-        'means'  => 'Short-call bursts are a classic reconnaissance pattern — probing whether a number is active, or acting as an out-of-band signalling mechanism for malware command-and-control.',
-        'icon'   => 'fas fa-bolt',
-        'color'  => 'warning',
-    ],
-    'Night-Activity Monitor' => [
-        'how'    => 'Rule-based: any call whose timestamp falls between 23:00 and 05:00 (local time) is flagged without further statistical analysis.',
-        'means'  => 'Calls at night — especially to unsaved numbers — may indicate covert communication or deliberate timing to avoid detection by the device owner.',
-        'icon'   => 'fas fa-moon',
-        'color'  => 'warning',
-    ],
-    'Geo-Fence Violation Detector' => [
-        'how'    => 'Computes the geographic centroid of all location points and calculates a home-zone radius (mean distance + 1 σ from centroid using Haversine formula). Points beyond 1.5× this radius are flagged.',
-        'means'  => 'A device detected far outside its normal geographic range may indicate the device (or its owner) has been moved, or GPS spoofing is occurring.',
-        'icon'   => 'fas fa-map-marked-alt',
-        'color'  => 'primary',
-    ],
-    'Travel Speed Anomaly' => [
-        'how'    => 'Calculates the Haversine distance between consecutive chronological location points and divides by elapsed seconds to get speed in km/h. Any speed > 900 km/h (commercial airspeed) is flagged as physically impossible.',
-        'means'  => 'Impossible travel speeds indicate GPS spoofing, VPN-based location faking, or data corruption — all of which are common in device-monitoring evasion.',
-        'icon'   => 'fas fa-tachometer-alt',
-        'color'  => 'primary',
-    ],
-    'DBSCAN Trajectory Clustering' => [
-        'how'    => 'Runs PHP-ML DBSCAN (epsilon=0.01°≈1 km, minSamples=2) on all [latitude, longitude] pairs. Points that do not belong to any cluster (noise points) are flagged as anomalous trajectory positions.',
-        'means'  => 'Noise points represent isolated, one-off location coordinates far from any frequent zone — possible indicators of a surveillance visit, a dead-drop location, or GPS manipulation.',
-        'icon'   => 'fas fa-dot-circle',
-        'color'  => 'primary',
-    ],
-    'Package Reputation Scanner' => [
-        'how'    => 'Checks each installed package name against a curated list of suspicious keywords (spy, hidden, track, keylog, ghost, etc.) using str_contains(). Off-hours installation time compounds severity.',
-        'means'  => 'A matched package name pattern is a strong indicator of stalkerware, keyloggers, or remote-access trojans. Off-hours installation (without user awareness) elevates the severity to High.',
-        'icon'   => 'fas fa-search',
-        'color'  => 'info',
-    ],
-    'Permission Anomaly Detector' => [
-        'how'    => 'Counts how many of 13 predefined sensitive permissions (READ_SMS, RECORD_AUDIO, ACCESS_FINE_LOCATION, DEVICE_ADMIN, etc.) each app requests. Z-Score is computed across all apps; any app exceeding mean + 2 σ is flagged.',
-        'means'  => 'Over-privileged apps — requesting far more sensitive permissions than peers — are a primary attack vector. Legitimate flashlights don\'t need SMS access; flagged apps warrant manual review.',
-        'icon'   => 'fas fa-lock-open',
-        'color'  => 'info',
-    ],
-    'File Creation Spike Detector' => [
-        'how'    => 'Aggregates file creation events per day. Computes the 30-day mean and flags any day where count exceeds 3× the mean.',
-        'means'  => 'Sudden file creation spikes can indicate bulk data staging for exfiltration, ransomware file encryption activity, or a large app update installing payload files.',
-        'icon'   => 'fas fa-file-medical',
-        'color'  => 'secondary',
-    ],
-    'Screen-Time Anomaly Detector' => [
-        'how'    => 'Aggregates daily screen-on minutes, computes the 30-day population mean and standard deviation. Days with |Z-score| > 2 are flagged as anomalous.',
-        'means'  => 'Unusually high screen time may indicate the device is being used by a different person or for automated tasks. Anomalously low usage can suggest the device is being hidden or turned off intentionally.',
-        'icon'   => 'fas fa-mobile-alt',
-        'color'  => 'danger',
-    ],
-    'App-Switch Rate Monitor' => [
-        'how'    => 'Groups app-usage events by hour and counts the number of distinct app transitions per hour. Periods exceeding 60 switches/hour are flagged.',
-        'means'  => 'Bot-like or scripted app-switching (e.g., an automation framework, spyware scanning all apps, or a RAT executing commands) produces switch rates that far exceed normal human interaction patterns.',
-        'icon'   => 'fas fa-random',
-        'color'  => 'danger',
-    ],
-    'Hardware Change Detector' => [
-        'how'    => 'Compares the current device profile snapshot against the most recent previous snapshot across 5 identifiers: IMEI, serial number, build fingerprint, Android ID, and MAC address.',
-        'means'  => 'Any change to IMEI or Android ID is a high-severity event — these are hardware-level identifiers that should never change under normal use. Changes may indicate device replacement, firmware flashing, or identifier spoofing.',
-        'icon'   => 'fas fa-microchip',
-        'color'  => 'dark',
-    ],
-    'Network Profile Monitor' => [
-        'how'    => 'Compares each Wi-Fi SSID seen in network logs against a known-safe list (currently empty — all SSIDs are considered new). Flags VPN connections and unknown SSIDs.',
-        'means'  => 'Connections to unknown Wi-Fi networks expose the device to man-in-the-middle attacks. VPN usage may indicate an attempt to mask network traffic from the monitoring system.',
-        'icon'   => 'fas fa-wifi',
-        'color'  => 'dark',
-    ],
-
-    // ── Python-only algorithms ──
-
-    'SMS Phishing Keyword Heuristic' => [
-        'how'    => 'Scans each SMS body against a curated list of phishing / social-engineering keyword indicators (urgency, impersonation, credential requests, unusual links). A message is flagged once it accumulates enough keyword hits.',
-        'means'  => 'A high score indicates the message uses language patterns typical of smishing attacks — urgency, impersonation of trusted entities, suspicious links, or credential requests. Because it is keyword-based, novel phrasings may slip through.',
-        'icon'   => 'fas fa-brain',
-        'color'  => 'danger',
-    ],
-    'Contact Graph Outlier Model' => [
-        'how'    => 'Builds a graph where contacts are nodes and shared phone-number prefixes / name similarity are edges. Contacts with degree 0 (orphaned) or unusually low connectivity are flagged.',
-        'means'  => 'Flagged contacts are structurally isolated from the rest of the network — they share no number or name relationship with anyone else. This can reveal synthetic contacts, newly-added numbers, or covert nodes in a social network.',
-        'icon'   => 'fas fa-share-alt',
-        'color'  => 'success',
-    ],
-    'Isolation Forest Outlier Detection' => [
-        'how'    => 'Treats each call as a multi-dimensional point (duration, hour, day-of-week, direction, network type). The Isolation Forest algorithm randomly partitions the feature space — outliers require fewer splits to isolate, producing a low anomaly score.',
-        'means'  => 'A call flagged as anomalous deviates from the caller\'s normal patterns across multiple dimensions simultaneously — for example, a long-duration call at 3 AM to an international number. Such multi-factor outliers are unlikely to be innocent.',
-        'icon'   => 'fas fa-tree',
-        'color'  => 'warning',
-    ],
-    'App Manifest Anomaly Scanner (PCA)' => [
-        'how'    => 'Extracts manifest-style features from each app (package-name patterns, sensitive permissions, name length) and fits a PCA model. Apps whose features are poorly reconstructed by the low-dimensional model have high reconstruction error and are flagged.',
-        'means'  => 'A flagged app combines declarations rarely seen in the rest of the fleet — for example, a calculator requesting SMS permissions and background location. PCA captures feature deviance without needing a curated signature list.',
-        'icon'   => 'fas fa-network-wired',
-        'color'  => 'info',
-    ],
-    'Suspicious File Metadata Scanner' => [
-        'how'    => 'Flags files whose metadata (high-risk extension, location inside Android data directories, deep paths, hidden names, suspicious keywords) suggests encrypted payloads, ransomware artefacts, or hidden executables. Works on stored metadata only.',
-        'means'  => 'Encrypted or disguised payloads often use high-risk extensions in app-private directories. Because this runs on metadata alone, it cannot verify byte-level entropy — a file with raw content may warrant manual review.',
-        'icon'   => 'fas fa-file-contract',
-        'color'  => 'secondary',
-    ],
-    'Activity Sequence Predictor (MLP)' => [
-        'how'    => 'Trains a small multi-layer perceptron (MLP) on chronologically ordered app-usage timestamps to model normal activity rhythms. At inference the model predicts the next usage time; a large prediction error flags the transition as unexpected.',
-        'means'  => 'An unexpected activity sequence — e.g. heavy usage at an atypical hour — does not match the user\'s learned behaviour profile. The MLP is a lightweight non-linear sequence predictor, not a recurrent LSTM network.',
-        'icon'   => 'fas fa-chart-line',
-        'color'  => 'danger',
-    ],
-    'One-Class SVM System-State Profiler' => [
-        'how'    => 'Collects system telemetry (CPU load, memory usage, battery temperature, active radios) at regular intervals. A one-class SVM learns the compact region of normal operational states; any point falling outside this decision boundary is flagged.',
-        'means'  => 'Abnormal system states — high CPU with elevated battery temp while the screen is off, radios active but no user interaction — strongly indicate background malicious processes: cryptominers, C2 beaconing, or data exfiltration. The SVM catches combined deviations a single-threshold rule would miss.',
-        'icon'   => 'fas fa-microchip',
-        'color'  => 'dark',
-    ],
-
-    // ── Both-compat algorithms (not yet in PHP implementation) ──
-
-    'Extension Mismatch Scanner' => [
-        'how'    => 'Reads the first few bytes (magic bytes) of each file and compares them against known file-type signatures. If the detected MIME type contradicts the file\'s extension, a mismatch is recorded.',
-        'means'  => 'A mismatch indicates deliberate renaming — a .jpg that is actually a ZIP archive, or a .txt that is an executable. This is a common obfuscation technique used to bypass security scans or trick users into opening malicious files.',
-        'icon'   => 'fas fa-file-signature',
-        'color'  => 'secondary',
-    ],
-];
-
-// ── Category metadata ────────────────────────────────────────────────────────
+// ─── Category display metadata ────────────────────────────────────────────────
 $catMeta = [
-    'SMS'           => ['icon' => 'fas fa-sms',           'color' => 'danger'],
-    'Contacts'      => ['icon' => 'fas fa-address-book',  'color' => 'success'],
-    'Call Log'      => ['icon' => 'fas fa-phone',         'color' => 'warning'],
-    'Location'      => ['icon' => 'fas fa-map-marker-alt','color' => 'primary'],
-    'Installed Apps'=> ['icon' => 'fas fa-th-large',      'color' => 'info'],
-    'Files'         => ['icon' => 'fas fa-folder-open',   'color' => 'secondary'],
-    'Activity'      => ['icon' => 'fas fa-heartbeat',     'color' => 'danger'],
-    'Device Info'   => ['icon' => 'fas fa-microchip',     'color' => 'dark'],
+    'sms'         => ['label' => 'SMS',          'icon' => 'fas fa-sms',             'color' => 'danger'],
+    'contacts'    => ['label' => 'Contacts',      'icon' => 'fas fa-address-book',    'color' => 'success'],
+    'call_logs'   => ['label' => 'Call Logs',     'icon' => 'fas fa-phone',           'color' => 'warning'],
+    'locations'   => ['label' => 'Locations',     'icon' => 'fas fa-map-marker-alt',  'color' => 'primary'],
+    'apps'        => ['label' => 'Apps',          'icon' => 'fas fa-th-large',        'color' => 'info'],
+    'files'       => ['label' => 'Files',         'icon' => 'fas fa-folder',          'color' => 'secondary'],
+    'activity'    => ['label' => 'Device Usage',  'icon' => 'fas fa-mobile-alt',      'color' => 'orange'],
+    'device_info' => ['label' => 'Device Info',   'icon' => 'fas fa-microchip',       'color' => 'dark'],
 ];
 
-// ── Group results by category ─────────────────────────────────────────────────
+// ─── Severity helpers ─────────────────────────────────────────────────────────
+$sevColor = ['High' => 'danger', 'Medium' => 'warning', 'Low' => 'info'];
+$sevIcon  = ['High' => 'fas fa-exclamation-circle', 'Medium' => 'fas fa-exclamation-triangle', 'Low' => 'fas fa-info-circle'];
+
+// ─── Group results by category ────────────────────────────────────────────────
 $grouped = [];
-foreach ($results as $row) {
-    $cat = $row['category'] ?? 'Other';
+foreach (($results ?? []) as $row) {
+    $cat = $row['category'] ?? 'other';
     $grouped[$cat][] = $row;
 }
-ksort($grouped);
 
-// ── Category pill gradient colors ────────────────────────────────────────────
-$pillGradient = ['danger', 'warning', 'info', 'primary', 'success', 'secondary', 'dark', 'danger'];
-$pillIdx = 0;
-$catPillColors = [];
-foreach ($catMeta as $cat => $meta) {
-    $catPillColors[$cat] = $pillGradient[$pillIdx % count($pillGradient)];
-    $pillIdx++;
+// Sort categories: worst first
+uksort($grouped, function ($a, $b) use ($grouped) {
+    $rank = ['High' => 2, 'Medium' => 1, 'Low' => 0];
+    $getWorst = fn($rows) => max(array_map(fn($r) => $rank[$r['severity'] ?? 'Low'] ?? 0, $rows));
+    return $getWorst($grouped[$b]) <=> $getWorst($grouped[$a]);
+});
+
+// ─── Threat level display colours (Bootstrap) ─────────────────────────────────
+$threatColorMap = [
+    'none'     => ['bg' => '#28a745', 'bs' => 'success'],
+    'low'      => ['bg' => '#17a2b8', 'bs' => 'info'],
+    'medium'   => ['bg' => '#ffc107', 'bs' => 'warning'],
+    'high'     => ['bg' => '#dc3545', 'bs' => 'danger'],
+    'critical' => ['bg' => '#343a40', 'bs' => 'dark'],
+];
+
+$td         = $threat_data ?? null;
+$tdLevel    = $td['level']  ?? 'none';
+$tdColor    = $threatColorMap[$tdLevel] ?? $threatColorMap['none'];
+
+// ─── Scan history scope label ─────────────────────────────────────────────────
+$scopeLabel = fn($s) => match($s) { 'incremental' => 'New data only', default => 'Full scan' };
+
+// ─── Format elapsed time ──────────────────────────────────────────────────────
+function fmtElapsed(?int $ms): string {
+    if (!$ms) return '';
+    if ($ms < 1000) return "{$ms}ms";
+    $s = round($ms / 1000, 1);
+    return $s < 60 ? "{$s}s" : round($s / 60, 1) . 'm';
 }
 
-// ── Severity map (badge + icon) ───────────────────────────────────────────────
-$sevMap = $severity_map ?? [
-    'High'   => ['badge' => 'danger',  'icon' => 'fas fa-angle-double-up'],
-    'Medium' => ['badge' => 'warning', 'icon' => 'fas fa-angle-up'],
-    'Low'    => ['badge' => 'info',    'icon' => 'fas fa-angle-right'],
-];
+// ─── Relative date ────────────────────────────────────────────────────────────
+function relDate(?string $dt): string {
+    if (!$dt) return 'Unknown';
+    $ts   = strtotime($dt);
+    return date('M jS D Y h:i:s A', $ts);
+}
+// ─── Format embedded dates in descriptions ────────────────────────────────────
+function formatEmbeddedDates(string $text): string {
+    // Match YYYY-MM-DD HH:MM:SS
+    $text = preg_replace_callback('/\b(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})\b/', function($matches) {
+        $ts = strtotime($matches[0]);
+        return $ts ? date('M jS D Y h:i:s A', $ts) : $matches[0];
+    }, $text);
+
+    // Match YYYY-MM-DD
+    $text = preg_replace_callback('/\b(\d{4})-(\d{2})-(\d{2})\b/', function($matches) {
+        $ts = strtotime($matches[0]);
+        return $ts ? date('M jS D Y', $ts) : $matches[0];
+    }, $text);
+
+    // Match HH:MM
+    $text = preg_replace_callback('/\b(\d{2}):(\d{2})\b/', function($matches) {
+        $ts = strtotime(date('Y-m-d ') . $matches[0]);
+        return $ts ? date('h:i A', $ts) : $matches[0];
+    }, $text);
+
+    return $text;
+}
 ?>
-<!-- Step 3 – Anomaly Detection Wizard: Results -->
+
+<style>
+/* ───────────────────────── Anomaly Scanner Styles ─────────────────────────── */
+.anomaly-wrapper          { padding: 20px 0; }
+
+/* ── Health Card ── */
+.health-card              { border-radius: 14px; overflow: hidden; position: relative; }
+.health-card .hc-band     { height: 6px; width: 100%; }
+.health-card .hc-body     { padding: 24px 28px 20px; }
+.health-score-ring        { width: 80px; height: 80px; flex-shrink: 0; position: relative; }
+.health-score-ring svg    { transform: rotate(-90deg); }
+.health-score-ring .score-text {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; font-weight: 700;
+    font-size: 1.25rem; line-height: 1;
+}
+.health-score-ring .score-sub { font-size: .65rem; font-weight: 500; opacity: .7; margin-top: 2px; }
+.health-label             { font-size: 1.3rem; font-weight: 700; }
+.health-sub               { font-size: .82rem; opacity: .7; margin-top: 2px; }
+.threat-bar-wrap          { margin-top: 12px; height: 8px; background: rgba(0,0,0,.08); border-radius: 4px; overflow: hidden; }
+.threat-bar               { height: 100%; border-radius: 4px; transition: width .8s ease; }
+
+/* ── Rescan dropdown ── */
+.rescan-btn-group         { position: relative; }
+.rescan-dropdown          { display: none; position: absolute; right: 0; top: calc(100% + 6px);
+                            background: #fff; border: 1px solid #dee2e6; border-radius: 10px;
+                            box-shadow: 0 8px 24px rgba(0,0,0,.12); min-width: 200px; z-index: 50; overflow: hidden; }
+.rescan-dropdown.open     { display: block; }
+.rescan-dropdown a        { display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+                            font-size: .85rem; color: #343a40; text-decoration: none; transition: background .15s; }
+.rescan-dropdown a:hover  { background: #f8f9fa; }
+.rescan-dropdown a i      { width: 18px; text-align: center; opacity: .7; }
+.rescan-divider           { height: 1px; background: #f0f0f0; }
+
+/* ── Category pills ── */
+.cat-pills                { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+.cat-pill                 { display: inline-flex; align-items: center; gap: 7px;
+                            padding: 6px 14px 6px 10px; border-radius: 50px;
+                            font-size: .78rem; font-weight: 600; cursor: pointer;
+                            transition: transform .15s, box-shadow .15s;
+                            text-decoration: none; border: none; background: none; }
+.cat-pill:hover           { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+.cat-pill .pill-dot       { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Finding cards ── */
+.findings-section         { margin-bottom: 28px; }
+.finding-card             { border-bottom: 1px solid #eee; padding: 16px 20px;
+                            background: #fff; transition: background .15s; }
+.finding-card:last-child  { border-bottom: none; }
+.finding-card:hover       { background: #fafafa; }
+.finding-sev-dot          { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.finding-title            { font-weight: 600; font-size: .88rem; margin-bottom: 4px; }
+.finding-body             { font-size: .82rem; color: #6c757d; line-height: 1.5; }
+.finding-tech             { margin-top: 10px; border-top: 1px dashed #dee2e6; padding-top: 10px; }
+.finding-tech pre         { font-size: .72rem; background: #f8f9fa; border-radius: 6px;
+                            padding: 10px; max-height: 120px; overflow-y: auto; margin: 0; }
+.tech-toggle              { font-size: .75rem; color: #6c757d; cursor: pointer; user-select: none;
+                            display: inline-flex; align-items: center; gap: 4px;
+                            border: none; background: none; padding: 0; margin-top: 8px; }
+.tech-toggle:hover        { color: #495057; }
+
+/* ── Empty state ── */
+.anomaly-empty            { padding: 60px 20px; text-align: center; }
+.anomaly-empty .ae-icon   { width: 90px; height: 90px; border-radius: 50%;
+                            background: linear-gradient(135deg,#667eea,#764ba2);
+                            display: flex; align-items: center; justify-content: center;
+                            margin: 0 auto 24px; box-shadow: 0 8px 30px rgba(102,126,234,.35); }
+.anomaly-empty .ae-icon i { font-size: 2rem; color: #fff; }
+.anomaly-empty h4         { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; margin-bottom: 10px; }
+.anomaly-empty p          { color: #6c757d; max-width: 440px; margin: 0 auto 28px; line-height: 1.6; }
+.scan-options             { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.scan-btn                 { display: inline-flex; align-items: center; gap: 8px;
+                            padding: 13px 24px; border-radius: 10px; font-weight: 600;
+                            font-size: .9rem; border: none; cursor: pointer; transition: all .2s;
+                            text-decoration: none; }
+.scan-btn-primary         { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
+                            box-shadow: 0 6px 20px rgba(102,126,234,.4); }
+.scan-btn-primary:hover   { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(102,126,234,.5); color:#fff; }
+.scan-btn-secondary       { background: #fff; color: #495057; border: 1.5px solid #dee2e6; }
+.scan-btn-secondary:hover { border-color: #adb5bd; transform: translateY(-1px); }
+
+/* ── Scanning progress ── */
+.scanning-card            { border-radius: 14px; border: 1.5px solid #dee2e6; overflow: hidden; }
+.scanning-header          { background: linear-gradient(135deg,#667eea,#764ba2);
+                            color: #fff; padding: 20px 24px; display: flex; align-items: center; gap: 14px; }
+.scanning-header .spin-icon { animation: spin 1.2s linear infinite; font-size: 1.4rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.scanning-body            { padding: 22px 24px; background: #fff; }
+.scan-progress-bar-wrap   { height: 10px; background: #f0f0f0; border-radius: 5px; overflow: hidden; margin: 14px 0; }
+.scan-progress-bar        { height: 100%; border-radius: 5px;
+                            background: linear-gradient(90deg,#667eea,#764ba2);
+                            transition: width .8s ease; }
+.scan-step-label          { font-size: .82rem; color: #6c757d; display: flex; align-items: center; gap: 6px; }
+.scan-step-label::before  { content: ''; display: inline-block; width: 6px; height: 6px;
+                            border-radius: 50%; background: #667eea; animation: pulse 1.2s infinite; }
+@keyframes pulse          { 0%,100%{opacity:1}50%{opacity:.3} }
+.scan-cats-live           { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.scan-cat-chip            { padding: 4px 10px; border-radius: 20px; font-size: .74rem;
+                            font-weight: 600; background: #f0f0f5; color: #6c757d; transition: all .3s; }
+.scan-cat-chip.active     { background: rgba(102,126,234,.15); color: #5a67d8; }
+.scan-cat-chip.done       { background: rgba(40,167,69,.1); color: #28a745; }
+
+/* ── History ── */
+.history-card             { border-radius: 12px; border: 1px solid #eee; overflow: hidden; }
+.history-card .hist-head  { padding: 14px 20px; background: #f8f9fa; border-bottom: 1px solid #eee;
+                            display: flex; align-items: center; justify-content: space-between; }
+.hist-item                { display: flex; align-items: center; gap: 14px; padding: 13px 20px;
+                            border-bottom: 1px solid #f5f5f5; transition: background .15s; cursor: pointer; }
+.hist-item:last-child     { border-bottom: none; }
+.hist-item:hover          { background: #fafafa; }
+.hist-dot                 { width: 38px; height: 38px; border-radius: 50%; display: flex;
+                            align-items: center; justify-content: center; flex-shrink: 0; font-size: .85rem; }
+.hist-score               { font-weight: 700; font-size: .95rem; }
+.hist-meta                { font-size: .75rem; color: #6c757d; }
+.hist-badge               { font-size: .7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+
+/* ── Sev summary counts ── */
+.sev-counts               { display: flex; gap: 16px; flex-wrap: wrap; }
+.sev-count-item           { display: flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; }
+.sev-count-dot            { width: 10px; height: 10px; border-radius: 50%; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .health-card .hc-body { padding: 16px; }
+    .health-label         { font-size: 1.1rem; }
+    .scan-options         { flex-direction: column; align-items: stretch; }
+    .scan-btn             { justify-content: center; }
+}
+</style>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     CONTENT WRAPPER
+════════════════════════════════════════════════════════════════════════════ -->
 <div class="content-wrapper">
 
-    <!-- Content Header -->
+    <!-- Page header -->
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row mb-2 align-items-center">
+            <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0 text-dark">
-                        <i class="fas fa-exclamation-triangle text-danger mr-2"></i>
-                        Detection Results
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-bug mr-2 text-primary"></i>Anomaly Scanner
                     </h1>
                 </div>
                 <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right bg-transparent p-0 m-0">
-                        <li class="breadcrumb-item"><a href="<?= base_url('home') ?>"><i class="fas fa-home mr-1"></i>Home</a></li>
-                        <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>"><i class="fas fa-brain mr-1"></i>Intelligence</a></li>
-                        <li class="breadcrumb-item"><a href="<?= base_url('analysis/anomalies') ?>"><i class="fas fa-bug mr-1"></i>Anomaly Detection</a></li>
-                        <li class="breadcrumb-item active"><i class="fas fa-table mr-1"></i>Results</li>
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="<?= base_url('dashboard') ?>"><i class="fas fa-home mr-1"></i>Home</a></li>
+                        <li class="breadcrumb-item">Intelligence</li>
+                        <li class="breadcrumb-item active">Anomaly Scanner</li>
                     </ol>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Main content -->
-    <section class="content">
+    <section class="content anomaly-wrapper">
         <div class="container-fluid">
 
-            <?php if (isset($can_see_advanced) && !$can_see_advanced): ?>
-            <!-- Advanced results are locked (Gold sees basic only) -->
-            <div class="callout callout-danger d-flex flex-wrap align-items-center">
-                <div class="mr-auto pr-3">
-                    <i class="fas fa-crown fa-lg text-danger mr-2"></i>
-                    <strong>You're viewing basic anomaly results.</strong>
-                    <span class="d-block text-muted small">Upgrade to <span class="badge badge-danger"><?= ucfirst($advanced_plan ?? 'platinum') ?></span> to unlock
-                    advanced &amp; deep-learning algorithms (BERT phishing, GCN graphs, isolation forests, LSTMs &amp; more).</span>
+            <!-- ════════════════ ALERT AREA ════════════════ -->
+            <div id="anom-alert-area"></div>
+
+            <!-- Consistent Security Callout -->
+            <div class="callout callout-info shadow-sm p-3 mb-4" style="border-left:5px solid #17a2b8;background:#fdfdfd;border-radius:4px;">
+                <h5 class="font-weight-bold text-info"><i class="fas fa-shield-alt mr-2"></i>Heuristic Behavioral Intelligence &amp; Anomaly Auditing</h5>
+                <p class="text-secondary mb-2" style="font-size:14px;">Automated statistical scanning of device activity. Auditing call metrics, message patterns, background location telemetry, app permissions, and file system spikes enables the detection of spyware, unauthorized usage, or data leakage.</p>
+                <div class="row" style="font-size:12px;">
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">Behavioral Spikes:</b>
+                        <ul class="pl-3 mb-0 text-muted">
+                            <li>Detects burst call sequences, off-hours messaging, or anomalous data extraction spikes.</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4 border-right pl-md-3">
+                        <b class="d-block mb-1">Identity &amp; Geofencing:</b>
+                        <ul class="pl-3 mb-0 text-muted">
+                            <li>Flags duplicate records, impossible velocities, or boundary violations.</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4 pl-md-3">
+                        <b class="d-block mb-1">Installed Footprint:</b>
+                        <ul class="pl-3 mb-0 text-muted">
+                            <li>Audits background permissions, privilege changes, and newly added packages.</li>
+                        </ul>
+                    </div>
                 </div>
-                <a href="<?= esc($advanced_upgrade_url ?? '#') ?>" class="btn btn-secondary text-white font-weight-bold">
-                    <i class="fas fa-arrow-up mr-1"></i> See Advanced Results
-                </a>
             </div>
-            <?php elseif (isset($can_see_advanced) && $can_see_advanced && ($current_plan ?? '') !== 'platinum'): ?>
-            <div class="alert alert-success d-flex flex-wrap align-items-center shadow-sm" role="alert">
-                <div class="mr-auto pr-3">
-                    <i class="fas fa-check-circle fa-lg text-success mr-2"></i>
-                    <strong>Advanced results unlocked.</strong>
-                    <span class="d-block text-muted small">Your plan includes advanced &amp; deep-learning anomaly algorithms.</span>
+
+
+
+            <?php if ($is_scanning): ?>
+            <!-- ════════════════════════════════════════════
+                 STATE: SCANNING IN PROGRESS
+                 (also shows last completed results below)
+            ════════════════════════════════════════════ -->
+            <div class="card card-outline card-primary shadow-sm mb-4">
+                <div class="card-header d-flex align-items-center">
+                    <h3 class="card-title font-weight-bold text-primary mb-0">
+                        <i class="fas fa-circle-notch fa-spin mr-2"></i>Scan Running…
+                    </h3>
+                    <div class="card-tools ml-auto">
+                        <span class="badge badge-primary font-weight-bold p-2" id="scan-pct-label">0%</span>
+                    </div>
                 </div>
-                <span class="badge badge-success"><i class="fas fa-crown mr-1"></i>Platinum Intelligence</span>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="scan-step-label text-muted" id="scan-current-alg">Starting checks…</span>
+                    </div>
+                    <div class="progress progress-sm rounded-pill my-3" style="height: 10px;">
+                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="scan-progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small style="font-size:.75rem;color:#adb5bd;" id="scan-alg-counter">
+                            0 of 0 checks complete
+                        </small>
+                    </div>
+                    <div class="scan-cats-live mt-3" id="scan-cats-live">
+                        <?php foreach ($catMeta as $ck => $cm): ?>
+                        <span class="badge badge-light border mr-1 py-2 px-3" id="scat-<?= $ck ?>"><?= $cm['label'] ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+
+            <?php if ($has_report): ?>
+            <div class="alert alert-light border" style="font-size:.82rem;border-radius:10px;">
+                <i class="fas fa-clock mr-2 text-muted"></i>
+                Showing results from your <strong>previous scan</strong> while the new one runs.
+                This page will refresh automatically when complete.
             </div>
             <?php endif; ?>
 
-
-            <div class="row mb-3">
-                <div class="col-md-3 col-sm-6">
-                    <div class="info-box shadow-sm">
-                        <span class="info-box-icon bg-secondary elevation-1"><i class="fas fa-list-ul"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Total Findings</span>
-                            <span class="info-box-number"><?= $severity_counts['total'] ?></span>
-                        </div>
-                    </div>
+            <?php elseif (!$has_report): ?>
+            <!-- ════════════════════════════════════════════
+                 STATE: EMPTY — NO SCAN YET
+            ════════════════════════════════════════════ -->
+            <div class="card card-outline card-secondary shadow-sm text-center py-5 px-4 mb-4">
+                <div class="ae-icon mb-4" style="width: 90px; height: 90px; border-radius: 50%; background: rgba(108, 117, 125, 0.1); color: #6c757d; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                    <i class="fas fa-shield-virus fa-3x"></i>
                 </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="info-box shadow-sm">
-                        <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-bolt"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">High Severity</span>
-                            <span class="info-box-number"><?= $severity_counts['high'] ?></span>
-                        </div>
-                    </div>
+                <h4 class="font-weight-bold">No Anomaly Scan Run Yet</h4>
+                <p class="text-muted mx-auto" style="max-width: 480px; line-height: 1.6;">
+                    The system will automatically check your device data across all
+                    categories — SMS, calls, locations, apps, files and more — using
+                    multiple detection algorithms matched to your plan.
+                </p>
+                <div class="scan-options mt-4">
+                    <button id="btn-full-scan" class="btn btn-primary btn-lg" onclick="startScan('full')" style="border-radius: 8px; font-weight: 600;">
+                        <i class="fas fa-play-circle mr-2"></i> Run Full Scan
+                    </button>
                 </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="info-box shadow-sm">
-                        <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-exclamation"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Medium Severity</span>
-                            <span class="info-box-number"><?= $severity_counts['medium'] ?></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="info-box shadow-sm">
-                        <span class="info-box-icon bg-info elevation-1"><i class="fas fa-info"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Low Severity</span>
-                            <span class="info-box-number"><?= $severity_counts['low'] ?></span>
-                        </div>
-                    </div>
-                </div>
+                <p class="text-muted mt-3 mb-0" style="font-size:.75rem;">
+                    <i class="fas fa-lock mr-1"></i>
+                    All analysis runs locally — no data leaves your server.
+                </p>
             </div>
+            <?php endif; ?>
 
-
-            <?php if (empty($results) && !empty($has_report)): ?>
-            <!-- Empty state (report ran but no anomalies found) -->
-            <div class="card shadow-sm">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-shield-alt fa-4x text-primary mb-3"></i>
-                    <h4 class="text-primary">No Anomalies Detected</h4>
-                    <p class="text-muted">All selected algorithms ran successfully and found no anomalies in your data. This is a great sign!</p>
-                </div>
-            </div>
-
-            <?php elseif (empty($results)): ?>
-            <!-- No report run yet → prompt to run anomaly detection -->
-            <div class="card shadow-sm border-0">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-bug fa-4x text-danger mb-3"></i>
-                    <h3 class="font-weight-bold text-dark">No Anomaly Report Yet</h3>
-                    <p class="text-muted mx-auto" style="max-width:560px;">
-                        Your anomaly report will appear here once a scan has been run.
-                        Kick off a scan now to detect suspicious activity in your SMS,
-                        calls, contacts, location, apps, files and device.
-                    </p>
-                    <a href="<?= esc($run_url ?? base_url('analysis/anomalies/run')) ?>"
-                       class="btn btn-danger btn-lg font-weight-bold shadow-sm mt-2">
-                        <i class="fas fa-play-circle mr-2"></i> Run Anomaly Detection
-                    </a>
-                </div>
-            </div>
-
-            <?php else: ?>
-
-            <!-- ── Category Nav Pills ── -->
-            <div class="card card-danger card-outline shadow-sm">
-                <div class="card-header border-bottom-0 pb-0">
-                    <h3 class="card-title">
-                        <i class="fas fa-table mr-2 text-danger"></i>
-                        Detected Anomalies
+            <?php if ($has_report && $td): ?>
+            <!-- ════════════════════════════════════════════
+                 STATE: RESULTS — HEALTH CARD
+            ════════════════════════════════════════════ -->
+            <div class="card card-outline card-<?= $tdColor['bs'] ?> shadow-sm mb-3">
+                <div class="card-header d-flex align-items-center py-3">
+                    <h3 class="card-title font-weight-bold text-<?= $tdColor['bs'] ?> d-flex align-items-center mb-0">
+                        <i class="fas <?= $td['icon'] ?> mr-2"></i><?= $td['label'] ?>
                     </h3>
-                    <div class="card-tools">
-                        <span class="badge badge-danger mr-1"><?= count($results) ?> findings</span>
+                    <div class="card-tools ml-auto">
+                        <!-- Right: re-scan buttons -->
+                        <?php if (!$is_scanning): ?>
+                        <div class="rescan-btn-group" style="flex-shrink:0;">
+                            <button class="btn btn-outline-secondary btn-sm" id="rescan-toggle-btn"
+                                    onclick="toggleRescanMenu(event)" style="border-radius:8px;font-size:.82rem;">
+                                <i class="fas fa-redo-alt mr-1"></i> Re-scan <i class="fas fa-caret-down ml-1"></i>
+                            </button>
+                            <div class="rescan-dropdown" id="rescan-dropdown">
+                                <a href="#" onclick="startScan('full');closeRescanMenu();return false;">
+                                    <i class="fas fa-database"></i>
+                                    <div>
+                                        <div style="font-weight:600;">Full Scan</div>
+                                        <div style="font-size:.73rem;color:#adb5bd;">Analyse all device data from scratch</div>
+                                    </div>
+                                </a>
+                                <div class="rescan-divider"></div>
+                                <a href="#" onclick="startScan('incremental');closeRescanMenu();return false;">
+                                    <i class="fas fa-bolt"></i>
+                                    <div>
+                                        <div style="font-weight:600;">Scan New Data</div>
+                                        <div style="font-size:.73rem;color:#adb5bd;">Only data added since last scan</div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
-
-                <!-- Category pills (no "All" pill — first category is active) -->
-                <div class="card-body pt-2 pb-0">
-                    <ul class="nav nav-pills nav-fill flex-wrap" id="cat-tabs" role="tablist" style="gap:.25rem;">
-                        <?php
-                        $firstCat = true;
-                        foreach ($grouped as $catName => $catRows):
-                            $paneId   = 'pane-' . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
-                            $tabId    = 'tab-'  . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
-                            $highCnt  = count(array_filter($catRows, fn($r) => ($r['severity'] ?? '') === 'High'));
-                            $pillClr  = $catPillColors[$catName] ?? 'primary';
-                        ?>
-                        <li class="nav-item">
-                            <a class="nav-link <?= $firstCat ? 'active' : '' ?>" id="<?= $tabId ?>" data-toggle="pill"
-                               href="#<?= $paneId ?>" role="tab" aria-controls="<?= $paneId ?>" aria-selected="<?= $firstCat ? 'true' : 'false' ?>"
-                               data-pill-color="<?= $pillClr ?>">
-                                <i class="<?= $catMeta[$catName]['icon'] ?? 'fas fa-circle' ?> mr-1 text-<?= $pillClr ?>"></i><?= esc($catName) ?>
-                                <span class="badge badge-<?= $pillClr ?> ml-1"><?= count($catRows) ?></span>
-                                <?php if ($highCnt > 0): ?>
-                                <span class="badge badge-danger ml-1" title="<?= $highCnt ?> high severity"><i class="fas fa-bolt"></i></span>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-auto text-center mb-3 mb-md-0">
+                            <?php
+                            $score   = $td['score'];
+                            $circum  = 2 * M_PI * 30; // r=30
+                            $dash    = $circum;
+                            $offset  = $circum - ($score / 100 * $circum);
+                            ?>
+                            <div class="health-score-ring mx-auto">
+                                <svg width="80" height="80" viewBox="0 0 80 80">
+                                    <circle cx="40" cy="40" r="30" fill="none" stroke="#f0f0f0" stroke-width="8"/>
+                                    <circle cx="40" cy="40" r="30" fill="none"
+                                            stroke="<?= $tdColor['bg'] ?>" stroke-width="8"
+                                            stroke-dasharray="<?= $circum ?>"
+                                            stroke-dashoffset="<?= $offset ?>"
+                                            stroke-linecap="round"/>
+                                </svg>
+                                <div class="score-text" style="color:<?= $tdColor['bg'] ?>">
+                                    <?= $score ?>
+                                    <span class="score-sub">/ 100</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md">
+                            <div class="health-sub text-muted" style="font-size: .85rem;">
+                                <strong>Scan completed:</strong> <?= date('M jS D Y h:i:s A', strtotime($job['completed_at'] ?? 'now')) ?><br>
+                                <strong>Setup:</strong> <?= count(json_decode($job['algorithms'] ?? '[]', true)) ?> algorithms active &nbsp;·&nbsp; <?= $scopeLabel($scope) ?>
+                                <?php if (!empty($job['timing_ms'])): ?>
+                                &nbsp;·&nbsp; Processed in <?= fmtElapsed((int)$job['timing_ms']) ?>
                                 <?php endif; ?>
-                            </a>
-                        </li>
-                        <?php $firstCat = false; endforeach; ?>
-                    </ul>
+                            </div>
+                            <!-- Severity count row -->
+                            <?php if ($td['total'] > 0): ?>
+                            <div class="sev-counts mt-2">
+                                <?php if ($td['highCount'] > 0): ?>
+                                <span class="badge badge-danger px-2 py-1 mr-1">
+                                    <i class="fas fa-exclamation-circle mr-1"></i><?= $td['highCount'] ?> High
+                                </span>
+                                <?php endif; ?>
+                                <?php if ($td['mediumCount'] > 0): ?>
+                                <span class="badge badge-warning px-2 py-1 mr-1 text-dark">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i><?= $td['mediumCount'] ?> Medium
+                                </span>
+                                <?php endif; ?>
+                                <?php if ($td['lowCount'] > 0): ?>
+                                <span class="badge badge-info px-2 py-1">
+                                    <i class="fas fa-info-circle mr-1"></i><?= $td['lowCount'] ?> Low
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="threat-bar-wrap">
+                        <div class="threat-bar" style="width:<?= $score ?>%;background:<?= $tdColor['bg'] ?>;"></div>
+                    </div>
                 </div>
+            </div>
 
+            <!-- ── Category pills ── -->
+            <?php if (!empty($grouped)): ?>
+            <div class="cat-pills">
+                <?php foreach ($grouped as $cat => $catRows):
+                    $cm   = $catMeta[$cat] ?? ['label' => ucfirst(str_replace('_', ' ', $cat)), 'icon' => 'fas fa-circle', 'color' => 'secondary'];
+                    $wst  = $td['categories'][$cat]['worst'] ?? 'Low';
+                    $wstC = ['High' => '#dc3545', 'Medium' => '#ffc107', 'Low' => '#17a2b8'][$wst] ?? '#adb5bd';
+                    $cnt  = count($catRows);
+                ?>
+                <a href="#cat-<?= $cat ?>" class="cat-pill"
+                   style="background:rgba(<?= $wst === 'High' ? '220,53,69' : ($wst === 'Medium' ? '255,193,7' : '23,162,184') ?>,.1);color:<?= $wstC ?>">
+                    <span class="pill-dot" style="background:<?= $wstC ?>;"></span>
+                    <i class="<?= $cm['icon'] ?>"></i>
+                    <?= $cm['label'] ?>
+                    <span style="font-size:.7rem;opacity:.7;margin-left:2px;"><?= $cnt ?></span>
+                </a>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
 
-                <!-- Tab panes -->
-                <div class="card-body pt-3">
-                    <div class="tab-content" id="cat-tabs-content">
+            <!-- ════════════════ FINDING CARDS ════════════════ -->
+            <?php if (empty($grouped)): ?>
+            <div class="card border-0 shadow-sm text-center p-4 mb-4" style="border-radius:14px;">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5 class="font-weight-bold">All Clear</h5>
+                <p class="text-muted mb-0">No anomalies were detected in this scan. Your device data looks normal.</p>
+            </div>
+            <?php else: ?>
+            <?php foreach ($grouped as $cat => $catRows):
+                $cm  = $catMeta[$cat] ?? ['label' => ucfirst(str_replace('_', ' ', $cat)), 'icon' => 'fas fa-circle', 'color' => 'secondary'];
+                $wst = $td['categories'][$cat]['worst'] ?? 'Low';
+                $wstC = ['High' => 'danger', 'Medium' => 'warning', 'Low' => 'info'][$wst] ?? 'secondary';
 
-                        <!-- Per-category panes (each has nested algorithm sub-tabs) -->
-                        <?php
-                        $firstCatPane = true;
-                        foreach ($grouped as $catName => $catRows):
-                            $paneId = 'pane-' . preg_replace('/[^a-z0-9]/i', '_', strtolower($catName));
-                            $rowsByAlg = [];
-                            foreach ($catRows as $row) {
-                                $alg = $row['algorithm'] ?? 'Unknown';
-                                $rowsByAlg[$alg][] = $row;
+                // Group findings by severity
+                $highRows = [];
+                $lowRows  = [];
+                foreach ($catRows as $r) {
+                    if (($r['severity'] ?? 'Low') === 'High') {
+                        $highRows[] = $r;
+                    } else {
+                        $lowRows[] = $r;
+                    }
+                }
+                
+                $hasHigh  = !empty($highRows);
+                $hasLow   = !empty($lowRows);
+                $colClass = ($hasHigh && $hasLow) ? 'col-md-6' : 'col-12';
+            ?>
+            <div class="card card-outline card-<?= $wstC ?> shadow-sm mb-4" id="cat-<?= $cat ?>">
+                <div class="card-header d-flex align-items-center">
+                    <h3 class="card-title font-weight-bold text-<?= $wstC ?> mb-0">
+                        <i class="<?= $cm['icon'] ?> mr-2"></i><?= $cm['label'] ?> Analysis
+                    </h3>
+                    <div class="card-tools ml-auto">
+                        <?php $catH=$td['categories'][$cat]['High']??0; $catM=$td['categories'][$cat]['Medium']??0; $catL=$td['categories'][$cat]['Low']??0; ?>
+                        <?php if($catH>0):?><span class="badge badge-danger mr-1"><?=$catH?> High</span><?php endif;?>
+                        <?php if($catM>0):?><span class="badge badge-warning text-dark mr-1"><?=$catM?> Medium</span><?php endif;?>
+                        <?php if($catL>0):?><span class="badge badge-info mr-1"><?=$catL?> Low</span><?php endif;?>
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="row no-gutters">
+                        
+                        <!-- HIGH SEVERITY COLUMN -->
+                        <?php if ($hasHigh): ?>
+                        <div class="<?= $colClass ?> <?= ($hasHigh && $hasLow) ? 'border-right' : '' ?>">
+                            <div class="bg-light px-3 py-2 border-bottom font-weight-bold text-danger" style="font-size: .82rem;">
+                                <i class="fas fa-exclamation-circle mr-1"></i> High Risk Findings
+                            </div>
+                            <?php
+                            $highGroups = [];
+                            foreach ($highRows as $r) {
+                                $highGroups[$r['algorithm'] ?? 'unknown'][] = $r;
                             }
-                        ?>
-                        <div class="tab-pane fade <?= $firstCatPane ? 'show active' : '' ?>" id="<?= $paneId ?>" role="tabpanel">
-<!-- Algorithm sub-tab nav -->
-                            <ul class="nav nav-tabs flex-wrap mb-0" id="<?= $paneId ?>-alg-nav" role="tablist" style="border-bottom:2px solid #dee2e6;">
-                                <?php $firstAlg = true; foreach ($rowsByAlg as $algName => $algRows):
-                                    $am      = $algMeta[$algName] ?? null;
-                                    $algHash = md5($paneId . $algName);
-                                    $highN   = count(array_filter($algRows, fn($r) => ($r['severity'] ?? '') === 'High'));
-                                ?>
-                                <li class="nav-item">
-                                 <a class="nav-link d-flex align-items-center <?= $firstAlg ? 'active' : '' ?>"
-                                        id="algtab-<?= $algHash ?>"
-                                        data-toggle="tab"
-                                        href="#algpane-<?= $algHash ?>"
-                                        role="tab"
-                                        style="font-size:.82rem; padding:.45rem .9rem;">
-                                          <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> mr-1 text-<?= $am['color'] ?? 'primary' ?>"></i>
-                                          <?= esc($algName) ?>
-                                          <span class="badge badge-<?= $am['color'] ?? 'primary' ?> ml-2"><?= count($algRows) ?></span>
-                                         <?php if ($highN > 0): ?>
-                                         <span class="badge badge-danger ml-1" title="<?= $highN ?> High severity"><i class="fas fa-bolt"></i></span>
-                                         <?php endif; ?>
-                                     </a>
-                                 </li>
-                                 <?php $firstAlg = false; endforeach; ?>
-                            </ul>
-
-                            <!-- Algorithm sub-tab panes -->
-                            <div class="tab-content border border-top-0 rounded-bottom" style="background:#fff;">
-                                <?php $firstAlg = true; foreach ($rowsByAlg as $algName => $algRows):
-                                    $am      = $algMeta[$algName] ?? null;
-                                    $mc      = $am['color'] ?? 'secondary';
-                                    $algHash = md5($paneId . $algName);
-                                ?>
-                                <div class="tab-pane fade <?= $firstAlg ? 'show active' : '' ?> p-3"
-                                     id="algpane-<?= $algHash ?>" role="tabpanel">
-
-<!-- Explanation card — expanded by default (no collapse class) -->
-                                    <?php if ($am): ?>
-                                    <div class="card card-info card-outline shadow-sm mb-3">
-                                        <div class="card-header py-2">
-                                            <h3 class="card-title mb-0">
-                                                <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> text-primary mr-2"></i>
-                                                <strong><?= esc($algName) ?></strong>
-                                                <small class="text-muted ml-2">— algorithm details</small>
-                                            </h3>
-                                            <div class="card-tools">
-                                                <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
-                                                    <i class="fas fa-minus"></i>
-                                                </button>
-                                            </div>
+                            foreach ($highGroups as $algKey => $findings):
+                                $fCount  = count($findings);
+                                $fFirst  = $findings[0];
+                                $fSev    = 'High';
+                                $fSevC   = 'danger';
+                                $fSevDot = '#dc3545';
+                                $tblId   = 'ctbl-'.preg_replace('/[^a-z0-9]/i','-',$cat.'-'.$algKey).'-high';
+                                $aLow    = strtolower($fFirst['anomaly'] ?? '');
+                                $hasTs   = !empty($fFirst['event_timestamp']);
+                                $hasSc   = !empty($fFirst['score']);
+                            ?>
+                            <?php if ($fCount > 1): ?>
+                            <div class="finding-card">
+                                <div class="d-flex align-items-start" style="gap:12px;">
+                                    <div class="finding-sev-dot" style="background:<?=$fSevDot?>;margin-top:5px;"></div>
+                                    <div style="flex:1;">
+                                        <div class="d-flex align-items-center mb-1" style="gap:8px;flex-wrap:wrap;">
+                                            <span class="badge badge-<?=$fSevC?>" style="font-size:.68rem;"><?=strtoupper($fSev)?></span>
+                                            <span class="badge badge-light" style="font-size:.68rem;border:1px solid #dee2e6;"><?=$fCount?> items</span>
                                         </div>
-                                        <!-- card-body is shown by default; data-card-widget="collapse" handles toggle -->
-                                        <div class="card-body py-3">
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <h6 class="text-primary font-weight-bold mb-2">
-                                                        <i class="fas fa-cogs mr-1"></i> How it works
-                                                    </h6>
-                                                    <p class="text-muted mb-0" style="font-size:.875rem; line-height:1.6;"><?= esc($am['how']) ?></p>
-                                                </div>
-                                                <div class="col-md-6 mt-3 mt-md-0">
-                                                    <h6 class="text-primary font-weight-bold mb-2">
-                                                        <i class="fas fa-lightbulb mr-1"></i> What the results mean
-                                                    </h6>
-                                                    <p class="text-muted mb-0" style="font-size:.875rem; line-height:1.6;"><?= esc($am['means']) ?></p>
-                                                </div>
+                                        <div class="finding-title"><?=esc(match(true) {
+                                            str_contains($aLow,'duplicate phone') => "{$fCount} duplicate phone numbers detected",
+                                            str_contains($aLow,'duplicate')       => "{$fCount} duplicate entries detected",
+                                            str_contains($aLow,'night')           => "{$fCount} unusual night-time events detected",
+                                            str_contains($aLow,'spike')           => "{$fCount} activity spikes detected",
+                                            str_contains($aLow,'geofence')        => "{$fCount} geofence boundary violations detected",
+                                            str_contains($aLow,'speed')           => "{$fCount} impossible travel events detected",
+                                            str_contains($aLow,'permission')      => "{$fCount} over-privileged apps detected",
+                                            str_contains($aLow,'suspicious')      => "{$fCount} suspicious items detected",
+                                            str_contains($aLow,'phish')           => "{$fCount} potential phishing messages detected",
+                                            str_contains($aLow,'burst')           => "{$fCount} short-call burst events detected",
+                                            str_contains($aLow,'outlier')||str_contains($aLow,'anomal') => "{$fCount} anomalous events detected",
+                                            default                               => "{$fCount} findings from this check",
+                                        })?></div>
+                                        <div class="finding-body" style="margin-top:3px;">Tap to expand and view each individual entry.</div>
+                                        <button class="tech-toggle mt-2" id="<?=$tblId?>-btn" onclick="toggleCondensed('<?=$tblId?>')">
+                                            <i class="fas fa-list fa-xs"></i>
+                                            <span id="<?=$tblId?>-btn-label">View all <?=$fCount?> entries</span>
+                                        </button>
+                                        <div id="<?=$tblId?>" style="display:none;margin-top:12px;">
+                                            <table class="table table-bordered table-hover table-valign-middle" style="font-size:.79rem;margin-bottom:6px;">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th style="width:36px;padding:8px 10px;">#</th>
+                                                        <th style="padding:8px 10px;">Finding</th>
+                                                        <?php if($hasTs):?><th style="width:110px;padding:8px 10px;">Time</th><?php endif;?>
+                                                        <?php if($hasSc):?><th style="width:70px;padding:8px 10px;text-align:right;">Score</th><?php endif;?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                <?php foreach($findings as $fi=>$frow):?>
+                                                    <tr class="cnd-row" data-grp="<?=$tblId?>" data-idx="<?=$fi?>"<?=$fi>=50?' style="display:none;"':''?>>
+                                                        <td style="color:#adb5bd;padding:7px 10px;vertical-align:top;"><?=$fi+1?></td>
+                                                        <td style="padding:7px 10px;vertical-align:top;word-break:break-word;"><?=esc(formatEmbeddedDates($frow['anomaly']??''))?></td>
+                                                        <?php if($hasTs):?>
+                                                        <td style="color:#adb5bd;padding:7px 10px;vertical-align:top;white-space:nowrap;font-size:.73rem;"><?=!empty($frow['event_timestamp'])?date('M jS D Y h:i:s A',strtotime($frow['event_timestamp'])):'—'?></td>
+                                                        <?php endif;?>
+                                                        <?php if($hasSc):?>
+                                                        <td style="text-align:right;padding:7px 10px;vertical-align:top;color:#6c757d;"><?=!empty($frow['score'])?round((float)$frow['score'],3):'—'?></td>
+                                                        <?php endif;?>
+                                                    </tr>
+                                                <?php endforeach;?>
+                                                </tbody>
+                                            </table>
+                                            <?php if($fCount>50):?>
+                                            <div style="font-size:.75rem;color:#6c757d;display:flex;align-items:center;gap:10px;">
+                                                <span id="<?=$tblId?>-info">Showing 1–50 of <?=$fCount?></span>
+                                                <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;padding:2px 10px;border-radius:6px;" id="<?=$tblId?>-prev" onclick="pageCondensed('<?=$tblId?>',<?=$fCount?>,'prev')" disabled>‹ Prev</button>
+                                                <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;padding:2px 10px;border-radius:6px;" id="<?=$tblId?>-next" onclick="pageCondensed('<?=$tblId?>',<?=$fCount?>,'next')">Next ›</button>
                                             </div>
+                                            <?php endif;?>
                                         </div>
                                     </div>
-                                    <?php endif; ?>
-
-                                    <!-- Paginated results table — only rows for this algorithm -->
-                                    <?php renderTable('alg_' . $algHash, $algRows, $sevMap, $algMeta, $engine_meta); ?>
-
                                 </div>
-                                <?php $firstAlg = false; endforeach; ?>
-                            </div><!-- /.tab-content (algorithm level) -->
-
+                            </div>
+                            <?php else: ?>
+                            <?php foreach($findings as $fi=>$row):
+                                $techId='tech-'.preg_replace('/[^a-z0-9]/i','-',$cat.'-'.$algKey).'-high-'.$fi;
+                                $details=!empty($row['details'])?(is_string($row['details'])?@json_decode($row['details'],true):$row['details']):null;
+                            ?>
+                            <div class="finding-card">
+                                <div class="d-flex align-items-start" style="gap:12px;">
+                                    <div class="finding-sev-dot" style="background:<?=$fSevDot?>;margin-top:5px;"></div>
+                                    <div style="flex:1;">
+                                        <div class="d-flex align-items-center mb-1" style="gap:8px;flex-wrap:wrap;">
+                                            <span class="badge badge-<?=$fSevC?>" style="font-size:.68rem;"><?=strtoupper($fSev)?></span>
+                                            <?php if(!empty($row['event_timestamp'])):?>
+                                            <span style="font-size:.73rem;color:#adb5bd;"><i class="far fa-clock mr-1"></i><?=date('M jS D Y h:i:s A',strtotime($row['event_timestamp']))?></span>
+                                            <?php endif;?>
+                                        </div>
+                                        <div class="finding-title"><?=esc(formatEmbeddedDates($row['anomaly']??'Anomaly detected'))?></div>
+                                        <?php if(!empty($row['score'])):?>
+                                        <div class="finding-body">Anomaly confidence score: <strong><?=round((float)$row['score'],3)?></strong></div>
+                                        <?php endif;?>
+                                        <?php if(($details&&!empty($details))||!empty($row['algorithm'])):?>
+                                        <button class="tech-toggle mt-2" onclick="toggleTech('<?=$techId?>')">
+                                            <i class="fas fa-code fa-xs"></i><span id="<?=$techId?>-label">Technical details</span>
+                                        </button>
+                                        <div class="finding-tech" id="<?=$techId?>" style="display:none;">
+                                            <?php if(!empty($row['algorithm'])):?>
+                                            <div style="font-size:.73rem;color:#6c757d;margin-bottom:6px;"><i class="fas fa-cog mr-1"></i> Detection method: <strong><?=esc($row['algorithm'])?></strong></div>
+                                            <?php endif;?>
+                                            <?php if($details):?>
+                                            <pre><?=esc(json_encode($details,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES))?></pre>
+                                            <?php endif;?>
+                                        </div>
+                                        <?php endif;?>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                            <?php endif; ?>
+                            <?php endforeach; ?>
                         </div>
-                        <?php $firstCatPane = false; endforeach; ?>
+                        <?php endif; ?>
 
-                    </div><!-- /.tab-content -->
+                        <!-- MEDIUM/LOW SEVERITY COLUMN -->
+                        <?php if ($hasLow): ?>
+                        <div class="<?= $colClass ?>">
+                            <div class="bg-light px-3 py-2 border-bottom font-weight-bold text-warning" style="font-size: .82rem;">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Medium &amp; Low Risk Findings
+                            </div>
+                            <?php
+                            $lowGroups = [];
+                            foreach ($lowRows as $r) {
+                                $lowGroups[$r['algorithm'] ?? 'unknown'][] = $r;
+                            }
+                            foreach ($lowGroups as $algKey => $findings):
+                                $fCount  = count($findings);
+                                $fFirst  = $findings[0];
+                                $fSev    = $fFirst['severity'] ?? 'Low';
+                                $fSevC   = $sevColor[$fSev] ?? 'secondary';
+                                $fSevDot = ['Medium'=>'#ffc107','Low'=>'#17a2b8'][$fSev] ?? '#adb5bd';
+                                $tblId   = 'ctbl-'.preg_replace('/[^a-z0-9]/i','-',$cat.'-'.$algKey).'-low';
+                                $aLow    = strtolower($fFirst['anomaly'] ?? '');
+                                $hasTs   = !empty($fFirst['event_timestamp']);
+                                $hasSc   = !empty($fFirst['score']);
+                            ?>
+                            <?php if ($fCount > 1): ?>
+                            <div class="finding-card">
+                                <div class="d-flex align-items-start" style="gap:12px;">
+                                    <div class="finding-sev-dot" style="background:<?=$fSevDot?>;margin-top:5px;"></div>
+                                    <div style="flex:1;">
+                                        <div class="d-flex align-items-center mb-1" style="gap:8px;flex-wrap:wrap;">
+                                            <span class="badge badge-<?=$fSevC?>" style="font-size:.68rem;"><?=strtoupper($fSev)?></span>
+                                            <span class="badge badge-light" style="font-size:.68rem;border:1px solid #dee2e6;"><?=$fCount?> items</span>
+                                        </div>
+                                        <div class="finding-title"><?=esc(match(true) {
+                                            str_contains($aLow,'duplicate phone') => "{$fCount} duplicate phone numbers detected",
+                                            str_contains($aLow,'duplicate')       => "{$fCount} duplicate entries detected",
+                                            str_contains($aLow,'night')           => "{$fCount} unusual night-time events detected",
+                                            str_contains($aLow,'spike')           => "{$fCount} activity spikes detected",
+                                            str_contains($aLow,'geofence')        => "{$fCount} geofence boundary violations detected",
+                                            str_contains($aLow,'speed')           => "{$fCount} impossible travel events detected",
+                                            str_contains($aLow,'permission')      => "{$fCount} over-privileged apps detected",
+                                            str_contains($aLow,'suspicious')      => "{$fCount} suspicious items detected",
+                                            str_contains($aLow,'phish')           => "{$fCount} potential phishing messages detected",
+                                            str_contains($aLow,'burst')           => "{$fCount} short-call burst events detected",
+                                            str_contains($aLow,'outlier')||str_contains($aLow,'anomal') => "{$fCount} anomalous events detected",
+                                            default                               => "{$fCount} findings from this check",
+                                        })?></div>
+                                        <div class="finding-body" style="margin-top:3px;">Tap to expand and view each individual entry.</div>
+                                        <button class="tech-toggle mt-2" id="<?=$tblId?>-btn" onclick="toggleCondensed('<?=$tblId?>')">
+                                            <i class="fas fa-list fa-xs"></i>
+                                            <span id="<?=$tblId?>-btn-label">View all <?=$fCount?> entries</span>
+                                        </button>
+                                        <div id="<?=$tblId?>" style="display:none;margin-top:12px;">
+                                            <table class="table table-bordered table-hover table-valign-middle" style="font-size:.79rem;margin-bottom:6px;">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th style="width:36px;padding:8px 10px;">#</th>
+                                                        <th style="padding:8px 10px;">Finding</th>
+                                                        <?php if($hasTs):?><th style="width:110px;padding:8px 10px;">Time</th><?php endif;?>
+                                                        <?php if($hasSc):?><th style="width:70px;padding:8px 10px;text-align:right;">Score</th><?php endif;?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                <?php foreach($findings as $fi=>$frow):?>
+                                                    <tr class="cnd-row" data-grp="<?=$tblId?>" data-idx="<?=$fi?>"<?=$fi>=50?' style="display:none;"':''?>>
+                                                        <td style="color:#adb5bd;padding:7px 10px;vertical-align:top;"><?=$fi+1?></td>
+                                                        <td style="padding:7px 10px;vertical-align:top;word-break:break-word;"><?=esc(formatEmbeddedDates($frow['anomaly']??''))?></td>
+                                                        <?php if($hasTs):?>
+                                                        <td style="color:#adb5bd;padding:7px 10px;vertical-align:top;white-space:nowrap;font-size:.73rem;"><?=!empty($frow['event_timestamp'])?date('M jS D Y h:i:s A',strtotime($frow['event_timestamp'])):'—'?></td>
+                                                        <?php endif;?>
+                                                        <?php if($hasSc):?>
+                                                        <td style="text-align:right;padding:7px 10px;vertical-align:top;color:#6c757d;"><?=!empty($frow['score'])?round((float)$frow['score'],3):'—'?></td>
+                                                        <?php endif;?>
+                                                    </tr>
+                                                <?php endforeach;?>
+                                                </tbody>
+                                            </table>
+                                            <?php if($fCount>50):?>
+                                            <div style="font-size:.75rem;color:#6c757d;display:flex;align-items:center;gap:10px;">
+                                                <span id="<?=$tblId?>-info">Showing 1–50 of <?=$fCount?></span>
+                                                <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;padding:2px 10px;border-radius:6px;" id="<?=$tblId?>-prev" onclick="pageCondensed('<?=$tblId?>',<?=$fCount?>,'prev')" disabled>‹ Prev</button>
+                                                <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;padding:2px 10px;border-radius:6px;" id="<?=$tblId?>-next" onclick="pageCondensed('<?=$tblId?>',<?=$fCount?>,'next')">Next ›</button>
+                                            </div>
+                                            <?php endif;?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php else: ?>
+                            <?php foreach($findings as $fi=>$row):
+                                $techId='tech-'.preg_replace('/[^a-z0-9]/i','-',$cat.'-'.$algKey).'-low-'.$fi;
+                                $details=!empty($row['details'])?(is_string($row['details'])?@json_decode($row['details'],true):$row['details']):null;
+                            ?>
+                            <div class="finding-card">
+                                <div class="d-flex align-items-start" style="gap:12px;">
+                                    <div class="finding-sev-dot" style="background:<?=$fSevDot?>;margin-top:5px;"></div>
+                                    <div style="flex:1;">
+                                        <div class="d-flex align-items-center mb-1" style="gap:8px;flex-wrap:wrap;">
+                                            <span class="badge badge-<?=$fSevC?>" style="font-size:.68rem;"><?=strtoupper($fSev)?></span>
+                                            <?php if(!empty($row['event_timestamp'])):?>
+                                            <span style="font-size:.73rem;color:#adb5bd;"><i class="far fa-clock mr-1"></i><?=date('M jS D Y h:i:s A',strtotime($row['event_timestamp']))?></span>
+                                            <?php endif;?>
+                                        </div>
+                                        <div class="finding-title"><?=esc(formatEmbeddedDates($row['anomaly']??'Anomaly detected'))?></div>
+                                        <?php if(!empty($row['score'])):?>
+                                        <div class="finding-body">Anomaly confidence score: <strong><?=round((float)$row['score'],3)?></strong></div>
+                                        <?php endif;?>
+                                        <?php if(($details&&!empty($details))||!empty($row['algorithm'])):?>
+                                        <button class="tech-toggle mt-2" onclick="toggleTech('<?=$techId?>')">
+                                            <i class="fas fa-code fa-xs"></i><span id="<?=$techId?>-label">Technical details</span>
+                                        </button>
+                                        <div class="finding-tech" id="<?=$techId?>" style="display:none;">
+                                            <?php if(!empty($row['algorithm'])):?>
+                                            <div style="font-size:.73rem;color:#6c757d;margin-bottom:6px;"><i class="fas fa-cog mr-1"></i> Detection method: <strong><?=esc($row['algorithm'])?></strong></div>
+                                            <?php endif;?>
+                                            <?php if($details):?>
+                                            <pre><?=esc(json_encode($details,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES))?></pre>
+                                            <?php endif;?>
+                                        </div>
+                                        <?php endif;?>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                            <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+
+                    </div>
                 </div><!-- /.card-body -->
             </div><!-- /.card -->
+            <?php endforeach; /* grouped */?>
+            <?php endif; /* empty(grouped) */?>
 
-            <?php endif; // end empty check ?>
+            <?php endif; // $has_report && $td ?>
 
-            <!-- ── Action Buttons ── -->
-            <div class="row mt-3 mb-4">
-                <div class="col-12 d-flex justify-content-center flex-wrap" style="gap:.5rem;">
-                    <a href="<?= base_url('analysis/anomalies/algorithms') ?>" class="btn btn-outline-primary font-weight-bold">
-                        <i class="fas fa-sliders-h mr-1"></i> Change Algorithms
-                    </a>
-                    <button type="button" class="btn btn-warning font-weight-bold shadow-sm" id="btn-rerun">
-                        <i class="fas fa-redo mr-1"></i> Re-run Detection
-                    </button>
-                    <a href="<?= base_url('analysis/anomalies/run') ?>" class="btn btn-primary font-weight-bold shadow-sm" id="btn-run-now" style="display:none;">
-                        <i class="fas fa-play mr-1"></i> Run Now
-                    </a>
+            <!-- ════════════════════════════════════════════
+                 SCAN HISTORY (always shown when jobs exist)
+            ════════════════════════════════════════════ -->
+            <?php if (!empty($recent_jobs)): ?>
+            <div class="card card-outline card-secondary shadow-sm mt-4">
+                <div class="card-header d-flex align-items-center py-3">
+                    <h3 class="card-title font-weight-bold text-dark mb-0">
+                        <i class="fas fa-history mr-2 text-muted"></i>Scan History
+                    </h3>
+                    <div class="card-tools ml-auto">
+                        <?php if (!$is_scanning): ?>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="startScan('full')">
+                                <i class="fas fa-play mr-1"></i>Full Scan
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="startScan('incremental')">
+                                <i class="fas fa-bolt mr-1"></i>Scan New Data
+                            </button>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <?php foreach ($recent_jobs as $hj):
+                        $hjStatus  = $hj['status'] ?? 'unknown';
+                        $hjEngine  = $hj['engine'] ?? 'php';
+                        $hjScope   = $hj['scope']  ?? 'full';
+                        $hjCount   = (int)($hj['results_count'] ?? 0);
+                        $hjDate    = $hj['completed_at'] ?? $hj['created_at'] ?? null;
+                        $hjId      = (int)$hj['id'];
+                        $hjAlgs    = count(json_decode($hj['algorithms'] ?? '[]', true));
+                        $dotBg     = match($hjStatus) {
+                            'completed' => '#28a745', 'failed' => '#dc3545',
+                            'running','pending' => '#667eea', default => '#adb5bd'
+                        };
+                        $isActive  = $job && (int)($job['id'] ?? 0) === $hjId;
+                    ?>
+                    <div class="hist-item <?= $isActive ? 'bg-light' : '' ?>"
+                         onclick="<?= $hjStatus === 'completed' ? "window.location='" . base_url('analysis/anomalies/results?job_id=' . $hjId) . "'" : 'void(0)' ?>">
+                        <div class="hist-dot" style="background:<?= $dotBg ?>1a;color:<?= $dotBg ?>;">
+                            <?php if ($hjStatus === 'running' || $hjStatus === 'pending'): ?>
+                            <i class="fas fa-circle-notch fa-spin"></i>
+                            <?php elseif ($hjStatus === 'completed'): ?>
+                            <i class="fas fa-check"></i>
+                            <?php elseif ($hjStatus === 'failed'): ?>
+                            <i class="fas fa-times"></i>
+                            <?php else: ?>
+                            <i class="fas fa-clock"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="d-flex align-items-center gap-2" style="gap:8px;flex-wrap:wrap;">
+                                <span class="hist-score">
+                                    <?= $hjStatus === 'completed' ? ($hjCount . ' finding' . ($hjCount !== 1 ? 's' : '')) : ucfirst($hjStatus) ?>
+                                </span>
+                                <?php if ($isActive): ?>
+                                <span class="hist-badge text-primary" style="background:rgba(0,123,255,.15);">Current</span>
+                                <?php endif; ?>
+                                <span class="hist-badge badge-light border text-muted">
+                                    <?= $scopeLabel($hjScope) ?>
+                                </span>
+                                <span class="hist-badge badge-light border text-muted">
+                                    <?= $hjEngine === 'python' ? 'Python' : 'PHP' ?> engine
+                                </span>
+                            </div>
+                            <div class="hist-meta mt-1">
+                                <?= $hjAlgs ?> algorithms &middot;
+                                <?= $hjDate ? relDate($hjDate) : 'Pending' ?>
+                                <?php if (!empty($hj['timing_ms'])): ?>
+                                &middot; <?= fmtElapsed((int)$hj['timing_ms']) ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php if ($hjStatus === 'completed'): ?>
+                        <i class="fas fa-chevron-right text-muted" style="font-size:.75rem;"></i>
+                        <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
+            <?php endif; ?>
 
-        </div>
-    </section>
-</div><!-- /.content-wrapper -->
+        </div><!-- .container-fluid -->
+    </section><!-- .content -->
+</div><!-- .content-wrapper -->
 
-<?php
-/**
- * Renders a paginated anomaly table for a given set of rows.
- *
- * @param string $paneId      Unique ID prefix for this table's pagination controls
- * @param array  $rows        Anomaly finding rows
- * @param array  $sevMap      Severity → badge/icon map
- * @param array  $algMeta     Algorithm metadata (used for badge colour)
- * @param array  $engineMeta  Engine metadata (badge colour for engine notes)
- */
-function renderTable(string $paneId, array $rows, array $sevMap, array $algMeta, array $engineMeta = []): void
-{
-    $tableId = 'tbl-' . preg_replace('/[^a-z0-9]/i', '_', $paneId);
-    $total   = count($rows);
-    $perPage = 30;
-    $pages   = max(1, (int) ceil($total / $perPage));
-    ?>
-    <div class="table-responsive" id="<?= $tableId ?>-wrap">
-        <table class="table table-hover table-striped mb-0" id="<?= $tableId ?>">
-            <thead class="thead-dark">
-                <tr>
-                    <th style="width:40px">#</th>
-                    <th>Category</th>
-                    <th>Detected Anomaly</th>
-                    <th style="width:105px">Severity</th>
-                    <th>Algorithm Used</th>
-                    <th>Engine Notes</th>
-                    <th style="width:150px">Timestamp</th>
-                </tr>
-            </thead>
-            <tbody id="<?= $tableId ?>-body">
-                <?php foreach ($rows as $i => $row):
-                    $sev   = $sevMap[$row['severity']] ?? ['badge' => 'secondary', 'icon' => 'fas fa-circle'];
-                    $am    = $algMeta[$row['algorithm'] ?? ''] ?? null;
-                    $algColor = $am['color'] ?? 'secondary';
-                ?>
-                <tr class="result-row" data-page-index="<?= $i ?>" style="display:none;">
-                    <td class="text-muted small align-middle"><?= $i + 1 ?></td>
-                    <td class="align-middle font-weight-bold text-dark" style="white-space:nowrap;">
-                        <i class="<?= esc($row['icon']) ?> mr-1 text-secondary"></i>
-                        <?= esc($row['category']) ?>
-                    </td>
-                    <td class="align-middle small"><?= esc($row['anomaly']) ?></td>
-                    <td class="align-middle" style="white-space:nowrap;">
-                        <span class="badge badge-<?= $sev['badge'] ?>">
-                            <i class="<?= $sev['icon'] ?> mr-1"></i><?= esc($row['severity']) ?>
-                        </span>
-                    </td>
-                    <td class="align-middle" style="white-space:nowrap;">
-                        <span class="badge badge-<?= $algColor ?>" style="font-size:.76rem; padding:.35em .6em; white-space:normal; max-width:160px; display:inline-block; text-align:left; line-height:1.3;">
-                            <i class="<?= $am['icon'] ?? 'fas fa-cog' ?> mr-1"></i>
-                            <?= esc($row['algorithm'] ?? '—') ?>
-                        </span>
-                    </td>
-                    <td class="align-middle" style="font-size:.75rem; color:#555;">
-                        <?php if (!empty($row['engine_note'])): ?>
-                        <span class="badge badge-light border text-muted"
-                              style="white-space:normal; text-align:left; display:inline-block; max-width:220px; line-height:1.3;">
-                            <i class="fas fa-microscope mr-1 text-<?= esc($engineMeta['badge'] ?? 'secondary') ?>"></i>
-                            <?= esc($row['engine_note']) ?>
-                        </span>
-                        <?php else: ?>
-                        <span class="text-muted">—</span>
-                        <?php endif; ?>
-                    </td>
-                    <td class="align-middle small" style="white-space:nowrap;">
-                        <i class="far fa-clock mr-1 text-muted"></i><?= esc($row['timestamp']) ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-
-        <?php if ($total === 0): ?>
-        <div class="text-center py-4 text-muted">
-            <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
-            No findings in this category.
-        </div>
-        <?php endif; ?>
-    </div>
-
-    <?php if ($pages > 1): ?>
-    <!-- Pagination controls -->
-    <div class="d-flex justify-content-between align-items-center mt-2 px-1" id="<?= $tableId ?>-pag-wrap">
-        <small class="text-muted" id="<?= $tableId ?>-pag-info"></small>
-        <nav aria-label="Results pagination">
-            <ul class="pagination pagination-sm mb-0" id="<?= $tableId ?>-pag">
-                <!-- generated by JS -->
-            </ul>
-        </nav>
-    </div>
-    <?php endif; ?>
-
-    <script>
-    (function () {
-        var tableId  = <?= json_encode($tableId) ?>;
-        var total    = <?= $total ?>;
-        var perPage  = <?= $perPage ?>;
-        var pages    = <?= $pages ?>;
-        var curPage  = 1;
-
-        function showPage(p) {
-            curPage = Math.max(1, Math.min(p, pages));
-            var rows    = document.querySelectorAll('#' + tableId + '-body .result-row');
-            var start   = (curPage - 1) * perPage;
-            var end     = start + perPage;
-            rows.forEach(function (tr, idx) {
-                tr.style.display = (idx >= start && idx < end) ? '' : 'none';
-            });
-
-            // Update info text
-            var infoEl = document.getElementById(tableId + '-pag-info');
-            if (infoEl) {
-                var from = Math.min(start + 1, total);
-                var to   = Math.min(end, total);
-                infoEl.textContent = 'Showing ' + from + '–' + to + ' of ' + total + ' findings';
-            }
-
-            // Rebuild pagination UL
-            var ul = document.getElementById(tableId + '-pag');
-            if (!ul) return;
-            ul.innerHTML = '';
-
-            // Prev
-            var prev = document.createElement('li');
-            prev.className = 'page-item' + (curPage === 1 ? ' disabled' : '');
-            prev.innerHTML = '<a class="page-link" href="#" data-p="' + (curPage - 1) + '">&laquo;</a>';
-            ul.appendChild(prev);
-
-            // Page numbers (show at most 7 around current)
-            var startP = Math.max(1, curPage - 3);
-            var endP   = Math.min(pages, curPage + 3);
-            if (startP > 1) {
-                ul.appendChild(makeLi(1));
-                if (startP > 2) ul.appendChild(makeLi('…', true));
-            }
-            for (var i = startP; i <= endP; i++) ul.appendChild(makeLi(i));
-            if (endP < pages) {
-                if (endP < pages - 1) ul.appendChild(makeLi('…', true));
-                ul.appendChild(makeLi(pages));
-            }
-
-            // Next
-            var next = document.createElement('li');
-            next.className = 'page-item' + (curPage === pages ? ' disabled' : '');
-            next.innerHTML = '<a class="page-link" href="#" data-p="' + (curPage + 1) + '">&raquo;</a>';
-            ul.appendChild(next);
-
-            // Bind clicks
-            ul.querySelectorAll('.page-link').forEach(function (a) {
-                a.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    var p = parseInt(this.getAttribute('data-p'));
-                    if (!isNaN(p)) showPage(p);
-                });
-            });
-        }
-
-        function makeLi(label, disabled) {
-            var li = document.createElement('li');
-            li.className = 'page-item' + (disabled ? ' disabled' : '') + (label === curPage ? ' active' : '');
-            li.innerHTML = '<a class="page-link" href="#" data-p="' + label + '">' + label + '</a>';
-            return li;
-        }
-
-        // Initialise on load (also re-trigger when tab shown)
-        showPage(1);
-
-        // Re-run when Bootstrap tab is shown (rows may have been hidden)
-        document.addEventListener('shown.bs.tab', function () { showPage(curPage); });
-        document.querySelectorAll('[data-toggle="pill"]').forEach(function (el) {
-            el.addEventListener('shown.bs.tab', function () { showPage(1); });
-        });
-    })();
-    </script>
-    <?php
-}
-?>
-
-<style>
-/* Category pill active border */
-.nav-pills .nav-link[data-pill-color] {
-    border-left: 3px solid transparent;
-    transition: border-color 0.2s;
-}
-</style>
-
+<!-- ════════════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════════════════════ -->
 <script>
-// Bootstrap 4 / AdminLTE color mapping for pill borders
-var pillColorMap = {
-    danger: '#dc3545', warning: '#ffc107', info: '#17a2b8',
-    primary: '#007bff', success: '#28a745', secondary: '#6c757d',
-    dark: '#343a40', light: '#f8f9fa'
-};
-document.querySelectorAll('#cat-tabs a[data-toggle="pill"]').forEach(function (el) {
-    el.addEventListener('shown.bs.tab', function () {
-        var clr = this.getAttribute('data-pill-color');
-        if (clr) this.style.borderLeftColor = pillColorMap[clr] || '#007bff';
-    });
-});
-document.addEventListener('DOMContentLoaded', function () {
-    var active = document.querySelector('#cat-tabs a.active[data-pill-color]');
-    if (active) {
-        var clr = active.getAttribute('data-pill-color');
-        if (clr) active.style.borderLeftColor = pillColorMap[clr] || '#007bff';
+(function () {
+    'use strict';
+
+    /* ── Config injected from PHP ───────────────────────────────────────────── */
+    var START_URL       = <?= json_encode($start_url ?? '') ?>;
+    var STATUS_BASE     = <?= json_encode(($status_url_base ?? '') . '/') ?>;
+    var PROCESS_BASE    = <?= json_encode(($process_url_base ?? '') . '/') ?>;
+    var RESULTS_BASE    = <?= json_encode($results_base_url ?? '') ?>;
+    var ACTIVE_JOB_ID   = <?= json_encode($active_job_id) ?>;
+    var IS_SCANNING     = <?= json_encode((bool)$is_scanning) ?>;
+
+    /* ── Human-readable algorithm name map ──────────────────────────────────── */
+    var ALG_LABELS = {
+        sms_freq:'SMS message frequency', sms_time:'Night SMS pattern', sms_cluster:'SMS sender clustering',
+        sms_bert:'SMS phishing detection', contacts_freq:'Contact add frequency', contacts_dup:'Duplicate contacts',
+        contacts_graph:'Contact network analysis', calls_burst:'Short-call bursts', calls_night:'Night call activity',
+        calls_isolation:'Call outlier detection', loc_geofence:'Geofence monitoring', loc_speed:'Travel speed analysis',
+        loc_dbscan:'Location clustering', apps_rep:'App reputation check', apps_perm:'App permissions analysis',
+        apps_autoencoder:'App manifest scan', files_spike:'File creation spike', files_ext:'File extension scan',
+        files_entropy:'Suspicious file scan', act_screen:'Screen time analysis', act_switch:'App switch rate',
+        act_lstm:'Activity sequence model', dev_hw:'Hardware change check', dev_net:'Network profile monitor',
+        dev_oneclass:'System state profiler', python_backend:'Python engine setup', python_results:'Python results fetch'
+    };
+
+    /* ── Category → data category mapping ─────────────────────────────────── */
+    var ALG_TO_CAT = {
+        sms_freq:'sms', sms_time:'sms', sms_cluster:'sms', sms_bert:'sms',
+        contacts_freq:'contacts', contacts_dup:'contacts', contacts_graph:'contacts',
+        calls_burst:'call_logs', calls_night:'call_logs', calls_isolation:'call_logs',
+        loc_geofence:'locations', loc_speed:'locations', loc_dbscan:'locations',
+        apps_rep:'apps', apps_perm:'apps', apps_autoencoder:'apps',
+        files_spike:'files', files_ext:'files', files_entropy:'files',
+        act_screen:'activity', act_switch:'activity', act_lstm:'activity',
+        dev_hw:'device_info', dev_net:'device_info', dev_oneclass:'device_info'
+    };
+
+    /* ── Scanning state ─────────────────────────────────────────────────────── */
+    var pollTimer = null;
+    var activeJobId = ACTIVE_JOB_ID;
+
+    if (IS_SCANNING && activeJobId) {
+        startPolling(activeJobId);
     }
-});
-</script>
 
-<!-- SweetAlert2 dialog scripts -->
-<script>
-document.getElementById('btn-rerun').addEventListener('click', function () {
-    Swal.fire({
-        title: 'Re-run Detection',
-        html:
-            '<div class="text-left" style="font-size:0.95rem;">' +
-            '<p>Choose the analysis scope:</p>' +
-            '<div class="custom-control custom-radio mb-2">' +
-            '<input type="radio" id="rerun-full" name="rerunScope" value="full" class="custom-control-input" checked>' +
-            '<label class="custom-control-label font-weight-bold" for="rerun-full">' +
-            '<i class="fas fa-database text-primary mr-1"></i> Full Scan</label>' +
-            '<small class="d-block text-muted ml-4">Re-analyze all data from scratch</small>' +
-            '</div>' +
-            '<div class="custom-control custom-radio">' +
-            '<input type="radio" id="rerun-incr" name="rerunScope" value="incremental" class="custom-control-input">' +
-            '<label class="custom-control-label font-weight-bold" for="rerun-incr">' +
-            '<i class="fas fa-plus-circle text-success mr-1"></i> New Data Only</label>' +
-            '<small class="d-block text-muted ml-4">Only analyze entries since the last analysis</small>' +
-            '</div>' +
-            '</div>',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#ffc107',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fas fa-redo mr-1"></i> Run',
-        cancelButtonText: 'Cancel',
-        preConfirm: function () {
-            var scope = document.querySelector('input[name="rerunScope"]:checked');
-            return scope ? scope.value : 'full';
+    function startPolling(jobId) {
+        clearInterval(pollTimer);
+        pollTimer = setInterval(function () { pollStatus(jobId); }, 1500);
+    }
+
+    function pollStatus(jobId) {
+        fetch(STATUS_BASE + jobId)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.error) { clearInterval(pollTimer); return; }
+
+                updateScanUI(data);
+
+                if (data.status === 'completed') {
+                    clearInterval(pollTimer);
+                    setTimeout(function () {
+                        window.location.href = RESULTS_BASE + '?job_id=' + jobId;
+                    }, 800);
+                } else if (data.status === 'failed') {
+                    clearInterval(pollTimer);
+                    showAlert('Scan failed: ' + (data.error_message || 'Unknown error'), 'danger');
+                }
+            })
+            .catch(function () { /* network glitch — keep polling */ });
+    }
+
+    function updateScanUI(data) {
+        var pct = Math.max(0, Math.min(100, data.progress_pct || 0));
+        var bar = document.getElementById('scan-progress-bar');
+        var pctLabel = document.getElementById('scan-pct-label');
+        var counter  = document.getElementById('scan-alg-counter');
+        var algLabel = document.getElementById('scan-current-alg');
+
+        if (bar)      bar.style.width = pct + '%';
+        if (pctLabel) pctLabel.textContent = pct + '%';
+        if (counter)  counter.textContent =
+            (data.completed_algorithms || 0) + ' of ' + (data.total_algorithms || '?') + ' checks complete';
+
+        var algId = (data.current_algorithm || '').toLowerCase().replace(/\s+/g, '_');
+        var algName = ALG_LABELS[algId] || data.current_algorithm || 'Checking…';
+        if (algLabel) algLabel.textContent = algName;
+
+        // Highlight active category chip
+        var cat = ALG_TO_CAT[algId];
+        if (cat) {
+            var chips = document.querySelectorAll('.scan-cat-chip');
+            chips.forEach(function (c) {
+                if (c.id === 'scat-' + cat) { c.classList.add('active'); c.classList.remove('done'); }
+            });
         }
-    }).then(function (result) {
-        if (result.isConfirmed) {
-            window.location.href = '<?= base_url('analysis/anomalies/run') ?>?scope=' + result.value;
+        // Mark completed cats done
+        if (pct >= 100) {
+            document.querySelectorAll('.scan-cat-chip').forEach(function (c) {
+                c.classList.remove('active'); c.classList.add('done');
+            });
         }
-    });
-});
+    }
+
+    /* ── Start scan ─────────────────────────────────────────────────────────── */
+    window.startScan = function (scope) {
+        var btn = document.getElementById('btn-full-scan');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> Starting…'; }
+
+        fetch(START_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest' },
+            body: 'scope=' + encodeURIComponent(scope || 'full')
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.error) {
+                showAlert(data.error, 'danger');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-play-circle"></i> Run Full Scan'; }
+                return;
+            }
+            activeJobId = data.job_id;
+            // If Python engine, kick the process endpoint
+            if (data.mode === 'process_needed') {
+                fetch(PROCESS_BASE + data.job_id, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+            }
+            // Reload page to show scanning state
+            window.location.href = RESULTS_BASE + '?job_id=' + data.job_id;
+        })
+        .catch(function (e) {
+            showAlert('Could not start scan. Please try again.', 'danger');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-play-circle"></i> Run Full Scan'; }
+        });
+    };
+
+    /* ── Rescan dropdown ────────────────────────────────────────────────────── */
+    window.toggleRescanMenu = function (e) {
+        e.stopPropagation();
+        var d = document.getElementById('rescan-dropdown');
+        if (d) d.classList.toggle('open');
+    };
+    window.closeRescanMenu = function () {
+        var d = document.getElementById('rescan-dropdown');
+        if (d) d.classList.remove('open');
+    };
+    document.addEventListener('click', function () { closeRescanMenu(); });
+
+    /* ── Technical detail toggle ─────────────────────────────────────────────── */
+    window.toggleTech = function (id) {
+        var el    = document.getElementById(id);
+        var label = document.getElementById(id + '-label');
+        if (!el) return;
+        var open = el.style.display !== 'none';
+        el.style.display = open ? 'none' : 'block';
+        if (label) label.textContent = open ? 'Technical details' : 'Hide details';
+    };
+
+    /* ── Condensed entries toggle ───────────────────────────────────────────── */
+    window.toggleCondensed = function (id) {
+        var el = document.getElementById(id);
+        var label = document.getElementById(id + '-btn-label');
+        if (!el) return;
+        var open = el.style.display !== 'none';
+        el.style.display = open ? 'none' : 'block';
+        if (label) {
+            var count = el.querySelectorAll('tbody tr').length;
+            label.textContent = open ? 'View all ' + count + ' entries' : 'Hide entries';
+        }
+    };
+
+    /* ── Condensed client-side pagination ───────────────────────────────────── */
+    window.pageCondensed = function (grpId, total, dir) {
+        var rows = document.querySelectorAll('tr[data-grp="' + grpId + '"]');
+        var info = document.getElementById(grpId + '-info');
+        var prevBtn = document.getElementById(grpId + '-prev');
+        var nextBtn = document.getElementById(grpId + '-next');
+        if (!rows.length) return;
+
+        // Find current page boundary
+        var currentStart = 0;
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].style.display !== 'none') {
+                currentStart = i;
+                break;
+            }
+        }
+
+        var newStart = currentStart;
+        if (dir === 'next') {
+            newStart = currentStart + 50;
+        } else if (dir === 'prev') {
+            newStart = Math.max(0, currentStart - 50);
+        }
+
+        var newEnd = Math.min(total, newStart + 50);
+
+        // Toggle row visibility
+        rows.forEach(function (row, idx) {
+            if (idx >= newStart && idx < newEnd) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Update info & buttons
+        if (info) info.textContent = 'Showing ' + (newStart + 1) + '–' + newEnd + ' of ' + total;
+        if (prevBtn) prevBtn.disabled = (newStart === 0);
+        if (nextBtn) nextBtn.disabled = (newEnd >= total);
+    };
+
+    /* ── Alert helper ───────────────────────────────────────────────────────── */
+    function showAlert(msg, type) {
+        var area = document.getElementById('anom-alert-area');
+        if (!area) return;
+        area.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+            '<i class="fas fa-exclamation-circle mr-2"></i>' + msg +
+            '<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button></div>';
+    }
+
+})();
 </script>

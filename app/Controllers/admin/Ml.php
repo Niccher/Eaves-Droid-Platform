@@ -50,13 +50,13 @@ class Ml extends BaseAdminController
         $parts = parse_url($url);
         $host = $parts['host'] ?? '';
         $port = $parts['port'] ?? '9070';
-        $path = $parts['path'] ?? '/api/analyze';
+        $path = $parts['path'] ?? '/api/v1/analysis-jobs';
 
         $settings = [
             ['class' => 'ml', 'key' => 'ml_python_url', 'value' => rtrim($url, '/'), 'type' => 'string'],
             ['class' => 'ml', 'key' => 'ml_python_host', 'value' => $host, 'type' => 'string'],
             ['class' => 'ml', 'key' => 'ml_python_port', 'value' => (string)$port, 'type' => 'string'],
-            ['class' => 'ml', 'key' => 'ml_python_endpoint', 'value' => $path ?: '/api/analyze', 'type' => 'string'],
+            ['class' => 'ml', 'key' => 'ml_python_endpoint', 'value' => $path ?: '/api/v1/analysis-jobs', 'type' => 'string'],
         ];
 
         foreach ($settings as $s) {

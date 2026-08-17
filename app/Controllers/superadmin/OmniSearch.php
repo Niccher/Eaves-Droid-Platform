@@ -23,13 +23,13 @@ class OmniSearch extends BaseSuperadminController
         }
 
         $catMeta = [
-            'sms'      => ['label' => 'SMS',     'icon' => 'fa-sms',        'color' => 'info',    'table' => 'tbl_sms'],
-            'calls'    => ['label' => 'Calls',   'icon' => 'fa-phone',      'color' => 'success',  'table' => 'tbl_logs'],
-            'contacts' => ['label' => 'Contacts', 'icon' => 'fa-address-book', 'color' => 'warning', 'table' => 'tbl_contacts'],
-            'locations'=> ['label' => 'Locations', 'icon' => 'fa-map-marker-alt', 'color' => 'danger', 'table' => 'tbl_location'],
+            'sms'      => ['label' => 'SMS',     'icon' => 'fa-sms',        'color' => 'info',    'table' => 'tbl_extracted_sms'],
+            'calls'    => ['label' => 'Calls',   'icon' => 'fa-phone',      'color' => 'success',  'table' => 'tbl_extracted_call_logs'],
+            'contacts' => ['label' => 'Contacts', 'icon' => 'fa-address-book', 'color' => 'warning', 'table' => 'tbl_extracted_contacts'],
+            'locations'=> ['label' => 'Locations', 'icon' => 'fa-map-marker-alt', 'color' => 'danger', 'table' => 'tbl_extracted_locations'],
             'accounts' => ['label' => 'Accounts', 'icon' => 'fa-user-circle', 'color' => 'primary', 'table' => 'tbl_accounts'],
-            'files'    => ['label' => 'Files',   'icon' => 'fa-file',       'color' => 'secondary','table' => 'tbl_device_files'],
-            'apps'     => ['label' => 'Apps',    'icon' => 'fa-th',         'color' => 'dark',     'table' => 'tbl_apps'],
+            'files'    => ['label' => 'Files',   'icon' => 'fa-file',       'color' => 'secondary','table' => 'tbl_extracted_device_files'],
+            'apps'     => ['label' => 'Apps',    'icon' => 'fa-th',         'color' => 'dark',     'table' => 'tbl_extracted_installed_apps'],
         ];
 
         $data['catMeta'] = $catMeta;

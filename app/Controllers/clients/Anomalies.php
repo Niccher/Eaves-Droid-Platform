@@ -5,16 +5,23 @@ namespace App\Controllers\clients;
 use App\Models\Mod_Anomalies;
 
 /**
- * Anomalies – Anomaly Detection Wizard Controller
+ * Anomalies – Simplified Anomaly Detection Controller
  *
- * Three-step visual wizard (no database writes).
- * All data is sourced from Mod_Anomalies which returns hardcoded
- * demo content. Replace model methods with real queries when
- * integrating a live detection engine.
+ * Single-page experience at /analysis/anomalies/results.
+ * All algorithms are auto-selected based on admin config and user plan tier.
+ * No multi-step wizard — users only see the results page.
  *
- * Step 1 → index()      /analysis/anomalies
- * Step 2 → algorithms() /analysis/anomalies/algorithms
- * Step 3 → results()    /analysis/anomalies/results
+ * Entry points:
+ *   GET  /analysis/anomalies/results         → Single page (empty/scanning/results)
+ *   POST /analysis/anomalies/start           → AJAX: create job + kick detection
+ *   GET  /analysis/anomalies/status/{jobId}  → AJAX: job progress JSON
+ *   POST /analysis/anomalies/process/{jobId} → AJAX: kick Python detection
+ *
+ * Legacy redirects to /results:
+ *   GET /analysis/anomalies
+ *   GET /analysis/anomalies/algorithms
+ *   GET /analysis/anomalies/run
+ *   GET /analysis/anomalies/progress/{jobId}
  */
 class Anomalies extends BaseClientController
 {
@@ -34,72 +41,79 @@ class Anomalies extends BaseClientController
     }
 
     // -------------------------------------------------------------------------
-    // Step 1 – Info & Engine Selection
+    // Legacy redirects — wizard pages no longer exist
     // -------------------------------------------------------------------------
 
-    /**
-     * Renders the wizard landing page: tool info and engine radio group.
-     *
-     * URL: GET /analysis/anomalies
-     *
-     * @return string|\CodeIgniter\HTTP\RedirectResponse Rendered HTML or Redirect
-     */
+    /** URL: GET /analysis/anomalies */
     public function index()
     {
-        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
+        return redirect()->to(base_url('analysis/anomalies/results'));
+    }
 
-        // Check if user has a last completed job — redirect to its results
-        $lastJob = $this->anomalyModel->getUserLastCompletedJob($this->userId);
-        if ($lastJob) {
-            $this->session->set('anomaly_engine', $lastJob['engine']);
-            $algs = json_decode($lastJob['algorithms'] ?? '[]', true);
-            $this->session->set('anomaly_algorithms', $algs);
-            return redirect()->to(base_url('analysis/anomalies/results?job_id=' . $lastJob['id']));
-        }
+    /** URL: GET /analysis/anomalies/algorithms */
+    public function algorithms()
+    {
+        return redirect()->to(base_url('analysis/anomalies/results'));
+    }
 
-        // If admin has locked the engine, skip selection — go to algorithms
-        if ($adminSettings['default_engine'] !== 'both') {
-            return redirect()->to(base_url('analysis/anomalies/algorithms'));
-        }
+    /** URL: GET|POST /analysis/anomalies/run */
+    public function run()
+    {
+        return redirect()->to(base_url('analysis/anomalies/results'));
+    }
 
-        // If already configured, go straight to results
-        if ($this->session->has('anomaly_engine') && $this->session->has('anomaly_algorithms')) {
-            return redirect()->to(base_url('analysis/anomalies/results'));
-        }
-
-        // Show engine selection page so the user can choose
-        $data = $this->baseData();
-        $data['engines'] = $this->anomalyModel->getEngines();
-
-        return $this->renderWizardView('analysis/info', $data);
+    /**
+     * URL: GET /analysis/anomalies/progress/{jobId}
+     * Redirect all progress page hits to the results page which now handles
+     * inline progress tracking.
+     */
+    public function progress(int $jobId)
+    {
+        return redirect()->to(base_url("analysis/anomalies/results?job_id={$jobId}"));
     }
 
     // -------------------------------------------------------------------------
-    // Step 2 – Algorithm Selection
+    // AJAX: Start a new scan
     // -------------------------------------------------------------------------
 
     /**
-     * Renders per-category algorithm selection.
+     * Creates a detection job and kicks background processing.
+     * Called via AJAX POST from the results page.
      *
-     * URL: GET /analysis/anomalies/algorithms
-     *
-     * @return string|\CodeIgniter\HTTP\RedirectResponse Rendered HTML or Redirect
+     * URL: POST /analysis/anomalies/start
+     * Body param: scope = 'full' | 'incremental'
      */
-    public function algorithms()
+    public function startScan()
     {
-        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
-
-        // Resolve effective engine: admin config takes precedence
-        if ($adminSettings['default_engine'] === 'both') {
-            $engine = $this->session->get('anomaly_engine') ?? 'php';
-        } else {
-            $engine = $adminSettings['default_engine'];
+        if ($this->request->getMethod() !== 'post') {
+            return $this->response->setStatusCode(405)->setJSON(['error' => 'Method not allowed']);
         }
-        $this->session->set('anomaly_engine', $engine);
 
+        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
+        $engine = $adminSettings['default_engine'];
+        if ($engine === 'both') {
+            // When admin allows both, prefer PHP for faster startup
+            $engine = 'php';
+        }
+
+        $scope = $this->request->getPost('scope') ?? 'full';
+
+        // For incremental scans, find the previous completion timestamp
+        $incrementalSince = null;
+        if ($scope === 'incremental') {
+            $lastJob = $this->anomalyModel->getUserLastCompletedJob($this->userId);
+            if ($lastJob && !empty($lastJob['completed_at'])) {
+                $incrementalSince = $lastJob['completed_at'];
+            } else {
+                // No prior job — fall back to a full scan
+                $scope = 'full';
+            }
+        }
+
+        // Build algorithm list from all categories, filtered by plan tier
         $categories = $this->anomalyModel->getAlgorithmCategories();
 
-        // Filter algorithms by admin config
+        // Apply admin whitelist
         if ($adminSettings['allowed_algorithms'] !== null) {
             $categories = $this->anomalyModel->filterAllowedAlgorithms(
                 $categories,
@@ -107,144 +121,78 @@ class Anomalies extends BaseClientController
             );
         }
 
-        // Filter algorithms by the user's plan tier (core|advanced|deep)
+        // Apply plan tier filter
         $categories = $this->filterByPlan($categories);
 
-        $gate = new \App\Services\PlanGate();
-
-        // No algorithms available on this plan — hard block with upgrade page.
         if (empty($categories)) {
-            return $this->renderUpgrade(
-                'Anomaly Detection',
-                $gate->upgradePlansForFeature($this->userId, 'risk_score'),
-                base_url('analysis/anomalies')
-            );
-        }
-
-        $data = $this->baseData();
-        $data['categories'] = $categories;
-        $data['engine'] = $engine;
-        $data['current_plan'] = $gate->currentPlanKey($this->userId);
-        $data['has_algorithms'] = !empty($categories);
-        $data['upgrade_plans'] = $gate->upgradePlansForFeature($this->userId, 'risk_score');
-
-        return $this->renderWizardView('analysis/select_algorithms', $data);
-    }
-
-    // -------------------------------------------------------------------------
-    // Step 3 – Start Detection (non-blocking with progress)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Creates a detection job and redirects to the progress page.
-     *
-     * URL: GET|POST /analysis/anomalies/run
-     */
-    public function run()
-    {
-        // ── Handle POST: algorithm selection form submitted ──
-        if ($this->request->getMethod() === 'post') {
-            $algs = $this->request->getPost('algs');
-            if ($algs && is_array($algs)) {
-                $this->session->set('anomaly_algorithms', $algs);
-            }
-        }
-
-        // ── Handle reset: clear session, reconfigure with PHP defaults ──
-        if ($this->request->getGet('reset') === 'true') {
-            $this->session->remove('anomaly_engine');
-            $this->session->remove('anomaly_algorithms');
-            $this->session->set('anomaly_engine', 'php');
-            $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
-            return redirect()->to(base_url('analysis/anomalies/run'));
-        }
-
-        // ── Handle skip: auto-configure with PHP defaults (from landing page) ──
-        if ($this->request->getGet('skip') === '1') {
-            $this->session->set('anomaly_engine', 'php');
-            $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
-        }
-
-        // ── Configure from session ──
-        $this->ensureConfigured();
-
-        $selectedEngine = $this->session->get('anomaly_engine') ?? 'php';
-        $selectedAlgs   = $this->session->get('anomaly_algorithms') ?? [];
-
-        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
-        $selectedAlgs = $this->filterAlgs($selectedAlgs, $adminSettings);
-        $selectedAlgs = $this->intersectWithPlan($selectedAlgs);
-
-        // No algorithms allowed by plan — redirect to upgrade page.
-        $algCount = 0;
-        foreach ($selectedAlgs as $algList) {
-            $algCount += count((array)$algList);
-        }
-        if ($algCount === 0) {
             $gate = new \App\Services\PlanGate();
-            return $this->renderUpgrade(
-                'Anomaly Detection',
-                $gate->upgradePlansForFeature($this->userId, 'risk_score'),
-                base_url('analysis/anomalies')
-            );
+            return $this->response->setJSON([
+                'error'       => 'No algorithms are available for your current plan.',
+                'upgrade_url' => base_url('analysis/anomalies/advanced'),
+            ])->setStatusCode(422);
         }
 
-        if ($adminSettings['default_engine'] !== 'both') {
-            $selectedEngine = $adminSettings['default_engine'];
-            $this->session->set('anomaly_engine', $selectedEngine);
-        }
-
-        $scope = $this->request->getGet('scope') ?? 'full';
-
-        // Create ml_jobs row
+        // Collect all algorithm IDs, respecting engine compatibility
         $allAlgIds = [];
-        foreach ($selectedAlgs as $algList) {
-            foreach ((array)$algList as $aid) {
-                $allAlgIds[] = $aid;
+        foreach ($categories as $cat) {
+            foreach ($cat['algorithms'] as $alg) {
+                $compat = $alg['compat'] ?? 'both';
+                // PHP engine: skip Python-only algorithms
+                if ($engine === 'php' && $compat === 'python') {
+                    continue;
+                }
+                $allAlgIds[] = $alg['id'];
             }
         }
 
+        if (empty($allAlgIds)) {
+            return $this->response->setJSON([
+                'error' => 'No compatible algorithms available for this engine.',
+            ])->setStatusCode(422);
+        }
+
+        // Create the ml_jobs row
         $jobId = $this->anomalyModel->createJob(
             $this->userId,
-            $selectedEngine,
+            $engine,
             $allAlgIds,
             $scope,
-            $algCount
+            count($allAlgIds)
         );
 
-        // Store job info in session for the results page
-        $this->session->set('anomaly_job_id', $jobId);
-        $this->session->set('anomaly_scope', $scope);
+        // Persist in session for process() / results() compatibility
+        $this->session->set('anomaly_engine',     $engine);
+        $this->session->set('anomaly_algorithms', $allAlgIds);
+        $this->session->set('anomaly_job_id',     $jobId);
+        $this->session->set('anomaly_scope',      $scope);
 
-        return redirect()->to(base_url("analysis/anomalies/progress/{$jobId}"));
-    }
-
-    /**
-     * Progress page — polls /analysis/anomalies/status/{jobId} every 2s.
-     *
-     * URL: GET /analysis/anomalies/progress/{jobId}
-     */
-    public function progress(int $jobId)
-    {
-        $job = $this->anomalyModel->getJob($jobId);
-        if (!$job) {
-            return redirect()->to(base_url('analysis/anomalies'))
-                ->with('error', 'Job not found.');
+        // Kick the background job
+        if ($engine === 'php') {
+            $sparkPath = ROOTPATH . 'spark';
+            $cmd = "php {$sparkPath} anomalies:run-job {$jobId}";
+            exec($cmd . ' > /dev/null 2>&1 &');
+            $mode = 'background';
+        } else {
+            // Python engine: client must POST to /process/{jobId}
+            $mode = 'process_needed';
         }
 
-        // If job is already done, skip progress and go straight to results
-        if ($job['status'] === 'completed' || $job['status'] === 'failed') {
-            return redirect()->to(base_url("analysis/anomalies/results?job_id={$jobId}"));
-        }
-
-        $data = $this->baseData();
-        $data['job'] = $job;
-
-        return $this->renderWizardView('analysis/progress', $data);
+        return $this->response->setJSON([
+            'job_id'    => $jobId,
+            'status'    => 'started',
+            'engine'    => $engine,
+            'scope'     => $scope,
+            'alg_count' => count($allAlgIds),
+            'mode'      => $mode,
+        ]);
     }
 
+    // -------------------------------------------------------------------------
+    // AJAX: Job status polling
+    // -------------------------------------------------------------------------
+
     /**
-     * AJAX status endpoint — returns job progress as JSON.
+     * Returns the current job progress as JSON.
      *
      * URL: GET /analysis/anomalies/status/{jobId}
      */
@@ -256,17 +204,21 @@ class Anomalies extends BaseClientController
         }
 
         return $this->response->setJSON([
-            'status'             => $job['status'],
-            'progress_pct'       => (int)($job['progress_pct'] ?? 0),
-            'current_algorithm'  => $job['current_algorithm'] ?? '',
+            'status'               => $job['status'],
+            'progress_pct'         => (int)($job['progress_pct'] ?? 0),
+            'current_algorithm'    => $job['current_algorithm'] ?? '',
             'completed_algorithms' => (int)($job['completed_algorithms'] ?? 0),
-            'total_algorithms'   => (int)($job['total_algorithms'] ?? 0),
-            'error_message'      => $job['error_message'] ?? null,
+            'total_algorithms'     => (int)($job['total_algorithms'] ?? 0),
+            'error_message'        => $job['error_message'] ?? null,
         ]);
     }
 
+    // -------------------------------------------------------------------------
+    // AJAX: Kick Python detection (unchanged from original)
+    // -------------------------------------------------------------------------
+
     /**
-     * Kicks off detection in the background (called by progress page JS).
+     * Kicks off Python detection synchronously or PHP spark in background.
      *
      * URL: POST /analysis/anomalies/process/{jobId}
      */
@@ -283,16 +235,14 @@ class Anomalies extends BaseClientController
             $sparkPath = ROOTPATH . 'spark';
             $cmd = "php {$sparkPath} anomalies:run-job {$jobId}";
             exec($cmd . ' > /dev/null 2>&1 &');
-
             return $this->response->setJSON(['status' => 'started', 'mode' => 'background']);
         }
 
         // Python detection runs synchronously
-        $selectedAlgs   = $this->session->get('anomaly_algorithms') ?? [];
+        $selectedAlgs  = $this->session->get('anomaly_algorithms') ?? [];
         $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
-        $selectedAlgs = $this->filterAlgs($selectedAlgs, $adminSettings);
-
-        $scope = $this->session->get('anomaly_scope') ?? 'full';
+        $selectedAlgs  = $this->filterAlgs($selectedAlgs, $adminSettings);
+        $scope         = $this->session->get('anomaly_scope') ?? 'full';
 
         try {
             $results = $this->anomalyModel->runPythonDetection($selectedAlgs, $this->userId, $scope, $jobId);
@@ -306,109 +256,99 @@ class Anomalies extends BaseClientController
     }
 
     // -------------------------------------------------------------------------
-    // Step 4 – Anomaly Results (reads cached or runs if needed)
+    // Main page: single results entry point
     // -------------------------------------------------------------------------
 
     /**
-     * Shows detection results. If job exists and is completed, reads from DB.
+     * The single anomaly scanner page.
+     * Handles three states: empty, scanning, and results.
      *
-     * URL: GET /analysis/anomalies/results?job_id=X
+     * URL: GET /analysis/anomalies/results
      */
     public function results()
     {
-        $gate = new \App\Services\PlanGate();
+        $gate    = new \App\Services\PlanGate();
         $planKey = $gate->currentPlanKey($this->userId);
 
-        // Check if the user's plan has any ML algorithms configured.
+        // Plan gating
         $allowedIds = $gate->allowedAlgorithmIds($this->userId, $this->anomalyModel->getAlgorithmTiers());
         if (empty($allowedIds)) {
             return $this->renderUpgrade(
                 'Anomaly Detection',
                 $gate->upgradePlansForFeature($this->userId, 'risk_score'),
-                base_url('analysis/anomalies')
+                base_url('analysis/anomalies/results')
             );
         }
 
-        // Advanced results are a Platinum feature. Gold sees basic results with a
-        // locked "advanced" button; Platinum sees everything unlocked.
         $canSeeAdvanced = $gate->hasFeature($this->userId, 'correlation')
                        || in_array($planKey, ['platinum'], true);
 
-        $engineLabels = [
-            'php'    => ['label' => 'PHP Engine',    'icon' => 'fab fa-php',    'badge' => 'primary'],
-            'python' => ['label' => 'Python Engine',  'icon' => 'fab fa-python', 'badge' => 'warning'],
-        ];
-
-        $jobId = $this->request->getGet('job_id')
-              ?? $this->session->get('anomaly_job_id');
-
-        $job = $jobId ? $this->anomalyModel->getJob($jobId) : null;
-
-        // Shared plan-gating metadata for the view.
         $data = $this->baseData();
-        $data['current_plan']          = $planKey;
-        $data['can_see_advanced']      = $canSeeAdvanced;
-        $data['advanced_plan']         = 'platinum';
-        $data['advanced_upgrade_url']  = base_url('analysis/anomalies/advanced');
-        $data['run_url']               = base_url('analysis/anomalies/run');
-        $data['algorithms_url']        = base_url('analysis/anomalies/algorithms');
+        $data['current_plan']         = $planKey;
+        $data['can_see_advanced']     = $canSeeAdvanced;
+        $data['advanced_upgrade_url'] = base_url('analysis/anomalies/advanced');
+        $data['start_url']            = base_url('analysis/anomalies/start');
+        $data['status_url_base']      = base_url('analysis/anomalies/status');
+        $data['process_url_base']     = base_url('analysis/anomalies/process');
+        $data['results_base_url']     = base_url('analysis/anomalies/results');
 
-        // No completed report yet (or unknown job) — prompt the user to run
-        // anomaly detection rather than redirecting to a separate page.
-        if (!$job) {
-            $data['has_report'] = false;
-            $data['results']    = [];
-            $data['selected_engine'] = $this->session->get('anomaly_engine') ?? 'php';
-            $data['engine_meta']     = $engineLabels[$data['selected_engine']] ?? $engineLabels['php'];
-            $data['severity_map']    = $this->anomalyModel->getSeverityMap();
-            $data['severity_counts'] = $this->anomalyModel->getSeverityCounts([]);
-            $data['selected_algs']   = $this->session->get('anomaly_algorithms') ?? [];
-            $data['analysis_counts'] = $this->anomalyModel->getAnalysisCounts($this->userId);
-            $data['scope']           = 'full';
-            $data['job']             = null;
+        // ── Detect an in-progress job ──
+        $runningJob = $this->anomalyModel->getRunningJobForUser($this->userId);
+        $data['is_scanning']   = !empty($runningJob);
+        $data['active_job_id'] = $runningJob ? (int)$runningJob['id'] : null;
+        $data['active_engine'] = $runningJob ? ($runningJob['engine'] ?? 'php') : null;
 
-            return $this->renderWizardView('analysis/results', $data);
+        // ── Scan history (most recent 6 scans) ──
+        $data['recent_jobs'] = $this->anomalyModel->getRecentJobsForUser($this->userId, 6);
+
+        // ── Resolve which completed job's results to show ──
+        $jobId = null;
+        if (!$runningJob) {
+            // Prefer explicit ?job_id query param, then session fallback
+            $jobId = $this->request->getGet('job_id')
+                  ?? $this->session->get('anomaly_job_id');
+        } else {
+            // While scanning, show the previous completed job's results underneath
+            $lastCompleted = $this->anomalyModel->getUserLastCompletedJob($this->userId);
+            if ($lastCompleted) {
+                $jobId = $lastCompleted['id'];
+            }
         }
 
-        // Job still in flight — send to the progress page.
-        if ($job['status'] === 'running' || $job['status'] === 'pending') {
-            return redirect()->to(base_url("analysis/anomalies/progress/{$jobId}"));
+        $job = $jobId ? $this->anomalyModel->getJob((int)$jobId) : null;
+
+        // Only treat as a completed report if actually completed
+        $data['has_report'] = false;
+        $data['results']    = [];
+        $data['threat_data'] = null;
+        $data['job']        = null;
+        $data['scope']      = 'full';
+
+        if ($job && $job['status'] === 'completed') {
+            $results = $this->anomalyModel->fetchJobResults((int)$jobId, $this->userId);
+            $data['has_report']  = true;
+            $data['results']     = $results;
+            $data['threat_data'] = $this->computeThreatSummary($results);
+            $data['job']         = $job;
+            $data['scope']       = $job['scope'] ?? 'full';
         }
 
-        $selectedEngine = $this->session->get('anomaly_engine') ?? 'php';
-
-        // Fetch results from ml_results table
-        $results = [];
-        if ($job['status'] === 'completed') {
-            $results = $this->anomalyModel->fetchJobResults($jobId, $this->userId);
-        }
-
-        $data['has_report']      = true;
-        $data['results']         = $results;
-        $data['selected_engine'] = $selectedEngine;
-        $data['engine_meta']     = $engineLabels[$selectedEngine] ?? $engineLabels['php'];
         $data['severity_map']    = $this->anomalyModel->getSeverityMap();
-        $data['severity_counts'] = $this->anomalyModel->getSeverityCounts($results);
-        $data['selected_algs']   = $this->session->get('anomaly_algorithms') ?? [];
         $data['analysis_counts'] = $this->anomalyModel->getAnalysisCounts($this->userId);
-        $data['scope']           = $job['scope'] ?? 'full';
-        $data['job']             = $job;
 
         return $this->renderWizardView('analysis/results', $data);
     }
 
     /**
-     * Renders the upgrade page for advanced (Platinum) anomaly algorithms.
-     *
      * URL: GET /analysis/anomalies/advanced
      */
     public function upgradeAdvanced()
     {
-        $gate = new \App\Services\PlanGate();
+        $gate    = new \App\Services\PlanGate();
         $planKey = $gate->currentPlanKey($this->userId);
 
         if ($planKey === 'platinum') {
-            return redirect()->to(base_url('analysis/anomalies'));
+            return redirect()->to(base_url('analysis/anomalies/results'));
         }
 
         return $this->renderUpgrade(
@@ -418,47 +358,83 @@ class Anomalies extends BaseClientController
         );
     }
 
+    // -------------------------------------------------------------------------
+    // Private: threat summary
+    // -------------------------------------------------------------------------
+
     /**
-     * Renders the shared subscription-upgrade page.
+     * Aggregates raw ml_results rows into a simplified threat summary.
      *
-     * @param string $featureLabel
-     * @param array  $upgradePlans  Plan keys to show upgrade cards for
-     * @param string $redirectTo    URL to land on after a successful (simulated) upgrade
+     * @param  array $results  Rows from ml_results (each has 'severity', 'category', etc.)
+     * @return array
      */
+    private function computeThreatSummary(array $results): array
+    {
+        $highCount   = 0;
+        $mediumCount = 0;
+        $lowCount    = 0;
+        $categories  = [];
+        $sevRank     = ['Low' => 0, 'Medium' => 1, 'High' => 2];
+
+        foreach ($results as $row) {
+            $sev = $row['severity'] ?? 'Low';
+            $cat = $row['category'] ?? 'other';
+
+            match ($sev) {
+                'High'   => $highCount++,
+                'Medium' => $mediumCount++,
+                default  => $lowCount++,
+            };
+
+            if (!isset($categories[$cat])) {
+                $categories[$cat] = ['High' => 0, 'Medium' => 0, 'Low' => 0, 'worst' => 'Low'];
+            }
+            $categories[$cat][$sev]++;
+
+            // Track the worst severity seen in this category
+            if (($sevRank[$sev] ?? 0) > ($sevRank[$categories[$cat]['worst']] ?? 0)) {
+                $categories[$cat]['worst'] = $sev;
+            }
+        }
+
+        $total = $highCount + $mediumCount + $lowCount;
+        $raw   = ($highCount * 3) + ($mediumCount * 1.0) + ($lowCount * 0.2);
+        $max   = $total > 0 ? $total * 3 : 1;
+        $score = min(100, (int)round($raw / $max * 100));
+
+        if ($total === 0) {
+            $level = 'none';     $label = 'All Clear';          $color = 'success'; $icon = 'fa-check-circle';
+        } elseif ($score <= 25) {
+            $level = 'low';      $label = 'Minor Observations'; $color = 'info';    $icon = 'fa-info-circle';
+        } elseif ($score <= 55) {
+            $level = 'medium';   $label = 'Attention Needed';   $color = 'warning'; $icon = 'fa-exclamation-triangle';
+        } elseif ($score <= 79) {
+            $level = 'high';     $label = 'Issues Detected';    $color = 'danger';  $icon = 'fa-exclamation-circle';
+        } else {
+            $level = 'critical'; $label = 'Critical Findings';  $color = 'dark';    $icon = 'fa-skull-crossbones';
+        }
+
+        return compact('level', 'label', 'color', 'icon', 'score',
+                       'highCount', 'mediumCount', 'lowCount', 'total', 'categories');
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers (preserved from original)
+    // -------------------------------------------------------------------------
+
     private function renderUpgrade(string $featureLabel, array $upgradePlans, string $redirectTo): string
     {
         $gate = new \App\Services\PlanGate();
-
         return view('errors/custom_errors/subscription_upgrade', [
-            'feature'       => $featureLabel,
-            'upgradePlans'  => $upgradePlans,
-            'current_plan'  => $gate->currentPlanKey($this->userId),
-            'redirect_to'   => $redirectTo,
-            'pag'           => 'intelligence',
-            'sub_pag'       => 'anomalies',
+            'feature'      => $featureLabel,
+            'upgradePlans' => $upgradePlans,
+            'current_plan' => $gate->currentPlanKey($this->userId),
+            'redirect_to'  => $redirectTo,
+            'pag'          => 'intelligence',
+            'sub_pag'      => 'anomalies',
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Ensure engine and algorithms are configured in session.
-     */
-    private function ensureConfigured(): void
-    {
-        if (!$this->session->has('anomaly_engine')) {
-            $this->session->set('anomaly_engine', 'php');
-        }
-        if (!$this->session->has('anomaly_algorithms')) {
-            $this->session->set('anomaly_algorithms', $this->anomalyModel->getRandomPhpAlgorithms());
-        }
-    }
-
-    /**
-     * Filter algorithms against admin allowed list.
-     */
     private function filterAlgs(array $selectedAlgs, array $adminSettings): array
     {
         if ($adminSettings['allowed_algorithms'] === null) {
@@ -476,13 +452,6 @@ class Anomalies extends BaseClientController
         return $selectedAlgs;
     }
 
-    /**
-     * Filter a category tree down to the algorithms the user's plan allows
-     * (core|advanced|deep tiers from their active subscription).
-     *
-     * @param array $categories
-     * @return array
-     */
     private function filterByPlan(array $categories): array
     {
         try {
@@ -498,10 +467,6 @@ class Anomalies extends BaseClientController
         }
     }
 
-    /**
-     * Intersect category-keyed selected algorithms with the user's allowed
-     * plan algorithm ids, dropping any that the plan no longer allows.
-     */
     private function intersectWithPlan(array $selectedAlgs): array
     {
         try {
@@ -526,40 +491,21 @@ class Anomalies extends BaseClientController
         return $selectedAlgs;
     }
 
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Builds the common data array shared by all three wizard steps.
-     *
-     * @return array
-     */
     private function baseData(): array
     {
         return array_merge(
             ['user_info' => $this->finderModel->basic_user()],
             $this->getUserDataCounts(),
             $this->getDeviceViewData(),
-            [
-                'pag'     => 'intelligence',
-                'sub_pag' => 'anomalies',
-            ]
+            ['pag' => 'intelligence', 'sub_pag' => 'anomalies']
         );
     }
 
-    /**
-     * Wraps a view with the standard users layout (header + sidebar + footer).
-     *
-     * @param  string $mainView  View path relative to app/Views/
-     * @param  array  $data      Data to pass to all view partials
-     * @return string
-     */
     private function renderWizardView(string $mainView, array $data): string
     {
         return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view($mainView, $data)
-            . view('headers_footers/footer_users', $data);
+             . view('headers_footers/sidebar_users', $data)
+             . view($mainView, $data)
+             . view('headers_footers/footer_users', $data);
     }
 }

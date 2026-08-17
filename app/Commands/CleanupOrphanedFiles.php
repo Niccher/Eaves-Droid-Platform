@@ -30,7 +30,7 @@ class CleanupOrphanedFiles extends BaseCommand
             CLI::write(' Checking for orphaned uploaded file records...', 'yellow');
             $output .= 'Checking for orphaned uploaded file records...' . PHP_EOL;
 
-            $rows = $db->table('uploaded_files')
+            $rows = $db->table('tbl_uploaded_files')
                 ->where('status !=', 'deleted')
                 ->get()
                 ->getResultArray();
@@ -48,7 +48,7 @@ class CleanupOrphanedFiles extends BaseCommand
                     if ($filePath && !file_exists($filePath)) {
                         $fileSize = (int)($row['file_size'] ?? 0);
 
-                        $db->table('uploaded_files')
+                        $db->table('tbl_uploaded_files')
                             ->where('id', (int)$row['id'])
                             ->update(['status' => 'deleted', 'deleted_at' => date('Y-m-d H:i:s')]);
 

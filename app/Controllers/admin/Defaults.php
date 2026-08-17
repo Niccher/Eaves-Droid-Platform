@@ -13,7 +13,7 @@ class Defaults extends BaseAdminController
         $db = $this->getDb();
         $this->ensureTableExists($db);
 
-        $defaults = $db->table('tbl_app_defaults')
+        $defaults = $db->table('tbl_system_default_apps')
             ->orderBy('version', 'DESC')
             ->limit(1)
             ->get()
@@ -27,8 +27,8 @@ class Defaults extends BaseAdminController
 
     private function ensureTableExists($db)
     {
-        if (!$db->tableExists('tbl_app_defaults')) {
-            $db->query("CREATE TABLE IF NOT EXISTS tbl_app_defaults (
+        if (!$db->tableExists('tbl_system_default_apps')) {
+            $db->query("CREATE TABLE IF NOT EXISTS tbl_system_default_apps (
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 config_json JSON NOT NULL,
                 version INT UNSIGNED NOT NULL DEFAULT 1,
@@ -54,7 +54,7 @@ class Defaults extends BaseAdminController
                 'pref_deactivated' => false,
             ]);
 
-            $db->table('tbl_app_defaults')->insert([
+            $db->table('tbl_system_default_apps')->insert([
                 'config_json' => $defaults,
                 'version' => 1,
                 'created_at' => date('Y-m-d H:i:s'),
@@ -111,14 +111,14 @@ class Defaults extends BaseAdminController
             $db = $this->getDb();
             $this->ensureTableExists($db);
 
-            $lastVersion = (int) $db->table('tbl_app_defaults')
+            $lastVersion = (int) $db->table('tbl_system_default_apps')
                 ->selectMax('version')
                 ->get()
                 ->getRowArray()['version'] ?? 0;
 
             $newVersion = $lastVersion + 1;
 
-            $db->table('tbl_app_defaults')->insert([
+            $db->table('tbl_system_default_apps')->insert([
                 'config_json' => is_string($config) ? $config : json_encode($config),
                 'version' => $newVersion,
                 'created_by' => $this->userId,
@@ -156,7 +156,7 @@ class Defaults extends BaseAdminController
             $db = $this->getDb();
             $this->ensureTableExists($db);
 
-            $defaults = $db->table('tbl_app_defaults')
+            $defaults = $db->table('tbl_system_default_apps')
                 ->orderBy('version', 'DESC')
                 ->limit(1)
                 ->get()
@@ -166,7 +166,7 @@ class Defaults extends BaseAdminController
                 return $this->fail('No defaults saved yet.');
             }
 
-            $devices = $db->table('tbl_device_profile')
+            $devices = $db->table('tbl_device_profiles')
                 ->select('fcm_token')
                 ->where('fcm_token !=', '')
                 ->where('fcm_token IS NOT NULL')

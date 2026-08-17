@@ -18,48 +18,48 @@ class Tokens extends BaseAdminController
             $page = 1;
         }
 
-        $allBuilder = $db->table('tbl_tokens')
-            ->select('tbl_tokens.*, users.username')
-            ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
-            ->where('tbl_tokens.status !=', '99');
+        $allBuilder = $db->table('tbl_user_api_tokens')
+            ->select('tbl_user_api_tokens.*, users.username')
+            ->join('users', 'users.id = tbl_user_api_tokens.owner_id', 'left')
+            ->where('tbl_user_api_tokens.status !=', '99');
         $totalAll = (int) $allBuilder->countAllResults(false);
-        $tokens = $allBuilder->orderBy('tbl_tokens.counter', 'DESC')
+        $tokens = $allBuilder->orderBy('tbl_user_api_tokens.counter', 'DESC')
             ->limit($perPage, ($page - 1) * $perPage)
             ->get()
             ->getResultArray();
 
-        $expiredBuilder = $db->table('tbl_tokens')
-            ->select('tbl_tokens.*, users.username')
-            ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
-            ->where('tbl_tokens.expires_at <', date('Y-m-d H:i:s'))
-            ->where('tbl_tokens.expires_at IS NOT NULL')
-            ->where('tbl_tokens.status !=', '99');
+        $expiredBuilder = $db->table('tbl_user_api_tokens')
+            ->select('tbl_user_api_tokens.*, users.username')
+            ->join('users', 'users.id = tbl_user_api_tokens.owner_id', 'left')
+            ->where('tbl_user_api_tokens.expires_at <', date('Y-m-d H:i:s'))
+            ->where('tbl_user_api_tokens.expires_at IS NOT NULL')
+            ->where('tbl_user_api_tokens.status !=', '99');
         $totalExpired = (int) $expiredBuilder->countAllResults(false);
-        $expiredTokens = $expiredBuilder->orderBy('tbl_tokens.expires_at', 'DESC')
+        $expiredTokens = $expiredBuilder->orderBy('tbl_user_api_tokens.expires_at', 'DESC')
             ->limit($perPage, ($page - 1) * $perPage)
             ->get()
             ->getResultArray();
 
-        $total = $db->table('tbl_tokens')->countAllResults();
-        $active = $db->table('tbl_tokens')->where('status', '00')->countAllResults();
-        $used = $db->table('tbl_tokens')->where('status', '11')->countAllResults();
-        $expiredCount = $db->table('tbl_tokens')
+        $total = $db->table('tbl_user_api_tokens')->countAllResults();
+        $active = $db->table('tbl_user_api_tokens')->where('status', '00')->countAllResults();
+        $used = $db->table('tbl_user_api_tokens')->where('status', '11')->countAllResults();
+        $expiredCount = $db->table('tbl_user_api_tokens')
             ->where('expires_at <', date('Y-m-d H:i:s'))
             ->where('status !=', '99')
             ->countAllResults();
-        $deleted = $db->table('tbl_tokens')->where('status', '99')->countAllResults();
+        $deleted = $db->table('tbl_user_api_tokens')->where('status', '99')->countAllResults();
 
-        $perUser = $db->table('tbl_tokens')
-            ->select('tbl_tokens.owner_id, users.username, COUNT(*) as token_count')
-            ->join('users', 'users.id = tbl_tokens.owner_id', 'left')
-            ->where('tbl_tokens.status !=', '99')
-            ->groupBy('tbl_tokens.owner_id')
+        $perUser = $db->table('tbl_user_api_tokens')
+            ->select('tbl_user_api_tokens.owner_id, users.username, COUNT(*) as token_count')
+            ->join('users', 'users.id = tbl_user_api_tokens.owner_id', 'left')
+            ->where('tbl_user_api_tokens.status !=', '99')
+            ->groupBy('tbl_user_api_tokens.owner_id')
             ->orderBy('token_count', 'DESC')
             ->limit(10)
             ->get()
             ->getResultArray();
 
-        $usageByDay = $db->table('tbl_tokens')
+        $usageByDay = $db->table('tbl_user_api_tokens')
             ->select("DATE(created_at) as date, COUNT(*) as count")
             ->where('created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)')
             ->groupBy('DATE(created_at)')
@@ -108,7 +108,7 @@ class Tokens extends BaseAdminController
     public function revoke(int $tokenId)
     {
         $db = $this->getDb();
-        $db->table('tbl_tokens')
+        $db->table('tbl_user_api_tokens')
             ->where('counter', $tokenId)
             ->update(['status' => '11']);
 
@@ -122,7 +122,7 @@ class Tokens extends BaseAdminController
     public function regenerate(int $tokenId)
     {
         $db = $this->getDb();
-        $token = $db->table('tbl_tokens')
+        $token = $db->table('tbl_user_api_tokens')
             ->where('counter', $tokenId)
             ->get()
             ->getRowArray();
@@ -132,7 +132,7 @@ class Tokens extends BaseAdminController
         }
 
         $newToken = bin2hex(random_bytes(32));
-        $db->table('tbl_tokens')
+        $db->table('tbl_user_api_tokens')
             ->where('counter', $tokenId)
             ->update([
                 'token' => $newToken,
@@ -151,7 +151,7 @@ class Tokens extends BaseAdminController
     public function delete(int $tokenId)
     {
         $db = $this->getDb();
-        $db->table('tbl_tokens')
+        $db->table('tbl_user_api_tokens')
             ->where('counter', $tokenId)
             ->update(['status' => '99']);
 

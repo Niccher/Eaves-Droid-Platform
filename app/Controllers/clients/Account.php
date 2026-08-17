@@ -168,7 +168,7 @@ class Account extends BaseClientController
 
         $deviceIds = array_column($devices, 'device_id');
         $db = \Config\Database::connect();
-        return $db->table('tbl_device_profile')
+        return $db->table('tbl_device_profiles')
             ->whereIn('device_id', $deviceIds)
             ->where('fcm_token !=', '')
             ->where('fcm_token IS NOT NULL')
@@ -739,7 +739,7 @@ class Account extends BaseClientController
     {
         try {
             $db = \Config\Database::connect();
-            return $db->table('uploaded_files')
+            return $db->table('tbl_uploaded_files')
                 ->select('original_filename as name, file_size_bytes as size_bytes, file_extension as extension, file_category as category, uploaded_at as created_at')
                 ->where('token_owner_id', $this->userId)
                 ->orderBy('uploaded_at', 'DESC')
@@ -766,7 +766,7 @@ class Account extends BaseClientController
 
         try {
             $db = \Config\Database::connect();
-            $row = $db->table('uploaded_files')
+            $row = $db->table('tbl_uploaded_files')
                 ->select('MAX(uploaded_at) as last_upload')
                 ->where('token_owner_id', $this->userId)
                 ->where('device_checksum', $deviceId)
@@ -829,7 +829,7 @@ class Account extends BaseClientController
             $db = \Config\Database::connect();
 
             // Mark old active tokens as inactive
-            $db->table('tbl_tokens')
+            $db->table('tbl_user_api_tokens')
                 ->where('owner_id', $this->userId)
                 ->where('status', '00')
                 ->set('status', '11')
@@ -951,7 +951,7 @@ class Account extends BaseClientController
             $db = \Config\Database::connect();
             
             // Revoke all active tokens for this user
-            $db->table('tbl_tokens')
+            $db->table('tbl_user_api_tokens')
                 ->where('owner_id', $this->userId)
                 ->where('status', '00')
                 ->set('status', '11')
@@ -1717,11 +1717,11 @@ class Account extends BaseClientController
         $db = \Config\Database::connect();
 
         return [
-            'tokens' => $db->table('tbl_tokens')->where('owner_id', $this->userId)->get()->getResultArray(),
-            'uploaded_files' => $db->table('uploaded_files')->where('token_owner_id', $this->userId)->get()->getResultArray(),
-            'upload_queue' => $db->table('upload_queue')->where('owner_id', $this->userId)->get()->getResultArray(),
-            'captured_media' => $db->table('tbl_captured_media')->where('owner_id', $this->userId)->get()->getResultArray(),
-            'blocklist' => $db->table('tbl_blocklist')->where('owner_id', $this->userId)->get()->getResultArray(),
+            'tokens' => $db->table('tbl_user_api_tokens')->where('owner_id', $this->userId)->get()->getResultArray(),
+            'tbl_uploaded_files' => $db->table('tbl_uploaded_files')->where('token_owner_id', $this->userId)->get()->getResultArray(),
+            'tbl_upload_queue' => $db->table('tbl_upload_queue')->where('owner_id', $this->userId)->get()->getResultArray(),
+            'captured_media' => $db->table('tbl_extracted_media_files')->where('owner_id', $this->userId)->get()->getResultArray(),
+            'blocklist' => $db->table('tbl_user_blocklists')->where('owner_id', $this->userId)->get()->getResultArray(),
             'ml_jobs' => $db->table('ml_jobs')->where('user_id', $this->userId)->get()->getResultArray(),
             'ml_results' => $db->table('ml_results')->where('user_id', $this->userId)->get()->getResultArray(),
             'ml_analysis_tracking' => $db->table('ml_analysis_tracking')->where('user_id', $this->userId)->get()->getResultArray(),
@@ -2097,38 +2097,38 @@ class Account extends BaseClientController
 
             switch ($type) {
                 case 'apps':
-                    $deletedCount = $this->finderModel->cq('tbl_apps', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_extracted_installed_apps', $this->userId);
                     $success = $this->finderModel->deleteAppsByUser($this->userId);
                     $message = 'All apps deleted successfully';
                     break;
                 case 'calls':
                 case 'call_logs':
-                    $deletedCount = $this->finderModel->cq('tbl_logs', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_extracted_call_logs', $this->userId);
                     $success = $this->finderModel->deleteCallsByUser($this->userId);
                     $message = 'All call logs deleted successfully';
                     break;
                 case 'contacts':
-                    $deletedCount = $this->finderModel->cq('tbl_contacts', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_extracted_contacts', $this->userId);
                     $success = $this->finderModel->deleteContactsByUser($this->userId);
                     $message = 'All contacts deleted successfully';
                     break;
                 case 'sms':
-                    $deletedCount = $this->finderModel->cq('tbl_sms', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_extracted_sms', $this->userId);
                     $success = $this->finderModel->deleteSmsByUser($this->userId);
                     $message = 'All SMS messages deleted successfully';
                     break;
                 case 'files':
-                    $deletedCount = $this->finderModel->cq('tbl_device_files', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_extracted_device_files', $this->userId);
                     $success = $this->finderModel->deleteDeviceFilesByUser($this->userId);
                     $message = 'All file metadata deleted successfully';
                     break;
                 case 'locations':
-                    $deletedCount = $this->finderModel->cq('tbl_location', $this->userId) + $this->finderModel->cq('tbl_activity', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_extracted_locations', $this->userId) + $this->finderModel->cq('tbl_extracted_activities', $this->userId);
                     $success = $this->finderModel->deleteLocationByUser($this->userId) && $this->finderModel->deleteActivityByUser($this->userId);
                     $message = 'All location and activity history deleted successfully';
                     break;
                 case 'misc_software':
-                    $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_input_methods', $this->userId) + $this->finderModel->cq('tbl_security_audit', $this->userId) + $this->finderModel->cq('tbl_proc_info', $this->userId) + $this->finderModel->cq('tbl_data_usage', $this->userId) + $this->finderModel->cq('tbl_saved_wifi', $this->userId) + $this->finderModel->cq('tbl_default_apps', $this->userId) + $this->finderModel->cq('tbl_alarms', $this->userId) + $this->finderModel->cq('tbl_app_security', $this->userId) + $this->finderModel->cq('tbl_network_security', $this->userId) + $this->finderModel->cq('tbl_telephony_network', $this->userId) + $this->finderModel->cq('tbl_system_locale', $this->userId) + $this->finderModel->cq('tbl_app_permissions', $this->userId) + $this->finderModel->cq('tbl_browser_history', $this->userId) + $this->finderModel->cq('tbl_clipboard', $this->userId) + $this->finderModel->cq('tbl_content_providers', $this->userId) + $this->finderModel->cq('tbl_crash_logs', $this->userId) + $this->finderModel->cq('tbl_digital_wellbeing', $this->userId) + $this->finderModel->cq('tbl_doze_standby', $this->userId) + $this->finderModel->cq('tbl_email_accounts', $this->userId) + $this->finderModel->cq('tbl_health_data', $this->userId) + $this->finderModel->cq('tbl_keyboard_input', $this->userId) + $this->finderModel->cq('tbl_keyguard_events', $this->userId) + $this->finderModel->cq('tbl_screenshots', $this->userId) + $this->finderModel->cq('tbl_screen_state', $this->userId) + $this->finderModel->cq('tbl_vpn_config', $this->userId) + $this->finderModel->cq('tbl_running_processes_detailed', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_device_hardware_contexts', $this->userId) + $this->finderModel->cq('tbl_system_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_extracted_calendar_events', $this->userId) + $this->finderModel->cq('tbl_system_app_usage', $this->userId) + $this->finderModel->cq('tbl_extracted_notifications', $this->userId) + $this->finderModel->cq('tbl_system_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_system_input_methods', $this->userId) + $this->finderModel->cq('tbl_security_audit', $this->userId) + $this->finderModel->cq('tbl_system_running_processes', $this->userId) + $this->finderModel->cq('tbl_data_usage', $this->userId) + $this->finderModel->cq('tbl_telemetry_wifi_networks', $this->userId) + $this->finderModel->cq('tbl_system_default_apps_device', $this->userId) + $this->finderModel->cq('tbl_system_alarms', $this->userId) + $this->finderModel->cq('tbl_system_app_security', $this->userId) + $this->finderModel->cq('tbl_network_security', $this->userId) + $this->finderModel->cq('tbl_telephony_network', $this->userId) + $this->finderModel->cq('tbl_system_locale', $this->userId) + $this->finderModel->cq('tbl_system_app_permissions', $this->userId) + $this->finderModel->cq('tbl_extracted_browser_history', $this->userId) + $this->finderModel->cq('tbl_extracted_clipboard_entries', $this->userId) + $this->finderModel->cq('tbl_content_providers', $this->userId) + $this->finderModel->cq('tbl_system_crash_logs', $this->userId) + $this->finderModel->cq('tbl_system_digital_wellbeing', $this->userId) + $this->finderModel->cq('tbl_system_doze_standby', $this->userId) + $this->finderModel->cq('tbl_extracted_email_accounts', $this->userId) + $this->finderModel->cq('tbl_health_data', $this->userId) + $this->finderModel->cq('tbl_keyboard_input', $this->userId) + $this->finderModel->cq('tbl_system_keyguard_events', $this->userId) + $this->finderModel->cq('tbl_extracted_screenshots', $this->userId) + $this->finderModel->cq('tbl_screen_state', $this->userId) + $this->finderModel->cq('tbl_vpn_config', $this->userId) + $this->finderModel->cq('tbl_system_running_processes_detailed', $this->userId);
                     $success = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
                                $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
                                $this->finderModel->deleteAccountsByUser($this->userId) &&
@@ -2165,7 +2165,7 @@ class Account extends BaseClientController
                     $message = 'All misc software data deleted successfully';
                     break;
                 case 'misc_hardware':
-                    $deletedCount = $this->finderModel->cq('tbl_hardware_graphics', $this->userId) + $this->finderModel->cq('tbl_hardware_network', $this->userId) + $this->finderModel->cq('tbl_camera_info', $this->userId) + $this->finderModel->cq('tbl_battery_stats', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_cell_towers', $this->userId) + $this->finderModel->cq('tbl_display_info', $this->userId) + $this->finderModel->cq('tbl_storage', $this->userId) + $this->finderModel->cq('tbl_thermal', $this->userId) + $this->finderModel->cq('tbl_nfc', $this->userId) + $this->finderModel->cq('tbl_running_processes', $this->userId) + $this->finderModel->cq('tbl_audio_devices', $this->userId) + $this->finderModel->cq('tbl_biometric', $this->userId) + $this->finderModel->cq('tbl_gnss_hardware', $this->userId) + $this->finderModel->cq('tbl_power_rails', $this->userId) + $this->finderModel->cq('tbl_usb_devices', $this->userId) + $this->finderModel->cq('tbl_vibration', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_hardware_graphics', $this->userId) + $this->finderModel->cq('tbl_hardware_network', $this->userId) + $this->finderModel->cq('tbl_telemetry_cameras', $this->userId) + $this->finderModel->cq('tbl_telemetry_battery_stats', $this->userId) + $this->finderModel->cq('tbl_telemetry_sensors', $this->userId) + $this->finderModel->cq('tbl_telemetry_bluetooth_devices', $this->userId) + $this->finderModel->cq('tbl_telemetry_cell_towers', $this->userId) + $this->finderModel->cq('tbl_telemetry_display_info', $this->userId) + $this->finderModel->cq('tbl_telemetry_storage_stats', $this->userId) + $this->finderModel->cq('tbl_telemetry_thermal', $this->userId) + $this->finderModel->cq('tbl_telemetry_nfc', $this->userId) + $this->finderModel->cq('tbl_running_processes', $this->userId) + $this->finderModel->cq('tbl_telemetry_audio_devices', $this->userId) + $this->finderModel->cq('tbl_biometric', $this->userId) + $this->finderModel->cq('tbl_telemetry_gnss_hardware', $this->userId) + $this->finderModel->cq('tbl_telemetry_power_rails', $this->userId) + $this->finderModel->cq('tbl_telemetry_usb_devices', $this->userId) + $this->finderModel->cq('tbl_telemetry_vibration', $this->userId);
                     $success = $this->finderModel->deleteHardwareGraphicsByUser($this->userId) &&
                                $this->finderModel->deleteHardwareNetworkByUser($this->userId) &&
                                $this->finderModel->deleteCameraInfoByUser($this->userId) &&
@@ -2187,7 +2187,7 @@ class Account extends BaseClientController
                     $message = 'All misc hardware data deleted successfully';
                     break;
                 case 'advanced':
-                    $deletedCount = $this->finderModel->cq('tbl_device_context', $this->userId) + $this->finderModel->cq('tbl_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_calendar_events', $this->userId) + $this->finderModel->cq('tbl_app_usage', $this->userId) + $this->finderModel->cq('tbl_notifications', $this->userId) + $this->finderModel->cq('tbl_bluetooth', $this->userId) + $this->finderModel->cq('tbl_sensor_profile', $this->userId) + $this->finderModel->cq('tbl_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_input_methods', $this->userId);
+                    $deletedCount = $this->finderModel->cq('tbl_device_hardware_contexts', $this->userId) + $this->finderModel->cq('tbl_system_network_info', $this->userId) + $this->finderModel->cq('tbl_accounts', $this->userId) + $this->finderModel->cq('tbl_extracted_calendar_events', $this->userId) + $this->finderModel->cq('tbl_system_app_usage', $this->userId) + $this->finderModel->cq('tbl_extracted_notifications', $this->userId) + $this->finderModel->cq('tbl_telemetry_bluetooth_devices', $this->userId) + $this->finderModel->cq('tbl_telemetry_sensors', $this->userId) + $this->finderModel->cq('tbl_system_accessibility_services', $this->userId) + $this->finderModel->cq('tbl_system_input_methods', $this->userId);
                     $success = $this->finderModel->deleteDeviceContextByUser($this->userId) &&
                                $this->finderModel->deleteNetworkInfoByUser($this->userId) &&
                                $this->finderModel->deleteAccountsByUser($this->userId) &&
@@ -2240,20 +2240,20 @@ class Account extends BaseClientController
                     if ($type === 'misc_software') {
                         $subCounts = [
                             'fa-user' => ['Accounts', $this->finderModel->cq('tbl_accounts', $this->userId)],
-                            'fa-calendar-alt' => ['Calendar', $this->finderModel->cq('tbl_calendar_events', $this->userId)],
-                            'fa-chart-bar' => ['App Usage', $this->finderModel->cq('tbl_app_usage', $this->userId)],
-                            'fa-bell' => ['Notifications', $this->finderModel->cq('tbl_notifications', $this->userId)],
-                            'fa-info-circle' => ['Device Context', $this->finderModel->cq('tbl_device_context', $this->userId)],
-                            'fa-network-wired' => ['Network Info', $this->finderModel->cq('tbl_network_info', $this->userId)],
-                            'fa-universal-access' => ['Accessibility', $this->finderModel->cq('tbl_accessibility_services', $this->userId)],
-                            'fa-keyboard' => ['Input Methods', $this->finderModel->cq('tbl_input_methods', $this->userId)],
+                            'fa-calendar-alt' => ['Calendar', $this->finderModel->cq('tbl_extracted_calendar_events', $this->userId)],
+                            'fa-chart-bar' => ['App Usage', $this->finderModel->cq('tbl_system_app_usage', $this->userId)],
+                            'fa-bell' => ['Notifications', $this->finderModel->cq('tbl_extracted_notifications', $this->userId)],
+                            'fa-info-circle' => ['Device Context', $this->finderModel->cq('tbl_device_hardware_contexts', $this->userId)],
+                            'fa-network-wired' => ['Network Info', $this->finderModel->cq('tbl_system_network_info', $this->userId)],
+                            'fa-universal-access' => ['Accessibility', $this->finderModel->cq('tbl_system_accessibility_services', $this->userId)],
+                            'fa-keyboard' => ['Input Methods', $this->finderModel->cq('tbl_system_input_methods', $this->userId)],
                             'fa-shield-alt' => ['Security Audit', $this->finderModel->cq('tbl_security_audit', $this->userId)],
-                            'fa-microchip' => ['Proc Info', $this->finderModel->cq('tbl_proc_info', $this->userId)],
+                            'fa-microchip' => ['Proc Info', $this->finderModel->cq('tbl_system_running_processes', $this->userId)],
                             'fa-chart-line' => ['Data Usage', $this->finderModel->cq('tbl_data_usage', $this->userId)],
-                            'fa-wifi' => ['Saved WiFi', $this->finderModel->cq('tbl_saved_wifi', $this->userId)],
-                            'fa-th-list' => ['Default Apps', $this->finderModel->cq('tbl_default_apps', $this->userId)],
-                            'fa-clock' => ['Alarms', $this->finderModel->cq('tbl_alarms', $this->userId)],
-                            'fa-lock' => ['App Security', $this->finderModel->cq('tbl_app_security', $this->userId)],
+                            'fa-wifi' => ['Saved WiFi', $this->finderModel->cq('tbl_telemetry_wifi_networks', $this->userId)],
+                            'fa-th-list' => ['Default Apps', $this->finderModel->cq('tbl_system_default_apps_device', $this->userId)],
+                            'fa-clock' => ['Alarms', $this->finderModel->cq('tbl_system_alarms', $this->userId)],
+                            'fa-lock' => ['App Security', $this->finderModel->cq('tbl_system_app_security', $this->userId)],
                             'fa-shield-virus' => ['Network Security', $this->finderModel->cq('tbl_network_security', $this->userId)],
                             'fa-sim-card' => ['Telephony Network', $this->finderModel->cq('tbl_telephony_network', $this->userId)],
                             'fa-language' => ['System Locale', $this->finderModel->cq('tbl_system_locale', $this->userId)],
@@ -2268,15 +2268,15 @@ class Account extends BaseClientController
                         $subCounts = [
                             'fa-palette' => ['Hardware Graphics', $this->finderModel->cq('tbl_hardware_graphics', $this->userId)],
                             'fa-network-wired' => ['Hardware Network', $this->finderModel->cq('tbl_hardware_network', $this->userId)],
-                            'fa-camera' => ['Camera Info', $this->finderModel->cq('tbl_camera_info', $this->userId)],
-                            'fa-battery-full' => ['Battery Stats', $this->finderModel->cq('tbl_battery_stats', $this->userId)],
-                            'fa-ruler' => ['Sensors', $this->finderModel->cq('tbl_sensor_profile', $this->userId)],
-                            'fa-bluetooth-b' => ['Bluetooth', $this->finderModel->cq('tbl_bluetooth', $this->userId)],
-                            'fa-broadcast-tower' => ['Cell Towers', $this->finderModel->cq('tbl_cell_towers', $this->userId)],
-                            'fa-tv' => ['Display Info', $this->finderModel->cq('tbl_display_info', $this->userId)],
-                            'fa-hdd' => ['Storage', $this->finderModel->cq('tbl_storage', $this->userId)],
-                            'fa-thermometer-half' => ['Thermal', $this->finderModel->cq('tbl_thermal', $this->userId)],
-                            'fa-credit-card' => ['NFC', $this->finderModel->cq('tbl_nfc', $this->userId)],
+                            'fa-camera' => ['Camera Info', $this->finderModel->cq('tbl_telemetry_cameras', $this->userId)],
+                            'fa-battery-full' => ['Battery Stats', $this->finderModel->cq('tbl_telemetry_battery_stats', $this->userId)],
+                            'fa-ruler' => ['Sensors', $this->finderModel->cq('tbl_telemetry_sensors', $this->userId)],
+                            'fa-bluetooth-b' => ['Bluetooth', $this->finderModel->cq('tbl_telemetry_bluetooth_devices', $this->userId)],
+                            'fa-broadcast-tower' => ['Cell Towers', $this->finderModel->cq('tbl_telemetry_cell_towers', $this->userId)],
+                            'fa-tv' => ['Display Info', $this->finderModel->cq('tbl_telemetry_display_info', $this->userId)],
+                            'fa-hdd' => ['Storage', $this->finderModel->cq('tbl_telemetry_storage_stats', $this->userId)],
+                            'fa-thermometer-half' => ['Thermal', $this->finderModel->cq('tbl_telemetry_thermal', $this->userId)],
+                            'fa-credit-card' => ['NFC', $this->finderModel->cq('tbl_telemetry_nfc', $this->userId)],
                             'fa-tasks' => ['Processes', $this->finderModel->cq('tbl_running_processes', $this->userId)],
                         ];
                         $deleteBreakdown = '<h4 style="margin:20px 0 10px;font-size:15px;">📊 Deleted Records Breakdown</h4>
@@ -2460,7 +2460,7 @@ class Account extends BaseClientController
     {
         try {
             $db = \Config\Database::connect();
-            return $db->table('tbl_tokens')
+            return $db->table('tbl_user_api_tokens')
                 ->where('owner_id', $this->userId)
                 ->countAllResults();
         } catch (\Exception $e) {

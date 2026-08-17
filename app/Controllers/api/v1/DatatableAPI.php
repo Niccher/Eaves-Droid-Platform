@@ -121,7 +121,7 @@ class DatatableAPI extends BaseController
         ];
         $orderBy = $columns[$orderColumnIndex] ?? 'extracted_at';
 
-        $builder = $this->db->table('tbl_app_usage')
+        $builder = $this->db->table('tbl_system_app_usage')
             ->where('owner_id', $userId)
             ->where('package_name', $packageName);
 
@@ -207,7 +207,7 @@ class DatatableAPI extends BaseController
         ];
         $orderBy = $columns[$orderColumnIndex] ?? 'notification_timestamp';
 
-        $builder = $this->db->table('tbl_notifications')
+        $builder = $this->db->table('tbl_extracted_notifications')
             ->where('owner_id', $userId)
             ->where('package_name', $packageName);
 

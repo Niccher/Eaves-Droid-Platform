@@ -1,7 +1,19 @@
+# Version control
 .git
+.gitignore
+
+# IDE / editor
 .idea
+.vscode
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# Dependencies (re-installed during build)
 vendor/
 node_modules/
+
+# Runtime writable directories (mounted as volumes in production)
 writable/logs/*
 writable/cache/*
 writable/session/*
@@ -9,15 +21,63 @@ writable/debugbar/*
 writable/uploads/*
 writable/exports/*
 writable/backups/*
-.env
-tests/
-Dockerfile
-docker-compose.yml
-phpunit.xml.dist
-README.md
-LICENSE
+writable/reports/*
+writable/temp/*
+# Keep placeholder files so dirs exist
 !writable/logs/index.html
 !writable/cache/index.html
 !writable/session/index.html
 !writable/debugbar/index.html
 !writable/uploads/index.html
+!writable/exports/index.html
+
+# Secrets & credentials — must NEVER bake into image layers
+.env
+.env.*
+!.env.example
+writable/credentials/firebase_service_account.json
+writable/firebase_credentials.json
+google-services.json
+GoogleService-Info.plist
+*.pem
+*.p12
+*.pfx
+
+# ML / Python artifacts
+writable/models_cache/
+*.pkl
+*.joblib
+*.model
+__pycache__/
+*.pyc
+*.pyo
+
+# Database dumps / pulled data
+*.sql.gz
+*.sql.bz2
+*_db_pulled
+*_db_dump
+
+# Tests (not needed in production image)
+tests/
+phpunit.xml.dist
+phpunit
+/results/
+/phpunit*.xml
+/.phpunit.*.cache
+tests/coverage*
+
+# Docker build files (no need to copy into image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Docs
+README.md
+LICENSE
+CHANGELOG.md
+
+# OS junk
+.DS_Store
+Thumbs.db
+._*

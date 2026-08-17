@@ -61,8 +61,7 @@ class Analyze extends BaseClientController
         $counts = $this->getUserDataCounts();
         $data = array_merge($data, $counts);
 
-        $decod_url  = $model_crypt->base64url_decode($target_contact);
-        $contact_id = $encrypter->decrypt(base64_decode($decod_url));
+        $contact_id = $model_crypt->decrypt_id($target_contact);
         $contact    = $model_extract->get_contact_at($contact_id);
 
         if (!$contact) {
@@ -74,7 +73,12 @@ class Analyze extends BaseClientController
         $data['sms_person']  = $contact['Number'] ?? '';
         $data['sms_saved']   = $contact['Name']   ?? 'Unknown';
         $data['number_variants'] = $variants;
+        $data['contact']     = $contact;
         $data['sms_thread']  = $model_extract->get_sms_between_contacts(
+            $data['user_info']['id'],
+            $variants
+        );
+        $data['log_thread']  = $model_extract->get_logs_between_contacts(
             $data['user_info']['id'],
             $variants
         );
@@ -103,8 +107,7 @@ class Analyze extends BaseClientController
         $counts = $this->getUserDataCounts();
         $data = array_merge($data, $counts);
 
-        $decod_url  = $model_crypt->base64url_decode($target_contact);
-        $contact_id = $encrypter->decrypt(base64_decode($decod_url));
+        $contact_id = $model_crypt->decrypt_id($target_contact);
         $contact    = $model_extract->get_contact_at($contact_id);
 
         if (!$contact) {
@@ -116,7 +119,12 @@ class Analyze extends BaseClientController
         $data['log_person']      = $contact['Number'] ?? '';
         $data['log_saved']       = $contact['Name']   ?? 'Unknown';
         $data['number_variants'] = $variants;
+        $data['contact']         = $contact;
         $data['log_thread']      = $model_extract->get_logs_between_contacts(
+            $data['user_info']['id'],
+            $variants
+        );
+        $data['sms_thread']      = $model_extract->get_sms_between_contacts(
             $data['user_info']['id'],
             $variants
         );

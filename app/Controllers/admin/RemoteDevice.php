@@ -16,9 +16,9 @@ class RemoteDevice extends BaseAdminController
 
         $users = $db->table('users')
             ->select('users.id, users.username')
-            ->join('tbl_device_profile', 'tbl_device_profile.owner_id = users.id', 'inner')
-            ->where('tbl_device_profile.fcm_token !=', '')
-            ->where('tbl_device_profile.fcm_token IS NOT NULL')
+            ->join('tbl_device_profiles', 'tbl_device_profiles.owner_id = users.id', 'inner')
+            ->where('tbl_device_profiles.fcm_token !=', '')
+            ->where('tbl_device_profiles.fcm_token IS NOT NULL')
             ->groupBy('users.id')
             ->orderBy('users.username', 'ASC')
             ->get()
@@ -26,12 +26,12 @@ class RemoteDevice extends BaseAdminController
 
         $targetDevice = null;
         if (!empty($users)) {
-            $targetDevice = $db->table('tbl_device_profile')
-                ->select('tbl_device_profile.*, users.username')
-                ->join('users', 'users.id = tbl_device_profile.owner_id')
-                ->where('tbl_device_profile.fcm_token !=', '')
-                ->where('tbl_device_profile.fcm_token IS NOT NULL')
-                ->orderBy('tbl_device_profile.counter', 'DESC')
+            $targetDevice = $db->table('tbl_device_profiles')
+                ->select('tbl_device_profiles.*, users.username')
+                ->join('users', 'users.id = tbl_device_profiles.owner_id')
+                ->where('tbl_device_profiles.fcm_token !=', '')
+                ->where('tbl_device_profiles.fcm_token IS NOT NULL')
+                ->orderBy('tbl_device_profiles.counter', 'DESC')
                 ->get()
                 ->getRowArray();
         }
@@ -63,7 +63,7 @@ class RemoteDevice extends BaseAdminController
             $tokens = [];
 
             if ($userId === 'all') {
-                $devices = $db->table('tbl_device_profile')
+                $devices = $db->table('tbl_device_profiles')
                     ->distinct()
                     ->select('fcm_token')
                     ->where('fcm_token !=', '')
@@ -74,7 +74,7 @@ class RemoteDevice extends BaseAdminController
                     $tokens[] = $d['fcm_token'];
                 }
             } else {
-                $device = $db->table('tbl_device_profile')
+                $device = $db->table('tbl_device_profiles')
                     ->select('fcm_token')
                     ->where('owner_id', $userId)
                     ->where('fcm_token !=', '')
@@ -110,7 +110,7 @@ class RemoteDevice extends BaseAdminController
                     'payload' => $payload,
                     'sent_at' => date('Y-m-d H:i:s'),
                     'action_log_id' => '0',
-                    'ack_url' => rtrim(base_url(), '/') . '/api/v1/fcm/ack/0',
+                    'ack_url' => rtrim(base_url(), '/') . '/api/v1/command-acknowledgements/0',
                 ], $extraFields);
 
                 $sent = $firebase->sendDataMessage($token, $fcmData);
@@ -287,7 +287,7 @@ class RemoteDevice extends BaseAdminController
 
             $targetUsers = [];
             if ($targetUserId === 'all') {
-                $allDevices = $db->table('tbl_device_profile')
+                $allDevices = $db->table('tbl_device_profiles')
                     ->distinct()
                     ->select('owner_id')
                     ->where('fcm_token !=', '')

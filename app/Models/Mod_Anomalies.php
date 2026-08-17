@@ -1423,7 +1423,7 @@ class Mod_Anomalies extends Model
     {
         $host     = 'ml-eaves-droid';
         $port     = 9070;
-        $endpoint = '/api/analyze';
+        $endpoint = '/api/v1/analysis-jobs';
         $url      = '';
 
         if (getenv('PYTHON_BACKEND_HOST') !== false) {
@@ -1482,7 +1482,7 @@ class Mod_Anomalies extends Model
     {
         $settings = $this->getPythonSettings();
         $baseUrl = $testUrl ? rtrim($testUrl, '/') : $settings['base_url'];
-        $healthUrl = $baseUrl . '/api/health';
+        $healthUrl = $baseUrl . '/api/v1/health';
 
         try {
             $client = service('curlrequest', [
@@ -1545,7 +1545,7 @@ class Mod_Anomalies extends Model
             'tf_serving_port'    => 9072,
             'debug_port'         => 9094,
             'mgmt_port'          => 9095,
-            'endpoint'           => '/api/analyze',
+            'endpoint'           => '/api/v1/analysis-jobs',
             'detected'           => false,
             'compose_file'       => '/home/niccher/Music/hosts/docker-compose.yml',
         ];
@@ -1625,14 +1625,14 @@ class Mod_Anomalies extends Model
 
         // How many records each category's primary table has for this user
         $tableMap = [
-            'sms'         => ['table' => 'tbl_sms',          'owner' => 'owner_id'],
-            'contacts'    => ['table' => 'tbl_contacts',     'owner' => 'owner_id'],
-            'call_logs'   => ['table' => 'tbl_logs',         'owner' => 'owner_id'],
-            'locations'   => ['table' => 'tbl_location',     'owner' => 'owner_id'],
-            'apps'        => ['table' => 'tbl_apps',         'owner' => 'owner_id'],
-            'files'       => ['table' => 'tbl_device_files', 'owner' => 'owner_id'],
-            'activity'    => ['table' => 'tbl_app_usage',    'owner' => 'owner_id'],
-            'device_info' => ['table' => 'tbl_device_profile','owner' => 'device_id'],
+            'sms'         => ['table' => 'tbl_extracted_sms',          'owner' => 'owner_id'],
+            'contacts'    => ['table' => 'tbl_extracted_contacts',     'owner' => 'owner_id'],
+            'call_logs'   => ['table' => 'tbl_extracted_call_logs',         'owner' => 'owner_id'],
+            'locations'   => ['table' => 'tbl_extracted_locations',     'owner' => 'owner_id'],
+            'apps'        => ['table' => 'tbl_extracted_installed_apps',         'owner' => 'owner_id'],
+            'files'       => ['table' => 'tbl_extracted_device_files', 'owner' => 'owner_id'],
+            'activity'    => ['table' => 'tbl_system_app_usage',    'owner' => 'owner_id'],
+            'device_info' => ['table' => 'tbl_device_profiles','owner' => 'device_id'],
         ];
 
         // Fetch tracking rows for this user
@@ -1961,7 +1961,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            return $this->db->table('tbl_sms')
+            return $this->db->table('tbl_extracted_sms')
                 ->select("address, body, DATE_FORMAT(FROM_UNIXTIME(sms_date/1000), '%Y-%m-%d %H:%i:%s') AS date")
                 ->where('owner_id', $userId)
                 ->orderBy('sms_date', 'DESC')
@@ -1978,7 +1978,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            $rows = $this->db->table('tbl_contacts')
+            $rows = $this->db->table('tbl_extracted_contacts')
                 ->select("display_name, phone_numbers, created_at AS last_modified")
                 ->where('owner_id', $userId)
                 ->orderBy('created_at', 'DESC')
@@ -2010,7 +2010,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            return $this->db->table('tbl_logs')
+            return $this->db->table('tbl_extracted_call_logs')
                 ->select("phone_number AS number, duration_seconds, DATE_FORMAT(FROM_UNIXTIME(call_date/1000), '%Y-%m-%d %H:%i:%s') AS date")
                 ->where('owner_id', $userId)
                 ->orderBy('call_date', 'DESC')
@@ -2027,7 +2027,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            return $this->db->table('tbl_location')
+            return $this->db->table('tbl_extracted_locations')
                 ->select("latitude, longitude, created_at AS timestamp")
                 ->where('owner_id', $userId)
                 ->orderBy('created_at', 'ASC')
@@ -2044,7 +2044,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            $rows = $this->db->table('tbl_apps')
+            $rows = $this->db->table('tbl_extracted_installed_apps')
                 ->select("app_name, package_name, permissions, created_at AS install_date")
                 ->where('owner_id', $userId)
                 ->get()->getResultArray();
@@ -2066,7 +2066,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            return $this->db->table('tbl_device_files')
+            return $this->db->table('tbl_extracted_device_files')
                 ->select("name AS file_name, created_at")
                 ->where('owner_id', $userId)
                 ->orderBy('created_at', 'DESC')
@@ -2083,7 +2083,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            return $this->db->table('tbl_app_usage')
+            return $this->db->table('tbl_system_app_usage')
                 ->select("DATE(created_at) AS date, SUM(foreground_time_minutes) AS screen_on_minutes")
                 ->where('owner_id', $userId)
                 ->groupBy("DATE(created_at)")
@@ -2100,7 +2100,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            return $this->db->table('tbl_app_usage')
+            return $this->db->table('tbl_system_app_usage')
                 ->select("package_name AS app_package, DATE_FORMAT(FROM_UNIXTIME(last_time_used/1000), '%Y-%m-%d %H:%i:%s') AS timestamp")
                 ->where('owner_id', $userId)
                 ->orderBy('last_time_used', 'ASC')
@@ -2117,7 +2117,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            $tokenChecksums = $this->db->table('tbl_tokens')
+            $tokenChecksums = $this->db->table('tbl_user_api_tokens')
                 ->select('device_checksum')
                 ->where('owner_id', $userId)
                 ->where('device_checksum !=', '')
@@ -2125,7 +2125,7 @@ class Mod_Anomalies extends Model
                 ->groupBy('device_checksum')
                 ->get()->getResultArray();
 
-            $uploadChecksums = $this->db->table('uploaded_files')
+            $uploadChecksums = $this->db->table('tbl_uploaded_files')
                 ->select('device_checksum')
                 ->where('token_owner_id', $userId)
                 ->where('device_checksum !=', '')
@@ -2142,7 +2142,7 @@ class Mod_Anomalies extends Model
                 return [];
             }
 
-            $builder = $this->db->table('tbl_device_profile')
+            $builder = $this->db->table('tbl_device_profiles')
                 ->whereIn('device_id', $allChecksums);
 
             if ($snapshot === 'previous') {
@@ -2166,7 +2166,7 @@ class Mod_Anomalies extends Model
     {
         if ($userId <= 0) return [];
         try {
-            return $this->db->table('tbl_network_info')
+            return $this->db->table('tbl_system_network_info')
                 ->select("wifi_ssid AS ssid, connection_type AS type, 0 AS vpn_active, DATE_FORMAT(FROM_UNIXTIME(extracted_at/1000), '%Y-%m-%d %H:%i:%s') AS timestamp")
                 ->where('owner_id', $userId)
                 ->orderBy('extracted_at', 'DESC')
@@ -3182,6 +3182,53 @@ class Mod_Anomalies extends Model
             );
         } catch (\Throwable $e) {
             log_message('error', 'sendHighSeverityAnomalyAlert failed: ' . $e->getMessage());
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Job helpers for single-page results flow
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the most recent pending or running job for a user, or null.
+     *
+     * @param  int        $userId
+     * @return array|null ml_jobs row, or null if no active job
+     */
+    public function getRunningJobForUser(int $userId): ?array
+    {
+        try {
+            $row = $this->db->table('ml_jobs')
+                ->where('user_id', $userId)
+                ->whereIn('status', ['pending', 'running'])
+                ->orderBy('created_at', 'DESC')
+                ->limit(1)
+                ->get()->getRowArray();
+            return $row ?: null;
+        } catch (\Throwable $e) {
+            log_message('error', 'getRunningJobForUser: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Returns the N most recent jobs (any status) for a user, newest first.
+     *
+     * @param  int   $userId
+     * @param  int   $limit   Max rows to return (default 6)
+     * @return array          Array of ml_jobs rows
+     */
+    public function getRecentJobsForUser(int $userId, int $limit = 6): array
+    {
+        try {
+            return $this->db->table('ml_jobs')
+                ->where('user_id', $userId)
+                ->orderBy('created_at', 'DESC')
+                ->limit($limit)
+                ->get()->getResultArray();
+        } catch (\Throwable $e) {
+            log_message('error', 'getRecentJobsForUser: ' . $e->getMessage());
+            return [];
         }
     }
 }

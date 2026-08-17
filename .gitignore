@@ -42,6 +42,8 @@ $RECYCLE.BIN/
 # These should never be under version control,
 # as it poses a security risk.
 .env
+.env.*
+!.env.example
 .vagrant
 Vagrantfile
 
@@ -81,6 +83,20 @@ writable/credentials/*
 php_errors.log
 
 #-------------------------
+# Credentials & Secrets
+#-------------------------
+# Firebase / Google service account credentials
+writable/credentials/firebase_service_account.json
+writable/firebase_credentials.json
+google-services.json
+GoogleService-Info.plist
+
+# Encryption / signing keys
+*.pem
+*.p12
+*.pfx
+
+#-------------------------
 # User Guide Temp Files
 #-------------------------
 user_guide_src/build/*
@@ -100,6 +116,26 @@ phpunit
 # Composer
 #-------------------------
 vendor/
+
+#-------------------------
+# ML / Python artifacts
+#-------------------------
+# PHP-ML persisted model files
+writable/models_cache/
+*.pkl
+*.joblib
+*.model
+__pycache__/
+*.pyc
+*.pyo
+
+#-------------------------
+# Database dumps / pulled data
+#-------------------------
+*.sql.gz
+*.sql.bz2
+*_db_pulled
+*_db_dump
 
 #-------------------------
 # IDE / Development Files

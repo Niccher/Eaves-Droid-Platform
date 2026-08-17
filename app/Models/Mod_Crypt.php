@@ -260,4 +260,30 @@ class Mod_Crypt extends Model
         $b64 = strtr(urldecode($data), '-_', '+/');
         return base64_decode($b64, $strict);
     }
+
+    /**
+     * Short secure encryption for URL IDs (using AES-128-CTR and base64url)
+     */
+    public function encrypt_id(string $value): string
+    {
+        $cipher_algo = "AES-128-CTR";
+        $crypt_iv = getenv('CRYPT_IV') ?: '1693339625878204';
+        $crypt_key = getenv('CRYPT_KEY') ?: "s0F&C!uAo)Q{Ԇ\\~`ݲ)<M";
+        
+        $raw = openssl_encrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
+        return $this->base64url_encode($raw);
+    }
+
+    /**
+     * Short secure decryption for URL IDs (using AES-128-CTR and base64url)
+     */
+    public function decrypt_id(string $value): string
+    {
+        $cipher_algo = "AES-128-CTR";
+        $crypt_iv = getenv('CRYPT_IV') ?: '1693339625878204';
+        $crypt_key = getenv('CRYPT_KEY') ?: "s0F&C!uAo)Q{Ԇ\\~`ݲ)<M";
+        
+        $raw = $this->base64url_decode($value);
+        return openssl_decrypt($raw, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
+    }
 }
