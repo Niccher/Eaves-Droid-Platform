@@ -2,7 +2,7 @@
 One-Class SVM System-State Profiler — models normal operational bounds
 (CPU, RAM, battery temperature, active radios) and flags abnormal states.
 
-Queries ``tbl_device_profile`` through the user's device checksums.
+Queries ``tbl_device_profiles`` through the user's device checksums.
 """
 
 import numpy as np
@@ -24,10 +24,10 @@ class DeviceOneClassDetector(BaseDetector):
 
         # Resolve device checksums for this user (tokens + uploads)
         sql = text("""
-            SELECT DISTINCT device_checksum FROM tbl_tokens
+            SELECT DISTINCT device_checksum FROM tbl_user_api_tokens
             WHERE owner_id = :uid AND device_checksum IS NOT NULL AND device_checksum != ''
             UNION
-            SELECT DISTINCT device_checksum FROM uploaded_files
+            SELECT DISTINCT device_checksum FROM tbl_uploaded_files
             WHERE token_owner_id = :uid AND device_checksum IS NOT NULL AND device_checksum != ''
         """)
         with get_engine().connect() as conn:
@@ -49,7 +49,7 @@ class DeviceOneClassDetector(BaseDetector):
         sql = text(f"""
             SELECT system_load, memory_available_mb, battery_temperature_c, battery_charging,
                    extraction_timestamp
-            FROM tbl_device_profile
+            FROM tbl_device_profiles
             WHERE device_id IN ({placeholders}){where_extra}
             ORDER BY extraction_timestamp DESC
             LIMIT 500

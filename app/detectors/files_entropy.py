@@ -6,11 +6,11 @@ or hidden executables.
 
 Note: byte-level Shannon entropy scanning is not performed because the
 PHP side only sends file *metadata* (name, path, timestamp) from
-tbl_device_files.  The ``algorithm_id`` (``files_entropy``) is kept for
+tbl_extracted_device_files.  The ``algorithm_id`` (``files_entropy``) is kept for
 backward compatibility with existing ``ml_results`` rows and webapp
 configuration.
 
-Queries ``tbl_device_files`` directly from the shared MySQL database.
+Queries ``tbl_extracted_device_files`` directly from the shared MySQL database.
 """
 
 from app.detectors.base import BaseDetector
@@ -48,7 +48,7 @@ class SuspiciousFileScanner(BaseDetector):
 
         sql = text(f"""
             SELECT name AS file_name, created_at
-            FROM tbl_device_files
+            FROM tbl_extracted_device_files
             WHERE {where}
             ORDER BY created_at DESC
             LIMIT 3000

@@ -9,7 +9,7 @@ Note: this is a PCA-based anomaly scanner, not a neural autoencoder.
 The ``algorithm_id`` (``apps_autoencoder``) is kept for backward
 compatibility with existing ``ml_results`` rows and webapp configuration.
 
-Queries ``tbl_apps`` directly from the shared MySQL database.
+Queries ``tbl_extracted_installed_apps`` directly from the shared MySQL database.
 """
 
 import json
@@ -51,7 +51,7 @@ class AppManifestAnomalyDetector(BaseDetector):
 
         sql = text(f"""
             SELECT app_name, package_name, permissions
-            FROM tbl_apps
+            FROM tbl_extracted_installed_apps
             WHERE {where}
             LIMIT 1000
         """)

@@ -7,7 +7,7 @@ Note: this uses sklearn's MLPRegressor, not a PyTorch LSTM.  The
 ``algorithm_id`` (``act_lstm``) is kept for backward compatibility with
 existing ``ml_results`` rows and webapp configuration.
 
-Queries ``tbl_app_usage`` directly from the shared MySQL database.
+Queries ``tbl_system_app_usage`` directly from the shared MySQL database.
 """
 
 import numpy as np
@@ -37,7 +37,7 @@ class ActivitySequenceDetector(BaseDetector):
             SELECT package_name,
                    DATE_FORMAT(FROM_UNIXTIME(last_time_used/1000),
                                '%Y-%m-%d %H:%i:%s') AS ts
-            FROM tbl_app_usage
+            FROM tbl_system_app_usage
             WHERE {where}
             ORDER BY last_time_used ASC
             LIMIT 3000

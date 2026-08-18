@@ -17,9 +17,13 @@
 
 ## Overview
 
+> [!WARNING]
+> The working tree currently has most source files showing as unstaged deletions.
+> Run `git restore .` if this is unintentional before committing.
+
 ML Eaves Droid is the **third component** of the Eaves Droid ecosystem, alongside the [Android client](https://github.com/Niccher/Eaves-Droid-App) and the [PHP/CodeIgniter 4 webapp](https://github.com/Niccher/Eaves-Droid-WebApp).
 
-It is a lightweight **FastAPI service** that performs anomaly detection against the data the webapp has already stored in MySQL. The PHP webapp creates a job row in `ml_jobs`, POSTs a tiny `{job_id, user_id, algorithms, scope}` payload to `/api/analyze`, and this backend:
+It is a lightweight **FastAPI service** that performs anomaly detection against the data the webapp has already stored in MySQL. The PHP webapp creates a job row in `ml_jobs`, POSTs a tiny `{job_id, user_id, algorithms, scope}` payload to `/api/v1/analysis-jobs`, and this backend:
 
 1. Updates the job status to `running`.
 2. Checks the model cache — if a valid cache entry exists for the algorithm set and data version, it returns cached results immediately.
@@ -53,7 +57,7 @@ Seven detectors are registered (the "Deep" tier in the webapp's Platinum plan). 
 ### Category → table mapping
 
 | Category | Table | PK |
-|----------|-------|----|
+|----------|-------|-----|
 | `sms` | `tbl_sms` | `id` |
 | `contacts` | `tbl_contacts` | `id` |
 | `call_logs` | `tbl_logs` | `id` |
@@ -72,23 +76,24 @@ Seven detectors are registered (the "Deep" tier in the webapp's Platinum plan). 
 | GET | `/` | Service landing page (discovery) |
 | GET | `/api/health` | Status, loaded models, DB connectivity, cache stats |
 | GET | `/api/models` | List registered algorithms + parameters |
-| POST | `/api/analyze` | Run a detection job (`{job_id, user_id, algorithms, scope}`) |
+| POST | `/api/v1/analysis-jobs` | Run a detection job (`{job_id, user_id, algorithms, scope}`) |
 | GET | `/metrics` | Prometheus metrics |
 
-### `/api/analyze` request
+### `/api/v1/analysis-jobs` request
 
 ```json
 {
   "job_id": 123,
   "user_id": 7,
   "algorithms": ["calls_isolation", "sms_bert"],
-  "scope": "full"
+  "scope": "full",
+  "params": {}
 }
 ```
 
 Incremental runs add `"scope": "incremental"` and `"incremental_since": "2026-08-01 00:00:00"`.
 
-Findings are written to `ml_results`; the response is a lightweight status with a result count and timing:
+Findings are written to `ml_results`; the response is a lightweight status with a result count and timing. A single failing detector never aborts the whole job — errors are collected per-algorithm and reported in the response `error` field.
 
 ```json
 {
@@ -173,11 +178,6 @@ uvicorn app.main:app --reload --port 9070
 3. Import it in `app/routers/analyze.py::load_detectors()`.
 4. Add it to `app/routers/health.py::_DETECTOR_MODULES` and the webapp's `Mod_Anomalies::getAlgorithmCategories()` / `getAlgorithmTiers()`.
 
-1. Create `app/detectors/<name>.py` implementing `BaseDetector` (`detect()` returns a list of `AnomalyResult`).
-2. Register it in `app/models/registry.py` (metadata shown by `/api/models`).
-3. Import it in `app/routers/analyze.py::load_detectors()`.
-4. Add it to `app/routers/health.py::_DETECTOR_MODULES` and the webapp's `Mod_Anomalies::getAlgorithmCategories()` / `getAlgorithmTiers()`.
-
 ---
 
 ## Project structure
@@ -198,6 +198,9 @@ uvicorn app.main:app --reload --port 9070
 │   │   ├── analyze.py          # /api/analyze — job dispatch + persistence
 │   │   ├── health.py           # /api/health
 │   │   └── models_info.py      # /api/models
+│   ├── services/
+│   │   ├── persistence.py      # _persist_results, _update_tracking_for_categories
+│   │   └── cache_manager.py    # _try_load_cache, _try_save_cache
 │   └── utils/
 │       └── db.py               # shared SQLAlchemy engine + ml_jobs/ml_results helpers
 ├── migrations/

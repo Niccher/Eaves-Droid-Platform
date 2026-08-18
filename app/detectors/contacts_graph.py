@@ -7,7 +7,7 @@ Note: this is a graph-heuristic outlier model, not a Graph Convolutional
 Network.  The ``algorithm_id`` (``contacts_graph``) is kept for backward
 compatibility with existing ``ml_results`` rows and webapp configuration.
 
-Queries ``tbl_contacts`` directly from the shared MySQL database.
+Queries ``tbl_extracted_contacts`` directly from the shared MySQL database.
 """
 
 import json
@@ -36,7 +36,7 @@ class GraphContactDetector(BaseDetector):
 
         sql = text(f"""
             SELECT display_name, phone_numbers
-            FROM tbl_contacts
+            FROM tbl_extracted_contacts
             WHERE {where}
             LIMIT 2000
         """)

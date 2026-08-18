@@ -51,7 +51,7 @@ _DETECTOR_MODULES = [
 ]
 
 
-@router.get("/api/health", response_model=HealthResponse)
+@router.get("/api/v1/health", response_model=HealthResponse)
 async def health():
     mem = psutil.virtual_memory()
     cs = cache_stats()

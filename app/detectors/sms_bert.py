@@ -6,7 +6,7 @@ This is a lightweight keyword heuristic, NOT a BERT transformer model.
 The ``algorithm_id`` (``sms_bert``) is kept for backward compatibility
 with existing ``ml_results`` rows and webapp configuration.
 
-Queries ``tbl_sms`` directly from the shared MySQL database.
+Queries ``tbl_extracted_sms`` directly from the shared MySQL database.
 """
 
 from app.detectors.base import BaseDetector
@@ -41,7 +41,7 @@ class SmsPhishingHeuristicDetector(BaseDetector):
         sql = text(f"""
             SELECT body, address,
                    DATE_FORMAT(FROM_UNIXTIME(sms_date/1000), '%Y-%m-%d %H:%i:%s') AS ts
-            FROM tbl_sms
+            FROM tbl_extracted_sms
             WHERE {where}
             ORDER BY sms_date DESC
             LIMIT 2000

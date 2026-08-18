@@ -3,7 +3,7 @@ Isolation Forest Outlier Detection — flags anomalous call records using
 scikit-learn's Isolation Forest on multi-dimensional call features
 (duration, direction, hour, network presence).
 
-Queries ``tbl_logs`` directly from the shared MySQL database.
+Queries ``tbl_extracted_call_logs`` directly from the shared MySQL database.
 """
 
 import numpy as np
@@ -33,7 +33,7 @@ class CallsIsolationDetector(BaseDetector):
             SELECT duration_seconds, call_type AS direction,
                    DATE_FORMAT(FROM_UNIXTIME(call_date/1000), '%Y-%m-%d %H:%i:%s') AS ts,
                    is_voip
-            FROM tbl_logs
+            FROM tbl_extracted_call_logs
             WHERE {where}
             ORDER BY call_date DESC
             LIMIT 3000

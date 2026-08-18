@@ -54,7 +54,7 @@ async def root():
         "service": "ML Eaves Droid",
         "version": "1.0.0",
         "docs": "/docs",
-        "health": "/api/health",
-        "models": "/api/models",
-        "analyze": "/api/analyze",
+        "health": "/api/v1/health",
+        "models": "/api/v1/models",
+        "analyze": "/api/v1/analysis-jobs",
     }
