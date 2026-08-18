@@ -12,8 +12,8 @@ class ThrottleFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         $throttler = Services::throttler();
-        // 10 requests per minute per IP
-        if ($throttler->check($request->getIPAddress(), 10, 60) === false) {
+        // Allow up to 60 requests per minute per IP to accommodate burst uploads
+        if ($throttler->check($request->getIPAddress(), 60, 60) === false) {
             return Services::response()
                 ->setJSON(['success' => false, 'message' => 'Too many requests'])
                 ->setStatusCode(429);
