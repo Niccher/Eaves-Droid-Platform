@@ -77,7 +77,7 @@ class CreateMlResults extends Migration
             'created_at' => [
                 'type'       => 'DATETIME',
                 'null'       => false,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
             ],
         ]);
 

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_Upload_Queue extends Model
+class UploadQueueModel extends Model
 {
     protected $table = 'tbl_upload_queue';
     protected $primaryKey = 'id';

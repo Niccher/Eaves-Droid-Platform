@@ -111,7 +111,7 @@
                         </div>
                         <div class="icon"><i class="fas fa-database"></i></div>
                         <div class="small-box-footer">
-                            Files: <?= number_format($uploaded_data['files_mb'], 1) ?> MB | Apps: <?= number_format($uploaded_data['apps_mb'], 1) ?> MB
+                            FilesController: <?= number_format($uploaded_data['files_mb'], 1) ?> MB | Apps: <?= number_format($uploaded_data['apps_mb'], 1) ?> MB
                         </div>
                     </div>
                 </div>

@@ -22,7 +22,7 @@ class Kint extends BaseConfig
 {
     /*
     |--------------------------------------------------------------------------
-    | Global Settings
+    | Global SettingsController
     |--------------------------------------------------------------------------
     */
 
@@ -38,7 +38,7 @@ class Kint extends BaseConfig
 
     /*
     |--------------------------------------------------------------------------
-    | RichRenderer Settings
+    | RichRenderer SettingsController
     |--------------------------------------------------------------------------
     */
     public string $richTheme = 'aante-light.css';
@@ -59,7 +59,7 @@ class Kint extends BaseConfig
 
     /*
     |--------------------------------------------------------------------------
-    | CLI Settings
+    | CLI SettingsController
     |--------------------------------------------------------------------------
     */
     public bool $cliColors      = true;

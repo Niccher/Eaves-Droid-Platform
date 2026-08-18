@@ -19,7 +19,7 @@
             <div class="col-md-12">
                 <div class="card card-outline card-info shadow-sm">
                     <div class="card-header">
-                        <?php $_eng = (new \App\Models\Mod_Anomalies())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
+                        <?php $_eng = (new \App\Models\AnomaliesModel())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
                         <h3 class="card-title"><i class="fas fa-brain mr-2"></i> <?= $_engLabel ?> Intelligence</h3>
                     </div>
                     <div class="card-body">
@@ -64,7 +64,7 @@
                     <div class="info-box shadow-sm">
                         <span class="info-box-icon bg-success"><i class="fas fa-file-image"></i></span>
                         <div class="info-box-content">
-                            <span class="info-box-text">Total Files</span>
+                            <span class="info-box-text">Total FilesController</span>
                             <span class="info-box-number"><?= number_format($storage['count']) ?></span>
                         </div>
                     </div>
@@ -123,7 +123,7 @@
                 </div>
             </div>
 
-            <!-- Top Files -->
+            <!-- Top FilesController -->
             <div class="row mt-4">
                 <div class="col-md-12">
                     <div class="card shadow-sm">

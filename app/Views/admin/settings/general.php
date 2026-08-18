@@ -67,7 +67,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label>App Description</label>
-                                    <textarea name="app_description" class="form-control" rows="3"><?= htmlspecialchars($settings['app_description'] ?? 'Advanced Mobile Forensic & Data Intelligence Platform') ?></textarea>
+                                    <textarea name="app_description" class="form-control" rows="3"><?= htmlspecialchars($settings['app_description'] ?? 'AdvancedController Mobile Forensic & Data Intelligence Platform') ?></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label>Timezone</label>

@@ -16,7 +16,7 @@ class Publisher extends BasePublisher
      * A list of allowed destinations with a (pseudo-)regex
      * of allowed files for each destination.
      * Attempts to publish to directories not in this list will
-     * result in a PublisherException. Files that do no fit the
+     * result in a PublisherException. FilesController that do no fit the
      * pattern will cause copy/merge to fail.
      *
      * @var array<string,string>

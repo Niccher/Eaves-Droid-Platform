@@ -1,7 +1,7 @@
 <?php
 /**
  * Content template for: Data Export Notification
- * Used by: Advanced::sendExportCompleteEmail
+ * Used by: AdvancedController::sendExportCompleteEmail
  * Layout: email/_layout
  */
 ?>

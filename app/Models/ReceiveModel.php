@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_Receive extends Model
+class ReceiveModel extends Model
 {
     /**
      * Creates or updates a device profile — idempotent upsert.
@@ -28,7 +28,6 @@ class Mod_Receive extends Model
             if (empty($print_dump['created_at'])) {
                 $print_dump['created_at'] = date('Y-m-d H:i:s');
             }
-            $print_dump['updated_at'] = date('Y-m-d H:i:s');
 
             // Check if this exact (device_id + fcm_token) already exists
             $fcmToken = $print_dump['fcm_token'] ?? null;
@@ -93,12 +92,12 @@ class Mod_Receive extends Model
 
     /**
      * Count devices currently linked to an owner.
-     * Reuses the checksum + owner_id resolution from Mod_User.
+     * Reuses the checksum + owner_id resolution from UserModel.
      */
     private function countDevicesForOwner(int $ownerId): int
     {
         try {
-            $userModel = new \App\Models\Mod_User();
+            $userModel = new \App\Models\UserModel();
             return count($userModel->get_user_devices_from_profile($ownerId));
         } catch (\Throwable $e) {
             log_message('error', 'PlanGate countDevices error: ' . $e->getMessage());
@@ -167,7 +166,7 @@ class Mod_Receive extends Model
     }
 
     /**
-     * Logs a token verification attempt.
+     * LogsController a token verification attempt.
      * Note: tbl_tokentest was removed in migration 20260815123000. Audit is now log-only.
      *
      * @param string $var_sent_token

@@ -5,7 +5,7 @@ namespace App\Models;
 use CodeIgniter\Model;
 use Config\Services;
 
-class Mod_Crypt extends Model
+class CryptModel extends Model
 {
     protected $encrypter;
 

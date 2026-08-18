@@ -98,7 +98,7 @@ class CreateMlJobs extends Migration
             'created_at' => [
                 'type'       => 'DATETIME',
                 'null'       => false,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
             ],
             'started_at' => [
                 'type'       => 'DATETIME',

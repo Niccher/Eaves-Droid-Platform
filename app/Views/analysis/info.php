@@ -15,7 +15,7 @@
                     <ol class="breadcrumb float-sm-right bg-transparent p-0 m-0">
                         <li class="breadcrumb-item"><a href="<?= base_url('home') ?>"><i class="fas fa-home mr-1"></i>Home</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>">Intelligence</a></li>
-                        <li class="breadcrumb-item active">Anomalies</li>
+                        <li class="breadcrumb-item active">AnomaliesController</li>
                     </ol>
                 </div>
             </div>
@@ -108,7 +108,7 @@
                                         <i class="fas fa-folder-open text-white" style="font-size:.85rem;"></i>
                                     </span>
                                     <div>
-                                        <strong>Files &amp; Applications</strong>
+                                        <strong>FilesController &amp; Applications</strong>
                                         <small class="d-block text-muted">Manifest permission profiling, shannon entropy checks, autoencoder anomaly flags</small>
                                     </div>
                                 </li>

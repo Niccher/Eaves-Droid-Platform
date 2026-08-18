@@ -200,7 +200,7 @@
                                         <optgroup label="Queue">
                                         <option value="queue:process">queue:process — Process pending upload queue items</option>
                                         </optgroup>
-                                        <optgroup label="Anomalies & ML">
+                                        <optgroup label="AnomaliesController & ML">
                                         <option value="anomalies:run-job">anomalies:run-job — Run ML anomaly detection job</option>
                                         </optgroup>
                                         <optgroup label="Housekeeping">

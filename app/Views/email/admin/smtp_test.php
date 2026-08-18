@@ -21,7 +21,7 @@
             <p style="color:#333;font-size:15px;line-height:1.6;">Thank you,<br><strong>Eaves Droid Team</strong></p>
         </div>
         <div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">
-            Eaves Droid — Advanced Mobile Forensic & Data Intelligence Platform
+            Eaves Droid — AdvancedController Mobile Forensic & Data Intelligence Platform
         </div>
     </div>
 </body>

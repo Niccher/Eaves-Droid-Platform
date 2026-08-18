@@ -24,6 +24,13 @@
             </div>
             <?php endif; ?>
 
+            <?php if (session()->getFlashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-circle mr-2"></i> <?= session()->getFlashdata('error') ?>
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+            <?php endif; ?>
+
             <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
                 <div class="d-flex align-items-center">
                     <i class="fas fa-info-circle text-info fa-2x mr-3"></i>

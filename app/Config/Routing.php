@@ -41,9 +41,9 @@ class Routing extends BaseRouting
      * The default controller to use when no other controller has been
      * specified.
      *
-     * Default: 'Home'
+     * Default: 'HomeController'
      */
-    public string $defaultController = 'Home';
+    public string $defaultController = 'HomeController';
 
     /**
      * The default method to call on the controller when no other
@@ -64,7 +64,7 @@ class Routing extends BaseRouting
     /**
      * Sets the class/method that should be called if routing doesn't
      * find a match. It can be either a closure or the controller/method
-     * name exactly like a route is defined: Users::index
+     * name exactly like a route is defined: UsersController::index
      *
      * This setting is passed to the Router class and handled there.
      *
@@ -76,7 +76,7 @@ class Routing extends BaseRouting
      * });
      *
      * Example:
-     *  public $override404 = 'App\Errors::show404';
+     *  public $override404 = 'App\ErrorsController::show404';
      */
     public ?string $override404 = null;
 

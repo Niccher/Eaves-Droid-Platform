@@ -65,7 +65,7 @@ class SubscriptionModel extends Model
                 'correlation' => false,
                 'care_plan' => false,
                 
-                // FCM Data Fetch Actions (Free Defaults)
+                // FCM Data Fetch Actions (Free DefaultsController)
                 'fcm_fetch_contacts' => true,
                 'fcm_cmd_beep'       => true,
                 'fcm_cmd_health'     => true,
@@ -81,12 +81,15 @@ class SubscriptionModel extends Model
                 'fcm_fetch_hard_misc' => false,
                 'fcm_fetch_all'      => false,
                 
-                // FCM Device Management Actions (Free Defaults)
+                // FCM Device Management Actions (Free DefaultsController)
                 'fcm_cmd_reset_app'          => true,
                 'fcm_cmd_deactivate'         => false,
                 'fcm_cmd_logout'             => false,
                 'fcm_cmd_uninstall_preserve' => false,
                 'fcm_cmd_uninstall_wipe'     => false,
+
+                // FCM File Management (Platinum only)
+                'fcm_file_management'        => false,  // Download/Delete specific files from device
             ],
             'ml_algorithms' => ['core'],
         ];

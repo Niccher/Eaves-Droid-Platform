@@ -89,7 +89,7 @@ class FirebaseLib
     }
 
     /**
-     * Get OAuth 2.0 Access Token using Service Account Credentials
+     * Get OAuth 2.0 Access Token using Service AccountController Credentials
      */
     private function getAccessToken()
     {
@@ -113,14 +113,14 @@ class FirebaseLib
         }
 
         if (!$credentialPath) {
-            log_message('error', 'Firebase Service Account file not found. Checked: ' . implode(', ', $paths));
+            log_message('error', 'Firebase Service AccountController file not found. Checked: ' . implode(', ', $paths));
             return false;
         }
 
         $credentials = json_decode(file_get_contents($credentialPath), true);
         
         if (!$credentials || !isset($credentials['client_email']) || !isset($credentials['private_key'])) {
-            log_message('error', 'Invalid Firebase Service Account credentials');
+            log_message('error', 'Invalid Firebase Service AccountController credentials');
             return false;
         }
 

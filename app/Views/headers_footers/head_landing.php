@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title><?= isset($page_title) ? esc($page_title) : 'Eaves Droid | Advanced Mobile Forensic & Data Intelligence Platform' ?></title>
+    <title><?= isset($page_title) ? esc($page_title) : 'Eaves Droid | AdvancedController Mobile Forensic & Data Intelligence Platform' ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= isset($page_desc) ? esc($page_desc) : 'A powerful, free mobile data intelligence platform designed for deep analysis of Android device data, including call logs, SMS correlation, and file structure visualization.' ?>"/>
     <meta name="keywords" content="<?= isset($page_keys) ? esc($page_keys) : 'mobile forensics, android data analysis, SMS correlation tool, call log analyzer, mobile data intelligence, digital forensics platform' ?>"/>

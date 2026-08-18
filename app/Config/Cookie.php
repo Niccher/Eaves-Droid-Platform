@@ -81,7 +81,7 @@ class Cookie extends BaseConfig
      * - `Cookie::SAMESITE_LAX`
      * - `Cookie::SAMESITE_STRICT`
      *
-     * Defaults to `Lax` for compatibility with modern browsers. Setting `''`
+     * DefaultsController to `Lax` for compatibility with modern browsers. Setting `''`
      * (empty string) means default SameSite attribute set by browsers (`Lax`)
      * will be set on cookies. If set to `None`, `$secure` must also be set.
      *

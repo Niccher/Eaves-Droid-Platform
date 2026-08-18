@@ -371,8 +371,23 @@ function actMeta(array $e): array {
 
         </div><!-- /.tl-wrap -->
 
-        <?php if (isset($pager)): ?>
-          <div class="d-flex justify-content-end mt-4"><?= $pager->links('default','bootstrap5_full') ?></div>
+        <?php if (isset($pager) && $totalLocations > 0): ?>
+          <div class="card-footer bg-white border-top mt-4">
+              <div class="row align-items-center">
+                  <div class="col-md-6">
+                      <div class="entry-info text-muted" style="font-size: 13px;">
+                          Showing <?= (($currentPage - 1) * $perPage) + 1 ?>
+                          to <?= min($currentPage * $perPage, $totalLocations) ?>
+                          of <?= $totalLocations ?> entries
+                      </div>
+                  </div>
+                  <div class="col-md-6">
+                      <div class="float-right">
+                          <?= $pager->links('default', 'bootstrap5_full') ?>
+                      </div>
+                  </div>
+              </div>
+          </div>
         <?php endif; ?>
 
       <?php endif; ?>

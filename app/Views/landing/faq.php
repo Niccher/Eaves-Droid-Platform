@@ -90,7 +90,7 @@
                                     <div class="col-md-6">
                                         <ul class="mb-0">
                                             <li><i class="fas fa-th-large text-primary mr-1"></i> Installed apps</li>
-                                            <li><i class="fas fa-file text-primary mr-1"></i> Files &amp; media</li>
+                                            <li><i class="fas fa-file text-primary mr-1"></i> FilesController &amp; media</li>
                                             <li><i class="fas fa-clock text-primary mr-1"></i> Activities</li>
                                             <li><i class="fas fa-microchip text-primary mr-1"></i> Device metrics</li>
                                         </ul>
@@ -101,9 +101,9 @@
                     </div>
                 </div>
 
-                <!-- Android Client -->
+                <!-- Android ClientController -->
                 <h3 class="font-weight-bold text-success mt-5 mb-4">
-                    <i class="fab fa-android mr-2"></i>Android Client
+                    <i class="fab fa-android mr-2"></i>Android ClientController
                 </h3>
                 <hr class="border-success mb-4">
 

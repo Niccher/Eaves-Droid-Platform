@@ -22,7 +22,7 @@ class Logger extends BaseConfig
      * - 1 = Emergency Messages - System is unusable
      * - 2 = Alert Messages - Action Must Be Taken Immediately
      * - 3 = Critical Messages - Application component unavailable, unexpected exception.
-     * - 4 = Runtime Errors - Don't need immediate action, but should be monitored.
+     * - 4 = Runtime ErrorsController - Don't need immediate action, but should be monitored.
      * - 5 = Warnings - Exceptional occurrences that are not errors.
      * - 6 = Notices - Normal but significant events.
      * - 7 = Info - Interesting events, like user logging in, etc.
@@ -42,7 +42,7 @@ class Logger extends BaseConfig
 
     /**
      * --------------------------------------------------------------------------
-     * Date Format for Logs
+     * Date Format for LogsController
      * --------------------------------------------------------------------------
      *
      * Each item that is logged has an associated date. You can use PHP date

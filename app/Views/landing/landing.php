@@ -53,11 +53,11 @@
         </div>
     </div>
 
-    <!-- What You Can Analyze -->
+    <!-- What You Can AnalyzeController -->
     <div class="content py-5">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="font-weight-light mb-2"><i class="fas fa-database text-primary mr-2"></i>What You Can Analyze</h2>
+                <h2 class="font-weight-light mb-2"><i class="fas fa-database text-primary mr-2"></i>What You Can AnalyzeController</h2>
                 <p class="text-muted lead">Every data type your Android device generates — captured and correlated</p>
                 <hr class="w-25 border-primary">
             </div>
@@ -112,7 +112,7 @@
                     <div class="card h-100 card-outline card-secondary shadow-sm text-center p-3">
                         <div class="card-body">
                             <div class="mb-3"><i class="fas fa-folder-open fa-3x text-secondary"></i></div>
-                            <h5 class="text-bold">Files & Media</h5>
+                            <h5 class="text-bold">FilesController & Media</h5>
                             <p class="text-muted small mb-0">File metadata indexing, media library scanning, and storage usage breakdowns.</p>
                         </div>
                     </div>

@@ -33,7 +33,7 @@ class CreateTblUserInteractions extends Migration
             'created_at' => [
                 'type'       => 'DATETIME',
                 'null'       => true,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
             ],
         ]);
 

@@ -76,32 +76,32 @@
                                     <div class="small-box bg-warning">
                                         <div class="inner">
                                             <h3><?= $log_count + $cache_count ?></h3>
-                                            <p>Logs &amp; Cache Files</p>
+                                            <p>Logs &amp; Cache FilesController</p>
                                         </div>
                                         <div class="icon"><i class="fas fa-archive"></i></div>
                                     </div>
-                                    <p class="text-muted small px-2">Files written by the application at runtime. Logs record system events and errors; cache files speed up page loads. These can be cleared safely.</p>
+                                    <p class="text-muted small px-2">FilesController written by the application at runtime. Logs record system events and errors; cache files speed up page loads. These can be cleared safely.</p>
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="card card-outline card-danger">
-                                        <div class="card-header"><h3 class="card-title"><i class="fas fa-file-alt mr-2"></i>Log Files</h3></div>
+                                        <div class="card-header"><h3 class="card-title"><i class="fas fa-file-alt mr-2"></i>Log FilesController</h3></div>
                                         <div class="card-body">
                                             <div class="alert alert-light border-0 p-2 mb-2 small">
                                                 <i class="fas fa-info-circle mr-1 text-info"></i>
                                                 Log files contain request traces, errors, and debug output. Clearing them frees disk space but permanently removes historical logs.
                                             </div>
                                             <table class="table table-sm">
-                                                <tr><td>Files</td><td><strong><?= $log_count ?></strong></td></tr>
+                                                <tr><td>FilesController</td><td><strong><?= $log_count ?></strong></td></tr>
                                                 <tr><td>Total Size</td><td><strong><?= number_format($log_size / 1024, 1) ?> KB</strong></td></tr>
                                             </table>
                                             <form method="post" action="<?= base_url('admin/settings/maintenance/run') ?>">
                                                 <?= csrf_field() ?>
                                                 <input type="hidden" name="action" value="logs">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm btn-block" onclick="return confirm('Clear all log files?')">
-                                                    <i class="fas fa-trash mr-1"></i> Clear Log Files
+                                                    <i class="fas fa-trash mr-1"></i> Clear Log FilesController
                                                 </button>
                                             </form>
                                         </div>
@@ -116,7 +116,7 @@
                                                 Cache files store temporary data to improve response times. Clearing them may slow down initial page loads until the cache rebuilds.
                                             </div>
                                             <table class="table table-sm">
-                                                <tr><td>Files</td><td><strong><?= $cache_count ?></strong></td></tr>
+                                                <tr><td>FilesController</td><td><strong><?= $cache_count ?></strong></td></tr>
                                                 <tr><td>Total Size</td><td><strong><?= number_format($cache_size / 1024, 1) ?> KB</strong></td></tr>
                                             </table>
                                             <form method="post" action="<?= base_url('admin/settings/maintenance/run') ?>">

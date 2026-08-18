@@ -17,7 +17,7 @@ class RoleFilter implements FilterInterface
         'admin'      => ['admin', 'superadmin'],
         // Superadmin routes: only superadmin
         'superadmin' => ['superadmin'],
-        // Client/User routes: user OR superadmin (superadmin can access everything)
+        // ClientController/User routes: user OR superadmin (superadmin can access everything)
         'client'     => ['user', 'superadmin'],
     ];
 

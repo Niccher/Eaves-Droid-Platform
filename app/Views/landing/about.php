@@ -61,7 +61,7 @@
                     <div class="card h-100 card-outline card-primary shadow-sm text-center">
                         <div class="card-body">
                             <i class="fab fa-android fa-3x text-primary mb-3"></i>
-                            <h5 class="text-bold">Android Client</h5>
+                            <h5 class="text-bold">Android ClientController</h5>
                             <p class="text-muted small">Native APK data collector that extracts 60+ types of data from Android devices with secure, AES-encrypted sync.</p>
                             <span class="badge badge-primary">Java 17</span>
                         </div>

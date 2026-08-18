@@ -1,6 +1,6 @@
 <?php
 /**
- * Files View
+ * FilesController View
  *
  * Displays all files with categorization. Navigation allows switching between All, Images, Videos, Documents.
  * Modeled after sms.php and apps_all.php patterns.
@@ -118,7 +118,7 @@
                                                 <div class="empty-state">
                                                     <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
                                                     <h4>No files found</h4>
-                                                    <p class="text-muted">Files will appear here</p>
+                                                    <p class="text-muted">Files will appear here once the device syncs.</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -446,8 +446,51 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            <div class="modal-footer d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">
+
+                <?php
+                // Pass plan tier to JS — buttons always visible, JS gates the action
+                $userPlanTier = 'free';
+                if (function_exists('auth') && auth()->loggedIn()) {
+                    $planGate = new \App\Services\PlanGate();
+                    $userPlanTier = $planGate->currentPlanKey((int) auth()->user()->id);
+                }
+                ?>
+                <!-- Plan tier constant for JS -->
+                <script>const USER_PLAN_TIER = '<?= $userPlanTier ?>';</script>
+
+                <!-- ─── Remote action buttons (always visible) ─────────────────────────── -->
+                <div class="d-flex flex-wrap" style="gap:6px;">
+                    <button type="button" class="btn btn-success btn-sm" id="btn-fcm-download"
+                            onclick="fcmFetchFile()"
+                            title="Download this file from the mobile device to the server">
+                        <i class="fas fa-cloud-download-alt mr-1"></i>Download this File
+                        <?php if ($userPlanTier !== 'platinum'): ?>
+                            <i class="fas fa-crown ml-1 text-warning" style="font-size:0.75em;" title="Platinum feature"></i>
+                        <?php endif; ?>
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" id="btn-fcm-delete"
+                            onclick="fcmDeleteFile()"
+                            title="Permanently delete this file from the mobile device">
+                        <i class="fas fa-trash-alt mr-1"></i>Delete this File from Mobile Device
+                        <?php if ($userPlanTier !== 'platinum'): ?>
+                            <i class="fas fa-crown ml-1 text-warning" style="font-size:0.75em;" title="Platinum feature"></i>
+                        <?php endif; ?>
+                    </button>
+                </div>
+
+                <!-- ─── Live status bar (shown only after a successful dispatch) ────────── -->
+                <div id="fcm-action-status" style="display:none; flex:1; min-width:200px;">
+                    <div class="d-flex align-items-center" style="gap:8px;">
+                        <i id="fcm-status-icon" class="fas fa-circle-notch fa-spin text-muted"></i>
+                        <div style="flex:1;">
+                            <div id="fcm-status-msg" class="small font-weight-bold">Sending command…</div>
+                            <div id="fcm-status-timeline" class="small text-muted" style="font-size:0.78em; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
                     <i class="fas fa-times mr-1"></i>Close
                 </button>
             </div>
@@ -526,20 +569,43 @@
 
         .avatar-circle-sm {
             width: 32px;
-            height: 32px;
-            font-size: 14px;
-        }
+        .entry-info { text-align: center; margin-bottom: 1rem; }
+        .float-right { float: none !important; text-align: center; }
+        .avatar-circle-sm { width: 32px; height: 32px; font-size: 14px; }
     }
     .table-sortable thead th { cursor: pointer; user-select: none; }
     .table-sortable thead th.sort-asc::after { content: ' \25B2'; font-size: 0.7em; }
     .table-sortable thead th.sort-desc::after { content: ' \25BC'; font-size: 0.7em; }
 </style>
 <script>
-    /**
-     * Populate file details modal with data
-     */
+    // ─── State ──────────────────────────────────────────────────────────────────
+    let _activeFileDeviceId = null;
+    let _activeFilePath     = null;
+    let _activeFileName     = null;
+    let _activeFileSize     = 0;
+    let _pollTimer          = null;   // setInterval handle
+    const FCM_STATUS_BASE   = '<?= base_url('api/v1/fcm-status') ?>';
+    const FCM_CMD_BASE      = '<?= base_url('api/v1/fcm-commands') ?>';
+    const POLL_INTERVAL_MS  = 3000;  // poll every 3 seconds
+    const POLL_MAX_TRIES    = 45;    // 45 × 3s = 135s max wait
+
+    // ─── showFileDetails ────────────────────────────────────────────────────────
     function showFileDetails(fileData) {
-        // File name
+        _activeFileDeviceId = fileData.device_id || null;
+        _activeFilePath     = fileData.path       || null;
+        _activeFileName     = fileData.name       || 'file';
+        _activeFileSize     = fileData.size_bytes  || 0;        // Reset live-status panel
+        _stopPolling();
+        _hideStatus();
+
+        // Re-enable action buttons if Platinum user
+        const isDir = fileData.is_directory == 1;
+        const dlBtn = document.getElementById('btn-fcm-download');
+        const delBtn = document.getElementById('btn-fcm-delete');
+        if (dlBtn)  dlBtn.disabled  = isDir || !_activeFileDeviceId;
+        if (delBtn) delBtn.disabled = !_activeFileDeviceId;
+
+        // Populate modal fields
         document.getElementById('modal-file-name').textContent = fileData.name || 'N/A';
         
         // Extension
@@ -605,12 +671,179 @@
         // Created At
         document.getElementById('modal-created-at').textContent = fileData.created_at || 'N/A';
         
-        // Is Directory
-        if (fileData.is_directory == 1) {
-            document.getElementById('modal-is-directory-row').style.display = '';
-        } else {
-            document.getElementById('modal-is-directory-row').style.display = 'none';
+        document.getElementById('modal-is-directory-row').style.display = (fileData.is_directory == 1) ? '' : 'none';
+    }
+
+    // ─── Status panel helpers ────────────────────────────────────────────────────
+    function _hideStatus() {
+        document.getElementById('fcm-action-status').style.display = 'none';
+        document.getElementById('fcm-status-timeline').textContent = '';
+    }
+
+    function _showStatus(msg, state) {
+        const panel  = document.getElementById('fcm-action-status');
+        const iconEl = document.getElementById('fcm-status-icon');
+        const msgEl  = document.getElementById('fcm-status-msg');
+        panel.style.display = '';
+        msgEl.textContent   = msg;
+        const iconMap = {
+            pending: 'fas fa-circle-notch fa-spin text-muted',
+            success: 'fas fa-check-circle text-success',
+            error:   'fas fa-exclamation-triangle text-danger',
+            timeout: 'fas fa-clock text-warning'
+        };
+        iconEl.className = iconMap[state] || iconMap.pending;
+    }
+
+    function _appendTimeline(entry) {
+        const tl   = document.getElementById('fcm-status-timeline');
+        const time = new Date().toLocaleTimeString();
+        tl.innerHTML += '<div>' + time + ' — ' + entry + '</div>';
+    }
+
+    // ─── Polling engine ──────────────────────────────────────────────────────────
+    function _startPolling(logId) {
+        let tries = 0;
+        _appendTimeline('Command dispatched. Waiting for device…');
+        _pollTimer = setInterval(function() {
+            tries++;
+            if (tries > POLL_MAX_TRIES) {
+                _stopPolling();
+                _showStatus('Device did not respond within 2 minutes. It may be offline.', 'timeout');
+                _appendTimeline('Timed out — no ACK received.');
+                _setActionBtnsDisabled(false);
+                return;
+            }
+            $.getJSON(FCM_STATUS_BASE + '/' + logId, function(resp) {
+                const status = resp.status || 'pending';
+                const uiState = status === 'pending' ? 'pending'
+                              : status === 'ack_success' ? 'success'
+                              : status === 'timeout'     ? 'timeout' : 'error';
+                _showStatus(resp.message || '…', uiState);
+                if (status === 'ack_success') {
+                    _stopPolling();
+                    _appendTimeline('✅ Device ACK received — ' + (resp.acked_at || ''));
+                    _setActionBtnsDisabled(false);
+                } else if (status === 'ack_failed') {
+                    _stopPolling();
+                    _appendTimeline('❌ Device reported failure — ' + (resp.acked_at || ''));
+                    _setActionBtnsDisabled(false);
+                } else if (status === 'timeout') {
+                    _stopPolling();
+                    _appendTimeline('⏰ Server timeout — device never responded.');
+                    _setActionBtnsDisabled(false);
+                } else {
+                    _appendTimeline('Still waiting… (' + (resp.elapsed || tries * 3) + 's)');
+                }
+            }).fail(function() {
+                _appendTimeline('Polling error on try ' + tries + '…');
+            });
+        }, POLL_INTERVAL_MS);
+    }
+
+    function _stopPolling() {
+        if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+    }
+
+    $('#fileDetailsModal').on('hidden.bs.modal', function() { _stopPolling(); _hideStatus(); });
+
+    function _setActionBtnsDisabled(state) {
+        const dl  = document.getElementById('btn-fcm-download');
+        const del = document.getElementById('btn-fcm-delete');
+        if (dl)  dl.disabled  = state;
+        if (del) del.disabled = state;
+    }
+    // ─── FCM dispatch helper ─────────────────────────────────────────────────────
+    function _dispatchFcmCommand(command, confirmOpts) {
+        // ── Upgrade gate: non-Platinum users see a friendly upgrade prompt ───────
+        if (USER_PLAN_TIER !== 'platinum') {
+            Swal.fire({
+                icon:  'info',
+                title: '<i class="fas fa-crown text-warning mr-2"></i>Platinum Feature',
+                html:  'Downloading or deleting files directly from the mobile device '
+                     + 'requires a <strong>Platinum</strong> plan.<br><br>'
+                     + 'Upgrade your plan to remotely manage files on your device.',
+                showCancelButton:   true,
+                confirmButtonColor: '#f59e0b',
+                confirmButtonText:  '<i class="fas fa-crown mr-1"></i>Upgrade to Platinum',
+                cancelButtonText:   'Maybe later',
+                customClass: { confirmButton: 'btn btn-warning' }
+            }).then(function(r) {
+                if (r.isConfirmed) window.location.href = '<?= base_url('billing') ?>';
+            });
+            return;
         }
+
+        // ── Platinum: proceed with normal guard + dispatch ───────────────────
+        if (!_activeFileDeviceId || !_activeFilePath) {
+            Swal.fire({ icon:'warning', title:'No device linked',
+                text:'This file has no associated device ID.', timer:3000, showConfirmButton:false });
+            return;
+        }
+
+        // Size check for download (200MB limit check)
+        if (command === 'cmd_fetch_file' && _activeFileSize > 209715200) {
+            Swal.fire({
+                icon: 'error',
+                title: 'File Size Exceeded',
+                text: 'This file exceeds the maximum allowed transfer limit of 200MB.'
+            });
+            return;
+        }
+
+        const execute = () => {
+            _setActionBtnsDisabled(true);
+            _hideStatus();
+            _showStatus('Sending command to device…', 'pending');
+            const url = FCM_CMD_BASE + '/' + encodeURIComponent(_activeFileDeviceId) + '/' + command;
+            $.ajax({
+                url: url, type: 'POST',
+                data: { payload: _activeFilePath },
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp && resp.success) {
+                        _showStatus('Command dispatched (log #' + resp.action_log_id + '). Awaiting device…', 'pending');
+                        _startPolling(resp.action_log_id);
+                    } else {
+                        _showStatus('Dispatch failed: ' + JSON.stringify(resp.messages || resp.message || 'Unknown'), 'error');
+                        _setActionBtnsDisabled(false);
+                    }
+                },
+                error: function(xhr) {
+                    let msg = 'Server error';
+                    try { const r = JSON.parse(xhr.responseText); msg = r.messages ? JSON.stringify(r.messages) : (r.message || msg); } catch(e){}
+                    _showStatus('Failed: ' + msg, 'error');
+                    _setActionBtnsDisabled(false);
+                }
+            });
+        };
+
+        if (confirmOpts) {
+            Swal.fire(confirmOpts).then(function(result) {
+                if (result.isConfirmed) execute();
+            });
+        } else {
+            execute();
+        }
+    }
+
+    // ─── Public: Download from Device ────────────────────────────────────────────
+    function fcmFetchFile() {
+        _dispatchFcmCommand('cmd_fetch_file', null);
+    }
+    // ─── Public: Delete from Device ──────────────────────────────────────────────
+    function fcmDeleteFile() {
+        _dispatchFcmCommand('cmd_delete_file', {
+            title: 'Delete from Device?',
+            html:  '<span class="text-danger"><strong>Warning:</strong></span> This will permanently delete '
+                 + '<strong>' + _activeFileName + '</strong> from the Android device.<br><br>'
+                 + 'This action <u>cannot be undone</u>.',
+            icon:  'warning',
+            showCancelButton:   true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText:  '<i class="fas fa-trash-alt mr-1"></i>Yes, Delete on Device',
+            cancelButtonText:   'Cancel'
+        });
     }
 </script>
 

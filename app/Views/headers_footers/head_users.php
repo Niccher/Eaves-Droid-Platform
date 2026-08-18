@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Eaves Droid | Advanced Mobile Forensic & Data Intelligence Platform</title>
+    <title>Eaves Droid | AdvancedController Mobile Forensic & Data Intelligence Platform</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="A powerful, free mobile data intelligence platform designed for deep analysis of Android device data, including call logs, SMS correlation, and file structure visualization."/>
     <meta name="keywords" content="mobile forensics, android data analysis, SMS correlation tool, call log analyzer, mobile data intelligence, digital forensics platform"/>

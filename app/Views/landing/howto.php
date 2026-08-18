@@ -31,7 +31,7 @@
                     <div class="info-box shadow-sm h-100">
                         <span class="info-box-icon bg-success">2</span>
                         <div class="info-box-content">
-                            <span class="info-box-text text-bold text-success">Install Android Client</span>
+                            <span class="info-box-text text-bold text-success">Install Android ClientController</span>
                             <span class="info-box-number small font-weight-normal">Download APK, authenticate, and grant permissions.</span>
                         </div>
                     </div>
@@ -79,7 +79,7 @@
                 <div class="col-lg-6 mb-4">
                     <div class="card card-outline card-success shadow-sm h-100">
                         <div class="card-header">
-                            <h3 class="card-title text-bold"><i class="fab fa-android mr-2 text-success"></i>2. Install Android Client</h3>
+                            <h3 class="card-title text-bold"><i class="fab fa-android mr-2 text-success"></i>2. Install Android ClientController</h3>
                         </div>
                         <div class="card-body">
                             <p class="text-muted small">Download the Eaves Droid APK and install it on your Android device (Android 7.0+). Launch the app, enter your verification token to authenticate, and grant the required permissions (calls, SMS, contacts, location, files, and usage access) to enable full data collection.</p>

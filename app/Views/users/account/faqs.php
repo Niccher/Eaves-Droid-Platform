@@ -97,10 +97,10 @@
                     </div>
                 </div>
 
-                <!-- Android Client -->
+                <!-- Android ClientController -->
                 <div class="mb-4">
                     <h5 class="text-success font-weight-bold mb-3">
-                        <i class="fab fa-android mr-2"></i> Android Client
+                        <i class="fab fa-android mr-2"></i> Android ClientController
                     </h5>
                     <div id="accordion-android">
                         <div class="card card-success card-outline shadow-sm border-0 rounded-lg mb-3">
@@ -362,33 +362,21 @@
 </div>
 
 <style>
-    .card {
-        border-radius: 12px !important;
-        transition: box-shadow 0.2s ease;
-    }
-    .card:hover {
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
-    }
     .card-header {
         cursor: pointer;
-        border-radius: 12px !important;
     }
     .card-header .fa-chevron-down {
         font-size: 0.8rem;
-        transition: transform 0.2s ease;
+        transition: transform 0.25s ease;
     }
-    .card-header[aria-expanded="true"] .fa-chevron-down {
+    .card-header.collapsed .fa-chevron-down {
+        transform: rotate(0deg);
+    }
+    .card-header:not(.collapsed) .fa-chevron-down {
         transform: rotate(180deg);
     }
     .badge {
-        min-width: 28px;
-        border-radius: 8px;
-    }
-    .rounded-lg {
-        border-radius: 12px !important;
-    }
-    .rounded-pill {
-        border-radius: 50px !important;
+        min-width: 24px;
     }
     pre {
         border: 1px solid #dee2e6;
@@ -396,26 +384,17 @@
     }
     pre code {
         font-size: 0.9rem;
-        color: #e83e8c;
     }
-    .content-wrapper {
-        background: #fff;
-    }
-    .card-outline {
-        border-top: 3px solid;
-    }
-    .card-info.card-outline { border-top-color: #17a2b8; }
-    .card-success.card-outline { border-top-color: #28a745; }
-    .card-primary.card-outline { border-top-color: #007bff; }
-    .card-secondary.card-outline { border-top-color: #6c757d; }
-    .card-dark.card-outline { border-top-color: #343a40; }
 </style>
 
 <script>
 $(function() {
-    $('[data-toggle="collapse"]').on('click', function() {
-        var icon = $(this).find('.fa-chevron-down');
-        icon.toggleClass('fa-rotate-180');
+    // Add collapsed class dynamically if collapsed on load
+    $('.card-header[data-toggle="collapse"]').each(function() {
+        var target = $(this).attr('href');
+        if (!$(target).hasClass('show')) {
+            $(this).addClass('collapsed');
+        }
     });
 });
 </script>

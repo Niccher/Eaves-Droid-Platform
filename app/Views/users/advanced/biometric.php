@@ -11,7 +11,13 @@ helper('coalesce');
 $rows = coalesce_snapshots(
     $rows,
     'biometric_unique_key',
-    ['sensor_id', 'sensor_type', 'sensor_strength', 'current_enrollments', 'failed_attempts', 'lockout_time', 'lockout_permanent', 'invalidated_by_reenrollment', 'vendor', 'version', 'template_version', 'max_enrollments'],
+    [
+        'sensor_id', 'sensor_type', 'sensor_strength', 'current_enrollments', 'failed_attempts', 
+        'lockout_time', 'lockout_permanent', 'invalidated_by_reenrollment', 'vendor', 'version', 
+        'template_version', 'max_enrollments', 'weak_auth_timeout_ms', 'authenticator_id', 
+        'challenge_counter', 'hardware_auth_token', 'crypto_object_supported', 'is_hardware_detected', 
+        'is_hardware_available', 'device_secure', 'enrollment_progress', 'has_enrollments'
+    ],
     ['enrolled_users']
 );
 

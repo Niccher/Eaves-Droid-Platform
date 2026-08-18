@@ -1,7 +1,7 @@
 <?php
 /**
  * Content template for: Data Deletion Notification
- * Used by: Advanced::sendDeleteNotificationEmail
+ * Used by: AdvancedController::sendDeleteNotificationEmail
  * Layout: email/_layout
  */
 ?>

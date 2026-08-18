@@ -1,5 +1,5 @@
 <?php
-$engAlertModel = new \App\Models\Mod_Anomalies();
+$engAlertModel = new \App\Models\AnomaliesModel();
 $engAlertEngine = $engAlertModel->getDefaultEngine();
 $engAlertLabel = match ($engAlertEngine) {
     'python' => 'Python Engine',

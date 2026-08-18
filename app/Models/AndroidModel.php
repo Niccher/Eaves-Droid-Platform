@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_Android extends Model
+class AndroidModel extends Model
 {
     /**
      * Tests if a token is valid and active.
@@ -17,7 +17,6 @@ class Mod_Android extends Model
         try {
             $builder = $this->db->table('tbl_user_api_tokens');
             $result = $builder->where('token', $token)
-                ->where('created_at = last_used_at', NULL, FALSE)
                 ->where('expires_at > NOW()', NULL, FALSE)
                 ->limit(1)
                 ->get()
@@ -51,35 +50,31 @@ class Mod_Android extends Model
     public function verify_device_checksum(int $ownerId, string $uuid, string $checksum)
     {
         try {
-            // Look up any registered device for this owner with this android_id
+            // Under Option 2, device_id in the DB stores the raw prefixed hardware UUID directly
             $device = $this->db->table('tbl_device_profiles')
-                ->select('device_id, android_id')
+                ->select('device_id')
                 ->where('owner_id', $ownerId)
-                ->where('android_id', $uuid)
+                ->where('device_id', $uuid)
                 ->limit(1)
                 ->get()
                 ->getRowArray();
 
             if (!$device) {
-                // Device UUID not in DB yet — fingerprint hasn't been submitted yet
-                // Return null to signal "unregistered, allow through"
+                // Device not registered yet — allow initial connection
                 return null;
             }
 
-            // Device exists — compare stored checksum (device_id column) against header
-            $storedChecksum = $device['device_id'] ?? '';
-            $matches = hash_equals($storedChecksum, $checksum);
+            $storedId = $device['device_id'] ?? '';
+            $matches = hash_equals($storedId, $checksum);
 
             if (!$matches) {
-                log_message('warning', "Checksum mismatch for owner #{$ownerId} uuid={$uuid}: " .
-                    "sent={$checksum} stored={$storedChecksum}");
+                log_message('warning', "Checksum mismatch for owner #{$ownerId}: uuid={$uuid} checksum={$checksum} stored={$storedId}");
             }
 
             return $matches;
 
         } catch (\Exception $e) {
             log_message('error', 'verify_device_checksum failed: ' . $e->getMessage());
-            // On DB error, fail open (allow) to avoid locking out legitimate devices
             return null;
         }
     }

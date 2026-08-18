@@ -205,7 +205,7 @@
                                     <label for="hardware_profile" class="font-weight-bold">Allowed Hardware Profile</label>
                                     <select name="hardware_profile" id="hardware_profile" class="form-control">
                                         <option value="basic" <?= (($featureDefaults['hardware_profile'] ?? 'basic') === 'basic') ? 'selected' : '' ?>>Basic (Free: Locale, default apps, alarms)</option>
-                                        <option value="advanced" <?= (($featureDefaults['hardware_profile'] ?? 'basic') === 'advanced') ? 'selected' : '' ?>>Advanced (Gold: Storage, battery, cell towers, display, etc.)</option>
+                                        <option value="advanced" <?= (($featureDefaults['hardware_profile'] ?? 'basic') === 'advanced') ? 'selected' : '' ?>>AdvancedController (Gold: Storage, battery, cell towers, display, etc.)</option>
                                         <option value="all" <?= (($featureDefaults['hardware_profile'] ?? 'basic') === 'all') ? 'selected' : '' ?>>All Hardware Configs (Platinum: Camera, sensors, biometric, etc.)</option>
                                     </select>
                                 </div>
@@ -213,7 +213,7 @@
                                     <label for="software_profile" class="font-weight-bold">Allowed Software Profile</label>
                                     <select name="software_profile" id="software_profile" class="form-control">
                                         <option value="basic" <?= (($featureDefaults['software_profile'] ?? 'basic') === 'basic') ? 'selected' : '' ?>>Basic (Free: default apps, alarms, locale)</option>
-                                        <option value="advanced" <?= (($featureDefaults['software_profile'] ?? 'basic') === 'advanced') ? 'selected' : '' ?>>Advanced (Gold: data usage, saved wifi, accessibility, keyboards)</option>
+                                        <option value="advanced" <?= (($featureDefaults['software_profile'] ?? 'basic') === 'advanced') ? 'selected' : '' ?>>AdvancedController (Gold: data usage, saved wifi, accessibility, keyboards)</option>
                                         <option value="all" <?= (($featureDefaults['software_profile'] ?? 'basic') === 'all') ? 'selected' : '' ?>>All Software Configs (Platinum: clipboard, screenshots, Wellbeing, VPN, health, etc.)</option>
                                     </select>
                                 </div>

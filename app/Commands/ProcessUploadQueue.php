@@ -4,11 +4,11 @@ namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use App\Models\Mod_Upload_Queue;
-use App\Models\Mod_Parse_Loot;
-use App\Models\Mod_Parse_Advanced;
-use App\Models\Mod_Uploaded_Files;
-use App\Models\Mod_Crypt;
+use App\Models\UploadQueueModel;
+use App\Models\ParseLootModel;
+use App\Models\ParseAdvancedModel;
+use App\Models\UploadedFilesModel;
+use App\Models\CryptModel;
 
 class ProcessUploadQueue extends BaseCommand
 {
@@ -117,7 +117,7 @@ class ProcessUploadQueue extends BaseCommand
             CLI::write(" Checking for pending uploads (limit: {$limit})...", 'yellow');
             $output .= "Checking for pending uploads (limit: {$limit})..." . PHP_EOL;
 
-            $queueModel  = new Mod_Upload_Queue();
+            $queueModel  = new UploadQueueModel();
             $pending     = $queueModel->getPendingBatch($limit);
 
             if (empty($pending)) {
@@ -136,10 +136,10 @@ class ProcessUploadQueue extends BaseCommand
             CLI::write(' Found ' . count($pending) . ' pending upload(s).', 'yellow');
             $output .= 'Found ' . count($pending) . ' pending upload(s).' . PHP_EOL;
 
-            $parseLoot    = new Mod_Parse_Loot();
-            $parseAdv     = new Mod_Parse_Advanced();
-            $uploadedFileModel = new Mod_Uploaded_Files();
-            $cryptModel   = new Mod_Crypt();
+            $parseLoot    = new ParseLootModel();
+            $parseAdv     = new ParseAdvancedModel();
+            $uploadedFileModel = new UploadedFilesModel();
+            $cryptModel   = new CryptModel();
 
             $processed = 0;
             $failed    = 0;
@@ -223,7 +223,7 @@ class ProcessUploadQueue extends BaseCommand
     {
         CLI::write(" Processing single queue ID: {$queueId}", 'blue');
 
-        $queueModel  = new Mod_Upload_Queue();
+        $queueModel  = new UploadQueueModel();
         $item        = $queueModel->find($queueId);
 
         if (!$item) {
@@ -244,10 +244,10 @@ class ProcessUploadQueue extends BaseCommand
 
         $queueModel->markProcessing($queueId);
 
-        $parseLoot    = new Mod_Parse_Loot();
-        $parseAdv     = new Mod_Parse_Advanced();
-        $uploadedFileModel = new Mod_Uploaded_Files();
-        $cryptModel   = new Mod_Crypt();
+        $parseLoot    = new ParseLootModel();
+        $parseAdv     = new ParseAdvancedModel();
+        $uploadedFileModel = new UploadedFilesModel();
+        $cryptModel   = new CryptModel();
 
         try {
             $result = $this->processItem($parseLoot, $parseAdv, $filename, $ownerId, $category, $devicePrintId, $fileRecordId);
@@ -276,8 +276,8 @@ class ProcessUploadQueue extends BaseCommand
     }
 
     private function processItem(
-        Mod_Parse_Loot $parseLoot,
-        Mod_Parse_Advanced $parseAdv,
+        ParseLootModel $parseLoot,
+        ParseAdvancedModel $parseAdv,
         string $filename,
         int $ownerId,
         string $category,

@@ -52,7 +52,7 @@ $errorId = uniqid('error', true);
             <li><a href="#server">Server</a></li>
             <li><a href="#request">Request</a></li>
             <li><a href="#response">Response</a></li>
-            <li><a href="#files">Files</a></li>
+            <li><a href="#files">FilesController</a></li>
             <li><a href="#memory">Memory</a></li>
         </ul>
 
@@ -340,7 +340,7 @@ $errorId = uniqid('error', true);
                 <?php endif; ?>
             </div>
 
-            <!-- Files -->
+            <!-- FilesController -->
             <div class="content" id="files">
                 <?php $files = get_included_files(); ?>
 

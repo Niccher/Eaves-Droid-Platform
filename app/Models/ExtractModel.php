@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_Extract extends Model
+class ExtractModel extends Model
 {
     /**
      * Gets SMS between contacts.

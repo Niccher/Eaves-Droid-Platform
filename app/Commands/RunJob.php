@@ -4,11 +4,11 @@ namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use App\Models\Mod_Anomalies;
+use App\Models\AnomaliesModel;
 
 class RunJob extends BaseCommand
 {
-    protected $group       = 'Anomalies';
+    protected $group       = 'AnomaliesController';
     protected $name        = 'anomalies:run-job';
     protected $description = 'Process an ML detection job in the background.';
 
@@ -35,7 +35,7 @@ class RunJob extends BaseCommand
                 throw new \InvalidArgumentException('Invalid job ID');
             }
 
-            $model = new Mod_Anomalies();
+            $model = new AnomaliesModel();
             $job   = $model->getJob($jobId);
             if (!$job || $job['status'] !== 'running') {
                 CLI::error("Job #{$jobId} is not in 'running' status.");

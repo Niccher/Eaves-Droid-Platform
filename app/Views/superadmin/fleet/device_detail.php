@@ -319,7 +319,7 @@
                                         <td class="bg-light">Apps</td>
                                         <td><?= number_format($data_counts['apps'] ?? 0) ?></td>
                                         <td>Installed Apps</td>
-                                        <td class="bg-light">Files</td>
+                                        <td class="bg-light">FilesController</td>
                                         <td><?= number_format($data_counts['files'] ?? 0) ?></td>
                                         <td>File Records</td>
                                     </tr>

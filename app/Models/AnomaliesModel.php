@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 use CodeIgniter\HTTP\CURLRequest;
 
 /**
- * Mod_Anomalies
+ * AnomaliesModel
  *
  * Provides static / dummy data for the Anomaly Detection wizard,
  * and contains functional PHP-ML-powered detection methods
@@ -14,11 +14,11 @@ use CodeIgniter\HTTP\CURLRequest;
  *
  * Algorithm categories supported:
  *  - SMS           : Frequency Spike, Time-Pattern, Sender K-Means Clustering
- *  - Contacts      : New-Contact Frequency, Duplicate Detector
- *  - Call Logs     : Short-Call Burst, Night-Activity Monitor, Isolation Forest
+ *  - ContactsController      : New-Contact Frequency, Duplicate Detector
+ *  - Call LogsController     : Short-Call Burst, Night-Activity Monitor, Isolation Forest
  *  - Locations     : Geo-Fence Violation, Travel Speed Anomaly
- *  - Installed Apps: Package Reputation Scanner, Permission Anomaly Detector
- *  - Files         : File Creation Spike, Extension Mismatch Scanner
+ *  - Installed AppsController: Package Reputation Scanner, Permission Anomaly Detector
+ *  - FilesController         : File Creation Spike, Extension Mismatch Scanner
  *  - Device Activity: Screen-Time Anomaly, App-Switch Rate Monitor
  *  - Device Info   : Hardware Change Detector, Network Profile Monitor
  *
@@ -27,7 +27,7 @@ use CodeIgniter\HTTP\CURLRequest;
  *  Entropy Scanner, LSTM, One-Class SVM) to the external ml-eaves-droid FastAPI
  *  service. Falls back to PHP-ML if the backend is unreachable.
  */
-class Mod_Anomalies extends Model
+class AnomaliesModel extends Model
 {
     // =========================================================================
     // Engine catalogue
@@ -55,7 +55,7 @@ class Mod_Anomalies extends Model
                 'description' => 'Runs entirely within the PHP runtime. Suitable for most datasets. '
                                . 'Uses PHP‑ML for K-Means clustering, statistical z-score analysis, '
                                . 'and rule-based pattern matching.',
-                'default'     => false,
+                'default'     => true,
             ],
             [
                 'id'          => 'python',
@@ -87,7 +87,7 @@ class Mod_Anomalies extends Model
                                . 'algorithms via the remote Docker backend — automatically. '
                                . 'You get the speed of PHP for traditional stat/rule detectors '
                                . 'and the power of scikit-learn/PyOD for deep learning models.',
-                'default'     => true,
+                'default'     => false,
             ],
         ];
     }
@@ -471,882 +471,10 @@ class Mod_Anomalies extends Model
     }
 
     // =========================================================================
-    // PHP-ML Detection Algorithms
+    // PHP-ML Detection Algorithms (Decoupled to App\\Libraries\\AnomalyDetectors)
     // =========================================================================
 
-    /**
-     * SMS – Frequency Spike Detector
-     *
-     * Uses Z-Score analysis: flags any 15-minute window where the message
-     * count is more than 2.5 standard deviations above the mean window count.
-     *
-     * @param  array $smsRows  Rows from sms table: [{body, date, address, type}, ...]
-     * @return array           Detected anomaly rows
-     */
-    public function detectSmsFrequencySpike(array $smsRows): array
-    {
-        if (empty($smsRows)) {
-            return $this->staticFallback('sms_freq');
-        }
-
-        // Bucket messages into 15-minute windows
-        $buckets = [];
-        foreach ($smsRows as $row) {
-            $ts     = strtotime($row['date'] ?? 'now');
-            $bucket = floor($ts / 900); // 900 seconds = 15 min
-            $buckets[$bucket] = ($buckets[$bucket] ?? 0) + 1;
-        }
-
-        $counts = array_values($buckets);
-        $mean   = array_sum($counts) / max(1, count($counts));
-        $std    = $this->stdDev($counts, $mean);
-        $thresh = $mean + 2.5 * max($std, 1);
-
-        $findings = [];
-        foreach ($buckets as $bucket => $cnt) {
-            if ($cnt > $thresh) {
-                $windowStart = date('Y-m-d H:i:s', $bucket * 900);
-                $findings[]  = [
-                    'category'  => 'SMS',
-                    'icon'      => 'fas fa-sms',
-                    'anomaly'   => "Unusual message burst: {$cnt} messages in a 15-minute window starting {$windowStart}",
-                    'severity'  => $cnt > $thresh * 1.5 ? 'High' : 'Medium',
-                    'algorithm' => 'Frequency Spike Detector',
-                    'timestamp' => $windowStart,
-                    'engine_note' => 'Z-Score threshold: ' . round($thresh, 1) . ' msgs/window (mean: ' . round($mean, 1) . ', σ: ' . round($std, 1) . ')',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * SMS – Time-Pattern Analyser
-     *
-     * Flags messages received between 23:00 and 05:00 (night window).
-     *
-     * @param  array $smsRows
-     * @return array
-     */
-    public function detectSmsTimePattern(array $smsRows): array
-    {
-        if (empty($smsRows)) {
-            return $this->staticFallback('sms_time');
-        }
-
-        $findings = [];
-        foreach ($smsRows as $row) {
-            $ts   = strtotime($row['date'] ?? 'now');
-            $hour = (int) date('G', $ts);
-            if ($hour >= 23 || $hour < 5) {
-                $findings[] = [
-                    'category'  => 'SMS',
-                    'icon'      => 'fas fa-sms',
-                    'anomaly'   => 'SMS at off-hours (' . date('H:i', $ts) . ') from ' . esc($row['address'] ?? 'unknown'),
-                    'severity'  => 'Medium',
-                    'algorithm' => 'Time-Pattern Analyser',
-                    'timestamp' => date('Y-m-d H:i:s', $ts),
-                    'engine_note' => 'Night window: 23:00 – 05:00',
-                ];
-            }
-        }
-
-        return array_slice($findings, 0, 5);
-    }
-
-    /**
-     * SMS – Sender Cluster Analysis (K-Means)
-     *
-     * Groups senders based on their activity (number of messages, frequency, and night-ratio)
-     * and flags outlying senders (e.g. in single-member clusters or far from centroid).
-     *
-     * @param array $smsRows
-     * @return array
-     */
-    public function detectSmsCluster(array $smsRows): array
-    {
-        if (empty($smsRows)) {
-            return $this->staticFallback('sms_cluster');
-        }
-
-        // Aggregate statistics per sender (address)
-        $senderStats = [];
-        foreach ($smsRows as $row) {
-            $sender = $row['address'] ?? 'unknown';
-            $ts     = strtotime($row['date'] ?? 'now');
-            $hour   = (int) date('G', $ts);
-            $isNight = ($hour >= 23 || $hour < 5) ? 1 : 0;
-
-            if (!isset($senderStats[$sender])) {
-                $senderStats[$sender] = [
-                    'count' => 0,
-                    'night_count' => 0,
-                    'lengths' => [],
-                ];
-            }
-            $senderStats[$sender]['count']++;
-            if ($isNight) {
-                $senderStats[$sender]['night_count']++;
-            }
-            $senderStats[$sender]['lengths'][] = strlen($row['body'] ?? '');
-        }
-
-        // We need at least some unique senders to run K-Means
-        $senders = array_keys($senderStats);
-        $countSenders = count($senders);
-        if ($countSenders < 3) {
-            return []; // Not enough senders to cluster
-        }
-
-        // Build feature vectors: [total_count, night_ratio, avg_length]
-        $samples = [];
-        $senderIndexMap = [];
-        $idx = 0;
-        foreach ($senderStats as $sender => $stats) {
-            $avgLength = count($stats['lengths']) > 0 ? (array_sum($stats['lengths']) / count($stats['lengths'])) : 0;
-            $nightRatio = $stats['count'] > 0 ? ($stats['night_count'] / $stats['count']) : 0;
-            
-            $samples[$idx] = [
-                (float)$stats['count'],
-                (float)$nightRatio,
-                (float)$avgLength
-            ];
-            $senderIndexMap[$idx] = $sender;
-            $idx++;
-        }
-
-        // Normalize features
-        $minVals = [INF, INF, INF];
-        $maxVals = [-INF, -INF, -INF];
-        foreach ($samples as $sample) {
-            for ($i = 0; $i < 3; $i++) {
-                if ($sample[$i] < $minVals[$i]) $minVals[$i] = $sample[$i];
-                if ($sample[$i] > $maxVals[$i]) $maxVals[$i] = $sample[$i];
-            }
-        }
-        $scaledSamples = [];
-        foreach ($samples as $idx => $sample) {
-            $scaled = [];
-            for ($i = 0; $i < 3; $i++) {
-                $range = $maxVals[$i] - $minVals[$i];
-                $scaled[$i] = $range > 0 ? ($sample[$i] - $minVals[$i]) / $range : 0.0;
-            }
-            $scaledSamples[$idx] = $scaled;
-        }
-
-        // Run K-Means Clustering using PHP-ML
-        $configuredK = max(2, (int)($this->getMlSetting('ml_phpml_kmeans_k', '3')));
-        $k = min($configuredK, $countSenders);
-        try {
-            $kmeans = new \Phpml\Clustering\KMeans($k);
-            $clusters = $kmeans->cluster($scaledSamples);
-        } catch (\Throwable $e) {
-            log_message('error', 'KMeans failed: ' . $e->getMessage());
-            return [];
-        }
-
-        $findings = [];
-        foreach ($clusters as $cId => $clusterPoints) {
-            $size = count($clusterPoints);
-            // If cluster is extremely small compared to others, all senders in it are outliers
-            $isOutlierCluster = ($size === 1 && $countSenders >= 4) || ($size / $countSenders < 0.15 && $countSenders >= 6);
-
-            foreach ($clusterPoints as $point) {
-                // Find matching original index
-                $foundIdx = null;
-                foreach ($scaledSamples as $origIdx => $origVal) {
-                    if ($origVal === $point) {
-                        $foundIdx = $origIdx;
-                        break;
-                    }
-                }
-
-                if ($foundIdx !== null) {
-                    $sender = $senderIndexMap[$foundIdx];
-                    $rawStats = $senderStats[$sender];
-                    
-                    if ($isOutlierCluster || $rawStats['count'] > 100 || ($rawStats['night_count'] / $rawStats['count']) > 0.8) {
-                        $findings[] = [
-                            'category'  => 'SMS',
-                            'icon'      => 'fas fa-sms',
-                            'anomaly'   => 'Outlier sender behavior from "' . esc($sender) . '": ' . $rawStats['count'] . ' messages, ' . round(($rawStats['night_count'] / $rawStats['count']) * 100) . '% night activity',
-                            'severity'  => $isOutlierCluster ? 'High' : 'Medium',
-                            'algorithm' => 'Sender Cluster Analysis (K-Means)',
-                            'timestamp' => date('Y-m-d H:i:s'),
-                            'engine_note' => 'K-Means Cluster ID: ' . $cId . ' (Cluster size: ' . $size . ')',
-                        ];
-                    }
-                }
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Contacts – New-Contact Frequency Monitor
-     *
-     * Flags days where new contact additions exceed 3× the 30-day rolling average.
-     *
-     * @param  array $contactRows  [{display_name, last_modified, ...}, ...]
-     * @return array
-     */
-    public function detectContactsFrequency(array $contactRows): array
-    {
-        if (empty($contactRows)) {
-            return $this->staticFallback('contacts_freq');
-        }
-
-        // Bucket new contacts by day
-        $daily = [];
-        foreach ($contactRows as $row) {
-            $day           = date('Y-m-d', strtotime($row['last_modified'] ?? 'today'));
-            $daily[$day]   = ($daily[$day] ?? 0) + 1;
-        }
-
-        $counts = array_values($daily);
-        $mean   = array_sum($counts) / max(1, count($counts));
-        $thresh = max(3, $mean * 3);
-
-        $findings = [];
-        foreach ($daily as $day => $cnt) {
-            if ($cnt > $thresh) {
-                $findings[] = [
-                    'category'  => 'Contacts',
-                    'icon'      => 'fas fa-address-book',
-                    'anomaly'   => "{$cnt} new contacts added on {$day} (" . round($cnt / max(1, $mean), 1) . '× above 30-day average)',
-                    'severity'  => $cnt > $thresh * 1.5 ? 'High' : 'Medium',
-                    'algorithm' => 'New-Contact Frequency Monitor',
-                    'timestamp' => $day . ' 00:00:00',
-                    'engine_note' => 'Daily threshold: ' . round($thresh) . ' (mean: ' . round($mean, 1) . '/day)',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Contacts – Duplicate & Anomaly Detector
-     *
-     * Finds contacts sharing the same phone number or suspiciously similar display names.
-     *
-     * @param  array $contactRows  [{display_name, phone_number, ...}, ...]
-     * @return array
-     */
-    public function detectContactsDuplicates(array $contactRows): array
-    {
-        if (empty($contactRows)) {
-            return $this->staticFallback('contacts_dup');
-        }
-
-        $phoneMap = [];
-        $findings = [];
-
-        foreach ($contactRows as $row) {
-            $phone = preg_replace('/\D/', '', $row['phone_number'] ?? '');
-            $name  = $row['display_name'] ?? 'Unknown';
-            if ($phone) {
-                if (isset($phoneMap[$phone])) {
-                    $findings[] = [
-                        'category'  => 'Contacts',
-                        'icon'      => 'fas fa-address-book',
-                        'anomaly'   => "Duplicate phone number shared by \"{$phoneMap[$phone]}\" and \"{$name}\" ({$phone})",
-                        'severity'  => 'Medium',
-                        'algorithm' => 'Duplicate & Anomaly Detector',
-                        'timestamp' => date('Y-m-d H:i:s'),
-                        'engine_note' => 'Exact phone number collision detected',
-                    ];
-                } else {
-                    $phoneMap[$phone] = $name;
-                }
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Call Logs – Short-Call Burst Detector
-     *
-     * Flags when 3 or more calls each shorter than 10 seconds occur within 30 minutes.
-     *
-     * @param  array $callRows  [{duration_seconds, date, number, type}, ...]
-     * @return array
-     */
-    public function detectCallsBurst(array $callRows): array
-    {
-        if (empty($callRows)) {
-            return $this->staticFallback('calls_burst');
-        }
-
-        // Isolate short calls (< 10 s)
-        $shortCalls = array_filter($callRows, fn($c) => (int)($c['duration_seconds'] ?? 999) < 10);
-        usort($shortCalls, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
-        $shortCalls = array_values($shortCalls);
-
-        $findings = [];
-        $i        = 0;
-        while ($i < count($shortCalls)) {
-            $window = [$shortCalls[$i]];
-            $j      = $i + 1;
-            while ($j < count($shortCalls) &&
-                   (strtotime($shortCalls[$j]['date']) - strtotime($shortCalls[$i]['date'])) <= 1800) {
-                $window[] = $shortCalls[$j];
-                $j++;
-            }
-            if (count($window) >= 3) {
-                $cnt   = count($window);
-                $num   = $window[0]['number'] ?? 'unknown';
-                $start = $window[0]['date'] ?? 'unknown';
-                $findings[] = [
-                    'category'  => 'Call Log',
-                    'icon'      => 'fas fa-phone',
-                    'anomaly'   => "Burst of {$cnt} short calls (< 10 s each) starting {$start} — number: {$num}",
-                    'severity'  => $cnt >= 6 ? 'High' : 'Medium',
-                    'algorithm' => 'Short-Call Burst Detector',
-                    'timestamp' => $start,
-                    'engine_note' => 'Window: 30 min; minimum burst size: 3 calls',
-                ];
-                $i = $j;
-            } else {
-                $i++;
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Call Logs – Night-Activity Monitor
-     *
-     * Flags calls between 23:00 and 05:00.
-     *
-     * @param  array $callRows
-     * @return array
-     */
-    public function detectCallsNight(array $callRows): array
-    {
-        if (empty($callRows)) {
-            return $this->staticFallback('calls_night');
-        }
-
-        $findings = [];
-        foreach ($callRows as $row) {
-            $ts   = strtotime($row['date'] ?? 'now');
-            $hour = (int) date('G', $ts);
-            if ($hour >= 23 || $hour < 5) {
-                $findings[] = [
-                    'category'  => 'Call Log',
-                    'icon'      => 'fas fa-phone',
-                    'anomaly'   => 'Call at ' . date('H:i', $ts) . ' from/to ' . esc($row['number'] ?? 'unknown'),
-                    'severity'  => 'Low',
-                    'algorithm' => 'Night-Activity Monitor',
-                    'timestamp' => date('Y-m-d H:i:s', $ts),
-                    'engine_note' => 'Night window: 23:00 – 05:00',
-                ];
-            }
-        }
-
-        return array_slice($findings, 0, 5);
-    }
-
-    /**
-     * Locations – Geo-Fence Violation Detector
-     *
-     * Builds a home zone (centroid ± radius) from the most frequent location cluster,
-     * then flags any point outside that zone.
-     *
-     * @param  array $locationRows  [{latitude, longitude, timestamp}, ...]
-     * @return array
-     */
-    public function detectLocationGeofence(array $locationRows): array
-    {
-        if (count($locationRows) < 5) {
-            return $this->staticFallback('loc_geofence');
-        }
-
-        $lats = array_column($locationRows, 'latitude');
-        $lngs = array_column($locationRows, 'longitude');
-        $centLat = array_sum($lats) / count($lats);
-        $centLng = array_sum($lngs) / count($lngs);
-
-        // Build distances from centroid
-        $distances = [];
-        foreach ($locationRows as $row) {
-            $distances[] = $this->haversine(
-                (float)$row['latitude'], (float)$row['longitude'],
-                $centLat, $centLng
-            );
-        }
-
-        // Home zone radius = mean + 1 stddev (in km)
-        $mean   = array_sum($distances) / count($distances);
-        $std    = $this->stdDev($distances, $mean);
-        $radius = $mean + $std;
-
-        $findings = [];
-        foreach ($locationRows as $row) {
-            $dist = $this->haversine(
-                (float)$row['latitude'], (float)$row['longitude'],
-                $centLat, $centLng
-            );
-            if ($dist > $radius * 1.5) {
-                $findings[] = [
-                    'category'  => 'Location',
-                    'icon'      => 'fas fa-map-marker-alt',
-                    'anomaly'   => 'Device ' . round($dist, 1) . ' km from home zone at ' . ($row['timestamp'] ?? 'unknown'),
-                    'severity'  => $dist > $radius * 3 ? 'High' : 'Medium',
-                    'algorithm' => 'Geo-Fence Violation Detector',
-                    'timestamp' => $row['timestamp'] ?? date('Y-m-d H:i:s'),
-                    'engine_note' => 'Home zone radius: ' . round($radius, 1) . ' km from centroid (' . round($centLat, 4) . ', ' . round($centLng, 4) . ')',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Locations – Travel Speed Anomaly
-     *
-     * Detects physically impossible travel speeds between consecutive points.
-     *
-     * @param  array $locationRows  [{latitude, longitude, timestamp}, ...] (ordered chronologically)
-     * @return array
-     */
-    public function detectLocationSpeed(array $locationRows): array
-    {
-        if (count($locationRows) < 2) {
-            return $this->staticFallback('loc_speed');
-        }
-
-        usort($locationRows, fn($a, $b) => strtotime($a['timestamp']) <=> strtotime($b['timestamp']));
-        $findings = [];
-
-        for ($i = 1; $i < count($locationRows); $i++) {
-            $prev  = $locationRows[$i - 1];
-            $curr  = $locationRows[$i];
-            $dist  = $this->haversine(
-                (float)$prev['latitude'], (float)$prev['longitude'],
-                (float)$curr['latitude'], (float)$curr['longitude']
-            );
-            $secs  = abs(strtotime($curr['timestamp']) - strtotime($prev['timestamp']));
-            if ($secs < 1) {
-                continue;
-            }
-            $kmph  = ($dist / $secs) * 3600;
-            if ($kmph > 900) {
-                $findings[] = [
-                    'category'  => 'Location',
-                    'icon'      => 'fas fa-map-marker-alt',
-                    'anomaly'   => 'Impossible travel speed ' . round($kmph) . ' km/h between ' . ($prev['timestamp'] ?? '') . ' and ' . ($curr['timestamp'] ?? ''),
-                    'severity'  => 'High',
-                    'algorithm' => 'Travel Speed Anomaly',
-                    'timestamp' => $curr['timestamp'] ?? date('Y-m-d H:i:s'),
-                    'engine_note' => 'Threshold: 900 km/h (commercial air speed)',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Locations – DBSCAN Trajectory Clustering
-     *
-     * Clusters coordinates to find frequent/normal zones, and flags coordinate points
-     * that do not belong to any cluster as trajectory anomalies.
-     *
-     * @param  array $locationRows  [{latitude, longitude, timestamp}, ...]
-     * @return array
-     */
-    public function detectLocationDbscan(array $locationRows): array
-    {
-        if (count($locationRows) < 5) {
-            return $this->staticFallback('loc_dbscan');
-        }
-
-        // Prepare sample data: [[lat, lng], [lat, lng], ...]
-        $samples = [];
-        foreach ($locationRows as $idx => $row) {
-            $samples[$idx] = [
-                (float)($row['latitude'] ?? 0.0),
-                (float)($row['longitude'] ?? 0.0)
-            ];
-        }
-
-        // Read DBSCAN params from DB settings
-        $epsilon    = max(0.001, (float)($this->getMlSetting('ml_phpml_dbscan_epsilon', '0.01')));
-        $minSamples = max(1, (int)($this->getMlSetting('ml_phpml_dbscan_minpoints', '2')));
-        try {
-            $dbscan = new \Phpml\Clustering\DBSCAN($epsilon, $minSamples);
-            $clusters = $dbscan->cluster($samples);
-        } catch (\Throwable $e) {
-            log_message('error', 'DBSCAN failed: ' . $e->getMessage());
-            return [];
-        }
-
-        // Identify noise/outliers (points not in any cluster)
-        $clusteredIndices = [];
-        foreach ($clusters as $cluster) {
-            foreach ($cluster as $point) {
-                // Find matching original indices
-                foreach ($samples as $origIdx => $origVal) {
-                    if ($origVal === $point) {
-                        $clusteredIndices[$origIdx] = true;
-                    }
-                }
-            }
-        }
-
-        $findings = [];
-        foreach ($locationRows as $idx => $row) {
-            if (!isset($clusteredIndices[$idx])) {
-                $findings[] = [
-                    'category'  => 'Location',
-                    'icon'      => 'fas fa-map-marker-alt',
-                    'anomaly'   => 'Anomalous trajectory point detected: (' . round($row['latitude'], 4) . ', ' . round($row['longitude'], 4) . ')',
-                    'severity'  => 'Medium',
-                    'algorithm' => 'DBSCAN Trajectory Clustering',
-                    'timestamp' => $row['timestamp'] ?? date('Y-m-d H:i:s'),
-                    'engine_note' => 'PHP-ML DBSCAN outlier (epsilon=' . $epsilon . ', minSamples=' . $minSamples . ')',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Installed Apps – Package Reputation Scanner
-     *
-     * Compares package names against a known-suspicious pattern list and
-     * checks installation time (off-hours installs are flagged).
-     *
-     * @param  array $appRows  [{package_name, app_name, install_date}, ...]
-     * @return array
-     */
-    public function detectAppsReputation(array $appRows): array
-    {
-        if (empty($appRows)) {
-            return $this->staticFallback('apps_rep');
-        }
-
-        // Patterns that indicate potential spyware/stalkerware package names
-        $suspiciousPatterns = [
-            'hidden', 'spy', 'track', 'monitor', 'stealth', 'covert',
-            'logger', 'keylog', 'remote', 'shadow', 'ghost', 'invisible',
-            'util.sync', 'background.service', 'com.android.hidden',
-        ];
-
-        $findings = [];
-        foreach ($appRows as $row) {
-            $pkg  = strtolower($row['package_name'] ?? '');
-            $name = $row['app_name'] ?? $pkg;
-            $date = $row['install_date'] ?? null;
-
-            foreach ($suspiciousPatterns as $pattern) {
-                if (str_contains($pkg, $pattern)) {
-                    $hour     = $date ? (int) date('G', strtotime($date)) : -1;
-                    $offHours = ($hour >= 23 || $hour < 5);
-                    $findings[] = [
-                        'category'  => 'Installed Apps',
-                        'icon'      => 'fas fa-th-large',
-                        'anomaly'   => "Suspicious package \"{$name}\" ({$pkg}) installed" . ($offHours ? ' at off-hours (' . date('H:i', strtotime($date)) . ')' : ''),
-                        'severity'  => $offHours ? 'High' : 'Medium',
-                        'algorithm' => 'Package Reputation Scanner',
-                        'timestamp' => $date ?? date('Y-m-d H:i:s'),
-                        'engine_note' => "Matched suspicious pattern: \"{$pattern}\"",
-                    ];
-                    break;
-                }
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Installed Apps – Permission Anomaly Detector
-     *
-     * Flags apps with an unusually high number of sensitive permissions.
-     *
-     * @param  array $appRows  [{app_name, permissions: ['READ_SMS','RECORD_AUDIO',...], ...}, ...]
-     * @return array
-     */
-    public function detectAppsPermission(array $appRows): array
-    {
-        if (empty($appRows)) {
-            return $this->staticFallback('apps_perm');
-        }
-
-        $sensitivePerms = [
-            'READ_SMS', 'RECEIVE_SMS', 'SEND_SMS',
-            'RECORD_AUDIO', 'CAMERA',
-            'READ_CONTACTS', 'WRITE_CONTACTS',
-            'ACCESS_FINE_LOCATION', 'ACCESS_BACKGROUND_LOCATION',
-            'READ_CALL_LOG', 'PROCESS_OUTGOING_CALLS',
-            'SYSTEM_ALERT_WINDOW', 'DEVICE_ADMIN',
-        ];
-
-        $permCounts = [];
-        foreach ($appRows as $row) {
-            $perms      = (array)($row['permissions'] ?? []);
-            $sensitiveN = count(array_intersect($perms, $sensitivePerms));
-            $permCounts[] = $sensitiveN;
-        }
-
-        $mean   = array_sum($permCounts) / max(1, count($permCounts));
-        $std    = $this->stdDev($permCounts, $mean);
-        $thresh = $mean + 2 * max($std, 0.5);
-
-        $findings = [];
-        foreach ($appRows as $i => $row) {
-            if ($permCounts[$i] > $thresh) {
-                $matched = array_intersect((array)($row['permissions'] ?? []), $sensitivePerms);
-                $findings[] = [
-                    'category'  => 'Installed Apps',
-                    'icon'      => 'fas fa-th-large',
-                    'anomaly'   => '"' . esc($row['app_name'] ?? 'Unknown') . '" requests ' . $permCounts[$i] . ' sensitive permissions: ' . implode(', ', array_slice($matched, 0, 4)),
-                    'severity'  => $permCounts[$i] >= 8 ? 'High' : 'Medium',
-                    'algorithm' => 'Permission Anomaly Detector',
-                    'timestamp' => $row['install_date'] ?? date('Y-m-d H:i:s'),
-                    'engine_note' => 'Threshold: ' . round($thresh, 1) . ' sensitive permissions (mean: ' . round($mean, 1) . ', σ: ' . round($std, 1) . ')',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Files – File Creation Spike Detector
-     *
-     * Flags days where file creations are 3× the 30-day rolling average.
-     *
-     * @param  array $fileRows  [{file_name, created_at, path}, ...]
-     * @return array
-     */
-    public function detectFilesSpike(array $fileRows): array
-    {
-        if (empty($fileRows)) {
-            return $this->staticFallback('files_spike');
-        }
-
-        $daily = [];
-        foreach ($fileRows as $row) {
-            $day         = date('Y-m-d', strtotime($row['created_at'] ?? 'today'));
-            $daily[$day] = ($daily[$day] ?? 0) + 1;
-        }
-
-        $counts = array_values($daily);
-        $mean   = array_sum($counts) / max(1, count($counts));
-        $thresh = $mean * 3;
-
-        $findings = [];
-        foreach ($daily as $day => $cnt) {
-            if ($cnt > $thresh) {
-                $findings[] = [
-                    'category'  => 'Files',
-                    'icon'      => 'fas fa-folder-open',
-                    'anomaly'   => "{$cnt} files created on {$day} (" . round($cnt / max(1, $mean), 1) . '× the daily average)',
-                    'severity'  => $cnt > $thresh * 2 ? 'High' : 'Medium',
-                    'algorithm' => 'File Creation Spike Detector',
-                    'timestamp' => $day . ' 00:00:00',
-                    'engine_note' => 'Daily threshold: ' . round($thresh) . ' files (mean: ' . round($mean, 1) . '/day)',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Device Activity – Screen-Time Anomaly Detector
-     *
-     * Flags days where screen-on time deviates > 2σ from the 30-day mean.
-     *
-     * @param  array $activityRows  [{date, screen_on_minutes}, ...]
-     * @return array
-     */
-    public function detectActivityScreenTime(array $activityRows): array
-    {
-        if (count($activityRows) < 3) {
-            return $this->staticFallback('act_screen');
-        }
-
-        $times  = array_column($activityRows, 'screen_on_minutes');
-        $mean   = array_sum($times) / count($times);
-        $std    = $this->stdDev($times, $mean);
-
-        $findings = [];
-        foreach ($activityRows as $row) {
-            $mins   = (float)$row['screen_on_minutes'];
-            $zscore = ($std > 0) ? abs($mins - $mean) / $std : 0;
-            if ($zscore > 2) {
-                $hours = round($mins / 60, 1);
-                $findings[] = [
-                    'category'  => 'Activity',
-                    'icon'      => 'fas fa-heartbeat',
-                    'anomaly'   => "Screen-time {$hours} h on " . ($row['date'] ?? 'unknown') . " (baseline: " . round($mean / 60, 1) . ' h ± ' . round($std / 60, 1) . ' h)',
-                    'severity'  => $zscore > 3 ? 'High' : 'Medium',
-                    'algorithm' => 'Screen-Time Anomaly Detector',
-                    'timestamp' => ($row['date'] ?? date('Y-m-d')) . ' 23:59:00',
-                    'engine_note' => 'Z-Score: ' . round($zscore, 2) . ' σ above mean',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Device Activity – App-Switch Rate Monitor
-     *
-     * Flags hourly periods with > 60 app switches.
-     *
-     * @param  array $activityRows  [{timestamp, app_package}, ...]  (ordered chronologically)
-     * @return array
-     */
-    public function detectActivitySwitchRate(array $activityRows): array
-    {
-        if (count($activityRows) < 5) {
-            return $this->staticFallback('act_switch');
-        }
-
-        // Bucket by hour
-        $hourBuckets = [];
-        foreach ($activityRows as $row) {
-            $hr = date('Y-m-d H', strtotime($row['timestamp'] ?? 'now'));
-            if (!isset($hourBuckets[$hr])) {
-                $hourBuckets[$hr] = ['switches' => 0, 'prev' => null];
-            }
-            if ($hourBuckets[$hr]['prev'] !== ($row['app_package'] ?? null)) {
-                $hourBuckets[$hr]['switches']++;
-                $hourBuckets[$hr]['prev'] = $row['app_package'] ?? null;
-            }
-        }
-
-        $findings = [];
-        foreach ($hourBuckets as $hr => $data) {
-            if ($data['switches'] > 60) {
-                $findings[] = [
-                    'category'  => 'Activity',
-                    'icon'      => 'fas fa-heartbeat',
-                    'anomaly'   => $data['switches'] . ' app switches in one hour (' . $hr . ':00) — possible scripted behaviour',
-                    'severity'  => $data['switches'] > 100 ? 'High' : 'Medium',
-                    'algorithm' => 'App-Switch Rate Monitor',
-                    'timestamp' => $hr . ':00:00',
-                    'engine_note' => 'Threshold: 60 app switches/hour',
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Device Info – Hardware Change Detector
-     *
-     * Compares current device identifiers with previous snapshot.
-     *
-     * @param  array $current   ['imei' => '...', 'serial' => '...', 'fingerprint' => '...']
-     * @param  array $previous  Same structure from a prior upload
-     * @return array
-     */
-    public function detectDeviceHardwareChange(array $current, array $previous): array
-    {
-        if (empty($current) || empty($previous)) {
-            return $this->staticFallback('dev_hw');
-        }
-
-        $keys     = ['imei', 'serial', 'fingerprint', 'android_id', 'mac_address'];
-        $findings = [];
-        foreach ($keys as $key) {
-            $cur = $current[$key] ?? null;
-            $old = $previous[$key] ?? null;
-            if ($cur && $old && $cur !== $old) {
-                $findings[] = [
-                    'category'  => 'Device Info',
-                    'icon'      => 'fas fa-microchip',
-                    'anomaly'   => strtoupper($key) . " changed: previous {$old} → current {$cur}",
-                    'severity'  => in_array($key, ['imei', 'android_id']) ? 'High' : 'Medium',
-                    'algorithm' => 'Hardware Change Detector',
-                    'timestamp' => date('Y-m-d H:i:s'),
-                    'engine_note' => 'Identifier field: ' . $key,
-                ];
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * Device Info – Network Profile Monitor
-     *
-     * Flags new Wi-Fi SSIDs, APN changes, or VPN usage not seen before.
-     *
-     * @param  array $netRows  [{ssid, type, vpn_active, timestamp}, ...]
-     * @param  array $knownSsids  List of known/trusted SSIDs
-     * @return array
-     */
-    public function detectDeviceNetworkProfile(array $netRows, array $knownSsids = []): array
-    {
-        if (empty($netRows)) {
-            return $this->staticFallback('dev_net');
-        }
-
-        $findings = [];
-        foreach ($netRows as $row) {
-            $ssid = $row['ssid'] ?? '';
-            $vpn  = !empty($row['vpn_active']);
-
-            if ($ssid && !in_array($ssid, $knownSsids)) {
-                $findings[] = [
-                    'category'  => 'Device Info',
-                    'icon'      => 'fas fa-microchip',
-                    'anomaly'   => 'Connected to unknown Wi-Fi SSID: "' . esc($ssid) . '" at ' . ($row['timestamp'] ?? 'unknown'),
-                    'severity'  => 'Medium',
-                    'algorithm' => 'Network Profile Monitor',
-                    'timestamp' => $row['timestamp'] ?? date('Y-m-d H:i:s'),
-                    'engine_note' => 'Not in known-safe SSID list',
-                ];
-            }
-
-            if ($vpn) {
-                $findings[] = [
-                    'category'  => 'Device Info',
-                    'icon'      => 'fas fa-microchip',
-                    'anomaly'   => 'VPN connection detected at ' . ($row['timestamp'] ?? 'unknown'),
-                    'severity'  => 'Low',
-                    'algorithm' => 'Network Profile Monitor',
-                    'timestamp' => $row['timestamp'] ?? date('Y-m-d H:i:s'),
-                    'engine_note' => 'VPN flag active in network profile',
-                ];
-            }
-        }
-
-        return array_slice($findings, 0, 5);
-    }
-
-    // =========================================================================
-    // Orchestration – Run all selected algorithms and merge results
-    // =========================================================================
-
-    /**
-     * Runs the PHP-ML detection pipeline for all selected algorithms.
-     *
-     * Pulls live data from the database (via CI4 query builder) for each
-     * category and runs the corresponding detection method. Falls back to
-     * static demo data when no live rows are available.
-     *
-     * @param  array  $selectedAlgs  Session algorithms map: ['sms' => ['sms_freq', 'sms_time'], ...]
-     * @param  int    $userId        Target user ID for querying data (from BaseClientController::$userId)
-     * @return array                 Merged anomaly findings
-     */
-    public function runPhpDetection(array $selectedAlgs, int $userId = 0,
+        public function runPhpDetection(array $selectedAlgs, int $userId = 0,
                                     int $jobId = 0): array
     {
         $results = [];
@@ -1357,27 +485,203 @@ class Mod_Anomalies extends Model
         }
         $completed = 0;
 
+        // Lazy-loaded database queries (caches results if multiple algorithms request same category)
+        $smsData = null;
+        $getSms = function() use (&$smsData, $userId) {
+            if ($smsData === null) {
+                $smsData = $this->fetchSms($userId);
+            }
+            return $smsData;
+        };
+
+        $contactsData = null;
+        $getContacts = function() use (&$contactsData, $userId) {
+            if ($contactsData === null) {
+                $contactsData = $this->fetchContacts($userId);
+            }
+            return $contactsData;
+        };
+
+        $callsData = null;
+        $getCalls = function() use (&$callsData, $userId) {
+            if ($callsData === null) {
+                $callsData = $this->fetchCallLogs($userId);
+            }
+            return $callsData;
+        };
+
+        $locData = null;
+        $getLoc = function() use (&$locData, $userId) {
+            if ($locData === null) {
+                $locData = $this->fetchLocations($userId);
+            }
+            return $locData;
+        };
+
+        $appsData = null;
+        $getApps = function() use (&$appsData, $userId) {
+            if ($appsData === null) {
+                $appsData = $this->fetchApps($userId);
+            }
+            return $appsData;
+        };
+
+        $filesData = null;
+        $getFiles = function() use (&$filesData, $userId) {
+            if ($filesData === null) {
+                $filesData = $this->fetchFiles($userId);
+            }
+            return $filesData;
+        };
+
+        $actScreenData = null;
+        $getActScreen = function() use (&$actScreenData, $userId) {
+            if ($actScreenData === null) {
+                $actScreenData = $this->fetchActivityScreenTime($userId);
+            }
+            return $actScreenData;
+        };
+
+        $actSwitchData = null;
+        $getActSwitch = function() use (&$actSwitchData, $userId) {
+            if ($actSwitchData === null) {
+                $actSwitchData = $this->fetchActivitySwitchRate($userId);
+            }
+            return $actSwitchData;
+        };
+
+        $devCurrentData = null;
+        $getDevCurrent = function() use (&$devCurrentData, $userId) {
+            if ($devCurrentData === null) {
+                $devCurrentData = $this->fetchDeviceInfo($userId, 'current');
+            }
+            return $devCurrentData;
+        };
+
+        $devPrevData = null;
+        $getDevPrev = function() use (&$devPrevData, $userId) {
+            if ($devPrevData === null) {
+                $devPrevData = $this->fetchDeviceInfo($userId, 'previous');
+            }
+            return $devPrevData;
+        };
+
+        $netData = null;
+        $getNet = function() use (&$netData, $userId) {
+            if ($netData === null) {
+                $netData = $this->fetchNetworkProfile($userId);
+            }
+            return $netData;
+        };
+
+        // Instantiate detector libraries
+        $smsLib      = new \App\Libraries\AnomalyDetectors\SmsDetectors();
+        $contactsLib = new \App\Libraries\AnomalyDetectors\ContactsDetectors();
+        $callsLib    = new \App\Libraries\AnomalyDetectors\CallLogsDetectors();
+        $locLib      = new \App\Libraries\AnomalyDetectors\LocationDetectors();
+        $appsLib     = new \App\Libraries\AnomalyDetectors\AppDetectors();
+        $filesLib    = new \App\Libraries\AnomalyDetectors\FileDetectors();
+        $actLib      = new \App\Libraries\AnomalyDetectors\ActivityDetectors();
+        $devLib      = new \App\Libraries\AnomalyDetectors\DeviceDetectors();
+
         $dispatch = [
-            'sms_freq'      => fn() => $this->detectSmsFrequencySpike($this->fetchSms($userId)),
-            'sms_time'      => fn() => $this->detectSmsTimePattern($this->fetchSms($userId)),
-            'sms_cluster'   => fn() => $this->detectSmsCluster($this->fetchSms($userId)),
-            'contacts_freq' => fn() => $this->detectContactsFrequency($this->fetchContacts($userId)),
-            'contacts_dup'  => fn() => $this->detectContactsDuplicates($this->fetchContacts($userId)),
-            'calls_burst'   => fn() => $this->detectCallsBurst($this->fetchCallLogs($userId)),
-            'calls_night'   => fn() => $this->detectCallsNight($this->fetchCallLogs($userId)),
-            'loc_geofence'  => fn() => $this->detectLocationGeofence($this->fetchLocations($userId)),
-            'loc_speed'     => fn() => $this->detectLocationSpeed($this->fetchLocations($userId)),
-            'loc_dbscan'    => fn() => $this->detectLocationDbscan($this->fetchLocations($userId)),
-            'apps_rep'      => fn() => $this->detectAppsReputation($this->fetchApps($userId)),
-            'apps_perm'     => fn() => $this->detectAppsPermission($this->fetchApps($userId)),
-            'files_spike'   => fn() => $this->detectFilesSpike($this->fetchFiles($userId)),
-            'act_screen'    => fn() => $this->detectActivityScreenTime($this->fetchActivityScreenTime($userId)),
-            'act_switch'    => fn() => $this->detectActivitySwitchRate($this->fetchActivitySwitchRate($userId)),
-            'dev_hw'        => fn() => $this->detectDeviceHardwareChange(
-                                    $this->fetchDeviceInfo($userId, 'current'),
-                                    $this->fetchDeviceInfo($userId, 'previous')),
-            'dev_net'       => fn() => $this->detectDeviceNetworkProfile(
-                                    $this->fetchNetworkProfile($userId), []),
+            'sms_freq'      => function() use ($getSms, $smsLib) {
+                $data = $getSms();
+                return empty($data) ? $this->staticFallback('sms_freq') : $smsLib->detectSmsFrequencySpike($data);
+            },
+            'sms_time'      => function() use ($getSms, $smsLib) {
+                $data = $getSms();
+                return empty($data) ? $this->staticFallback('sms_time') : $smsLib->detectSmsTimePattern($data);
+            },
+            'sms_cluster'   => function() use ($getSms, $smsLib) {
+                $data = $getSms();
+                return empty($data) ? $this->staticFallback('sms_cluster') : $smsLib->detectSmsCluster($data);
+            },
+            'sms_bert'      => function() use ($getSms, $smsLib) {
+                $data = $getSms();
+                return empty($data) ? $this->staticFallback('sms_bert') : $smsLib->detectSmsBert($data);
+            },
+            'contacts_freq' => function() use ($getContacts, $contactsLib) {
+                $data = $getContacts();
+                return empty($data) ? $this->staticFallback('contacts_freq') : $contactsLib->detectContactsFrequency($data);
+            },
+            'contacts_dup'  => function() use ($getContacts, $contactsLib) {
+                $data = $getContacts();
+                return empty($data) ? $this->staticFallback('contacts_dup') : $contactsLib->detectContactsDuplicates($data);
+            },
+            'contacts_graph'=> function() use ($getContacts, $contactsLib) {
+                $data = $getContacts();
+                return empty($data) ? $this->staticFallback('contacts_graph') : $contactsLib->detectContactsGraph($data);
+            },
+            'calls_burst'   => function() use ($getCalls, $callsLib) {
+                $data = $getCalls();
+                return empty($data) ? $this->staticFallback('calls_burst') : $callsLib->detectCallsBurst($data);
+            },
+            'calls_night'   => function() use ($getCalls, $callsLib) {
+                $data = $getCalls();
+                return empty($data) ? $this->staticFallback('calls_night') : $callsLib->detectCallsNight($data);
+            },
+            'calls_isolation'=> function() use ($getCalls, $callsLib) {
+                $data = $getCalls();
+                return empty($data) ? $this->staticFallback('calls_isolation') : $callsLib->detectCallsIsolation($data);
+            },
+            'loc_geofence'  => function() use ($getLoc, $locLib) {
+                $data = $getLoc();
+                return empty($data) ? $this->staticFallback('loc_geofence') : $locLib->detectLocationGeofence($data);
+            },
+            'loc_speed'     => function() use ($getLoc, $locLib) {
+                $data = $getLoc();
+                return empty($data) ? $this->staticFallback('loc_speed') : $locLib->detectLocationSpeed($data);
+            },
+            'loc_dbscan'    => function() use ($getLoc, $locLib) {
+                $data = $getLoc();
+                return empty($data) ? $this->staticFallback('loc_dbscan') : $locLib->detectLocationDbscan($data);
+            },
+            'apps_rep'      => function() use ($getApps, $appsLib) {
+                $data = $getApps();
+                return empty($data) ? $this->staticFallback('apps_rep') : $appsLib->detectAppsReputation($data);
+            },
+            'apps_perm'     => function() use ($getApps, $appsLib) {
+                $data = $getApps();
+                return empty($data) ? $this->staticFallback('apps_perm') : $appsLib->detectAppsPermission($data);
+            },
+            'apps_autoencoder'=> function() use ($getApps, $appsLib) {
+                $data = $getApps();
+                return empty($data) ? $this->staticFallback('apps_autoencoder') : $appsLib->detectAppsAutoencoder($data);
+            },
+            'files_spike'   => function() use ($getFiles, $filesLib) {
+                $data = $getFiles();
+                return empty($data) ? $this->staticFallback('files_spike') : $filesLib->detectFilesSpike($data);
+            },
+            'files_entropy' => function() use ($getFiles, $filesLib) {
+                $data = $getFiles();
+                return empty($data) ? $this->staticFallback('files_entropy') : $filesLib->detectFilesEntropy($data);
+            },
+            'act_screen'    => function() use ($getActScreen, $actLib) {
+                $data = $getActScreen();
+                return empty($data) ? $this->staticFallback('act_screen') : $actLib->detectActivityScreenTime($data);
+            },
+            'act_switch'    => function() use ($getActSwitch, $actLib) {
+                $data = $getActSwitch();
+                return empty($data) ? $this->staticFallback('act_switch') : $actLib->detectActivitySwitchRate($data);
+            },
+            'act_lstm'      => function() use ($getActSwitch, $actLib) {
+                $data = $getActSwitch();
+                return empty($data) ? $this->staticFallback('act_lstm') : $actLib->detectActivityLstm($data);
+            },
+            'dev_hw'        => function() use ($getDevCurrent, $getDevPrev, $devLib) {
+                $cur = $getDevCurrent();
+                $prev = $getDevPrev();
+                return (empty($cur) || empty($prev)) ? $this->staticFallback('dev_hw') : $devLib->detectDeviceHardwareChange($cur, $prev);
+            },
+            'dev_net'       => function() use ($getNet, $devLib) {
+                $data = $getNet();
+                return empty($data) ? $this->staticFallback('dev_net') : $devLib->detectDeviceNetworkProfile($data, []);
+            },
+            'dev_oneclass'  => function() use ($getDevCurrent, $devLib) {
+                $data = $getDevCurrent();
+                return empty($data) ? $this->staticFallback('dev_oneclass') : $devLib->detectDeviceOneclass($data);
+            },
         ];
 
         foreach ($selectedAlgs as $category => $algList) {
@@ -1414,7 +718,7 @@ class Mod_Anomalies extends Model
     /**
      * Reads the ml_python_* connection settings from the database.
      *
-     * Settings stored in tbl_settings with class='ml':
+     * SettingsController stored in tbl_settings with class='ml':
      *   ml_python_host, ml_python_port, ml_python_endpoint
      *
      * @return array{host: string, port: int, endpoint: string, base_url: string}
@@ -1852,28 +1156,123 @@ class Mod_Anomalies extends Model
 
         // ── Fallback if Python returned nothing ──
         if ($hasPy && empty($pyResults)) {
+            // Lazy-loaded database queries (caches results if multiple algorithms request same category)
+            $smsData = null;
+            $getSms = function() use (&$smsData, $userId) {
+                if ($smsData === null) {
+                    $smsData = $this->fetchSms($userId);
+                }
+                return $smsData;
+            };
+
+            $contactsData = null;
+            $getContacts = function() use (&$contactsData, $userId) {
+                if ($contactsData === null) {
+                    $contactsData = $this->fetchContacts($userId);
+                }
+                return $contactsData;
+            };
+
+            $callsData = null;
+            $getCalls = function() use (&$callsData, $userId) {
+                if ($callsData === null) {
+                    $callsData = $this->fetchCallLogs($userId);
+                }
+                return $callsData;
+            };
+
+            $appsData = null;
+            $getApps = function() use (&$appsData, $userId) {
+                if ($appsData === null) {
+                    $appsData = $this->fetchApps($userId);
+                }
+                return $appsData;
+            };
+
+            $filesData = null;
+            $getFiles = function() use (&$filesData, $userId) {
+                if ($filesData === null) {
+                    $filesData = $this->fetchFiles($userId);
+                }
+                return $filesData;
+            };
+
+            $actSwitchData = null;
+            $getActSwitch = function() use (&$actSwitchData, $userId) {
+                if ($actSwitchData === null) {
+                    $actSwitchData = $this->fetchActivitySwitchRate($userId);
+                }
+                return $actSwitchData;
+            };
+
+            $devCurrentData = null;
+            $getDevCurrent = function() use (&$devCurrentData, $userId) {
+                if ($devCurrentData === null) {
+                    $devCurrentData = $this->fetchDeviceInfo($userId, 'current');
+                }
+                return $devCurrentData;
+            };
+
+            // Lazy-loaded PHP dispatch table just for the Python-only algorithms
+            $smsLib      = new \App\Libraries\AnomalyDetectors\SmsDetectors();
+            $contactsLib = new \App\Libraries\AnomalyDetectors\ContactsDetectors();
+            $callsLib    = new \App\Libraries\AnomalyDetectors\CallLogsDetectors();
+            $appsLib     = new \App\Libraries\AnomalyDetectors\AppDetectors();
+            $filesLib    = new \App\Libraries\AnomalyDetectors\FileDetectors();
+            $actLib      = new \App\Libraries\AnomalyDetectors\ActivityDetectors();
+            $devLib      = new \App\Libraries\AnomalyDetectors\DeviceDetectors();
+
+            $pyPhpDispatch = [
+                'sms_bert'        => function() use ($getSms, $smsLib) {
+                    $data = $getSms();
+                    return empty($data) ? $this->staticFallback('sms_bert') : $smsLib->detectSmsBert($data);
+                },
+                'contacts_graph'  => function() use ($getContacts, $contactsLib) {
+                    $data = $getContacts();
+                    return empty($data) ? $this->staticFallback('contacts_graph') : $contactsLib->detectContactsGraph($data);
+                },
+                'calls_isolation' => function() use ($getCalls, $callsLib) {
+                    $data = $getCalls();
+                    return empty($data) ? $this->staticFallback('calls_isolation') : $callsLib->detectCallsIsolation($data);
+                },
+                'apps_autoencoder'=> function() use ($getApps, $appsLib) {
+                    $data = $getApps();
+                    return empty($data) ? $this->staticFallback('apps_autoencoder') : $appsLib->detectAppsAutoencoder($data);
+                },
+                'files_entropy'   => function() use ($getFiles, $filesLib) {
+                    $data = $getFiles();
+                    return empty($data) ? $this->staticFallback('files_entropy') : $filesLib->detectFilesEntropy($data);
+                },
+                'act_lstm'        => function() use ($getActSwitch, $actLib) {
+                    $data = $getActSwitch();
+                    return empty($data) ? $this->staticFallback('act_lstm') : $actLib->detectActivityLstm($data);
+                },
+                'dev_oneclass'    => function() use ($getDevCurrent, $devLib) {
+                    $data = $getDevCurrent();
+                    return empty($data) ? $this->staticFallback('dev_oneclass') : $devLib->detectDeviceOneclass($data);
+                },
+            ];
+
             $pyAlgIds = [];
-            foreach ($pyOnly as $algList) {
+            foreach ($pyOnly as $category => $algList) {
                 foreach ((array)$algList as $algId) {
                     $pyAlgIds[] = $algId;
                 }
             }
+
             foreach ($pyAlgIds as $algId) {
-                $fallback = $this->staticFallback($algId);
-                if (!empty($fallback)) {
-                    $pyResults = array_merge($pyResults, $fallback);
+                if (isset($pyPhpDispatch[$algId])) {
+                    $found = $pyPhpDispatch[$algId]();
+                    if (!empty($found)) {
+                        foreach ($found as &$f) {
+                            $f['algorithm_id'] = $algId;
+                            $f['engine_note'] .= ' (Python offline fallback)';
+                        }
+                        unset($f);
+                        $pyResults = array_merge($pyResults, $found);
+                    }
                 }
             }
-
-            foreach ($pyResults as &$r) {
-                $r['engine_note'] .= ' — Python backend offline, showing demo data';
-            }
-            unset($r);
-        }
-
-        // ── Mark job completed if PHP-only (no Python backend call) ──
-        if (!$hasPy && $jobId > 0) {
-            $this->completeJob($jobId);
         }
 
         // ── Merge PHP + Python results ──
@@ -1912,7 +1311,7 @@ class Mod_Anomalies extends Model
             'sms'         => 'SMS',
             'contacts'    => 'Contacts',
             'call_logs'   => 'Call Log',
-            'locations'   => 'Location',
+            'locations'   => 'LocationController',
             'apps'        => 'Installed Apps',
             'files'       => 'Files',
             'activity'    => 'Activity',
@@ -2022,7 +1421,7 @@ class Mod_Anomalies extends Model
         }
     }
 
-    /** @return array Location rows for a user */
+    /** @return array LocationController rows for a user */
     protected function fetchLocations(int $userId): array
     {
         if ($userId <= 0) return [];
@@ -2200,13 +1599,13 @@ class Mod_Anomalies extends Model
                 'engine_note'=> 'Z-Score 4.2 σ (mean: 3.1 msgs/window, σ: 2.4)',
             ],
             [
-                'category'   => 'Location',
+                'category'   => 'LocationController',
                 'icon'       => 'fas fa-map-marker-alt',
                 'anomaly'    => 'Visit to unknown location (Industrial Zone, 38 km from home base)',
                 'severity'   => 'Medium',
                 'algorithm'  => 'Geo-Fence Violation Detector',
                 'timestamp'  => '2026-07-13 01:45:00',
-                'engine_note'=> 'Home zone radius: 12.4 km from centroid (-1.2921, 36.8219)',
+                'engine_note'=> 'HomeController zone radius: 12.4 km from centroid (-1.2921, 36.8219)',
             ],
             [
                 'category'   => 'Call Log',
@@ -2272,7 +1671,7 @@ class Mod_Anomalies extends Model
                 'engine_note'=> 'Night window: 23:00 – 05:00',
             ],
             [
-                'category'   => 'Location',
+                'category'   => 'LocationController',
                 'icon'       => 'fas fa-map-marker-alt',
                 'anomaly'    => 'Device at unknown location for 4 h 20 min (01:00 – 05:20)',
                 'severity'   => 'Medium',
@@ -2316,8 +1715,8 @@ class Mod_Anomalies extends Model
             'contacts_dup'  => ['Contacts', 'fas fa-address-book', 'Duplicate phone number shared by two contact entries', 'Medium', 'Duplicate & Anomaly Detector', '2026-07-09 10:00:00', 'Demo data – no live contacts rows found'],
             'calls_burst'   => ['Call Log', 'fas fa-phone', 'Burst of 11 short calls (< 8 s each) to +254-700-XXXX', 'High', 'Short-Call Burst Detector', '2026-07-13 02:30:00', 'Demo data – no live call log rows found'],
             'calls_night'   => ['Call Log', 'fas fa-phone', 'Incoming call at 03:47 AM from unsaved international number', 'Low', 'Night-Activity Monitor', '2026-07-06 03:47:15', 'Demo data – no live call log rows found'],
-            'loc_geofence'  => ['Location', 'fas fa-map-marker-alt', 'Visit to unknown location 38 km from home base', 'Medium', 'Geo-Fence Violation Detector', '2026-07-13 01:45:00', 'Demo data – no live location rows found'],
-            'loc_speed'     => ['Location', 'fas fa-map-marker-alt', 'Travel speed 1,240 km/h detected between two consecutive points', 'High', 'Travel Speed Anomaly', '2026-07-11 08:00:00', 'Demo data – threshold: 900 km/h'],
+            'loc_geofence'  => ['LocationController', 'fas fa-map-marker-alt', 'Visit to unknown location 38 km from home base', 'Medium', 'Geo-Fence Violation Detector', '2026-07-13 01:45:00', 'Demo data – no live location rows found'],
+            'loc_speed'     => ['LocationController', 'fas fa-map-marker-alt', 'Travel speed 1,240 km/h detected between two consecutive points', 'High', 'Travel Speed Anomaly', '2026-07-11 08:00:00', 'Demo data – threshold: 900 km/h'],
             'apps_rep'      => ['Installed Apps', 'fas fa-th-large', 'App "com.util.sync.hidden" installed at 02:17 AM', 'High', 'Package Reputation Scanner', '2026-07-11 02:17:43', 'Demo data – matched pattern "hidden"'],
             'apps_perm'     => ['Installed Apps', 'fas fa-th-large', '"FlashLight Pro" requests 19 permissions: READ_SMS, RECORD_AUDIO…', 'Low', 'Permission Anomaly Detector', '2026-07-05 11:23:00', 'Demo data – Z-Score 2.8 σ'],
             'files_spike'   => ['Files', 'fas fa-folder-open', '1,240 files created in /sdcard/Android/data in under 2 minutes', 'Medium', 'File Creation Spike Detector', '2026-07-12 22:41:10', 'Demo data – 4× daily average'],
@@ -2412,7 +1811,7 @@ class Mod_Anomalies extends Model
     public function getAdminAnomalySettings(): array
     {
         $result = [
-            'default_engine'    => 'both',
+            'default_engine'    => 'php',
             'allowed_algorithms' => null, // null = all allowed
         ];
 
@@ -2423,7 +1822,7 @@ class Mod_Anomalies extends Model
 
             foreach ($rows as $r) {
                 if ($r['key'] === 'default_engine') {
-                    $result['default_engine'] = $r['value'] ?: 'both';
+                    $result['default_engine'] = $r['value'] ?: 'php';
                 }
                 if ($r['key'] === 'allowed_algorithms' && $r['value']) {
                     $decoded = json_decode($r['value'], true);
@@ -2433,7 +1832,7 @@ class Mod_Anomalies extends Model
                 }
             }
         } catch (\Throwable $e) {
-            // Settings table may not exist; return defaults
+            // SettingsController table may not exist; return defaults
         }
 
         return $result;
@@ -2512,7 +1911,7 @@ class Mod_Anomalies extends Model
             'files_spike'   => 'core',
             'dev_hw'        => 'core',
 
-            // Advanced (Gold) — PHP-ML / moderate complexity
+            // AdvancedController (Gold) — PHP-ML / moderate complexity
             'sms_cluster'   => 'advanced',
             'contacts_dup'  => 'advanced',
             'loc_geofence'  => 'advanced',

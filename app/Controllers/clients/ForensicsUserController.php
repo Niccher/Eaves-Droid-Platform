@@ -1150,7 +1150,7 @@ class ForensicsUserController extends BaseClientController
     {
         $data = array_merge($this->commonData('clipboard', 'Clipboard'), [
             'rows' => $this->finderModel->get_clipboard($this->userId),
-            'total' => $this->finderModel->get_count_Clipboard($this->userId),
+            'total' => $this->finderModel->get_count_Clipboard_filtered($this->userId),
             'pager' => $this->finderModel->getPager(),
         ]);
         return $this->renderAppView('users/advanced/clipboard', $data);

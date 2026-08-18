@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_Export_Job extends Model
+class ExportJobModel extends Model
 {
     protected $table = 'export_jobs';
     protected $primaryKey = 'id';

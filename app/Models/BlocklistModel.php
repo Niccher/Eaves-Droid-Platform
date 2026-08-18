@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_Blocklist extends Model
+class BlocklistModel extends Model
 {
     protected $table = 'tbl_user_blocklists';
     protected $primaryKey = 'id';

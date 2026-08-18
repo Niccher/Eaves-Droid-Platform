@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_User extends Model
+class UserModel extends Model
 {
     protected $DBGroup = 'default';
     protected $table = 'users';
@@ -200,7 +200,7 @@ class Mod_User extends Model
             ];
 
             if ($this->db->table('tbl_user_api_tokens')->insert($data)) {
-                $logData = new Mod_Access_Logs();
+                $logData = new AccessLogsModel();
                 // Log action
                 $logData->logAction([
                     'user_id' => $user_id,

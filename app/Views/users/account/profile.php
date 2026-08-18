@@ -294,7 +294,7 @@
                                             'contacts'       => ['icon' => 'fa-address-book', 'color' => 'success', 'label' => 'Contacts', 'count' => $total_contacts],
                                             'sms'            => ['icon' => 'fa-sms', 'color' => 'info', 'label' => 'SMS Messages', 'count' => $total_sms],
                                             'calls'          => ['icon' => 'fa-phone', 'color' => 'warning', 'label' => 'Call Logs', 'count' => $total_calls],
-                                            'files'          => ['icon' => 'fa-file-alt', 'color' => 'secondary', 'label' => 'Files Metadata', 'count' => $total_files],
+                                            'files'          => ['icon' => 'fa-file-alt', 'color' => 'secondary', 'label' => 'FilesController Metadata', 'count' => $total_files],
                                             'locations'      => ['icon' => 'fa-map-marked-alt', 'color' => 'danger', 'label' => 'Location History', 'count' => $total_locations],
                                             'misc_software'  => ['icon' => 'fa-laptop-code', 'color' => 'info', 'label' => 'Misc Software', 'count' => $miscSoftwareCount, 'subs' => [
                                                 ['icon' => 'fa-user', 'label' => 'Accounts', 'count' => $total_accounts],
@@ -401,7 +401,7 @@
                                             'contacts'       => ['icon' => 'fa-address-book', 'label' => 'Contacts', 'count' => $total_contacts],
                                             'sms'            => ['icon' => 'fa-sms', 'label' => 'SMS Messages', 'count' => $total_sms],
                                             'calls'          => ['icon' => 'fa-phone', 'label' => 'Call Logs', 'count' => $total_calls],
-                                            'files'          => ['icon' => 'fa-file-excel', 'label' => 'Files Metadata', 'count' => $total_files],
+                                            'files'          => ['icon' => 'fa-file-excel', 'label' => 'FilesController Metadata', 'count' => $total_files],
                                             'locations'      => ['icon' => 'fa-map-marker-alt', 'label' => 'Locations & Activities', 'count' => $total_locations + $total_activities],
                                             'misc_software'  => ['icon' => 'fa-laptop-code', 'label' => 'Misc Software', 'count' => $miscSoftwareCount, 'subs' => $exportTypes['misc_software']['subs']],
                                             'misc_hardware'  => ['icon' => 'fa-microchip', 'label' => 'Misc Hardware', 'count' => $miscHardwareCount, 'subs' => $exportTypes['misc_hardware']['subs']],

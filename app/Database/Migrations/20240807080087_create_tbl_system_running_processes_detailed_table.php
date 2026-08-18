@@ -269,7 +269,7 @@ class CreateTblSystemRunningProcessesDetailed extends Migration
         $this->forge->addKey('owner_id', false, false, 'owner_id');
         $this->forge->addKey('device_id', false, false, 'device_id');
         $this->forge->addKey('pid', false, false, 'pid');
-        $this->forge->addKey('name`(255', false, false, 'name');
+        $this->forge->addKey('name', false, false, 'name');
 
         $this->forge->createTable('tbl_system_running_processes_detailed', true);
     }

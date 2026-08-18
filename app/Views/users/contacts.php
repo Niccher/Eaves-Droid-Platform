@@ -94,7 +94,7 @@
                                         </tr>
                                     <?php else: ?>
                                         <?php
-                                        $encrypter = model('Mod_Crypt');
+                                        $encrypter = model('CryptModel');
                                         foreach ($contacts_dump as $contact):
                                             // Use counter as ID for encryption
                                             $enc_id = $encrypter->encrypt_id($contact['ID'] ?? $contact['counter'] ?? '');
@@ -164,18 +164,30 @@
                                                            title="View Call History">
                                                             <i class="fas fa-phone mr-1"></i> Calls
                                                         </a>
-                                                        <button type="button"
+                                                         <button type="button"
                                                                  class="btn btn-outline-info view-contact-details"
                                                                  data-contact='<?= htmlspecialchars(json_encode([
                                                                      'ID' => $contact['ID'] ?? $contact['counter'] ?? '',
                                                                      'Name' => $contact['Name'] ?? 'Unknown',
                                                                      'contact_id' => $contact['contact_id'] ?? ($contact['ID'] ?? $contact['counter'] ?? ''),
-                                                                     'phone_numbers' => [$contact['Number'] ?? 'N/A'],
+                                                                     'phone_numbers' => $contact['phone_numbers_array'] ?? [],
                                                                      'phone_count' => $contact['phone_count'] ?? 0,
                                                                      'last_contacted' => $contact['last_contacted'] ?? null,
                                                                      'is_favorite' => $contact['is_favorite'] ?? 0,
                                                                      'contact_frequency' => $contact['contact_frequency'] ?? 0,
-                                                                     'device_id' => $contact['device_id'] ?? null
+                                                                     'device_id' => $contact['device_id'] ?? null,
+                                                                     'emails' => json_decode($contact['emails'] ?? '[]', true) ?: ($contact['emails'] ? [$contact['emails']] : []),
+                                                                     'email_count' => $contact['email_count'] ?? 0,
+                                                                     'companies' => json_decode($contact['companies'] ?? '[]', true) ?: ($contact['companies'] ? [$contact['companies']] : []),
+                                                                     'addresses' => json_decode($contact['addresses'] ?? '[]', true) ?: ($contact['addresses'] ? [$contact['addresses']] : []),
+                                                                     'notes' => $contact['notes'] ?? '',
+                                                                     'nickname' => $contact['nickname'] ?? '',
+                                                                     'website' => json_decode($contact['website'] ?? '[]', true) ?: ($contact['website'] ? [$contact['website']] : []),
+                                                                     'social_profiles' => json_decode($contact['social_profiles'] ?? '[]', true) ?: ($contact['social_profiles'] ? [$contact['social_profiles']] : []),
+                                                                     'raw_contact_account_type' => $contact['raw_contact_account_type'] ?? '',
+                                                                     'raw_contact_account_name' => $contact['raw_contact_account_name'] ?? '',
+                                                                     'photo_thumbnail_base64' => $contact['photo_thumbnail_base64'] ?? '',
+                                                                     'relation' => json_decode($contact['relation'] ?? '[]', true) ?: ($contact['relation'] ? [$contact['relation']] : [])
                                                                  ]), ENT_QUOTES, 'UTF-8') ?>'>
                                                              <i class="fas fa-info-circle"></i> Details
                                                          </button>
@@ -243,51 +255,87 @@
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-md-3 text-center">
+                    <!-- Left Sidebar (Avatar, Name, Quick details) -->
+                    <div class="col-md-4 text-center border-right">
                         <div id="contactAvatar" class="mb-3">
-                            <div class="avatar-circle-lg bg-info text-white d-inline-flex align-items-center justify-content-center" style="width:100px;height:100px;">
-                                <span id="contactInitial" style="font-size:48px;"></span>
+                            <div id="contactPhotoWrapper" class="d-inline-block position-relative">
+                                <div id="contactInitialsCircle" class="avatar-circle-lg bg-info text-white d-flex align-items-center justify-content-center" style="width:110px; height:110px; border-radius:50%; margin:0 auto; font-size:48px;">
+                                    <span id="contactInitial"></span>
+                                </div>
+                                <img id="contactPhotoImg" class="img-thumbnail rounded-circle" style="width:110px; height:110px; object-fit: cover; display:none; margin:0 auto;" alt="Contact Photo">
                             </div>
                         </div>
-                        <h5 id="contactName" class="font-weight-bold"></h5>
-                        <p id="contactId" class="text-muted small"></p>
-                        <div id="contactBadges" class="mt-2"></div>
-                    </div>
-                    <div class="col-md-9">
-                        <div class="row">
-                            <!-- Contact Info -->
-                            <div class="col-md-6">
-                                <h6 class="border-bottom pb-2">
-                                    <i class="fas fa-info-circle text-primary mr-1"></i>
-                                    Contact Information
-                                </h6>
-                                <table class="table table-sm">
-                                    <tr>
-                                        <td width="40%"><i class="fas fa-hashtag text-muted"></i> Contact ID:</td>
-                                        <td><code id="contactAndroidId"></code></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-mobile-alt text-muted"></i> Device ID:</td>
-                                        <td><small id="contactDeviceId" class="text-muted"></small></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-handshake text-muted"></i> Last Contacted:</td>
-                                        <td><span id="contactLastContacted" class="badge badge-info"></span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-chart-line text-muted"></i> Contact Frequency:</td>
-                                        <td><span id="contactFrequency" class="badge badge-success"></span></td>
-                                    </tr>
+                        <h4 id="contactName" class="font-weight-bold mb-1"></h4>
+                        <p id="contactNickname" class="text-muted small mb-2"></p>
+                        <div id="contactBadges" class="mb-3"></div>
+                        
+                        <div class="card card-outline card-secondary text-left mt-3">
+                            <div class="card-header p-2">
+                                <h3 class="card-title text-sm font-weight-bold"><i class="fas fa-link mr-1"></i> Account Source</h3>
+                            </div>
+                            <div class="card-body p-2">
+                                <table class="table table-sm table-borderless mb-0 small">
+                                    <tr><td class="text-muted" style="width:70px;">Type:</td><td id="contactAccountType" class="font-weight-bold"></td></tr>
+                                    <tr><td class="text-muted">Name:</td><td id="contactAccountName" class="text-break"></td></tr>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Content (Tabs for organized sections) -->
+                    <div class="col-md-8">
+                        <ul class="nav nav-tabs mb-3" id="modalTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="info-tab" data-toggle="tab" href="#tab-info" role="tab"><i class="fas fa-id-card mr-1"></i> Contact Info</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="social-tab" data-toggle="tab" href="#tab-share" role="tab"><i class="fas fa-share-alt mr-1"></i> Details &amp; Notes</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="meta-tab" data-toggle="tab" href="#tab-meta" role="tab"><i class="fas fa-cog mr-1"></i> System Meta</a>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="modalTabsContent">
+                            <!-- TAB 1: Contact Info -->
+                            <div class="tab-pane fade show active" id="tab-info" role="tabpanel">
+                                <!-- Phone Numbers -->
+                                <h6 class="font-weight-bold text-primary mb-2"><i class="fas fa-phone mr-1"></i> Phone Numbers (<span id="phoneCount">0</span>)</h6>
+                                <div id="contactPhoneNumbers" class="mb-3 p-2 bg-light rounded border small" style="max-height:150px; overflow-y:auto;"></div>
 
-                            <!-- Phone Numbers -->
-                            <div class="col-md-6">
-                                <h6 class="border-bottom pb-2">
-                                    <i class="fas fa-phone text-primary mr-1"></i>
-                                    Phone Numbers (<span id="phoneCount">0</span>)
-                                </h6>
-                                <div id="contactPhoneNumbers" class="phone-numbers-list"></div>
+                                <!-- Emails -->
+                                <h6 class="font-weight-bold text-success mb-2"><i class="fas fa-envelope mr-1"></i> Email Addresses (<span id="emailCount">0</span>)</h6>
+                                <div id="contactEmails" class="mb-3 p-2 bg-light rounded border small" style="max-height:120px; overflow-y:auto;"></div>
+
+                                <!-- Companies / Organizations -->
+                                <h6 class="font-weight-bold text-info mb-2"><i class="fas fa-building mr-1"></i> Organization / Company</h6>
+                                <div id="contactCompanies" class="mb-3 p-2 bg-light rounded border small"></div>
+                            </div>
+                            
+                            <!-- TAB 2: Details & Notes -->
+                            <div class="tab-pane fade" id="tab-share" role="tabpanel">
+                                <!-- Addresses -->
+                                <h6 class="font-weight-bold text-secondary mb-2"><i class="fas fa-map-marker-alt mr-1"></i> Addresses</h6>
+                                <div id="contactAddresses" class="mb-3 p-2 bg-light rounded border small" style="max-height:100px; overflow-y:auto;"></div>
+
+                                <!-- Websites & Socials -->
+                                <h6 class="font-weight-bold text-indigo mb-2"><i class="fas fa-globe mr-1"></i> Websites &amp; Socials</h6>
+                                <div id="contactWebsites" class="mb-3 p-2 bg-light rounded border small"></div>
+
+                                <!-- Notes -->
+                                <h6 class="font-weight-bold text-dark mb-2"><i class="fas fa-sticky-note mr-1"></i> Notes / Comments</h6>
+                                <div id="contactNotes" class="mb-3 p-2 bg-light rounded border small" style="max-height:120px; overflow-y:auto; white-space: pre-wrap;"></div>
+                            </div>
+                            
+                            <!-- TAB 3: System Meta -->
+                            <div class="tab-pane fade" id="tab-meta" role="tabpanel">
+                                <table class="table table-sm table-striped border rounded small">
+                                    <tr><td class="font-weight-bold" style="width:150px;">Local Database ID</td><td id="contactIdVal"></td></tr>
+                                    <tr><td class="font-weight-bold">Android Contact ID</td><td id="contactAndroidIdVal"></td></tr>
+                                    <tr><td class="font-weight-bold">Device ID</td><td id="contactDeviceIdVal"></td></tr>
+                                    <tr><td class="font-weight-bold">Last Contacted</td><td id="contactLastContactedVal"></td></tr>
+                                    <tr><td class="font-weight-bold">Contact Frequency</td><td id="contactFrequencyVal"></td></tr>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -349,30 +397,108 @@
         });
 
         function populateContactModal(contact) {
-            // Set basic info
+            // Basic Info
             document.getElementById('contactName').textContent = contact.Name;
-            document.getElementById('contactId').textContent = 'ID: ' + (contact.ID || 'N/A');
-            document.getElementById('contactAndroidId').textContent = contact.contact_id || 'N/A';
-            document.getElementById('contactDeviceId').textContent = contact.device_id || 'N/A';
-            document.getElementById('contactFrequency').textContent = (contact.contact_frequency || 0) + ' times';
+            document.getElementById('contactNickname').textContent = contact.nickname ? '"' + contact.nickname + '"' : '';
+            
+            // Local Database ID / Android Contact ID / Device ID
+            document.getElementById('contactIdVal').textContent = contact.ID || 'N/A';
+            document.getElementById('contactAndroidIdVal').textContent = contact.contact_id || 'N/A';
+            document.getElementById('contactDeviceIdVal').textContent = contact.device_id || 'N/A';
+            document.getElementById('contactFrequencyVal').textContent = (contact.contact_frequency || 0) + ' times';
 
-            // Set avatar initial
-            const initial = contact.Name.charAt(0).toUpperCase();
-            document.getElementById('contactInitial').textContent = initial;
+            // Parse Account Source
+            let accountType = 'Local / Unknown';
+            let accountName = 'Device Account';
+            
+            try {
+                if (contact.raw_contact_account_type) {
+                    let parsedType = typeof contact.raw_contact_account_type === 'string' && contact.raw_contact_account_type.startsWith('[') || contact.raw_contact_account_type.startsWith('{')
+                        ? JSON.parse(contact.raw_contact_account_type) 
+                        : contact.raw_contact_account_type;
+                    if (Array.isArray(parsedType) && parsedType.length > 0) {
+                        accountType = parsedType[0].account_type || accountType;
+                        accountName = parsedType[0].account_name || accountName;
+                    } else if (typeof parsedType === 'object' && parsedType !== null) {
+                        accountType = parsedType.account_type || accountType;
+                        accountName = parsedType.account_name || accountName;
+                    } else if (typeof parsedType === 'string' && parsedType.trim() !== '') {
+                        accountType = parsedType;
+                    }
+                }
+            } catch (e) {
+                accountType = contact.raw_contact_account_type || accountType;
+            }
 
-            // Set badges
+            try {
+                if (contact.raw_contact_account_name && (accountName === 'Device Account' || accountName === '')) {
+                    let parsedName = typeof contact.raw_contact_account_name === 'string' && contact.raw_contact_account_name.startsWith('[') || contact.raw_contact_account_name.startsWith('{')
+                        ? JSON.parse(contact.raw_contact_account_name) 
+                        : contact.raw_contact_account_name;
+                    if (Array.isArray(parsedName) && parsedName.length > 0) {
+                        accountName = parsedName[0] || accountName;
+                    } else if (typeof parsedName === 'string' && parsedName.trim() !== '') {
+                        accountName = parsedName;
+                    }
+                }
+            } catch (e) {
+                if (accountName === 'Device Account') {
+                    accountName = contact.raw_contact_account_name || accountName;
+                }
+            }
+
+            // Prettify common account types
+            let prettyType = accountType;
+            if (accountType === 'com.google') {
+                prettyType = 'Google Account';
+            } else if (accountType === 'com.whatsapp') {
+                prettyType = 'WhatsApp';
+            } else if (accountType === 'com.android.huawei.phone') {
+                prettyType = 'Huawei Device';
+            } else if (accountType.toLowerCase().includes('telegram')) {
+                prettyType = 'Telegram';
+            } else if (accountType.toLowerCase().includes('facebook')) {
+                prettyType = 'Facebook';
+            }
+
+            document.getElementById('contactAccountType').textContent = prettyType;
+            document.getElementById('contactAccountName').textContent = accountName;
+
+            // Set Photo or Initials
+            const initialCircle = document.getElementById('contactInitialsCircle');
+            const photoImg = document.getElementById('contactPhotoImg');
+            
+            if (contact.photo_thumbnail_base64 && contact.photo_thumbnail_base64.trim() !== '') {
+                // Ensure data URI prefix is present
+                let photoSrc = contact.photo_thumbnail_base64;
+                if (!photoSrc.startsWith('data:')) {
+                    photoSrc = 'data:image/jpeg;base64,' + photoSrc;
+                }
+                photoImg.src = photoSrc;
+                photoImg.style.display = 'block';
+                initialCircle.style.display = 'none';
+            } else {
+                const initial = contact.Name ? contact.Name.charAt(0).toUpperCase() : '?';
+                document.getElementById('contactInitial').textContent = initial;
+                photoImg.style.display = 'none';
+                initialCircle.style.display = 'flex';
+            }
+
+            // Badges
             const badgesContainer = document.getElementById('contactBadges');
             badgesContainer.innerHTML = '';
-
-            if (contact.is_favorite) {
-                badgesContainer.innerHTML += '<span class="badge badge-warning mr-1"><i class="fas fa-star"></i> Favorite</span>';
+            if (parseInt(contact.is_favorite)) {
+                badgesContainer.innerHTML += '<span class="badge badge-warning mr-1"><i class="fas fa-star mr-1"></i>Favorite</span>';
             }
-            if (contact.phone_count > 1) {
-                badgesContainer.innerHTML += '<span class="badge badge-success mr-1">' + contact.phone_count + ' phones</span>';
+            if (contact.phone_count > 0) {
+                badgesContainer.innerHTML += '<span class="badge badge-success mr-1"><i class="fas fa-phone mr-1"></i>' + contact.phone_count + ' Phones</span>';
+            }
+            if (parseInt(contact.email_count) > 0) {
+                badgesContainer.innerHTML += '<span class="badge badge-info mr-1"><i class="fas fa-envelope mr-1"></i>' + contact.email_count + ' Emails</span>';
             }
 
-            // Set last contacted time
-            const lastContactedSpan = document.getElementById('contactLastContacted');
+            // Format last contacted time if available
+            const lastContactedVal = document.getElementById('contactLastContactedVal');
             if (contact.last_contacted) {
                 const date = new Date(parseInt(contact.last_contacted));
                 const now = new Date();
@@ -381,44 +507,135 @@
 
                 let timeText = '';
                 if (diffDays === 0) {
-                    timeText = 'Today at ' + date.toLocaleTimeString();
+                    timeText = 'Today at ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 } else if (diffDays === 1) {
-                    timeText = 'Yesterday at ' + date.toLocaleTimeString();
+                    timeText = 'Yesterday at ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 } else if (diffDays < 7) {
                     timeText = diffDays + ' days ago';
                 } else {
-                    timeText = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                    timeText = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 }
-                lastContactedSpan.textContent = timeText;
+                lastContactedVal.textContent = timeText;
             } else {
-                lastContactedSpan.textContent = 'Never';
+                lastContactedVal.textContent = 'Never';
             }
 
-            // Set phone numbers
+            // Phone Numbers
             const phoneNumbersContainer = document.getElementById('contactPhoneNumbers');
             const phoneCountSpan = document.getElementById('phoneCount');
-
-            if (contact.phone_numbers && Array.isArray(contact.phone_numbers)) {
+            if (contact.phone_numbers && Array.isArray(contact.phone_numbers) && contact.phone_numbers.length > 0) {
                 phoneCountSpan.textContent = contact.phone_numbers.length;
                 let phoneHtml = '';
-
                 contact.phone_numbers.forEach((phone, index) => {
+                    let num = phone;
+                    let label = 'Mobile';
+                    if (typeof phone === 'object' && phone !== null) {
+                        num = phone.number || '';
+                        label = phone.type || phone.label || 'Phone';
+                    }
                     phoneHtml += `
-                    <div class="phone-item">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-phone text-success mr-2"></i>
-                            <span class="font-weight-bold">${phone}</span>
-                            ${index === 0 ? '<span class="badge badge-primary badge-sm ml-2">Primary</span>' : ''}
+                        <div class="py-1 border-bottom d-flex align-items-center justify-content-between">
+                            <div>
+                                <i class="fas fa-phone text-success mr-2"></i>
+                                <span class="font-weight-bold">${num}</span>
+                            </div>
+                            <span class="badge badge-light border small text-muted">${label}</span>
                         </div>
-                    </div>
-                `;
+                    `;
                 });
-
                 phoneNumbersContainer.innerHTML = phoneHtml;
             } else {
                 phoneCountSpan.textContent = '0';
-                phoneNumbersContainer.innerHTML = '<p class="text-muted text-center">No phone numbers available</p>';
+                phoneNumbersContainer.innerHTML = '<div class="text-center text-muted py-2">No phone numbers</div>';
             }
+
+            // Emails
+            const emailsContainer = document.getElementById('contactEmails');
+            const emailCountSpan = document.getElementById('emailCount');
+            if (contact.emails && Array.isArray(contact.emails) && contact.emails.length > 0) {
+                emailCountSpan.textContent = contact.emails.length;
+                let emailHtml = '';
+                contact.emails.forEach((email) => {
+                    let addr = email;
+                    let label = 'Home';
+                    if (typeof email === 'object' && email !== null) {
+                        addr = email.address || '';
+                        label = email.type || email.label || 'Email';
+                    }
+                    emailHtml += `
+                        <div class="py-1 border-bottom d-flex align-items-center justify-content-between">
+                            <div>
+                                <i class="fas fa-envelope text-success mr-2"></i>
+                                <span class="font-weight-bold">${addr}</span>
+                            </div>
+                            <span class="badge badge-light border small text-muted">${label}</span>
+                        </div>
+                    `;
+                });
+                emailsContainer.innerHTML = emailHtml;
+            } else {
+                emailCountSpan.textContent = '0';
+                emailsContainer.innerHTML = '<div class="text-center text-muted py-2">No emails registered</div>';
+            }
+
+            // Companies
+            const companiesContainer = document.getElementById('contactCompanies');
+            if (contact.companies && Array.isArray(contact.companies) && contact.companies.length > 0) {
+                let compHtml = '';
+                contact.companies.forEach((comp) => {
+                    let name = comp.company || comp.name || '';
+                    let title = comp.title || comp.jobTitle || '';
+                    compHtml += `
+                        <div class="py-1 border-bottom">
+                            <i class="fas fa-building text-info mr-2"></i><strong>${name}</strong>
+                            ${title ? ` — <span class="text-muted">${title}</span>` : ''}
+                        </div>
+                    `;
+                });
+                companiesContainer.innerHTML = compHtml;
+            } else {
+                companiesContainer.innerHTML = '<div class="text-center text-muted py-2">No company details</div>';
+            }
+
+            // Addresses
+            const addressesContainer = document.getElementById('contactAddresses');
+            if (contact.addresses && Array.isArray(contact.addresses) && contact.addresses.length > 0) {
+                let addrHtml = '';
+                contact.addresses.forEach((addr) => {
+                    let formatted = addr.formattedAddress || addr.address || '';
+                    let label = addr.type || addr.label || 'Work';
+                    addrHtml += `
+                        <div class="py-1 border-bottom d-flex justify-content-between">
+                            <div><i class="fas fa-map-marker-alt text-secondary mr-2"></i>${formatted}</div>
+                            <span class="badge badge-light border small text-muted align-self-start">${label}</span>
+                        </div>
+                    `;
+                });
+                addressesContainer.innerHTML = addrHtml;
+            } else {
+                addressesContainer.innerHTML = '<div class="text-center text-muted py-2">No address data</div>';
+            }
+
+            // Websites
+            const websitesContainer = document.getElementById('contactWebsites');
+            if (contact.website && Array.isArray(contact.website) && contact.website.length > 0) {
+                let webHtml = '';
+                contact.website.forEach((web) => {
+                    let url = typeof web === 'string' ? web : (web.url || '');
+                    webHtml += `
+                        <div class="py-1 border-bottom">
+                            <i class="fas fa-globe text-primary mr-2"></i><a href="${url}" target="_blank">${url}</a>
+                        </div>
+                    `;
+                });
+                websitesContainer.innerHTML = webHtml;
+            } else {
+                websitesContainer.innerHTML = '<div class="text-center text-muted py-2">No websites listed</div>';
+            }
+
+            // Notes
+            const notesContainer = document.getElementById('contactNotes');
+            notesContainer.textContent = contact.notes || 'No notes available.';
         }
 
         // Real-time table search

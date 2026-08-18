@@ -24,7 +24,7 @@ class PlanGate implements FilterInterface
      */
     protected array $featureRoutes = [
         // NOTE: anomaly detection is NOT blocked here — it renders for all
-        // users and is tiered inside the Anomalies controller (free=empty,
+        // users and is tiered inside the AnomaliesController controller (free=empty,
         // gold=basic, platinum=all).
         'geofencing' => [
             'location',

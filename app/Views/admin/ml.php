@@ -194,7 +194,7 @@
                                                 <input type="number" name="ml_phpml_isolationforest_trees" class="form-control" value="<?= htmlspecialchars($settings['ml_phpml_isolationforest_trees'] ?? '100') ?>" min="10" max="1000">
                                                 <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
                                                     <i class="fas fa-book-open text-info mr-1"></i>
-                                                    <strong>How it works:</strong> Isolation Forest isolates anomalies by randomly partitioning the data with decision trees. Anomalies are few and different &mdash; they require fewer partitions to isolate, producing shorter path lengths. The algorithm builds an ensemble of trees (the "forest") and scores each point by its average path length. Highly effective for multi-dimensional anomaly detection across SMS, calls, locations, and app behaviour simultaneously.
+                                                    <strong>How it works:</strong> Isolation Forest isolates anomalies by randomly partitioning the data with decision trees. AnomaliesController are few and different &mdash; they require fewer partitions to isolate, producing shorter path lengths. The algorithm builds an ensemble of trees (the "forest") and scores each point by its average path length. Highly effective for multi-dimensional anomaly detection across SMS, calls, locations, and app behaviour simultaneously.
                                                     <br><br>
                                                     <strong>Low (10&ndash;50):</strong> Fast training, lower memory &mdash; but higher variance in anomaly scores. May produce inconsistent results across runs.
                                                     <br>
@@ -483,7 +483,7 @@
                             <div class="tab-pane fade" id="pane-requirements" role="tabpanel">
                                 <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
                                     <i class="fas fa-info-circle text-info mr-1"></i>
-                                    System requirements vary significantly based on dataset size. Below are recommended specifications for the PHP server and Python Docker backend at different data volumes. These assume processing SMS + Calls + Contacts + Locations + Apps + Files + Device Activity simultaneously.
+                                    System requirements vary significantly based on dataset size. Below are recommended specifications for the PHP server and Python Docker backend at different data volumes. These assume processing SMS + Calls + Contacts + Locations + Apps + FilesController + Device Activity simultaneously.
                                 </div>
 
                                 <!-- Scale Comparison Table -->

@@ -99,6 +99,15 @@
         $providers = [];
         $hotspots = [];
 
+        // GNSS GPS telemetry stats
+        $satSum = $satCount = $maxSats = 0;
+        $hdopSum = $hdopCount = 0;
+        $minHdop = 999.0;
+        $maxAlt = -9999.0;
+        $vAccSum = $vAccCount = 0;
+        $latestGnss = '—';
+        $latestFloor = '—';
+
         foreach ($locations as $l) {
             // Accuracy precision tiers
             $acc = isset($l['accuracy']) ? (float)$l['accuracy'] : null;
@@ -109,7 +118,10 @@
             }
 
             // Speed
-            $spd = isset($l['speed']) ? (float)$l['speed'] * 3.6 : null;
+            $spd = isset($l['speed_kmh']) && (float)$l['speed_kmh'] > 0 
+                ? (float)$l['speed_kmh'] 
+                : (isset($l['speed']) ? (float)$l['speed'] * 3.6 : null);
+
             if ($spd !== null && $spd >= 0) {
                 $speedSum += $spd;
                 $speedCount++;
@@ -128,70 +140,262 @@
                 $key = $lat4 . ',' . $lng4;
                 $hotspots[$key] = ($hotspots[$key] ?? 0) + 1;
             }
+
+            // Satellites
+            if (isset($l['satellite_count']) && $l['satellite_count'] !== null) {
+                $satVal = (int)$l['satellite_count'];
+                $satSum += $satVal;
+                $satCount++;
+                if ($satVal > $maxSats) $maxSats = $satVal;
+            }
+
+            // HDOP
+            if (isset($l['hdop']) && $l['hdop'] !== null && (float)$l['hdop'] > 0) {
+                $hdopVal = (float)$l['hdop'];
+                $hdopSum += $hdopVal;
+                $hdopCount++;
+                if ($hdopVal < $minHdop) $minHdop = $hdopVal;
+            }
+
+            // Altitude
+            if (isset($l['altitude']) && $l['altitude'] !== null) {
+                $altVal = (float)$l['altitude'];
+                if ($altVal > $maxAlt) $maxAlt = $altVal;
+            }
+
+            // Vertical accuracy
+            if (isset($l['vertical_accuracy']) && $l['vertical_accuracy'] !== null && (float)$l['vertical_accuracy'] > 0) {
+                $vAccSum += (float)$l['vertical_accuracy'];
+                $vAccCount++;
+            }
+
+            // Latest GNSS receiver status
+            if ($latestGnss === '—' && !empty($l['gnss_status'])) {
+                $latestGnss = $l['gnss_status'];
+            }
+            // Latest floor level
+            if ($latestFloor === '—' && !empty($l['floor_level'])) {
+                $latestFloor = $l['floor_level'];
+            }
         }
         arsort($hotspots);
         $avgSpeed = $speedCount > 0 ? round($speedSum / $speedCount, 1) : null;
         $maxSpeed = $maxSpeed > 0 ? round($maxSpeed, 1) : null;
         $topHotspots = array_slice($hotspots, 0, 5, true);
         $total = count($locations);
+
+        $avgSats = $satCount > 0 ? round($satSum / $satCount, 1) : null;
+        $avgHdop = $hdopCount > 0 ? round($hdopSum / $hdopCount, 2) : null;
+        $minHdop = $minHdop !== 999.0 ? round($minHdop, 2) : null;
+        $maxAlt = $maxAlt !== -9999.0 ? round($maxAlt, 1) : null;
+        $avgVAcc = $vAccCount > 0 ? round($vAccSum / $vAccCount, 1) : null;
         ?>
 
         <!-- Row 1: Precision Spectrum (3 info-boxes) + Velocity -->
+        <style>
+          .telemetry-visual-box {
+            width: 46px;
+            height: 46px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+          }
+          .bg-success-light { background-color: rgba(40, 167, 69, 0.08); color: #28a745; }
+          .bg-warning-light { background-color: rgba(255, 193, 7, 0.08); color: #ffc107; }
+          .bg-danger-light { background-color: rgba(220, 53, 69, 0.08); color: #dc3545; }
+          .bg-info-light { background-color: rgba(23, 162, 184, 0.08); color: #17a2b8; }
+        </style>
+
         <div class="col-12 mt-4">
           <div class="row">
             <!-- High Precision -->
-            <div class="col-md-3 col-sm-6">
-              <div class="info-box shadow-sm" style="border-left:4px solid #28a745!important;">
-                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-crosshairs"></i></span>
-                <div class="info-box-content">
-                  <span class="info-box-text">High Precision</span>
-                  <span class="info-box-number"><?= $high ?></span>
-                  <div class="progress mt-1" style="height:4px;">
-                    <div class="progress-bar bg-success" style="width:<?= $total > 0 ? round($high/$total*100) : 0 ?>%"></div>
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card card-outline card-success shadow-sm h-100 mb-0">
+                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                  <div>
+                    <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">High Precision</span>
+                    <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;"><?= $high ?></h3>
+                    <div class="progress mt-2" style="height: 4px; width: 100px;">
+                      <div class="progress-bar bg-success" style="width: <?= $total > 0 ? round($high/$total*100) : 0 ?>%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1">&le; 15 m accuracy</small>
+                    <p class="text-xs text-muted mb-0 mt-2" style="font-size: 11px; line-height: 1.3; color:#6c757d;">
+                      Highly accurate locks, pinning the device position within standard street width.
+                    </p>
                   </div>
-                  <span class="progress-description">&le; 15 m accuracy</span>
+                  <div class="telemetry-visual-box bg-success-light">
+                    <i class="fas fa-crosshairs"></i>
+                  </div>
                 </div>
               </div>
             </div>
+
             <!-- Medium Precision -->
-            <div class="col-md-3 col-sm-6">
-              <div class="info-box shadow-sm" style="border-left:4px solid #ffc107!important;">
-                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-bullseye"></i></span>
-                <div class="info-box-content">
-                  <span class="info-box-text">Medium Precision</span>
-                  <span class="info-box-number"><?= $med ?></span>
-                  <div class="progress mt-1" style="height:4px;">
-                    <div class="progress-bar bg-warning" style="width:<?= $total > 0 ? round($med/$total*100) : 0 ?>%"></div>
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card card-outline card-warning shadow-sm h-100 mb-0">
+                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                  <div>
+                    <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">Medium Precision</span>
+                    <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;"><?= $med ?></h3>
+                    <div class="progress mt-2" style="height: 4px; width: 100px;">
+                      <div class="progress-bar bg-warning" style="width: <?= $total > 0 ? round($med/$total*100) : 0 ?>%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1">16 – 50 m accuracy</small>
+                    <p class="text-xs text-muted mb-0 mt-2" style="font-size: 11px; line-height: 1.3; color:#6c757d;">
+                      Moderate accuracy locks, pinning location to within a block or neighborhood zone.
+                    </p>
                   </div>
-                  <span class="progress-description">16 – 50 m accuracy</span>
+                  <div class="telemetry-visual-box bg-warning-light">
+                    <i class="fas fa-bullseye"></i>
+                  </div>
                 </div>
               </div>
             </div>
+
             <!-- Low Precision -->
-            <div class="col-md-3 col-sm-6">
-              <div class="info-box shadow-sm" style="border-left:4px solid #dc3545!important;">
-                <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-map-pin"></i></span>
-                <div class="info-box-content">
-                  <span class="info-box-text">Low Precision</span>
-                  <span class="info-box-number"><?= $low ?></span>
-                  <div class="progress mt-1" style="height:4px;">
-                    <div class="progress-bar bg-danger" style="width:<?= $total > 0 ? round($low/$total*100) : 0 ?>%"></div>
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card card-outline card-danger shadow-sm h-100 mb-0">
+                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                  <div>
+                    <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">Low Precision</span>
+                    <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;"><?= $low ?></h3>
+                    <div class="progress mt-2" style="height: 4px; width: 100px;">
+                      <div class="progress-bar bg-danger" style="width: <?= $total > 0 ? round($low/$total*100) : 0 ?>%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1">&gt; 50 m accuracy</small>
+                    <p class="text-xs text-muted mb-0 mt-2" style="font-size: 11px; line-height: 1.3; color:#6c757d;">
+                      Coarse locks. Usually occurs indoors or via cell tower triangulation approximations.
+                    </p>
                   </div>
-                  <span class="progress-description">&gt; 50 m accuracy</span>
+                  <div class="telemetry-visual-box bg-danger-light">
+                    <i class="fas fa-map-pin"></i>
+                  </div>
                 </div>
               </div>
             </div>
-            <!-- Avg & Max Speed -->
-            <div class="col-md-3 col-sm-6">
-              <div class="info-box shadow-sm" style="border-left:4px solid #17a2b8!important;">
-                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-tachometer-alt"></i></span>
-                <div class="info-box-content">
-                  <span class="info-box-text">Velocity</span>
-                  <span class="info-box-number"><?= $avgSpeed !== null ? $avgSpeed . ' km/h' : '—' ?></span>
-                  <div class="progress mt-1" style="height:4px;">
-                    <div class="progress-bar bg-info" style="width:<?= $maxSpeed !== null && $maxSpeed > 0 ? min(100, round($avgSpeed/$maxSpeed*100)) : 0 ?>%"></div>
+
+            <!-- Velocity -->
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card card-outline card-info shadow-sm h-100 mb-0">
+                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                  <div>
+                    <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">Velocity</span>
+                    <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;"><?= $avgSpeed !== null ? $avgSpeed . ' km/h' : '—' ?></h3>
+                    <div class="progress mt-2" style="height: 4px; width: 100px;">
+                      <div class="progress-bar bg-info" style="width: <?= $maxSpeed !== null && $maxSpeed > 0 ? min(100, round($avgSpeed/$maxSpeed*100)) : 0 ?>%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1">avg &bull; max <?= $maxSpeed !== null ? $maxSpeed . ' km/h' : '—' ?></small>
+                    <p class="text-xs text-muted mb-0 mt-2" style="font-size: 11px; line-height: 1.3; color:#6c757d;">
+                      Speed of the device while moving. Helps distinguish walking, running, and vehicular travel.
+                    </p>
                   </div>
-                  <span class="progress-description">avg &bull; max <?= $maxSpeed !== null ? $maxSpeed . ' km/h' : '—' ?></span>
+                  <div class="telemetry-visual-box bg-info-light">
+                    <i class="fas fa-tachometer-alt"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 1.5: GNSS Hardware Telemetry -->
+        <style>
+          .bg-purple-light { background-color: rgba(111, 66, 193, 0.08); color: #6f42c1; }
+          .bg-secondary-light { background-color: rgba(108, 117, 125, 0.08); color: #6c757d; }
+        </style>
+        <div class="col-12 mt-2">
+          <div class="row">
+            <!-- GPS Satellites -->
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card card-outline card-success shadow-sm h-100 mb-0">
+                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                  <div>
+                    <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">GPS Satellites</span>
+                    <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;">
+                      <?= $avgSats !== null ? $avgSats : '—' ?> <span style="font-size:14px; font-weight:600; color:#8c98a5;">avg</span>
+                    </h3>
+                    <small class="text-muted d-block mt-2">
+                      <i class="fas fa-arrow-up mr-1 text-success"></i> Peak: <?= $maxSats ?> satellites
+                    </small>
+                    <p class="text-xs text-muted mb-0 mt-2" style="font-size: 11px; line-height: 1.3; color:#6c757d;">
+                      Number of space satellites queried by the device receiver. More satellites mean better lock.
+                    </p>
+                  </div>
+                  <div class="telemetry-visual-box bg-success-light">
+                    <i class="fas fa-satellite"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Signal Precision (HDOP) -->
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card card-outline card-primary shadow-sm h-100 mb-0">
+                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                  <div>
+                    <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">HDOP Precision</span>
+                    <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;">
+                      <?= $avgHdop !== null ? $avgHdop : '—' ?>
+                    </h3>
+                    <small class="text-muted d-block mt-2">
+                      <i class="fas fa-check mr-1 text-primary"></i> Best fix: <?= $minHdop !== null ? $minHdop : '—' ?>
+                    </small>
+                    <p class="text-xs text-muted mb-0 mt-2" style="font-size: 11px; line-height: 1.3; color:#6c757d;">
+                      Horizontal Dilution of Precision. Values below 1.5 represent an excellent signal alignment.
+                    </p>
+                  </div>
+                  <div class="telemetry-visual-box bg-info-light">
+                    <i class="fas fa-signal"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Altitude & Verticality -->
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card card-outline card-purple shadow-sm h-100 mb-0" style="border-top: 3px solid #6f42c1;">
+                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                  <div>
+                    <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">Verticality</span>
+                    <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;">
+                      <?= $maxAlt !== null ? number_format($maxAlt) . ' m' : '—' ?>
+                    </h3>
+                    <small class="text-muted d-block mt-2">
+                      Avg Vert. Acc: <?= $avgVAcc !== null ? $avgVAcc . ' m' : '—' ?>
+                    </small>
+                    <p class="text-xs text-muted mb-0 mt-2" style="font-size: 11px; line-height: 1.3; color:#6c757d;">
+                      Height coordinates above sea level. Vertical accuracy denotes elevation reading error margins.
+                    </p>
+                  </div>
+                  <div class="telemetry-visual-box bg-purple-light">
+                    <i class="fas fa-mountain"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Receiver Status & Floor level -->
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card card-outline card-secondary shadow-sm h-100 mb-0">
+                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                  <div>
+                    <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">Receiver Status</span>
+                    <h3 class="mb-0 mt-1" style="font-size: 20px; font-weight: 800; color: #6c757d;">
+                      <?= esc(strtoupper($latestGnss)) ?>
+                    </h3>
+                    <small class="text-muted d-block mt-2">
+                      <i class="fas fa-layer-group mr-1"></i> Floor: <?= esc($latestFloor) ?>
+                    </small>
+                    <p class="text-xs text-muted mb-0 mt-2" style="font-size: 11px; line-height: 1.3; color:#6c757d;">
+                      Lock state of the GPS receiver module inside the mobile device, and vertical building level.
+                    </p>
+                  </div>
+                  <div class="telemetry-visual-box bg-secondary-light">
+                    <i class="fas fa-microchip"></i>
+                  </div>
                 </div>
               </div>
             </div>

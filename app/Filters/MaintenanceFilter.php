@@ -7,7 +7,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\Filters\FilterInterface;
 use Config\Database;
 use Config\Services;
-use App\Models\Mod_Log_User_Action;
+use App\Models\LogUserActionModel;
 
 class MaintenanceFilter implements FilterInterface
 {
@@ -103,7 +103,7 @@ class MaintenanceFilter implements FilterInterface
             }
         }
 
-        $logModel = new Mod_Log_User_Action();
+        $logModel = new LogUserActionModel();
         $authUser = auth()->loggedIn() ? auth()->user() : null;
         $logModel->logAction([
             'user_id'         => $authUser ? (int) $authUser->id : null,

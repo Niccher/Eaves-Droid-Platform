@@ -5,8 +5,8 @@ namespace Config;
 use CodeIgniter\Config\BaseConfig;
 use CodeIgniter\Debug\Toolbar\Collectors\Database;
 use CodeIgniter\Debug\Toolbar\Collectors\Events;
-use CodeIgniter\Debug\Toolbar\Collectors\Files;
-use CodeIgniter\Debug\Toolbar\Collectors\Logs;
+use CodeIgniter\Debug\Toolbar\Collectors\FilesController;
+use CodeIgniter\Debug\Toolbar\Collectors\LogsController;
 use CodeIgniter\Debug\Toolbar\Collectors\Routes;
 use CodeIgniter\Debug\Toolbar\Collectors\Timers;
 use CodeIgniter\Debug\Toolbar\Collectors\Views;
@@ -36,10 +36,10 @@ class Toolbar extends BaseConfig
     public array $collectors = [
         Timers::class,
         Database::class,
-        Logs::class,
+        LogsController::class,
         Views::class,
         // \CodeIgniter\Debug\Toolbar\Collectors\Cache::class,
-        Files::class,
+        FilesController::class,
         Routes::class,
         Events::class,
     ];

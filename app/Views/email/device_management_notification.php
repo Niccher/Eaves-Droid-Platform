@@ -1,7 +1,7 @@
 <?php
 /**
  * Content template for: Remote Device Command Notification
- * Used by: FCMCommandController, RemoteDevice (admin)
+ * Used by: FCMCommandController, RemoteDeviceController (admin)
  * Layout: email/_layout
  */
 

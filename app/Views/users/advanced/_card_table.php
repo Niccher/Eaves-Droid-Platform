@@ -76,12 +76,43 @@ if (!function_exists('render_adv_cell')) {
         case 'json':
             $jsonTitle = $col['jsonTitle'] ?? $col['label'] ?? 'Details';
             $decoded   = is_array($raw) ? $raw : json_decode((string)($raw ?? '[]'), true);
-            $count     = is_array($decoded) ? count($decoded) : 0;
-            $label     = $col['jsonLabel'] ?? ('View (' . $count . ')');
-            $encoded   = htmlspecialchars(json_encode($decoded, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
-            return '<button type="button" class="btn btn-sm btn-outline-primary details-row" '
-                 . 'data-title="' . esc($jsonTitle) . '" data-data="' . $encoded . '">'
-                 . '<i class="fas fa-eye mr-1"></i>' . esc($label) . '</button>';
+            if (empty($decoded)) return '<span class="text-muted">—</span>';
+            
+            // Check if it's a simple list of scalar values
+            $isSimpleList = true;
+            foreach ($decoded as $item) {
+                if (is_array($item)) {
+                    $isSimpleList = false;
+                    break;
+                }
+            }
+            
+            if ($isSimpleList) {
+                $html = '<div class="d-flex flex-wrap align-items-center" style="gap: 4px;">';
+                $limit = 6;
+                $i = 0;
+                foreach ($decoded as $val) {
+                    if ($i >= $limit) {
+                        $remaining = count($decoded) - $limit;
+                        $encoded = htmlspecialchars(json_encode($decoded, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+                        $html .= '<button type="button" class="btn btn-xs btn-outline-secondary details-row py-0 px-1 ml-1" style="font-size: 10px; border-radius: 4px;" '
+                               . 'data-title="' . esc($jsonTitle) . '" data-data="' . $encoded . '">'
+                               . '+' . $remaining . ' more</button>';
+                        break;
+                    }
+                    $html .= '<span class="badge badge-light border mr-1 mb-1 font-weight-normal text-secondary" style="font-size: 11px; padding: 3px 6px;">' . esc($val) . '</span>';
+                    $i++;
+                }
+                $html .= '</div>';
+                return $html;
+            } else {
+                $count   = count($decoded);
+                $label   = $col['jsonLabel'] ?? ('View (' . $count . ')');
+                $encoded = htmlspecialchars(json_encode($decoded, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+                return '<button type="button" class="btn btn-xs btn-outline-info details-row px-2 py-0" '
+                     . 'data-title="' . esc($jsonTitle) . '" data-data="' . $encoded . '" style="font-size: 11px; border-radius: 12px;">'
+                     . '<i class="fas fa-eye mr-1"></i>' . esc($label) . '</button>';
+            }
 
         case 'maps':
             if ($raw === null || $raw === '' || $raw === '—') return '<span class="text-muted">—</span>';

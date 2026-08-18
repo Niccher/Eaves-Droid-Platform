@@ -4,7 +4,7 @@ namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use App\Models\Mod_Anomalies;
+use App\Models\AnomaliesModel;
 
 class SendNotificationDigest extends BaseCommand
 {

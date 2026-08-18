@@ -13,7 +13,7 @@
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="<?= base_url('home') ?>">Home</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>">Intelligence</a></li>
-                        <li class="breadcrumb-item active">Anomalies</li>
+                        <li class="breadcrumb-item active">Behavioral Anomalies</li>
                     </ol>
                 </div>
             </div>
@@ -22,6 +22,33 @@
 
     <section class="content">
         <div class="container-fluid">
+
+            <?php if (session()->getFlashdata('success')): ?>
+                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i><?= session()->getFlashdata('success') ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+
+            <?php if (session()->getFlashdata('error')): ?>
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-exclamation-circle mr-2"></i><?= session()->getFlashdata('error') ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+
+            <?php if (session()->getFlashdata('info')): ?>
+                <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-info-circle mr-2"></i><?= session()->getFlashdata('info') ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
 
             <!-- Summary info-boxes -->
             <div class="row">
@@ -138,6 +165,19 @@
                                         <div class="timeline-body text-muted">
                                             <?= esc($anomaly['description']) ?>
                                         </div>
+                                        <?php if (!empty($anomaly['whitelist_identifier'])): ?>
+                                            <div class="timeline-footer p-2 bg-light d-flex align-items-center justify-content-between border-top">
+                                                <small class="text-muted"><i class="fas fa-fingerprint mr-1"></i>Target: <code><?= esc($anomaly['whitelist_identifier']) ?></code></small>
+                                                <form action="<?= base_url('behavioral-anomalies/whitelist') ?>" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to whitelist and dismiss this target from anomalies?');">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="category" value="<?= esc($anomaly['whitelist_category']) ?>">
+                                                    <input type="hidden" name="identifier" value="<?= esc($anomaly['whitelist_identifier']) ?>">
+                                                    <button type="submit" class="btn btn-xs btn-outline-success rounded shadow-sm">
+                                                        <i class="fas fa-check-circle mr-1"></i>Whitelist Target
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             <?php endforeach; ?>

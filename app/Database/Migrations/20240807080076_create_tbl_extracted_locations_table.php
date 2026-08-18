@@ -40,7 +40,7 @@ class CreateTblExtractedLocations extends Migration
             'accuracy' => [
                 'type'       => 'FLOAT',
                 'null'       => true,
-                'comment'    => 'Location accuracy in meters',
+                'comment'    => 'LocationController accuracy in meters',
             ],
             'altitude' => [
                 'type'       => 'FLOAT',
@@ -61,7 +61,7 @@ class CreateTblExtractedLocations extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => 50,
                 'null'       => true,
-                'comment'    => 'Location provider (gps, network, etc.)',
+                'comment'    => 'LocationController provider (gps, network, etc.)',
             ],
             'location_time' => [
                 'type'       => 'BIGINT',

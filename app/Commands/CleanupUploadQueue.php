@@ -4,7 +4,7 @@ namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use App\Models\Mod_Upload_Queue;
+use App\Models\UploadQueueModel;
 
 class CleanupUploadQueue extends BaseCommand
 {
@@ -35,7 +35,7 @@ class CleanupUploadQueue extends BaseCommand
             CLI::write(" Checking for stuck queue items (timeout: {$timeoutHours}h, max attempts: {$maxAttempts})...", 'yellow');
             $output .= "Checking for stuck queue items (timeout: {$timeoutHours}h, max attempts: {$maxAttempts})..." . PHP_EOL;
 
-            $queueModel = new Mod_Upload_Queue();
+            $queueModel = new UploadQueueModel();
             $cutoff = date('Y-m-d H:i:s', strtotime("-{$timeoutHours} hours"));
 
             $stuckItems = $db->table('tbl_upload_queue')

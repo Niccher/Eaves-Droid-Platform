@@ -15,7 +15,7 @@
                         <div class="d-flex align-items-center">
                             <h1 class="h2 mb-0">
                                 <i class="fas fa-microchip text-info mr-2"></i>
-                                Advanced Analysis Suite
+                                AdvancedController Analysis Suite
                             </h1>
                             <div class="ml-3">
                                 <span class="badge badge-info border p-2">
@@ -40,7 +40,7 @@
                     <div class="col-md-12">
                         <div class="card card-outline card-info shadow-sm">
                             <div class="card-header">
-                                <?php $_eng = (new \App\Models\Mod_Anomalies())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
+                                <?php $_eng = (new \App\Models\AnomaliesModel())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
                         <h3 class="card-title"><i class="fas fa-brain mr-2"></i> <?= $_engLabel ?> Intelligence</h3>
                             </div>
                             <div class="card-body">
@@ -66,7 +66,7 @@
             <?php endif; ?>
             <div class="container-fluid">
                 
-                <!-- Advanced Features Grid -->
+                <!-- AdvancedController Features Grid -->
                 <div class="row">
                     <!-- Financial Intelligence -->
                     <div class="col-md-6">
@@ -139,7 +139,7 @@
                                 </h3>
                             </div>
                             <div class="card-body">
-                                <p>Analyze communication frequency to map out the social circle and interaction heatmaps.</p>
+                                <p>AnalyzeController communication frequency to map out the social circle and interaction heatmaps.</p>
                                 <div class="alert alert-light border">
                                     <i class="fas fa-project-diagram mr-2"></i> Top 10 Connections & New Contact Alerts.
                                 </div>
@@ -163,7 +163,7 @@
                                 </div>
                             </div>
                             <div class="card-body">
-                                <p>Analyze activity patterns (walking, driving, still) and screen time habits to build a lifestyle profile.</p>
+                                <p>AnalyzeController activity patterns (walking, driving, still) and screen time habits to build a lifestyle profile.</p>
                                 <div class="alert alert-light border">
                                     <i class="fas fa-history mr-2"></i> Movement Trends & Digital Balance.
                                 </div>
@@ -218,7 +218,7 @@
                                     <i class="fas fa-coins mr-2"></i> Bill Detection & Expense Forecasting.
                                 </div>
                                 <a href="<?= base_url('analysis/subscriptions') ?>" class="btn btn-success btn-block">
-                                    <i class="fas fa-receipt mr-1"></i> View Subscriptions
+                                    <i class="fas fa-receipt mr-1"></i> View SubscriptionsController
                                 </a>
                             </div>
                         </div>
@@ -260,11 +260,11 @@
                                     Media & Storage Forensics
                                 </h3>
                                 <div class="card-tools">
-                                    <span class="badge badge-info">Files</span>
+                                    <span class="badge badge-info">FilesController</span>
                                 </div>
                             </div>
                             <div class="card-body">
-                                <p>Analyze disk usage by source (WhatsApp vs Camera) and identify aging media content or large space hogs.</p>
+                                <p>AnalyzeController disk usage by source (WhatsApp vs Camera) and identify aging media content or large space hogs.</p>
                                 <div class="alert alert-light border">
                                     <i class="fas fa-folder-open mr-2"></i> Storage Health & Source Auditing.
                                 </div>
@@ -295,7 +295,7 @@
                                     <i class="fas fa-heartbeat mr-2"></i> Emotional Profiling & Social Health.
                                 </div>
                                 <a href="<?= base_url('analysis/sentiment') ?>" class="btn btn-warning btn-block">
-                                    <i class="fas fa-brain mr-1"></i> Analyze Relationship Tone
+                                    <i class="fas fa-brain mr-1"></i> AnalyzeController Relationship Tone
                                 </a>
                             </div>
                         </div>

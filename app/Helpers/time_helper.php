@@ -45,7 +45,7 @@ if (! function_exists('package_url_encode')) {
      */
     function package_url_encode(string $packageName): string
     {
-        $crypt   = new \App\Models\Mod_Crypt();
+        $crypt   = new \App\Models\CryptModel();
         $encoded = $crypt->base64url_encode($packageName);
 
         return $encoded !== false ? $encoded : '';
@@ -62,7 +62,7 @@ if (! function_exists('package_url_decode')) {
             return null;
         }
 
-        $crypt   = new \App\Models\Mod_Crypt();
+        $crypt   = new \App\Models\CryptModel();
         $decoded = $crypt->base64url_decode($segment, true);
 
         if ($decoded === false || $decoded === '') {

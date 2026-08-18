@@ -70,7 +70,7 @@ class Autoload extends AutoloadConfig
 
     /**
      * -------------------------------------------------------------------
-     * Files
+     * FilesController
      * -------------------------------------------------------------------
      * The files array provides a list of paths to __non-class__ files
      * that will be autoloaded. This can be useful for bootstrap operations

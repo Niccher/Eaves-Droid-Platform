@@ -39,7 +39,7 @@ class CreateMlAnalysisTracking extends Migration
             'updated_at' => [
                 'type'       => 'DATETIME',
                 'null'       => false,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
                 // ON UPDATE CURRENT_TIMESTAMP (add via raw query if required)
             ],
         ]);

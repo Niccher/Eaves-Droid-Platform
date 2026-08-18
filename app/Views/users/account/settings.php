@@ -47,8 +47,8 @@
                                     <div class="row">
                                         <!-- Create Token Panel -->
                                         <div class="col-lg-5 mb-4">
-                                            <div class="card card-success h-100 border-success shadow-sm">
-                                                <div class="card-header bg-success text-white">
+                                            <div class="card card-secondary h-100 shadow-sm">
+                                                <div class="card-header bg-gradient-secondary text-white">
                                                     <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>New Token</h5>
                                                 </div>
                                                 <div class="card-body text-center">
@@ -59,7 +59,7 @@
                                                             <input type="text" class="form-control text-center" id="tokenName" name="token_name" placeholder="e.g. My Pixel 7">
                                                             <small class="text-muted">Optional name to identify this token</small>
                                                         </div>
-                                                        <button type="submit" class="btn btn-success btn-lg btn-block shadow-sm font-weight-bold" id="createTokenBtn">
+                                                        <button type="submit" class="btn btn-outline-secondary btn-lg btn-block shadow-sm font-weight-bold" id="createTokenBtn">
                                                             <i class="fas fa-plus mr-2"></i> Generate Token
                                                         </button>
                                                     </form>
@@ -87,9 +87,11 @@
                                         <!-- Token History Panel -->
                                         <div class="col-lg-7 mb-4">
                                             <div class="card h-100 border shadow-sm">
-                                                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                                                    <h5 class="mb-0"><i class="fas fa-history mr-2"></i>Token History</h5>
-                                                    <span class="badge badge-light"><?= count($used_tokens) ?> total</span>
+                                                <div class="card-header bg-secondary text-white d-flex align-items-center">
+                                                    <h5 class="card-title mb-0"><i class="fas fa-history mr-2"></i>Token History</h5>
+                                                    <div class="card-tools ml-auto">
+                                                        <span class="badge badge-light"><?= count($used_tokens) ?> total</span>
+                                                    </div>
                                                 </div>
                                                 <div class="card-body p-0">
                                                     <?php if (!empty($used_tokens)): ?>

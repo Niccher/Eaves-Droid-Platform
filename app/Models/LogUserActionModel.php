@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_Log_User_Action extends Model
+class LogUserActionModel extends Model
 {
     protected $table = 'tbl_user_actions';
     protected $primaryKey = 'id';
@@ -114,7 +114,7 @@ class Mod_Log_User_Action extends Model
                 } elseif (stripos($uaString, 'postman') !== false) {
                     $data['browser'] = 'Postman';
                 } else {
-                    $data['browser'] = 'API Client';
+                    $data['browser'] = 'API ClientController';
                 }
             }
         }

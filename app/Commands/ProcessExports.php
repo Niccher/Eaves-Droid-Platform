@@ -4,7 +4,7 @@ namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use App\Models\Mod_Export_Job;
+use App\Models\ExportJobModel;
 use App\Services\ForensicExportService;
 
 class ProcessExports extends BaseCommand
@@ -28,7 +28,7 @@ class ProcessExports extends BaseCommand
         ]);
         $logId = $db->insertID();
 
-        $jobModel = new Mod_Export_Job();
+        $jobModel = new ExportJobModel();
         $service = new ForensicExportService();
 
         try {

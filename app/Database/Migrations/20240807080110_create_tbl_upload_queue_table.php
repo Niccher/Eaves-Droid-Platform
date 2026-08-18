@@ -95,7 +95,7 @@ class CreateTblUploadQueue extends Migration
             'queued_at' => [
                 'type'       => 'DATETIME',
                 'null'       => true,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
             ],
             'processing_started_at' => [
                 'type'       => 'DATETIME',
@@ -108,7 +108,7 @@ class CreateTblUploadQueue extends Migration
             'updated_at' => [
                 'type'       => 'DATETIME',
                 'null'       => true,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
                 // ON UPDATE CURRENT_TIMESTAMP (add via raw query if required)
             ],
         ]);

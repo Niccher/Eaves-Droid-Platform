@@ -60,7 +60,7 @@ class Security extends BaseConfig
      *
      * Expiration time for Cross Site Request Forgery protection cookie.
      *
-     * Defaults to two hours (in seconds).
+     * DefaultsController to two hours (in seconds).
      */
     public int $expires = 7200;
 
@@ -96,7 +96,7 @@ class Security extends BaseConfig
      *
      * Allowed values are: None - Lax - Strict - ''.
      *
-     * Defaults to `Lax` as recommended in this link:
+     * DefaultsController to `Lax` as recommended in this link:
      *
      * @see https://portswigger.net/web-security/csrf/samesite-cookies
      *

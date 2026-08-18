@@ -9,7 +9,7 @@ use Phpml\FeatureExtraction\TfIdfTransformer;
 use Phpml\FeatureExtraction\TokenCountVectorizer;
 use Phpml\Tokenization\WhitespaceTokenizer;
 
-class Mod_ML_Analyzer
+class MLAnalyzerModel
 {
     public static function preprocess(string $text): string
     {
@@ -229,7 +229,7 @@ class Mod_ML_Analyzer
 
         $totalSms = array_sum($smsCounts);
         $totalCalls = array_sum($callCounts);
-        $dominant = $totalSms > $totalCalls ? 'SMS' : 'Calls';
+        $dominant = $totalSms > $totalCalls ? 'SMS' : 'CallsController';
         $topName = $count > 0 ? ($socialData[0]['name'] !== 'Unknown' ? $socialData[0]['name'] : $socialData[0]['number']) : '—';
 
         $insights = [
@@ -327,7 +327,7 @@ class Mod_ML_Analyzer
         return [
             'algorithm' => 'Z-Score Anomaly Detection (threshold: 1.5σ)',
             'data_source' => 'App permission risk scores',
-            'description' => 'Applies Z-Score analysis to detect permission-risk outliers. Apps with a score more than 1.5 standard deviations above the mean are flagged as anomalous — they request significantly more sensitivity than typical apps on this device.',
+            'description' => 'Applies Z-Score analysis to detect permission-risk outliers. AppsController with a score more than 1.5 standard deviations above the mean are flagged as anomalous — they request significantly more sensitivity than typical apps on this device.',
             'insights' => $insights,
         ];
     }
@@ -417,7 +417,7 @@ class Mod_ML_Analyzer
     {
         $count = count($clusterData);
         if ($count === 0) {
-            return ['algorithm' => '—', 'data_source' => 'Location clusters', 'description' => 'No location clusters found.', 'insights' => []];
+            return ['algorithm' => '—', 'data_source' => 'LocationController clusters', 'description' => 'No location clusters found.', 'insights' => []];
         }
 
         $totalPings = array_sum(array_column($clusterData, 'pings'));

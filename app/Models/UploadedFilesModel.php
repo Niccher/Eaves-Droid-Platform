@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_Uploaded_Files extends Model
+class UploadedFilesModel extends Model
 {
     protected $table = 'tbl_uploaded_files';
     protected $primaryKey = 'file_id';

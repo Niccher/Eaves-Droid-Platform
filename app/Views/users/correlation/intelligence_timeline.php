@@ -49,7 +49,7 @@ $bSms    = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 's
 $bCalls  = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 'call'));
 $bMissed = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 'call' && ($e['subtype'] ?? '') === 'missed'));
 
-// Advanced type counts from current page data
+// AdvancedController type counts from current page data
 $aCounts = [];
 $advExclude = ['sms', 'call'];
 if (!empty($advanced_timeline)) {
@@ -113,7 +113,7 @@ $aTotal = $adv_total ?? count($advanced_timeline ?? []);
                         </li>
                         <li class="nav-item">
                             <a class="nav-link <?= $default_tab === 'advanced' ? 'active' : '' ?>" id="tab-advanced" data-toggle="pill" href="#pane-advanced" role="tab">
-                                <i class="fas fa-layer-group mr-1"></i> Advanced Timeline
+                                <i class="fas fa-layer-group mr-1"></i> AdvancedController Timeline
                                 <span class="badge badge-dark ml-1"><?= number_format($aTotal) ?></span>
                             </a>
                         </li>
@@ -343,7 +343,7 @@ $(function(){
     $s.on('input', applyBasic);
     hideOrphans($bT);
 
-    // Advanced filter buttons (JS only, no reload)
+    // AdvancedController filter buttons (JS only, no reload)
     var $aT = $('#adv-tl');
     function applyAdvanced() {
         var activeBtn = $('#pane-advanced .af-btn.active');

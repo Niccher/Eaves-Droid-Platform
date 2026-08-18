@@ -63,8 +63,8 @@
 
             <!-- Info boxes -->
             <div class="row">
-                <div class="col-12 col-sm-4">
-                    <div class="info-box bg-danger">
+                <div class="col-12 col-sm-3">
+                    <div class="info-box bg-danger shadow-sm">
                         <span class="info-box-icon"><i class="fas fa-gamepad"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">Social & Gaming</span>
@@ -72,13 +72,13 @@
                             <div class="progress">
                                 <div class="progress-bar" style="width: <?= $dopamine_pct ?>%"></div>
                             </div>
-                            <span class="progress-description"><?= $dopamine_pct ?>% of total tracked time</span>
+                            <span class="progress-description"><?= $dopamine_pct ?>% of tracked time</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-4">
-                    <div class="info-box bg-success">
+                <div class="col-12 col-sm-3">
+                    <div class="info-box bg-success shadow-sm">
                         <span class="info-box-icon"><i class="fas fa-briefcase"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">Productivity & Work</span>
@@ -86,13 +86,13 @@
                             <div class="progress">
                                 <div class="progress-bar" style="width: <?= $productivity_pct ?>%"></div>
                             </div>
-                            <span class="progress-description"><?= $productivity_pct ?>% of total tracked time</span>
+                            <span class="progress-description"><?= $productivity_pct ?>% of tracked time</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-4">
-                    <div class="info-box bg-info">
+                <div class="col-12 col-sm-3">
+                    <div class="info-box bg-info shadow-sm">
                         <span class="info-box-icon"><i class="fas fa-mobile-alt"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">Other Apps</span>
@@ -100,7 +100,21 @@
                             <div class="progress">
                                 <div class="progress-bar" style="width: <?= $other_pct ?>%"></div>
                             </div>
-                            <span class="progress-description"><?= $other_pct ?>% of total tracked time</span>
+                            <span class="progress-description"><?= $other_pct ?>% of tracked time</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-3">
+                    <div class="info-box bg-warning shadow-sm">
+                        <span class="info-box-icon text-white"><i class="fas fa-lock-open"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Device Unlocks</span>
+                            <span class="info-box-number text-dark"><?= number_format($total_unlocks) ?> times</span>
+                            <div class="progress">
+                                <div class="progress-bar bg-dark" style="width: 100%"></div>
+                            </div>
+                            <span class="progress-description text-muted">Screen turns ON activations</span>
                         </div>
                     </div>
                 </div>
@@ -174,15 +188,14 @@
                         </div>
                         <div class="card-body table-responsive p-0">
                             <table class="table table-hover table-striped">
-                                <thead><tr><th>Date</th><th>Sleep Start</th><th>Sleep End</th><th>Duration (hrs)</th><th>Stages</th></tr></thead>
+                                <thead><tr><th>Date</th><th>Estimated Bedtime</th><th>Estimated Wake Time</th><th>Inactivity Duration</th></tr></thead>
                                 <tbody>
                                 <?php foreach ($sleep as $s): ?>
                                 <tr>
                                     <td><?= esc($s['date']) ?></td>
                                     <td><?= esc($s['sleep_start']) ?></td>
                                     <td><?= esc($s['sleep_end']) ?></td>
-                                    <td><?= esc($s['duration_hours']) ?></td>
-                                    <td><?= esc(implode(', ', $s['stages'])) ?></td>
+                                    <td><?= esc($s['duration_hours']) ?> hrs</td>
                                 </tr>
                                 <?php endforeach; ?>
                                 </tbody>

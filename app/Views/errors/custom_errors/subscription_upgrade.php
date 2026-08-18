@@ -51,7 +51,7 @@ $currentSupport     = $currentVer['support_tier'] ?? 'standard';
 
 $algoTierLabels = [
     'core'     => 'Core Algorithms',
-    'advanced' => 'Advanced Algorithms',
+    'advanced' => 'AdvancedController Algorithms',
     'deep'     => 'Deep-Learning Models',
 ];
 

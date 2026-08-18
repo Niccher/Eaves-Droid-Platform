@@ -9,7 +9,7 @@
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="<?= base_url('home') ?>">Home</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('analysis') ?>">Analysis</a></li>
-                        <li class="breadcrumb-item active">Anomalies</li>
+                        <li class="breadcrumb-item active">AnomaliesController</li>
                     </ol>
                 </div>
             </div>

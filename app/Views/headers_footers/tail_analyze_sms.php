@@ -40,7 +40,7 @@
 
                 $(".source_save_data_points").click(function(){
                     var senders = '"'+ $(".source_sms").select2().val() + '"';
-                    <?php $encrypter = model('Mod_Crypt'); ?>
+                    <?php $encrypter = model('CryptModel'); ?>
                     var my_id = "<?php echo $encrypter->base64url_encode($user_info['id']);?>";
                     var urls = "<?php echo base_url('analysis/set/set_sms_datapoints/'); ?>";
                     $.ajax({

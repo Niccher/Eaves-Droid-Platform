@@ -372,7 +372,7 @@ class GeoIntelligenceService
                 'user_id' => $place['user_id'],
                 'device_id' => $place['device_id'],
                 'place_id' => $place['id'],
-                'name' => $place['label'] === 'home' ? 'Home' : ($place['label'] === 'work' ? 'Work' : 'Place'),
+                'name' => $place['label'] === 'home' ? 'HomeController' : ($place['label'] === 'work' ? 'Work' : 'Place'),
                 'type' => $place['label'],
                 'center_lat' => $place['centroid_lat'],
                 'center_lng' => $place['centroid_lng'],

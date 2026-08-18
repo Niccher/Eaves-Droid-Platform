@@ -47,12 +47,12 @@ class CreateTblDeviceConfigs extends Migration
             'created_at' => [
                 'type'       => 'DATETIME',
                 'null'       => true,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
             ],
             'updated_at' => [
                 'type'       => 'DATETIME',
                 'null'       => true,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
                 // ON UPDATE CURRENT_TIMESTAMP (add via raw query if required)
             ],
         ]);

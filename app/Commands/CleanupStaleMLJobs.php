@@ -4,7 +4,7 @@ namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use App\Models\Mod_Anomalies;
+use App\Models\AnomaliesModel;
 
 class CleanupStaleMLJobs extends BaseCommand
 {
@@ -48,7 +48,7 @@ class CleanupStaleMLJobs extends BaseCommand
                 CLI::write(' No stale ML jobs found.', 'green');
                 $output .= 'No stale ML jobs found.' . PHP_EOL;
             } else {
-                $model = new Mod_Anomalies();
+                $model = new AnomaliesModel();
                 $cleanedCount = 0;
 
                 foreach ($staleJobs as $job) {

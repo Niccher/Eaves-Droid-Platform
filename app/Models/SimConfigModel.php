@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class Mod_SimConfig extends Model
+class SimConfigModel extends Model
 {
     protected $table = 'tbl_sim_configs';
     protected $primaryKey = 'id';

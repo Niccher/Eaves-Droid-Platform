@@ -56,7 +56,7 @@ class CreateTblDeviceRiskScores extends Migration
             'created_at' => [
                 'type'       => 'TIMESTAMP',
                 'null'       => false,
-                'default'    => 'CURRENT_TIMESTAMP',
+                'default'    => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
             ],
         ]);
 

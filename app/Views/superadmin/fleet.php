@@ -113,7 +113,7 @@
                                 <hr>
                                 <h6>Storage Summary:</h6>
                                 <div class="d-flex justify-content-between">
-                                    <span>Files Storage:</span>
+                                    <span>FilesController Storage:</span>
                                     <span><?= number_format(floor($data_by_category['Files']['storage'] / (1024*1024)), 2) ?> MB</span>
                                 </div>
                                 <div class="d-flex justify-content-between">
@@ -148,7 +148,7 @@
                 </div>
             </div>
             
-            <!-- Advanced Statistics -->
+            <!-- AdvancedController Statistics -->
             <div class="row mt-4">
                 <!-- Activity Trends -->
                 <div class="col-md-6">

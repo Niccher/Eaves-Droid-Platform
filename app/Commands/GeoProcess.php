@@ -65,7 +65,7 @@ class GeoProcess extends BaseCommand
         // 4. Check anomalies
         CLI::write("\n[4/4] Checking anomalies...", 'yellow');
         $anomalies = $this->checkAnomalies($userId, $deviceId, $days);
-        CLI::write("Anomalies found: $anomalies", 'green');
+        CLI::write("AnomaliesController found: $anomalies", 'green');
         
         CLI::write("\n=== geo:process completed ===", 'green');
     }

@@ -97,7 +97,7 @@
                     <div class="small-box bg-secondary">
                         <div class="inner">
                             <h3><?= number_format($total_files) ?></h3>
-                            <p>Files</p>
+                            <p>FilesController</p>
                         </div>
                         <div class="icon"><i class="fas fa-file"></i></div>
                         <a href="<?= base_url('files') ?>" class="small-box-footer">View All <i class="fas fa-arrow-circle-right"></i></a>
@@ -197,7 +197,7 @@
                                     </thead>
                                     <tbody>
                                         <?php
-                                        $modFinder = new \App\Models\Mod_Finder();
+                                        $modFinder = new \App\Models\FinderModel();
                                         $i = 1; foreach ($active_sms as $sms => $smsinfo):
                                             $number = substr($smsinfo['sms_number'] ?? '', 0, 1);
                                             $old_number = $smsinfo['sms_number'] ?? '';

@@ -70,7 +70,7 @@
                                 <div class="col-md-4 mb-3">
                                     <div class="card border-info">
                                         <div class="card-body text-center">
-                                            <h6 class="card-title text-info"><i class="fas fa-file mr-1"></i> All Files</h6>
+                                            <h6 class="card-title text-info"><i class="fas fa-file mr-1"></i> All FilesController</h6>
                                             <div class="h4 mb-0"><?= esc($all_files_size_formatted ?? '0 B') ?></div>
                                             <small class="text-muted">Uploaded files on disk</small>
                                         </div>
@@ -90,7 +90,7 @@
                                         <div class="card-body text-center">
                                             <h6 class="card-title text-primary"><i class="fas fa-hdd mr-1"></i> Total Used</h6>
                                             <div class="h4 mb-0"><?= esc($total_used_size_formatted ?? '0 B') ?></div>
-                                            <small class="text-muted">Files + Database</small>
+                                            <small class="text-muted">FilesController + Database</small>
                                         </div>
                                     </div>
                                 </div>

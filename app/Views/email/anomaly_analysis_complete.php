@@ -1,7 +1,7 @@
 <?php
 /**
  * Content template for: Anomaly Analysis Complete
- * Used by: Mod_Anomalies::sendAnalysisCompleteEmail
+ * Used by: AnomaliesModel::sendAnalysisCompleteEmail
  * Layout: email/_layout
  */
 ?>
@@ -27,7 +27,7 @@
                 <strong>Contacts:</strong> <?= number_format($analysis_counts['contacts']['total'] ?? 0) ?> |
                 <strong>Locations:</strong> <?= number_format($analysis_counts['locations']['total'] ?? 0) ?> |
                 <strong>Apps:</strong> <?= number_format($analysis_counts['apps']['total'] ?? 0) ?> |
-                <strong>Files:</strong> <?= number_format($analysis_counts['files']['total'] ?? 0) ?> |
+                <strong>FilesController:</strong> <?= number_format($analysis_counts['files']['total'] ?? 0) ?> |
                 <strong>Activity:</strong> <?= number_format($analysis_counts['activity']['total'] ?? 0) ?> |
                 <strong>Hardware/Device Info:</strong> <?= number_format($analysis_counts['device_info']['total'] ?? 0) ?>
             </td>
@@ -59,7 +59,7 @@
     </table>
     
     <!-- 2. Grouped Anomaly Results -->
-    <h3 style="color:#0f172a;font-size:16px;font-weight:700;margin:24px 0 12px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;">⚠️ Flagged Anomalies by Category</h3>
+    <h3 style="color:#0f172a;font-size:16px;font-weight:700;margin:24px 0 12px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;">⚠️ Flagged AnomaliesController by Category</h3>
     
     <?php
     // Map view category keys to standard DB count keys

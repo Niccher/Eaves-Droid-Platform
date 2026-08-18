@@ -270,7 +270,7 @@ $tab = $active_tab ?? 'all';
                     <div class="tab-pane <?= $tab === 'php-errors' ? 'active' : '' ?>" id="tab-php-errors">
                         <?php if (!empty($errorFilename) && !empty($errorLines)): ?>
                         <div class="mb-2">
-                            <a href="<?= base_url('admin/logs') ?>" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left mr-1"></i> Back to PHP Error Files</a>
+                            <a href="<?= base_url('admin/logs') ?>" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left mr-1"></i> Back to PHP Error FilesController</a>
                             <small class="text-muted ml-2">Viewing: <code><?= htmlspecialchars($errorFilename) ?></code> (last <?= count($errorLines) ?> lines)</small>
                         </div>
                         <pre class="p-3 bg-dark text-light rounded" style="max-height:600px;overflow:auto;font-size:12px;line-height:1.4;"><?php foreach ($errorLines as $line): ?><?= htmlspecialchars($line) ?><?php echo "\n"; ?><?php endforeach; ?></pre>

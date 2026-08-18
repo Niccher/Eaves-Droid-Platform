@@ -229,7 +229,7 @@
                                 <tr role="row">
                                     <th>Sender</th>
                                     <th>Time</th>
-                                    <th>Sms</th>
+                                    <th>SmsController</th>
                                 </tr>
                                 </thead>
                                 <tbody>

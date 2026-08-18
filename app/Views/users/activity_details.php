@@ -16,41 +16,138 @@
         </div>
       </div>
 
-      <!-- AdminLTE Info Boxes -->
+      <!-- Premium Redesigned Telemetry Cards with AdminLTE Properties -->
+      <style>
+        .sync-pulse {
+          width: 6px;
+          height: 6px;
+          background-color: #17a2b8;
+          border-radius: 50%;
+          display: inline-block;
+          box-shadow: 0 0 0 0 rgba(23, 162, 184, 0.7);
+          animation: pulse 1.6s infinite;
+        }
+        @keyframes pulse {
+          0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(23, 162, 184, 0.7);
+          }
+          70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 5px rgba(23, 162, 184, 0);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(23, 162, 184, 0);
+          }
+        }
+        .telemetry-visual-box {
+          width: 46px;
+          height: 46px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+        .bg-paired-light { background-color: rgba(23, 162, 184, 0.08); color: #17a2b8; }
+        .bg-state-light { background-color: rgba(40, 167, 69, 0.08); color: #28a745; }
+        .bg-battery-light { background-color: rgba(255, 193, 7, 0.08); color: #ffc107; }
+
+        .battery-track {
+          width: 100px;
+          height: 5px;
+          background-color: #e7eaf3;
+          border-radius: 3px;
+          margin-top: 6px;
+          overflow: hidden;
+        }
+        .battery-fill {
+          height: 100%;
+          border-radius: 3px;
+        }
+      </style>
+
       <div class="row mt-2">
-        <div class="col-md-4 col-sm-6">
-          <div class="info-box shadow-sm">
-            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-walking"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">Paired Events</span>
-              <span class="info-box-number"><?= number_format($totalActivities) ?></span>
+        <!-- Card: Paired Events -->
+        <div class="col-lg-4 col-sm-6 mb-3">
+          <div class="card card-outline card-info shadow-sm h-100 mb-0">
+            <div class="card-body d-flex align-items-center justify-content-between p-3">
+              <div>
+                <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">Telemetry Feed</span>
+                <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;"><?= number_format($totalActivities) ?></h3>
+                <small class="text-muted d-block mt-2">
+                  <span class="sync-pulse mr-1"></span> Paired Sensor Events
+                </small>
+              </div>
+              <div class="telemetry-visual-box bg-paired-light">
+                <i class="fas fa-link"></i>
+              </div>
             </div>
           </div>
         </div>
-        <div class="col-md-4 col-sm-6">
-          <div class="info-box shadow-sm">
-            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-heartbeat"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">Dominant State</span>
-              <span class="info-box-number" style="font-size:1.2rem;">
-                <?php
-                $topType = '—'; $maxHits = 0;
-                foreach (($activity_stats['types'] ?? []) as $t) {
-                    if ($t['count'] > $maxHits) { $maxHits = $t['count']; $topType = $t['activity_type']; }
-                }
-                echo htmlspecialchars(strtoupper($topType));
-                ?>
-              </span>
-              <span class="progress-description"><?= $maxHits ?> hits</span>
+
+        <!-- Card: Dominant State -->
+        <?php
+        $topType = '—'; $maxHits = 0;
+        foreach (($activity_stats['types'] ?? []) as $t) {
+            if ($t['count'] > $maxHits) { $maxHits = $t['count']; $topType = $t['activity_type']; }
+        }
+        $stateLabel = strtoupper($topType);
+        $stateDesc = 'Active baseline';
+        $stateIcon = 'fa-chart-line';
+        if (str_contains($stateLabel, 'STILL') || str_contains($stateLabel, 'IDLE')) {
+            $stateDesc = 'Stationary / Idle';
+            $stateIcon = 'fa-chair';
+        } elseif (str_contains($stateLabel, 'WALK')) {
+            $stateDesc = 'Walking pace';
+            $stateIcon = 'fa-walking';
+        } elseif (str_contains($stateLabel, 'VEHICLE')) {
+            $stateDesc = 'In moving vehicle';
+            $stateIcon = 'fa-car';
+        }
+        ?>
+        <div class="col-lg-4 col-sm-6 mb-3">
+          <div class="card card-outline card-success shadow-sm h-100 mb-0">
+            <div class="card-body d-flex align-items-center justify-content-between p-3">
+              <div>
+                <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">Dominant State</span>
+                <h3 class="mb-0 mt-1" style="font-size: 22px; font-weight: 800; color: #1e2022;"><?= htmlspecialchars($stateLabel) ?></h3>
+                <small class="text-muted d-block mt-2">
+                  <i class="fas fa-fire mr-1 text-success"></i> <?= $maxHits ?> hits &bull; <?= $stateDesc ?>
+                </small>
+              </div>
+              <div class="telemetry-visual-box bg-state-light">
+                <i class="fas <?= $stateIcon ?>"></i>
+              </div>
             </div>
           </div>
         </div>
-        <div class="col-md-4 col-sm-6">
-          <div class="info-box shadow-sm">
-            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-battery-half"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">Avg Battery</span>
-              <span class="info-box-number"><?= $activity_stats['avg_battery'] ?? 0 ?>%</span>
+
+        <!-- Card: Avg Battery -->
+        <?php
+        $battVal = (int)($activity_stats['avg_battery'] ?? 0);
+        $battColor = '#28a745'; // green
+        if ($battVal < 20) {
+            $battColor = '#dc3545'; // red
+        } elseif ($battVal < 60) {
+            $battColor = '#ffc107'; // amber
+        }
+        ?>
+        <div class="col-lg-4 col-sm-6 mb-3">
+          <div class="card card-outline card-warning shadow-sm h-100 mb-0">
+            <div class="card-body d-flex align-items-center justify-content-between p-3">
+              <div>
+                <span class="text-uppercase text-muted" style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px;">Average Battery</span>
+                <h3 class="mb-0 mt-1" style="font-size: 26px; font-weight: 800; color: #1e2022;"><?= $battVal ?>%</h3>
+                <div class="battery-track">
+                  <div class="battery-fill" style="width: <?= $battVal ?>%; background-color: <?= $battColor ?>;"></div>
+                </div>
+              </div>
+              <div class="telemetry-visual-box bg-battery-light">
+                <i class="fas fa-battery-three-quarters" style="color: <?= $battColor ?>;"></i>
+              </div>
             </div>
           </div>
         </div>
@@ -65,29 +162,6 @@
   <section class="content">
     <div class="container-fluid">
       <div class="row">
-        <!-- Chart: Activity Time Distribution -->
-        <div class="col-md-6">
-          <div class="card card-info card-outline shadow-sm">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i>Activity Distribution</h3>
-            </div>
-            <div class="card-body">
-              <canvas id="activityPieChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Chart: Battery Drain Rate -->
-        <div class="col-md-6">
-          <div class="card card-warning card-outline shadow-sm">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-bolt mr-2"></i>Battery Level Telemetry</h3>
-            </div>
-            <div class="card-body">
-              <canvas id="batteryLineChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-            </div>
-          </div>
-        </div>
 
         <!-- ── User Behavioral & Power Diagnostics Dashboard ──────────────── -->
         <?php

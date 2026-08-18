@@ -109,7 +109,7 @@ hr { border: none; border-top: 1px solid #dee2e6; margin: 10pt 0; }
                 <td style="width:16.66%"><div class="scorecard"><span class="value"><?= number_format($counts['total_contacts']) ?></span><span class="label">Contacts</span></div></td>
                 <td style="width:16.66%"><div class="scorecard"><span class="value"><?= number_format($counts['total_apps']) ?></span><span class="label">Apps</span></div></td>
                 <td style="width:16.66%"><div class="scorecard"><span class="value"><?= number_format($counts['total_locations']) ?></span><span class="label">Locations</span></div></td>
-                <td style="width:16.66%"><div class="scorecard"><span class="value"><?= number_format($counts['total_files']) ?></span><span class="label">Files</span></div></td>
+                <td style="width:16.66%"><div class="scorecard"><span class="value"><?= number_format($counts['total_files']) ?></span><span class="label">FilesController</span></div></td>
             </tr>
         </table>
     </div>
@@ -238,7 +238,7 @@ hr { border: none; border-top: 1px solid #dee2e6; margin: 10pt 0; }
 
 <!-- ═══════════════════ SUBSCRIPTIONS & RECURRING BILLS ═══════════════════ -->
 <?php if (!empty($ml_subscript['insights'])): ?>
-<div class="section-title" style="page-break-before: always;">&#9632; Subscriptions &amp; Recurring Bills</div>
+<div class="section-title" style="page-break-before: always;">&#9632; SubscriptionsController &amp; Recurring Bills</div>
 <div class="card">
     <div class="card-header bg-warning">&#9670; ML Insight: <?= $ml_subscript['algorithm'] ?></div>
     <div class="card-body">
@@ -283,7 +283,7 @@ hr { border: none; border-top: 1px solid #dee2e6; margin: 10pt 0; }
                 <td class="col" style="width:40%">
                     <table class="scorecard-row">
                         <tr>
-                            <td style="width:50%"><div class="scorecard" style="border-color:#dc3545;"><span class="value text-danger"><?php preg_match('/(\d+) app\(s\) statistically above normal/', strip_tags(implode(' ', $ml_privacy['insights'])), $m); echo $m[1] ?? '0'; ?></span><span class="label">Z-Score Anomalies</span></div></td>
+                            <td style="width:50%"><div class="scorecard" style="border-color:#dc3545;"><span class="value text-danger"><?php preg_match('/(\d+) app\(s\) statistically above normal/', strip_tags(implode(' ', $ml_privacy['insights'])), $m); echo $m[1] ?? '0'; ?></span><span class="label">Z-Score AnomaliesController</span></div></td>
                             <td style="width:50%"><div class="scorecard"><span class="value"><?php preg_match('/(\d+) are critical risk/', strip_tags(implode(' ', $ml_privacy['insights'])), $m); echo $m[1] ?? '0'; ?></span><span class="label">Critical Risk Apps</span></div></td>
                         </tr>
                     </table>
@@ -493,7 +493,7 @@ hr { border: none; border-top: 1px solid #dee2e6; margin: 10pt 0; }
                     <table class="scorecard-row">
                         <tr>
                             <td style="width:50%"><div class="scorecard"><span class="value"><?php preg_match('/Storage: ([\d.]+) MB/', strip_tags($ml_storage['insights'][0] ?? ''), $m); echo $m[1] ?? '—'; ?></span><span class="label">Total (MB)</span></div></td>
-                            <td style="width:50%"><div class="scorecard"><span class="value"><?php preg_match('/across (\d+) files/', strip_tags($ml_storage['insights'][0] ?? ''), $m); echo $m[1] ?? '—'; ?></span><span class="label">Files</span></div></td>
+                            <td style="width:50%"><div class="scorecard"><span class="value"><?php preg_match('/across (\d+) files/', strip_tags($ml_storage['insights'][0] ?? ''), $m); echo $m[1] ?? '—'; ?></span><span class="label">FilesController</span></div></td>
                         </tr>
                     </table>
                     <?php

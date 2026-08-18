@@ -5,7 +5,7 @@ namespace App\Filters;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use App\Models\Mod_Android;
+use App\Models\AndroidModel;
 
 class ApiAuthFilter implements FilterInterface
 {
@@ -49,7 +49,7 @@ class ApiAuthFilter implements FilterInterface
         // ─────────────────────────────────────────────────────────────────────
         // STEP 2: Validate token against DB
         // ─────────────────────────────────────────────────────────────────────
-        $androidModel = new Mod_Android();
+        $androidModel = new AndroidModel();
         $tokenData    = $androidModel->token_test($token);
 
         if (!$tokenData) {

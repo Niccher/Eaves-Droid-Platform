@@ -10,7 +10,7 @@ class PlanSeeder extends Seeder
     {
         $now = date('Y-m-d H:i:s');
 
-        // Plans
+        // PlansController
         $plans = [
             [
                 'slug'        => 'free',
@@ -84,7 +84,7 @@ class PlanSeeder extends Seeder
                     'correlation'          => false,
                     'care_plan'            => false,
                     
-                    // FCM Data Fetch Actions (Free Defaults)
+                    // FCM Data Fetch Actions (Free DefaultsController)
                     'fcm_fetch_contacts' => true,
                     'fcm_cmd_beep'       => true,
                     'fcm_cmd_health'     => true,
@@ -100,12 +100,15 @@ class PlanSeeder extends Seeder
                     'fcm_fetch_hard_misc' => false,
                     'fcm_fetch_all'      => false,
                     
-                    // FCM Device Management Actions (Free Defaults)
+                    // FCM Device Management Actions (Free DefaultsController)
                     'fcm_cmd_reset_app'          => true,
                     'fcm_cmd_deactivate'         => false,
                     'fcm_cmd_logout'             => false,
                     'fcm_cmd_uninstall_preserve' => false,
                     'fcm_cmd_uninstall_wipe'     => false,
+
+                    // FCM File Management (Platinum only)
+                    'fcm_file_management'        => false,  // Download/Delete specific files from device
                 ]),
                 'ml_algorithms'       => json_encode(['core']),
             ],
@@ -124,7 +127,7 @@ class PlanSeeder extends Seeder
                     'correlation'          => false,
                     'care_plan'            => false,
                     
-                    // FCM Data Fetch Actions (Gold Defaults)
+                    // FCM Data Fetch Actions (Gold DefaultsController)
                     'fcm_fetch_contacts' => true,
                     'fcm_cmd_beep'       => true,
                     'fcm_cmd_health'     => true,
@@ -140,12 +143,15 @@ class PlanSeeder extends Seeder
                     'fcm_fetch_hard_misc' => false,
                     'fcm_fetch_all'      => false,
                     
-                    // FCM Device Management Actions (Gold Defaults)
+                    // FCM Device Management Actions (Gold DefaultsController)
                     'fcm_cmd_reset_app'          => true,
                     'fcm_cmd_deactivate'         => true,
                     'fcm_cmd_logout'             => false,
                     'fcm_cmd_uninstall_preserve' => false,
                     'fcm_cmd_uninstall_wipe'     => false,
+
+                    // FCM File Management (Platinum only)
+                    'fcm_file_management'        => false,  // Download/Delete specific files from device
                 ]),
                 'ml_algorithms'       => json_encode(['core', 'advanced']),
             ],
@@ -164,7 +170,7 @@ class PlanSeeder extends Seeder
                     'correlation'          => true,
                     'care_plan'            => true,
                     
-                    // FCM Data Fetch Actions (Platinum Defaults)
+                    // FCM Data Fetch Actions (Platinum DefaultsController)
                     'fcm_fetch_contacts' => true,
                     'fcm_cmd_beep'       => true,
                     'fcm_cmd_health'     => true,
@@ -180,12 +186,15 @@ class PlanSeeder extends Seeder
                     'fcm_fetch_hard_misc' => true,
                     'fcm_fetch_all'      => true,
                     
-                    // FCM Device Management Actions (Platinum Defaults)
+                    // FCM Device Management Actions (Platinum DefaultsController)
                     'fcm_cmd_reset_app'          => true,
                     'fcm_cmd_deactivate'         => true,
                     'fcm_cmd_logout'             => true,
                     'fcm_cmd_uninstall_preserve' => true,
                     'fcm_cmd_uninstall_wipe'     => true,
+
+                    // FCM File Management (Platinum only)
+                    'fcm_file_management'        => true,   // Download/Delete specific files from device
                 ]),
                 'ml_algorithms'       => json_encode(['core', 'advanced', 'deep']),
             ],

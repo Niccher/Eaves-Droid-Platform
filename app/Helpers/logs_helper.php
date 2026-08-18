@@ -8,7 +8,7 @@ if (!function_exists('renderLogsTable')) {
      * @param string $title
      * @return string
      */
-    function renderLogsTable(array $logs, string $title = 'Logs'): string
+    function renderLogsTable(array $logs, string $title = 'LogsController'): string
     {
         if (empty($logs)) {
             return '
@@ -225,7 +225,7 @@ if (!function_exists('getCategoryIcon')) {
 
 if (!function_exists('getFileCategoryIcon')) {
     /**
-     * Gets icon for a file sub-category (SMS, Contacts, Calls, Files, Location, etc.)
+     * Gets icon for a file sub-category (SMS, ContactsController, CallsController, FilesController, LocationController, etc.)
      *
      * @param string $category
      * @return string
