@@ -1,4 +1,5 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php helper('coalesce'); $rows = coalesce_snapshots($rows, 'device_id'); ?>
 
 <?php
 // Derive count columns from the decoded JSON arrays (populated by get_security_audit)

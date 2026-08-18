@@ -1,4 +1,18 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php
+foreach ($rows as &$r) {
+    $r['ime_unique_key'] = ($r['device_id'] ?? 'default') . '_' . ($r['ime_id'] ?? 'unknown');
+}
+unset($r);
+
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'ime_unique_key',
+    ['ime_id', 'package_name', 'label', 'is_system', 'service_name', 'is_auxiliary'],
+    ['subtypes']
+);
+?>
 
 <?= view('users/advanced/_card_table', [
     'title'    => 'Input Methods (IMEs)',
@@ -21,5 +35,4 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/software/input_methods/delete'),
 ]) ?>

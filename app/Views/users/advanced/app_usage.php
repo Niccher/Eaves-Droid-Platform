@@ -1,4 +1,6 @@
 <?php
+helper('coalesce'); $rows = coalesce_snapshots($rows, 'device_id');
+
 /** @var array $rows @var int $total @var int $total_snapshots @var object $pager @var string $nav_urls */
 /** @var bool $detail_mode @var string|null $package_name @var array|null $summary @var array|null $app_detail @var array|null $sessions @var string|null $back_url */
 if (!empty($detail_mode)) {

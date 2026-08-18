@@ -1,4 +1,17 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php
+foreach ($rows as &$r) {
+    $r['account_unique_key'] = ($r['device_id'] ?? 'default') . '_' . ($r['account_name'] ?? 'unknown');
+}
+unset($r);
+
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'account_unique_key',
+    ['account_name', 'account_type', 'account_label', 'total_count', 'summary_json', 'is_syncable', 'last_sync_time', 'last_sync_result', 'auth_token_type', 'features']
+);
+?>
 
 <?= view('users/advanced/_card_table', [
     'title'    => 'Accounts',
@@ -27,5 +40,4 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/software/accounts/delete'),
 ]) ?>

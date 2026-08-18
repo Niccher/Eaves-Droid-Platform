@@ -1,17 +1,17 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Group sensor readings by device_id and keep only the unique sensors list
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
-    $sensorKey = ($r['device_id'] ?? 'default') . '_' . ($r['sensor_name'] ?? 'unknown');
-    $key = strtolower(trim($sensorKey));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[] = $r;
-    }
+// Group sensor readings by device_id and keep only unique sensors list
+foreach ($rows as &$r) {
+    $r['sensor_unique_key'] = ($r['device_id'] ?? 'default') . '_' . ($r['sensor_name'] ?? 'unknown');
 }
-$rows = $unique;
+unset($r);
+
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'sensor_unique_key',
+    ['sensor_name', 'vendor', 'type_id', 'type_string', 'version', 'maximum_range', 'resolution', 'power_ma', 'sensor_string_type', 'min_delay_us', 'max_delay_us', 'fifo_reserved_event_count', 'fifo_max_event_count', 'is_wakeup', 'is_dynamic', 'is_additional_info', 'reporting_mode', 'required_permission', 'permission_display_name', 'flags', 'direct_channel_type', 'direct_report_rates', 'additional_info', 'calibration_params', 'mounting_matrix', 'drivetime_us', 'event_time_ns', 'sensor_max_range']
+);
 
 $typeMap = [
     1 => 'Accelerometer', 2 => 'Magnetic Field', 3 => 'Orientation',
@@ -75,7 +75,7 @@ $typeMap = [
             </ul>
           </div>
           <div class="col-md-4 pl-md-3">
-            <b class="d-block mb-1">Advanced Calibrations:</b>
+            <b class="d-block mb-1">AdvancedController Calibrations:</b>
             <ul class="pl-3 mb-0 text-muted">
               <li><b>Mounting Matrix:</b> Evaluates physical alignment coordinates to detect custom sensor frameworks.</li>
             </ul>
@@ -159,7 +159,7 @@ $typeMap = [
                 
                 <div class="sens-kv"><span class="sk">Version / Permission</span><span class="sv" style="font-size:11px;">v<?= esc($r['version'] ?? '—') ?> / <?= esc($r['required_permission'] ?? 'None') ?></span></div>
 
-                <!-- Advanced Enriched Data Blocks -->
+                <!-- AdvancedController Enriched Data Blocks -->
                 <?php if (!empty($matrix) && is_array($matrix) && count($matrix) >= 9): ?>
                   <div class="section-label mt-3 mb-1"><i class="fas fa-th-large mr-1"></i>Mounting Alignment Matrix</div>
                   <div class="matrix-grid">
@@ -186,11 +186,6 @@ $typeMap = [
 
                 <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-3">
                   <small class="text-muted" style="font-size:10px;">Extracted: <?= $ts ?></small>
-                  <button class="btn btn-xs btn-outline-danger delete-row"
-                    data-id="<?= $rid ?>"
-                    data-url="<?= base_url('advanced/hardware/sensors/delete') ?>">
-                    <i class="fas fa-trash mr-1"></i>Remove
-                  </button>
                 </div>
               </div>
             </div>

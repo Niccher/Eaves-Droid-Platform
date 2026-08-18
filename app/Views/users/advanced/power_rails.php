@@ -1,17 +1,11 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Group power rails by device_id and keep only unique rails
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
-    $railKey = ($r['device_id'] ?? 'default') . '_' . ($r['rail_name'] ?? 'unknown');
-    $key = strtolower(trim($railKey));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[] = $r;
-    }
+helper('coalesce');
+foreach ($rows as &$row) {
+    $row['device_rail_key'] = ($row['device_id'] ?? 'default') . '_' . ($row['rail_name'] ?? 'unknown');
 }
-$rows = $unique;
+unset($row);
+$rows = coalesce_snapshots($rows, 'device_rail_key');
 ?>
 
 <style>

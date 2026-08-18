@@ -1,17 +1,13 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Group by device_id and show only unique snapshots
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
-    $devId = $r['device_id'] ?? 'default';
-    $key   = strtolower(trim((string)$devId));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[]   = $r;
-    }
-}
-$rows = $unique;
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['adapter_name', 'adapter_address'],
+    ['paired_devices'],
+    'bt_address'
+);
 ?>
 
 <style>
@@ -214,11 +210,6 @@ $rows = $unique;
               <!-- Footer -->
               <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
                 <small class="text-muted">Row ID: <?= $rid ?></small>
-                <button class="btn btn-sm btn-outline-danger delete-row py-0"
-                  data-id="<?= $rid ?>"
-                  data-url="<?= base_url('advanced/hardware/bluetooth/delete') ?>">
-                  <i class="fas fa-trash mr-1"></i>Remove Snapshot
-                </button>
               </div>
             </div>
           </div>

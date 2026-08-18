@@ -349,7 +349,7 @@ $typeCounts = [
                             </div>
                         </div>
                         
-                        <!-- Right: Advanced Pill Filters -->
+                        <!-- Right: AdvancedController Pill Filters -->
                         <div class="col-lg-8 col-md-7 text-md-right">
                             <div class="d-flex flex-wrap align-items-center justify-content-md-end" style="gap: 6px;">
                                 <span class="filter-pill active" style="background:#e8f8f5;color:#0e6251;" data-filter="call">

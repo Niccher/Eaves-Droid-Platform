@@ -1,17 +1,7 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Deduplicate: show only the latest record per device_id
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
-    $devId = $r['device_id'] ?? 'default';
-    $key   = strtolower(trim((string)$devId));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[]   = $r;
-    }
-}
-$rows = $unique;
+helper('coalesce');
+$rows = coalesce_snapshots($rows, 'device_id');
 
 // Helper to extract JSON fields safely
 $parseJson = fn($v) => is_string($v) ? (json_decode($v, true) ?: []) : (is_array($v) ? $v : []);

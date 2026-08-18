@@ -1,18 +1,19 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
 // Group & deduplicate: keep the latest state per unique device using audio_device_id or product_name
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
+foreach ($rows as &$r) {
     $devId = $r['audio_device_id'] ?? 0;
     $name  = $r['product_name'] ?? '—';
-    $key   = strtolower(trim((string)$devId)) . '_' . strtolower(trim($name));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[]   = $r;
-    }
+    $r['audio_unique_key'] = ($r['device_id'] ?? 'default') . '_' . strtolower(trim((string)$devId)) . '_' . strtolower(trim($name));
 }
-$rows = $unique;
+unset($r);
+
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'audio_unique_key',
+    ['product_name', 'audio_device_id', 'is_source', 'is_sink', 'type', 'sample_rates', 'channel_masks', 'channel_index_masks', 'encodings']
+);
 
 function parseAudioList($val): array {
     if (empty($val)) return [];
@@ -204,13 +205,6 @@ function parseAudioList($val): array {
                   <span class="sv" style="font-size:11px;"><?= $ts ?></span>
                 </div>
 
-                <div class="mt-3 text-right">
-                  <button class="btn btn-sm btn-outline-danger delete-row py-0"
-                    data-id="<?= $rid ?>"
-                    data-url="<?= base_url('advanced/hardware/audio_devices/delete') ?>">
-                    <i class="fas fa-trash mr-1"></i>Remove
-                  </button>
-                </div>
               </div>
 
             </div>

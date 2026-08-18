@@ -1,17 +1,11 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Deduplicate: group by device_id and keep only the latest snapshot
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
-    $devId = $r['device_id'] ?? 'default';
-    $key   = strtolower(trim((string)$devId));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[]   = $r;
-    }
-}
-$rows = $unique;
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['locale_display_language', 'locale_display_country', 'locale_language', 'locale_country', 'locale_timezone', 'locale_timezone_offset_ms', 'clipboard_text']
+);
 ?>
 
 <style>
@@ -185,11 +179,6 @@ $rows = $unique;
               <!-- Footer -->
               <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
                 <small class="text-muted">Row ID: <?= $rid ?> · Extracted: <?= $ts ?></small>
-                <button class="btn btn-sm btn-outline-danger delete-row py-0"
-                  data-id="<?= $rid ?>"
-                  data-url="<?= base_url('advanced/hardware/device/delete') ?>">
-                  <i class="fas fa-trash mr-1"></i>Remove Snapshot
-                </button>
               </div>
             </div>
           </div>

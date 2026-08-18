@@ -1,4 +1,5 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php helper('coalesce'); $rows = coalesce_snapshots($rows, 'device_id'); ?>
 
 <?php
 // 1. Process screen logs into daily/hourly slots for the heatmap and modal popups

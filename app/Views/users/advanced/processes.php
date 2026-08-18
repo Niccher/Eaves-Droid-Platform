@@ -1,17 +1,7 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Deduplicate: group by device_id and keep only the latest snapshot
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
-    $devId = $r['device_id'] ?? 'default';
-    $key   = strtolower(trim((string)$devId));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[]   = $r;
-    }
-}
-$rows = $unique;
+helper('coalesce');
+$rows = coalesce_snapshots($rows, 'device_id');
 ?>
 
 <style>

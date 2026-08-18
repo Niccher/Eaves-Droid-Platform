@@ -1,6 +1,20 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 
 <?php
+// Group & deduplicate: keep the latest state per unique device and sensor type/id
+foreach ($rows as &$r) {
+    $r['biometric_unique_key'] = ($r['device_id'] ?? 'default') . '_' . ($r['sensor_type'] ?? 0) . '_' . ($r['sensor_id'] ?? 'default');
+}
+unset($r);
+
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'biometric_unique_key',
+    ['sensor_id', 'sensor_type', 'sensor_strength', 'current_enrollments', 'failed_attempts', 'lockout_time', 'lockout_permanent', 'invalidated_by_reenrollment', 'vendor', 'version', 'template_version', 'max_enrollments'],
+    ['enrolled_users']
+);
+
 $sensors         = [];
 $securityWarnings = [];
 
@@ -8,26 +22,11 @@ $typeLabels     = ['1' => 'Fingerprint', '2' => 'Face', '3' => 'Iris', '4' => 'V
 $strengthLabels = ['1' => 'Weak', '2' => 'Standard', '3' => 'Strong', 1 => 'Weak', 2 => 'Standard', 3 => 'Strong', 'WEAK' => 'Weak', 'STRONG' => 'Strong', 'CONVENIENCE' => 'Standard'];
 $strengthColors = ['Weak' => 'danger', 'Standard' => 'warning', 'Strong' => 'success'];
 
-$seenTypes = []; // track sensor types already shown
-
 foreach ($rows as $r) {
     $sensorId   = $r['sensor_id'] ?? 'Unknown';
     $typeId     = $r['sensor_type'] ?? 0;
     $typeName   = $typeLabels[$typeId] ?? 'Other';
 
-    // Deduplicate: only show one card per unique sensor type
-    $dedupeKey = $typeName . '_' . ($r['sensor_id'] ?? 'default');
-    // If same type AND same sensor_id already shown, skip
-    // If same type but different sensor_id (multi-sensor device), allow it
-    $typeKey = strtolower($typeName);
-    if (!isset($seenTypes[$typeKey])) {
-        $seenTypes[$typeKey] = [];
-    }
-    $sensorKey = strtolower(trim((string)($r['sensor_id'] ?? 'default')));
-    if (in_array($sensorKey, $seenTypes[$typeKey], true)) {
-        continue; // duplicate sensor_id for this type — skip
-    }
-    $seenTypes[$typeKey][] = $sensorKey;
 
     $strengthRaw = $r['sensor_strength'] ?? 'Unknown';
     $strengthName = $strengthLabels[$strengthRaw] ?? ucfirst(strtolower($strengthRaw));
@@ -171,7 +170,7 @@ foreach ($rows as $r) {
       <!-- Security Alerts -->
       <?php if (!empty($securityWarnings)): ?>
       <div class="alert alert-danger shadow-sm mb-4">
-        <h5><i class="icon fas fa-shield-alt"></i> Security Warning: Biometric Anomalies Flagged</h5>
+        <h5><i class="icon fas fa-shield-alt"></i> Security Warning: Biometric AnomaliesController Flagged</h5>
         <ul class="pl-3 mb-0" style="font-size:13.5px;">
           <?php foreach ($securityWarnings as $w): ?><li><?= $w ?></li><?php endforeach; ?>
         </ul>

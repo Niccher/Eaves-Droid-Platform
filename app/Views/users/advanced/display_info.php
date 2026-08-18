@@ -1,6 +1,15 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 
 <?php
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['width_px', 'height_px', 'real_width', 'real_height', 'usable_width', 'usable_height', 'density_dpi', 'refresh_rate', 'mode_refresh_rate', 'mode_width', 'mode_height', 'screen_layout', 'ui_mode', 'xdpi', 'ydpi', 'scaled_density', 'hdr_capable'],
+    ['displays', 'displays_json']
+);
+?>
+<?php
 // DPI category helper
 function dpiCategory(int $dpi): array {
     if ($dpi <= 0)  return ['Unknown', 'secondary'];
@@ -146,9 +155,6 @@ function aspectRatio(int $w, int $h): string {
                 <small class="text-muted mr-2"><?= $ts ?></small>
                 <button class="btn btn-tool btn-sm" data-toggle="collapse" data-target="#disp-<?= $rid ?>">
                   <i class="fas fa-<?= $isFirst ? 'minus' : 'plus' ?>"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger delete-row py-0" data-id="<?= $rid ?>" data-url="<?= base_url('advanced/hardware/display_info/delete') ?>">
-                  <i class="fas fa-trash"></i>
                 </button>
               </div>
             </div>

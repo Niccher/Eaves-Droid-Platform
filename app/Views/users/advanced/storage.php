@@ -1,16 +1,17 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Deduplicate storage by volume_path — keep the most recent snapshot per mount point.
-$seen   = [];
-$unique = [];
-foreach ($rows as $r) {
-    $key = strtolower(trim($r['volume_path'] ?? $r['id'] ?? uniqid()));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[]   = $r;
-    }
+// Group storage by device and volume path and coalesce
+foreach ($rows as &$r) {
+    $r['storage_unique_key'] = ($r['device_id'] ?? 'default') . '_' . ($r['volume_path'] ?? 'unknown');
 }
-$rows = $unique;
+unset($r);
+
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'storage_unique_key',
+    ['volume_path', 'total_bytes', 'available_bytes', 'free_bytes', 'used_bytes', 'total_formatted', 'available_formatted', 'used_formatted', 'description', 'is_removable', 'state']
+);
 
 function fmtBytes(int $bytes): string {
     if ($bytes <= 0) return '—';
@@ -172,11 +173,6 @@ $overallPct = $totalBytes > 0 ? round($usedBytes / $totalBytes * 100) : 0;
                   </span>
                   <span class="badge badge-<?= $stateColor ?> ml-1"><?= ucfirst($state) ?></span>
                 </div>
-                <button class="btn btn-sm btn-outline-danger delete-row py-0"
-                  data-id="<?= $rid ?>"
-                  data-url="<?= base_url('advanced/hardware/storage/delete') ?>">
-                  <i class="fas fa-trash"></i>
-                </button>
               </div>
 
               <div class="card-body">

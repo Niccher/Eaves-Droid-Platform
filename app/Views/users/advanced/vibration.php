@@ -1,8 +1,16 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 
 <?php
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['has_vibrator', 'has_amplitude_control', 'has_frequency_control', 'has_minimum_limit', 'has_maximum_limit', 'q_factor', 'resonant_frequency_hz', 'primitives', 'composites', 'supported_effects']
+);
+
 $actuator = null;
 $allRows  = [];
+
 
 $primIcons = [
     'CLICK'      => 'fa-mouse-pointer',

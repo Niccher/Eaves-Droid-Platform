@@ -1,19 +1,12 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Group thermal readings by device_id (or latest scan snapshot)
-// Deduplicate: group by zone_name (or CPU name) to keep only the latest reading per thermal sensor zone.
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
-    // We group/dedupe by zone_name or cpu_name to avoid listing historical duplicate sensors
-    $sensorName = !empty($r['zone_name']) ? $r['zone_name'] : (!empty($r['cpu_name']) ? $r['cpu_name'] : 'unknown');
-    $key = strtolower(trim($sensorName));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[] = $r;
-    }
+helper('coalesce');
+foreach ($rows as &$row) {
+    $sensorName = !empty($row['zone_name']) ? $row['zone_name'] : (!empty($row['cpu_name']) ? $row['cpu_name'] : 'unknown');
+    $row['sensor_key'] = ($row['device_id'] ?? 'default') . '_' . $sensorName;
 }
-$rows = $unique;
+unset($row);
+$rows = coalesce_snapshots($rows, 'sensor_key');
 
 function tempStatus(float $temp): array {
     if ($temp <= 0) return ['Unknown', 'secondary', 'fa-question-circle'];

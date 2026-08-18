@@ -1,17 +1,11 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
-// Group by device_id and keep only unique NFC snapshots
-$seen = [];
-$unique = [];
-foreach ($rows as $r) {
-    $devId = $r['device_id'] ?? 'default';
-    $key   = strtolower(trim((string)$devId));
-    if (!isset($seen[$key])) {
-        $seen[$key] = true;
-        $unique[]   = $r;
-    }
-}
-$rows = $unique;
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['nfc_available', 'nfc_supported', 'nfc_secure_nfc', 'nfc_secure_supported', 'features', 'features_json']
+);
 ?>
 
 <style>
@@ -166,11 +160,6 @@ $rows = $unique;
 
                 <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-3">
                   <small class="text-muted" style="font-size:10px;">Extracted: <?= $ts ?></small>
-                  <button class="btn btn-xs btn-outline-danger delete-row"
-                    data-id="<?= $rid ?>"
-                    data-url="<?= base_url('advanced/hardware/nfc/delete') ?>">
-                    <i class="fas fa-trash mr-1"></i>Remove
-                  </button>
                 </div>
               </div>
             </div>

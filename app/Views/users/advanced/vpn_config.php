@@ -1,4 +1,13 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['vpn_active', 'vpn_protocol', 'vpn_server', 'vpn_package', 'vpn_is_always_on', 'vpn_interface', 'vpn_mtu', 'vpn_is_lockdown', 'vpn_label', 'vpn_block_non_vpn', 'vpn_auth_type', 'vpn_ca_cert_sha256', 'vpn_client_cert_sha256', 'vpn_port'],
+    ['vpn_dns_servers', 'vpn_routes', 'vpn_apps', 'vpn_dns_search_domains', 'vpn_excluded_apps', 'vpn_included_apps']
+);
+?>
 
 <?= view('users/advanced/_card_table', [
     'title'    => 'VPN Configuration',
@@ -26,7 +35,7 @@
         ['field' => 'vpn_block_non_vpn',     'label' => 'Block Non-VPN',     'format' => 'yesno', 'icon' => 'fas fa-ban'],
         ['field' => 'vpn_auth_type',         'label' => 'Auth Type',         'format' => 'text', 'icon' => 'fas fa-key'],
         ['field' => 'vpn_ca_cert_sha256',    'label' => 'CA Cert SHA256',    'format' => 'code', 'icon' => 'fas fa-certificate'],
-        ['field' => 'vpn_client_cert_sha256','label' => 'Client Cert SHA256', 'format' => 'code', 'icon' => 'fas fa-certificate'],
+        ['field' => 'vpn_client_cert_sha256','label' => 'ClientController Cert SHA256', 'format' => 'code', 'icon' => 'fas fa-certificate'],
         ['field' => 'vpn_port',              'label' => 'Port',              'format' => 'text', 'icon' => 'fas fa-door-open'],
     ],
     'rows'      => $rows,
@@ -34,5 +43,4 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/software/vpn_config/delete'),
 ]) ?>

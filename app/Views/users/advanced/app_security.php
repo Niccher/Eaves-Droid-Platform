@@ -1,9 +1,16 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
-
 <?php
-// Helper function to safely decode and truncate JSON
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['device_admin_apps_json', 'app_permissions_map_json', 'running_services_json']
+);
+
+// Helper function to safely decode and truncate JSON (handles pre-decoded arrays)
 function decode_and_truncate($json_str, $max_items = 20) {
     if (empty($json_str)) return [];
+    if (is_array($json_str)) return array_slice($json_str, 0, $max_items);
     $decoded = json_decode($json_str, true);
     if (!is_array($decoded)) return [];
     return array_slice($decoded, 0, $max_items);
@@ -23,6 +30,7 @@ foreach ($rows as &$row) {
     $row['app_permissions_map_json_truncated'] = json_encode($permMap);
     $row['running_services_json_truncated'] = json_encode($runningSvcs);
 }
+unset($row);
 ?>
 <?= view('users/advanced/_card_table', [
     'title'    => 'App Security',
@@ -44,5 +52,4 @@ foreach ($rows as &$row) {
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/software/app_security/delete'),
 ]) ?>

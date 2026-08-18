@@ -31,28 +31,24 @@ $facingColors = ['Back'=>'primary','Front'=>'success','External'=>'warning text-
 $facingIcons  = ['Back'=>'fa-camera','Front'=>'fa-user','External'=>'fa-video'];
 
 // Group cameras by facing — deduplicated by camera_id within each group.
-// Keep the most recent (first in $rows) record for each unique camera_id per facing.
-$grouped    = [];
-$seenCamIds = []; // ['Back' => ['0'=>true, '1'=>true], ...]
+foreach ($rows as &$r) {
+    $r['camera_unique_key'] = ($r['lens_facing'] ?? '0') . '_' . ($r['camera_id'] ?? 'default');
+}
+unset($r);
 
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'camera_unique_key',
+    ['camera_id', 'lens_facing', 'megapixels', 'sensor_physical_size', 'focal_lengths', 'apertures', 'iso_range', 'has_flash', 'capabilities', 'available_video_stabilization', 'available_ae_modes', 'available_af_modes', 'available_effects', 'available_scene_modes']
+);
+
+$grouped = [];
 foreach ($rows as $r) {
     $facing   = $r['lens_facing'] ?? '0';
     $label    = $facingLabels[$facing] ?? 'Back';
-    $camId    = strtolower(trim((string)($r['camera_id'] ?? $r['id'] ?? 'default')));
-
-    if (!isset($seenCamIds[$label])) {
-        $seenCamIds[$label] = [];
-    }
-
-    // Skip if we already have a card for this camera_id in this facing group
-    if (isset($seenCamIds[$label][$camId])) {
-        continue;
-    }
-
-    $seenCamIds[$label][$camId] = true;
     $grouped[$label][] = $r;
 }
-
 ?>
 
 <style>
@@ -331,11 +327,6 @@ foreach ($rows as $r) {
 
                   <div class="border-top pt-2 mt-1 text-muted d-flex justify-content-between" style="font-size:11px;">
                     <span><i class="fas fa-clock mr-1"></i>Extracted: <?= $ts ?></span>
-                    <button class="btn btn-sm btn-outline-danger delete-row py-0"
-                      data-id="<?= $rid ?>"
-                      data-url="<?= base_url('advanced/hardware/camera_info/delete') ?>">
-                      <i class="fas fa-trash"></i>
-                    </button>
                   </div>
                 </div>
               </div>

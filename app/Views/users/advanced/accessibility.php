@@ -1,4 +1,17 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php
+foreach ($rows as &$r) {
+    $r['service_unique_key'] = ($r['device_id'] ?? 'default') . '_' . ($r['service_id'] ?? $r['package_name'] ?? 'unknown');
+}
+unset($r);
+
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'service_unique_key',
+    ['package_name', 'service_id', 'description', 'can_retrieve_window_content', 'capabilities', 'flags', 'feedback_type', 'notification_timeout', 'settings_activity_name']
+);
+?>
 
 <?= view('users/advanced/_card_table', [
     'title'    => 'Accessibility Services',
@@ -23,5 +36,4 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/software/accessibility/delete'),
 ]) ?>

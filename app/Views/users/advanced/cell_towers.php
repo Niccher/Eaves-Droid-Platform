@@ -17,10 +17,10 @@ $rows = $unique;
 <style>
 .cell-card       { border-radius: 8px; background: #fff; box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); }
 .cell-hero       { background: linear-gradient(135deg, #6c757d 0%, #5a6268 60%, #495057 100%); border-radius: 8px 8px 0 0; padding: 18px 22px; color: #fff; }
-.cell-kv         { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-.cell-kv:last-child { border-bottom: none; }
-.cell-kv .ck     { color: #6c757d; font-weight: 600; font-size: 11px; text-transform: uppercase; }
-.cell-kv .cv     { font-weight: 700; color: #343a40; text-align: right; max-width: 60%; word-break: break-all; }
+.cell-kv, .ctx-kv         { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.cell-kv:last-child, .ctx-kv:last-child { border-bottom: none; }
+.cell-kv .ck, .ctx-kv .ck     { color: #6c757d; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+.cell-kv .cv, .ctx-kv .cv     { font-weight: 700; color: #343a40; text-align: right; max-width: 60%; word-break: break-all; }
 .cell-badge      { border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
 .section-label   { font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: .4px; }
 .sig-bar-container { height: 8px; border-radius: 4px; background: #e9ecef; overflow: hidden; margin-top: 5px; }
@@ -202,11 +202,6 @@ $rows = $unique;
               <!-- Footer -->
               <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
                 <small class="text-muted">Row ID: <?= $rid ?> · Extracted: <?= $ts ?></small>
-                <button class="btn btn-sm btn-outline-danger delete-row py-0"
-                  data-id="<?= $rid ?>"
-                  data-url="<?= base_url('advanced/hardware/cell_towers/delete') ?>">
-                  <i class="fas fa-trash mr-1"></i>Remove Snapshot
-                </button>
               </div>
             </div>
           </div>

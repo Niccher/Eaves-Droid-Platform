@@ -1,6 +1,13 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 
 <?php
+helper('coalesce');
+foreach ($rows as &$row) {
+    $row['device_usb_key'] = ($row['device_id'] ?? 'default') . '_' . ($row['usb_device_id'] ?? $row['product_name'] ?? 'unknown');
+}
+unset($row);
+$rows = coalesce_snapshots($rows, 'device_usb_key');
+
 // Process USB records from snapshots
 $connectedDevices = [];
 $adbEnabledGlobal = false;

@@ -1,8 +1,16 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 
 <?php
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['gnss_id', 'gnss_hardware_model_id', 'gnss_year_of_hardware', 'gnss_batch_size', 'constellations_supported', 'frequencies_supported', 'antenna_type', 'antenna_info', 'measurement_capabilities', 'max_satellites_tracked', 'max_satellites_used', 'agps_supported', 'agps_modes', 'dead_reckoning_supported', 'raw_measurements_supported', 'correction_data_supported', 'navigation_messages_supported', 'status_supported', 'gps_provider_available', 'time_offset_ns', 'leap_second', 'utc_time_accuracy_ns']
+);
+
 $gnss    = null;
 $allRows = [];
+
 
 // Frequency band color mapping
 $freqColors = [

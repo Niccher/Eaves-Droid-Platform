@@ -1,4 +1,5 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php helper('coalesce'); $rows = coalesce_snapshots($rows, 'device_id'); ?>
 
 <?= view('users/advanced/_card_table', [
     'title'    => 'Browser History',

@@ -1,8 +1,16 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
 
 <?php
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'device_id',
+    ['gpu_renderer_json', 'media_codecs_json', 'input_devices_json']
+);
+
 $snapshot = null;
 $allRows  = [];
+
 
 foreach ($rows as $idx => $r) {
     $parseJ = fn($v) => is_string($v) ? (json_decode($v, true) ?: []) : (is_array($v) ? $v : []);

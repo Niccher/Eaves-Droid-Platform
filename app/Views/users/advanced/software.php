@@ -3,18 +3,14 @@
 /** @var string $userTier */ 
 /** @var array $features */ 
 
-$subModel = new \App\Models\SubscriptionModel();
-$limits = $subModel->getPlanLimits(auth()->id());
-$featuresArr = $limits['features'] ?? [];
-if (is_string($featuresArr)) {
-    $featuresArr = json_decode($featuresArr, true) ?: [];
-}
-$allowedSoftware = $featuresArr['software_profile'] ?? 'basic';
-
-function isLocked($requiredTier, $allowedSoftware) {
-    if ($requiredTier === 'free') return false;
-    if ($requiredTier === 'gold' && $allowedSoftware === 'basic') return true;
-    if ($requiredTier === 'platinum' && $allowedSoftware !== 'all') return true;
+function isLocked($requiredTier, $userTier) {
+    if ($requiredTier === 'free' || empty($requiredTier)) return false;
+    if ($requiredTier === 'gold') {
+        return !in_array($userTier, ['gold', 'platinum'], true);
+    }
+    if ($requiredTier === 'platinum') {
+        return $userTier !== 'platinum';
+    }
     return false;
 }
 
@@ -85,7 +81,7 @@ function getFeatureCount($slug, $counts) {
 
             <div class="row">
                 <?php foreach ($features as $f): ?>
-                    <?php $isLock = isLocked($f['required_tier'], $allowedSoftware); ?>
+                    <?php $isLock = isLocked($f['required_tier'], $userTier); ?>
                     <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
                         <div class="card card-outline <?php echo esc($f['color_class']); ?> shadow-sm h-100 card-locked-wrapper <?php echo $isLock ? 'locked' : ''; ?>">
                             <?php if ($isLock): ?>

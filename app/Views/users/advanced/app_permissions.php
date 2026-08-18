@@ -1,4 +1,17 @@
 <?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php
+foreach ($rows as &$r) {
+    $r['perm_unique_key'] = ($r['device_id'] ?? 'default') . '_' . ($r['package_name'] ?? 'unknown') . '_' . ($r['permission_name'] ?? 'unknown');
+}
+unset($r);
+
+helper('coalesce');
+$rows = coalesce_snapshots(
+    $rows,
+    'perm_unique_key',
+    ['package_name', 'permission_name', 'is_granted', 'is_runtime', 'is_revoked', 'is_requested', 'is_system_fixed', 'grant_time', 'last_used_time', 'flags', 'is_one_time', 'is_auto_revoke_whitelisted', 'user_set', 'fixed_policy', 'is_hard_restricted', 'is_soft_restricted']
+);
+?>
 
 <?= view('users/advanced/_card_table', [
     'title'    => 'App Permissions',
@@ -30,5 +43,4 @@
     'total'     => $total,
     'nav_urls'  => $nav_urls,
     'perPage'  => 25,
-    'deleteUrl' => base_url('advanced/software/app_permissions/delete'),
 ]) ?>
