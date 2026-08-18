@@ -3,10 +3,10 @@
 namespace App\Controllers\clients;
 
 use App\Controllers\clients\BaseClientController;
-use App\Models\Mod_Finder;
-use App\Models\Mod_Android;
-use App\Models\Mod_User;
-use App\Models\Mod_Access_Logs;
+use App\Models\FinderModel;
+use App\Models\AndroidModel;
+use App\Models\UserModel;
+use App\Models\AccessLogsModel;
 
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Model;
@@ -16,14 +16,14 @@ class Profile extends BaseClientController
     use ResponseTrait;
 
     public function profile_upload(){
-		$model_finder = new Mod_Finder();
+		$model_finder = new FinderModel();
 		if (!auth()->loggedIn()){
 			return redirect()->to('login');
 		}
 
 		$data["user_info"] = $model_finder->basic_user();
 		$person_id = $data["user_info"]['id'];
-		$lognow = new Mod_Access_Logs();
+		$lognow = new AccessLogsModel();
 
 		if (!empty($_FILES) ) {
 
@@ -44,7 +44,7 @@ class Profile extends BaseClientController
 				move_uploaded_file($tempFile, "uploads/profiles/" . $newfilename);
 
                 // Log action
-                $lognow = new Mod_Access_Logs();
+                $lognow = new AccessLogsModel();
 
                 $logdata = $lognow->logAction([
                     'user_id' => $this->userId,
@@ -64,7 +64,7 @@ class Profile extends BaseClientController
 	}
 	
 	public function profile_update(){
-		$model_finder = new Mod_Finder();
+		$model_finder = new FinderModel();
 		if (!auth()->loggedIn()){
 			return redirect()->to('login');
 		}
@@ -94,7 +94,7 @@ if(($_POST['ed_email']) != "") {
 		}
 
         // Log action
-        $lognow = new Mod_Access_Logs();
+        $lognow = new AccessLogsModel();
 
         $logdata = $lognow->logAction([
             'user_id' => $this->userId,
@@ -114,8 +114,8 @@ if(($_POST['ed_email']) != "") {
 	}
 
 	public function token_generate(){
-		$model_finder = new Mod_Finder();
-        $model_user = new Mod_User();
+		$model_finder = new FinderModel();
+        $model_user = new UserModel();
 
 		if (!auth()->loggedIn()){
 			return redirect()->to('login');
@@ -133,8 +133,8 @@ if(($_POST['ed_email']) != "") {
 	}
 
     public function profile_del_apps(){
-        $model_finder = new Mod_Finder();
-        $model_android = new Mod_Android();
+        $model_finder = new FinderModel();
+        $model_android = new AndroidModel();
 
         if (!auth()->loggedIn()){
             return redirect()->to('login');
@@ -146,15 +146,15 @@ if(($_POST['ed_email']) != "") {
         $dated = date('Y-m-d H:i:s');
         $ip_add = $this->request->getIPAddress();
 
-        $model_android->data_register_action($person_id,"Delete All Apps", $ip_add, $dated);
+        $model_android->data_register_action($person_id,"Delete All AppsController", $ip_add, $dated);
         $model_android->data_del_apps($person_id);
 
         // Log action
-        $lognow = new Mod_Access_Logs();
+        $lognow = new AccessLogsModel();
 
         $logdata = $lognow->logAction([
             'user_id' => $this->userId,
-            'action_type' => 'Data Deletion (Apps)',
+            'action_type' => 'Data Deletion (AppsController)',
             'action_category' => 'profile',
             'action_severity' => 'low',
             'ip_address' => $this->request->getIPAddress(),
@@ -170,8 +170,8 @@ if(($_POST['ed_email']) != "") {
     }
 
     public function profile_del_call_logs(){
-        $model_finder = new Mod_Finder();
-        $model_android = new Mod_Android();
+        $model_finder = new FinderModel();
+        $model_android = new AndroidModel();
 
         if (!auth()->loggedIn()){
             return redirect()->to('login');
@@ -186,11 +186,11 @@ if(($_POST['ed_email']) != "") {
         $model_android->data_del_call_logs($person_id);
 
         // Log action
-        $lognow = new Mod_Access_Logs();
+        $lognow = new AccessLogsModel();
 
         $logdata = $lognow->logAction([
             'user_id' => $this->userId,
-            'action_type' => 'Data Deletion (Call Logs)',
+            'action_type' => 'Data Deletion (Call LogsController)',
             'action_category' => 'profile',
             'action_severity' => 'critical',
             'ip_address' => $this->request->getIPAddress(),
@@ -206,8 +206,8 @@ if(($_POST['ed_email']) != "") {
     }
 
     public function profile_del_contacts(){
-        $model_finder = new Mod_Finder();
-        $model_android = new Mod_Android();
+        $model_finder = new FinderModel();
+        $model_android = new AndroidModel();
 
         if (!auth()->loggedIn()){
             return redirect()->to('login');
@@ -222,11 +222,11 @@ if(($_POST['ed_email']) != "") {
         $model_android->data_del_contacts($person_id);
 
         // Log action
-        $lognow = new Mod_Access_Logs();
+        $lognow = new AccessLogsModel();
 
         $logdata = $lognow->logAction([
             'user_id' => $this->userId,
-            'action_type' => 'Data Deletion (Contacts)',
+            'action_type' => 'Data Deletion (ContactsController)',
             'action_category' => 'profile',
             'action_severity' => 'critical',
             'ip_address' => $this->request->getIPAddress(),
@@ -242,8 +242,8 @@ if(($_POST['ed_email']) != "") {
     }
 
     public function profile_del_sms(){
-        $model_finder = new Mod_Finder();
-        $model_android = new Mod_Android();
+        $model_finder = new FinderModel();
+        $model_android = new AndroidModel();
 
         if (!auth()->loggedIn()){
             return redirect()->to('login');
@@ -258,7 +258,7 @@ if(($_POST['ed_email']) != "") {
         $model_android->data_del_sms($person_id);
 
         // Log action
-        $lognow = new Mod_Access_Logs();
+        $lognow = new AccessLogsModel();
 
         $logdata = $lognow->logAction([
             'user_id' => $this->userId,

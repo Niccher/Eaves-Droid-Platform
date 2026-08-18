@@ -41,7 +41,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["entrypoint.sh"]
 EXPOSE 80
 # Increase PHP upload limits
-RUN echo "upload_max_filesize = 120M\npost_max_size = 120M\nmemory_limit = 256M" > /usr/local/etc/php/conf.d/uploads.ini
+RUN echo "upload_max_filesize = 120M\npost_max_size = 120M" > /usr/local/etc/php/conf.d/uploads.ini
 
 # Increase PHP memory limit
-RUN echo "memory_limit = 256M" > /usr/local/etc/php/conf.d/memory.ini
+RUN echo "memory_limit = 512M" > /usr/local/etc/php/conf.d/memory.ini

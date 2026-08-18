@@ -3,7 +3,7 @@
 namespace App\Controllers\clients;
 
 use App\Controllers\BaseController;
-use App\Models\Mod_Finder;
+use App\Models\FinderModel;
 use Config\Services;
 
 class BaseClientController extends BaseController
@@ -47,7 +47,7 @@ class BaseClientController extends BaseController
         $this->session = Services::session();
 
         // Initialize models
-        $this->finderModel = new Mod_Finder();
+        $this->finderModel = new FinderModel();
 
         // Get authenticated user data
         $this->userData = $this->finderModel->basic_user();
@@ -67,7 +67,7 @@ class BaseClientController extends BaseController
      */
     protected function initActiveDevice(): void
     {
-        $modUser = new \App\Models\Mod_User();
+        $modUser = new \App\Models\UserModel();
         $this->userDevices = $modUser->get_user_devices_from_profile($this->userId);
 
         $tokenData = $modUser->get_token($this->userId);
@@ -264,7 +264,7 @@ protected function getUserDataCounts(): array
     }
 
     /**
-     * Get navigation URLs for Location/Activity views.
+     * Get navigation URLs for LocationController/Activity views.
      *
      * @param string $activeView
      * @return string
@@ -275,7 +275,7 @@ protected function getUserDataCounts(): array
             'location' => ['url' => 'location', 'label' => 'Locations', 'icon' => 'fas fa-map-marker-alt'],
             'activity' => ['url' => 'activities', 'label' => 'Activities', 'icon' => 'fas fa-walking'],
             'sms'      => ['url' => 'sms', 'label' => 'Messages', 'icon' => 'fas fa-sms'],
-            'advanced' => ['url' => 'advanced/device', 'label' => 'Advanced Data', 'icon' => 'fas fa-microchip'],
+            'advanced' => ['url' => 'advanced/device', 'label' => 'AdvancedController Data', 'icon' => 'fas fa-microchip'],
         ];
 
         $html = '<div class="d-flex justify-content-end flex-wrap" style="gap: 5px;">';

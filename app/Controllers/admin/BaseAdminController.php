@@ -3,7 +3,7 @@
 namespace App\Controllers\admin;
 
 use App\Controllers\BaseController;
-use App\Models\Mod_Log_User_Action;
+use App\Models\LogUserActionModel;
 
 class BaseAdminController extends BaseController
 {
@@ -68,7 +68,7 @@ class BaseAdminController extends BaseController
         bool $success = true,
         array $extras = []
     ): void {
-        $logModel = new Mod_Log_User_Action();
+        $logModel = new LogUserActionModel();
         $request = service('request');
 
         $data = array_merge([

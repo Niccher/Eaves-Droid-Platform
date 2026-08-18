@@ -388,8 +388,8 @@ The app ships over 60 `DataExtractor` implementations. The table below lists the
 | ML Library | `php-ai/php-ml` 0.10.0 (in‑process KMeans / DBSCAN) |
 | ML Engine | Python FastAPI + scikit-learn / networkx (external service, CPU-only) |
 | PDF Export | `dompdf/dompdf` ^3.1 |
-| Frontend | AdminLTE 3 (Bootstrap 4, Font Awesome, jQuery) |
-| Container | Docker / docker-compose (PHP 8.3‑apache, MySQL 8.4, phpMyAdmin, ML engine) |
+| Frontend | AdminLTE 3 (Bootstrap 4, Font Awesome via CDN, jQuery via CDN, Select2, Toastr, OverlayScrollbars — all loaded from CDN, not bundled) |
+| Container | Docker / docker-compose (PHP 8.3‑apache, MySQL 8.4, phpMyAdmin, ML engine); PHP `memory_limit = 512M` |
 | Web Server | Apache 2 (mod_rewrite) |
 | Testing | PHPUnit ^9.1, Faker |
 
@@ -636,34 +636,57 @@ All tables are created by CodeIgniter migrations under `app/Database/Migrations/
 │   │   ├── Filters.php             # Global filter registration
 │   │   └── Routes.php              # 2000+ route definitions
 │   ├── Controllers/
-│   │   ├── auth/                   # Login, Register, Forgot Password
-│   │   ├── api/v1/                 # Receive, DatatableAPI, DeviceConfig, FCM
-│   │   ├── clients/                # 18 dashboard controllers
-│   │   │   ├── Client.php          # Home dashboard
-│   │   │   ├── Billing.php         # Subscription management
-│   │   │   ├── Anomalies.php       # Anomaly detection wizard
-│   │   │   ├── Advanced.php        # 14 advanced extraction views
-│   │   │   ├── Location.php        # Location + activity
-│   │   │   ├── Correlation.php     # Correlation + wellbeing + care plans
-│   │   │   └── ...
-│   │   ├── admin/                  # 10 admin controllers
-│   │   │   ├── Dashboard.php
-│   │   │   ├── Users.php
-│   │   │   ├── Settings.php
-│   │   │   ├── Logs.php
-│   │   │   ├── Ml.php
-│   │   │   └── ...
-│   │   └── superadmin/             # 11 superadmin controllers
-│   │       ├── Dashboard.php
-│   │       ├── FleetController.php
-│   │       ├── Plans.php
-│   │       ├── Subscriptions.php
-│   │       ├── AuditLog.php
-│   │       ├── OmniSearch.php
-│   │       ├── Impersonate.php
-│   │       ├── RoleMatrix.php
-│   │       ├── ForensicExport.php
-│   │       └── ...
+│   │   ├── ErrorsController.php        # Custom 403/404/500 error pages
+│   │   ├── HomeController.php          # Public landing page + APK download
+│   │   ├── api/v1/                     # Mobile API (2 controllers)
+│   │   │   ├── ReceiveController.php   # Encrypted payload intake, AES decrypt, category routing
+│   │   │   └── FCMStatusController.php # FCM token registration & push-notification sync
+│   │   ├── clients/                    # Client dashboard (22 controllers)
+│   │   │   ├── ClientController.php         # Home dashboard — data overview cards
+│   │   │   ├── AccountController.php        # User account management
+│   │   │   ├── ClientProfileController.php  # Extended profile + device/plan summary
+│   │   │   ├── AppsController.php           # Installed apps browser
+│   │   │   ├── CallsController.php          # Call log viewer
+│   │   │   ├── ContactsController.php       # Contacts + quality scores
+│   │   │   ├── SmsController.php            # SMS browser
+│   │   │   ├── FilesController.php          # Device files browser
+│   │   │   ├── LocationController.php       # Location + activity; map diagnostics; path analytics
+│   │   │   ├── AdvancedController.php       # Advanced data hub + feature-tier landing
+│   │   │   ├── ForensicsEnvironmentController.php  # Network, BT, sensors, app usage, notifications, calendar, accounts
+│   │   │   ├── ForensicsSystemController.php       # Device context, security audit, SIM, hardware, captured media
+│   │   │   ├── ForensicsUserController.php         # SMS/call/contact/file per-row drill-down views
+│   │   │   ├── AnalyzeController.php        # ML analysis dashboard
+│   │   │   ├── AnomaliesController.php      # 3-step anomaly detection wizard
+│   │   │   ├── CorrelationController.php    # Correlation + Smart Timeline + Wellbeing + Care Plans
+│   │   │   ├── ApiKeyController.php         # Per-user API key management
+│   │   │   ├── BlocklistController.php      # Category block-rule management
+│   │   │   ├── BillingController.php        # Subscription management + simulated checkout
+│   │   │   ├── GlobalSearchController.php   # Cross-category search
+│   │   │   ├── SimConfigController.php      # SIM configuration history
+│   │   │   ├── TelemetryExportController.php # Full telemetry export (JSON/CSV, plan-gated)
+│   │   │   └── UserSessionController.php    # Active session listing + remote session revocation
+│   │   ├── admin/                      # Admin panel (12 controllers)
+│   │   │   ├── UsersController.php          # CRUD, suspend/activate accounts
+│   │   │   ├── SettingsController.php       # Site, API, and notification config
+│   │   │   ├── SecuritySettingsController.php # Rate limits, IP allowlist, 2FA, session TTL
+│   │   │   ├── SystemSettingsController.php  # Maintenance mode, timezone, max upload size
+│   │   │   ├── MailSettingsController.php   # SMTP config and test-send
+│   │   │   ├── DefaultsController.php       # Platform default values
+│   │   │   ├── LogsController.php           # Access, error, API, maintenance, engine logs
+│   │   │   ├── MlController.php             # ML algorithm config and management
+│   │   │   ├── AnomaliesController.php      # Anomaly detection thresholds
+│   │   │   ├── ReportsController.php        # System usage and audit reports
+│   │   │   ├── RemoteDeviceController.php   # Remote extraction command dispatch
+│   │   │   └── TokensController.php         # API token management (list, revoke, audit)
+│   │   └── superadmin/                 # Superadmin panel (7 controllers)
+│   │       ├── PlansController.php          # Plan version management with diff history
+│   │       ├── SubscriptionsController.php  # User subscription management
+│   │       ├── AuditLogController.php       # Security audit trail
+│   │       ├── OmniSearchController.php     # Cross-user forensic search
+│   │       ├── ImpersonateController.php    # User session impersonation
+│   │       ├── RoleMatrixController.php     # Role and permission management
+│   │       └── ForensicExportController.php # Legal/forensic data export jobs
+
 │   ├── Database/
 │   │   ├── Migrations/             # 111 migration files
 │   │   └── Seeds/                  # PlanSeeder, SuperAdminSeeder, etc.

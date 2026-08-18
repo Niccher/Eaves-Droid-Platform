@@ -32,7 +32,7 @@ class RegisterController extends Controller
         $rules = $this->getValidationRules();
 
         if (!$this->validate($rules)) {
-            $logModel = new \App\Models\Mod_Log_User_Action();
+            $logModel = new \App\Models\LogUserActionModel();
             $logModel->logAction([
                 'action_category' => 'authentication',
                 'action_type'     => 'register',
@@ -70,7 +70,7 @@ class RegisterController extends Controller
 
             if (!$result) {
                 $errors = $users->errors();
-                $logModel = new \App\Models\Mod_Log_User_Action();
+                $logModel = new \App\Models\LogUserActionModel();
                 $logModel->logAction([
                     'action_category' => 'authentication',
                     'action_type'     => 'register',
@@ -115,7 +115,7 @@ class RegisterController extends Controller
             $this->sendWelcomeEmail($user);
 
             // Log registration action
-            $logModel = new \App\Models\Mod_Log_User_Action();
+            $logModel = new \App\Models\LogUserActionModel();
             $logModel->logAction([
                 'user_id'         => $userId,
                 'action_category' => 'authentication',
@@ -129,7 +129,7 @@ class RegisterController extends Controller
             $db->transComplete();
 
             if ($db->transStatus() === false) {
-                $logModel = new \App\Models\Mod_Log_User_Action();
+                $logModel = new \App\Models\LogUserActionModel();
                 $logModel->logAction([
                     'action_category' => 'authentication',
                     'action_type'     => 'register',
@@ -160,7 +160,7 @@ class RegisterController extends Controller
                 $db->transRollback();
             }
 
-            $logModel = new \App\Models\Mod_Log_User_Action();
+            $logModel = new \App\Models\LogUserActionModel();
             $logModel->logAction([
                 'action_category' => 'authentication',
                 'action_type'     => 'register',
@@ -246,7 +246,7 @@ class RegisterController extends Controller
             helper('email');
             send_templated_email(
                 $emailAddr,
-                'Welcome to Eaves Droid — Your Account Is Ready',
+                'Welcome to Eaves Droid — Your AccountController Is Ready',
                 'email/user/welcome',
                 [
                     'username' => $user->username ?? '',

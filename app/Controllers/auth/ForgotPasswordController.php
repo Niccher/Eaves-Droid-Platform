@@ -2,7 +2,7 @@
 
 namespace App\Controllers\auth;
 
-use App\Models\Mod_Log_User_Action;
+use App\Models\LogUserActionModel;
 use App\Controllers\BaseController;
 use CodeIgniter\Shield\Models\UserIdentityModel;
 use CodeIgniter\Shield\Models\UserModel;
@@ -29,7 +29,7 @@ class ForgotPasswordController extends BaseController
      */
     public function forgotAction(): RedirectResponse
     {
-        $logModel = new Mod_Log_User_Action();
+        $logModel = new LogUserActionModel();
 
         // Validate email
         $rules = [
@@ -146,7 +146,7 @@ class ForgotPasswordController extends BaseController
      */
     public function resetAction(): RedirectResponse
     {
-        $logModel = new Mod_Log_User_Action();
+        $logModel = new LogUserActionModel();
         $rules = $this->getResetValidationRules();
 
         if (!$this->validate($rules)) {
@@ -280,7 +280,7 @@ class ForgotPasswordController extends BaseController
      */
     public function offlineResetAction(): RedirectResponse
     {
-        $logModel = new Mod_Log_User_Action();
+        $logModel = new LogUserActionModel();
         $rules = [
             'email' => [
                 'label' => 'Email',

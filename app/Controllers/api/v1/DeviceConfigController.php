@@ -157,7 +157,7 @@ class DeviceConfigController extends BaseController
                 'updated_at' => $row['updated_at'],
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Defaults fetch error: ' . $e->getMessage());
+            log_message('error', 'DefaultsController fetch error: ' . $e->getMessage());
             return $this->fail('Server error.', 500);
         }
     }

