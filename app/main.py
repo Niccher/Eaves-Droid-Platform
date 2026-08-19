@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ML Eaves Droid",
     description="Python ML backend for Eaves Droid anomaly detection",
-    version="2.4.0",
+    version="2.5.0",
     lifespan=lifespan,
 )
 
