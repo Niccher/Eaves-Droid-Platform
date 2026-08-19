@@ -148,16 +148,6 @@ class CreateTblFeatureTiers extends Migration
                 'required_tier' => 'gold',
             ],
             [
-                'category_type' => 'hardware',
-                'slug'          => 'processes',
-                'label'         => 'Running Processes',
-                'description'   => 'Process snapshots',
-                'icon'          => 'fas fa-tasks',
-                'color_class'   => 'card-dark',
-                'bg_class'      => 'bg-dark',
-                'required_tier' => 'gold',
-            ],
-            [
                 'category_type' => 'software',
                 'slug'          => 'accessibility',
                 'label'         => 'Accessibility',
@@ -217,26 +207,6 @@ class CreateTblFeatureTiers extends Migration
                 'icon'          => 'fas fa-credit-card',
                 'color_class'   => 'card-info',
                 'bg_class'      => 'bg-info',
-                'required_tier' => 'platinum',
-            ],
-            [
-                'category_type' => 'hardware',
-                'slug'          => 'power_rails',
-                'label'         => 'Power Rails',
-                'description'   => 'Voltage, current, power per rail',
-                'icon'          => 'fas fa-bolt',
-                'color_class'   => 'card-orange',
-                'bg_class'      => 'bg-orange',
-                'required_tier' => 'platinum',
-            ],
-            [
-                'category_type' => 'hardware',
-                'slug'          => 'thermal',
-                'label'         => 'Thermal',
-                'description'   => 'Temperature zones, throttling, governors',
-                'icon'          => 'fas fa-thermometer-half',
-                'color_class'   => 'card-danger',
-                'bg_class'      => 'bg-danger',
                 'required_tier' => 'platinum',
             ],
             [
@@ -363,16 +333,6 @@ class CreateTblFeatureTiers extends Migration
             ],
             [
                 'category_type' => 'software',
-                'slug'          => 'email',
-                'label'         => 'Email Accounts',
-                'description'   => 'Configured email accounts and providers',
-                'icon'          => 'fas fa-envelope',
-                'color_class'   => 'card-primary',
-                'bg_class'      => 'bg-primary',
-                'required_tier' => 'platinum',
-            ],
-            [
-                'category_type' => 'software',
                 'slug'          => 'calendar',
                 'label'         => 'Calendar',
                 'description'   => 'Calendar events, reminders, and schedule data',
@@ -443,16 +403,6 @@ class CreateTblFeatureTiers extends Migration
             ],
             [
                 'category_type' => 'software',
-                'slug'          => 'browser_history',
-                'label'         => 'Browser History',
-                'description'   => 'Browsing history, bookmarks, and searches',
-                'icon'          => 'fas fa-globe',
-                'color_class'   => 'card-orange',
-                'bg_class'      => 'bg-orange',
-                'required_tier' => 'platinum',
-            ],
-            [
-                'category_type' => 'software',
                 'slug'          => 'clipboard',
                 'label'         => 'Clipboard',
                 'description'   => 'Copied text, URIs, and source applications',
@@ -513,16 +463,6 @@ class CreateTblFeatureTiers extends Migration
             ],
             [
                 'category_type' => 'software',
-                'slug'          => 'keyboard_input',
-                'label'         => 'Keyboard Input',
-                'description'   => 'Keystroke logs and type indicators',
-                'icon'          => 'fas fa-keyboard',
-                'color_class'   => 'card-secondary',
-                'bg_class'      => 'bg-secondary',
-                'required_tier' => 'platinum',
-            ],
-            [
-                'category_type' => 'software',
                 'slug'          => 'keyguard',
                 'label'         => 'Keyguard Events',
                 'description'   => 'Unlock/lock events and auth methods',
@@ -563,16 +503,6 @@ class CreateTblFeatureTiers extends Migration
             ],
             [
                 'category_type' => 'software',
-                'slug'          => 'running_processes',
-                'label'         => 'Running Processes',
-                'description'   => 'Detailed process list with memory and CPU',
-                'icon'          => 'fas fa-cogs',
-                'color_class'   => 'card-success',
-                'bg_class'      => 'bg-success',
-                'required_tier' => 'platinum',
-            ],
-            [
-                'category_type' => 'software',
                 'slug'          => 'telephony_network',
                 'label'         => 'Mobile Network',
                 'description'   => 'IMS/VoLTE, data roaming, carrier config',
@@ -583,7 +513,6 @@ class CreateTblFeatureTiers extends Migration
             ],
         ];
 
-        $this->db->table('tbl_feature_tiers')->insertBatch($features);
     }
 
     public function down()

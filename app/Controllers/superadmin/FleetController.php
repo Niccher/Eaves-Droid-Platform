@@ -37,6 +37,12 @@ class FleetController extends BaseSuperadminController
         // Alerts
         $alerts = $this->getAlerts($devices);
 
+        // User Activity Metrics (Admin commands & FCM actions)
+        $userActivity = $this->getUserActivityStats();
+
+        // Geography Breakdown for main overview
+        $geoOverview = $this->getGeoOverviewStats();
+
         return $this->renderView('superadmin/fleet/index', [
             'pag' => 'superadmin-fleet',
             'active_tab' => $tab,
@@ -50,7 +56,82 @@ class FleetController extends BaseSuperadminController
             'user_fleet' => $userFleet,
             'sync_timeline' => $syncTimeline,
             'alerts' => $alerts,
+            'user_activity' => $userActivity,
+            'geo_overview' => $geoOverview,
         ]);
+    }
+
+    private function getUserActivityStats(): array
+    {
+        $db = $this->getDb();
+
+        $commands24h = $db->table('tbl_user_actions')
+            ->like('action_type', 'remote_cmd_')
+            ->where('created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)')
+            ->countAllResults();
+
+        $topCommandRow = $db->table('tbl_user_actions')
+            ->select('action_type as command, COUNT(*) as cnt')
+            ->like('action_type', 'remote_cmd_')
+            ->groupBy('action_type')
+            ->orderBy('cnt', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        $topAdminRow = $db->table('tbl_user_actions ual')
+            ->select('u.username, COUNT(*) as cnt')
+            ->join('users u', 'u.id = ual.user_id', 'left')
+            ->where('ual.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)')
+            ->groupBy('ual.user_id')
+            ->orderBy('cnt', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        $adminActions24h = $db->table('tbl_user_actions')
+            ->where('created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)')
+            ->countAllResults();
+
+        $topCmdName = !empty($topCommandRow['command']) ? str_replace('remote_cmd_', '', $topCommandRow['command']) : 'None';
+
+        return [
+            'fcm_commands_24h' => $commands24h,
+            'top_command' => $topCmdName,
+            'top_command_count' => $topCommandRow['cnt'] ?? 0,
+            'top_admin' => $topAdminRow['username'] ?? 'System',
+            'admin_actions_24h' => $adminActions24h,
+        ];
+    }
+
+    private function getGeoOverviewStats(): array
+    {
+        $db = $this->getDb();
+
+        $topCountries = $db->table('tbl_device_profiles')
+            ->select('country, COUNT(DISTINCT device_id) as cnt')
+            ->where('country IS NOT NULL')
+            ->where('country !=', '')
+            ->groupBy('country')
+            ->orderBy('cnt', 'DESC')
+            ->limit(5)
+            ->get()
+            ->getResultArray();
+
+        $topCarriers = $db->table('tbl_device_profiles')
+            ->select('network_operator, COUNT(DISTINCT device_id) as cnt')
+            ->where('network_operator IS NOT NULL')
+            ->where('network_operator !=', '')
+            ->groupBy('network_operator')
+            ->orderBy('cnt', 'DESC')
+            ->limit(5)
+            ->get()
+            ->getResultArray();
+
+        return [
+            'top_countries' => $topCountries,
+            'top_carriers' => $topCarriers,
+        ];
     }
 
     // ================================================================
@@ -61,8 +142,6 @@ class FleetController extends BaseSuperadminController
     {
         $db = $this->getDb();
 
-        // Get latest extraction per device_id (deduplication)
-        // Use a simpler approach: get max timestamp per device, then fetch matching rows
         $latestTimestamps = $db->table('tbl_device_profiles')
             ->select('device_id, MAX(extraction_timestamp) as max_ts')
             ->groupBy('device_id')
@@ -73,7 +152,6 @@ class FleetController extends BaseSuperadminController
             return [];
         }
 
-        // Build where conditions for each device_id + max_ts pair
         $devices = [];
         foreach ($latestTimestamps as $lt) {
             $device = $db->table('tbl_device_profiles')
@@ -111,12 +189,10 @@ class FleetController extends BaseSuperadminController
             return null;
         }
 
-        // Handle string "2026" format
         if (is_string($value) && preg_match('/^\d{4}$/', $value)) {
             return strtotime($value . '-01-01');
         }
 
-        // Handle epoch milliseconds (13 digits) or seconds (10 digits)
         $num = (int) $value;
         if ($num > 10000000000) {
             return (int) ($num / 1000); // milliseconds to seconds
@@ -167,19 +243,16 @@ class FleetController extends BaseSuperadminController
             ? round(($queueStats['success'] / $queueStats['total']) * 100, 1)
             : 100;
 
-        // Failed uploads count
         $failedCount = $db->table('tbl_upload_queue')
             ->where('status', 'failed')
             ->where('queued_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)')
             ->countAllResults();
 
-        // Devices with low storage
         $lowStorage = $db->table('tbl_device_profiles')
             ->where('internal_storage_free_gb <', 1)
             ->where('internal_storage_free_gb >', 0)
             ->countAllResults();
 
-        // Battery health (average level)
         $avgBattery = $db->table('tbl_device_profiles')
             ->selectAvg('battery_level')
             ->where('battery_level >', 0)
@@ -187,12 +260,32 @@ class FleetController extends BaseSuperadminController
             ->getRow()
             ->battery_level ?? 0;
 
+        $avgFreeGb = $db->table('tbl_device_profiles')
+            ->selectAvg('internal_storage_free_gb')
+            ->where('internal_storage_free_gb >', 0)
+            ->get()
+            ->getRow()
+            ->internal_storage_free_gb ?? 0;
+
+        $fcmReachable = $db->table('tbl_device_profiles')
+            ->where('fcm_token !=', '')
+            ->where('fcm_token IS NOT NULL')
+            ->select('COUNT(DISTINCT device_id) as cnt')
+            ->get()
+            ->getRow()
+            ->cnt ?? 0;
+
+        $totalDevices = $this->getLatestDeviceProfilesCount();
+
         return [
             'sync_success_rate' => $successRate,
             'failed_uploads_24h' => $failedCount,
             'pending_uploads' => $queueStats['pending'] ?? 0,
             'low_storage_devices' => $lowStorage,
             'avg_battery_level' => round($avgBattery, 1),
+            'avg_free_gb' => round($avgFreeGb, 1),
+            'fcm_reachable_devices' => $fcmReachable,
+            'fcm_reachability_rate' => $totalDevices > 0 ? round(($fcmReachable / $totalDevices) * 100, 1) : 0,
         ];
     }
 
@@ -203,14 +296,12 @@ class FleetController extends BaseSuperadminController
         $rooted = $db->table('tbl_device_profiles')->where('is_rooted', 1)->countAllResults();
         $debuggable = $db->table('tbl_device_profiles')->where('is_debuggable', 1)->countAllResults();
 
-        // Sideloaded apps (not from Play Store)
         $sideloaded = $db->table('tbl_device_profiles')
             ->where('app_installer !=', 'com.android.vending')
             ->where('app_installer !=', '')
             ->where('app_installer IS NOT NULL')
             ->countAllResults();
 
-        // OS patch compliance (< 90 days)
         $patched = $db->table('tbl_device_profiles')
             ->where('android_security_patch >=', date('Y-m-d', strtotime('-90 days')))
             ->where('android_security_patch !=', '')
@@ -224,7 +315,8 @@ class FleetController extends BaseSuperadminController
             'debuggable_devices' => $debuggable,
             'sideloaded_apps' => $sideloaded,
             'patched_devices' => $patched,
-            'patch_compliance_rate' => $total > 0 ? round(($patched / $total) * 100, 1) : 100,
+            'patch_compliance_rate' => $total > 0 ? min(100, round(($patched / $total) * 100, 1)) : 100,
+            'total_devices' => $total,
         ];
     }
 
@@ -256,7 +348,6 @@ class FleetController extends BaseSuperadminController
             $stats['models'][$model] = ($stats['models'][$model] ?? 0) + 1;
         }
 
-        // Sort and limit
         foreach ($stats as &$arr) {
             arsort($arr);
             $arr = array_slice($arr, 0, 10, true);
@@ -293,7 +384,6 @@ class FleetController extends BaseSuperadminController
             }
         }
 
-        // Enrich with usernames for linked users
         $linkedIds = array_filter(array_keys($userDevices), function($k) { return is_numeric($k) && $k > 0; });
         $usernames = [];
         if ($linkedIds) {
@@ -323,21 +413,20 @@ class FleetController extends BaseSuperadminController
         $db = $this->getDb();
 
         $daily = $db->table('tbl_device_profiles')
-            ->select("DATE(FROM_UNIXTIME(extraction_timestamp / 1000)) as date, COUNT(DISTINCT device_id) as syncs")
-            ->where('extraction_timestamp >', (time() - 604800) * 1000) // last 7 days in ms
-            ->groupBy('DATE(FROM_UNIXTIME(extraction_timestamp / 1000))')
+            ->select("DATE(FROM_UNIXTIME(CASE WHEN extraction_timestamp > 10000000000 THEN extraction_timestamp / 1000 ELSE extraction_timestamp END)) as date, COUNT(DISTINCT device_id) as syncs")
+            ->where('extraction_timestamp >', (time() - 604800) * 1000)
+            ->groupBy('date')
             ->orderBy('date', 'ASC')
             ->get()
             ->getResultArray();
 
-        // Fill missing days
         $filled = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-$i days"));
             $filled[$date] = 0;
         }
         foreach ($daily as $row) {
-            if (isset($filled[$row['date']])) {
+            if (!empty($row['date']) && isset($filled[$row['date']])) {
                 $filled[$row['date']] = (int) $row['syncs'];
             }
         }
@@ -362,7 +451,7 @@ class FleetController extends BaseSuperadminController
                 'type' => 'warning',
                 'title' => 'Stale Devices',
                 'message' => "$staleCount devices haven't synced in 24+ hours",
-                'route' => 'superadmin-fleet-alerts',
+                'route' => 'superadmin/fleet/alerts',
             ];
         }
 
@@ -373,7 +462,7 @@ class FleetController extends BaseSuperadminController
                 'type' => 'danger',
                 'title' => 'Rooted Devices Detected',
                 'message' => count($rooted) . ' devices are rooted',
-                'route' => 'superadmin-fleet-security',
+                'route' => 'superadmin/fleet/alerts',
             ];
         }
 
@@ -384,7 +473,7 @@ class FleetController extends BaseSuperadminController
                 'type' => 'warning',
                 'title' => 'Low Storage',
                 'message' => count($lowStorage) . ' devices have < 1GB free space',
-                'route' => 'superadmin-fleet-storage',
+                'route' => 'superadmin/fleet/alerts',
             ];
         }
 
@@ -398,7 +487,7 @@ class FleetController extends BaseSuperadminController
                 'type' => 'info',
                 'title' => 'Outdated Security Patches',
                 'message' => count($outdated) . ' devices have patches older than 90 days',
-                'route' => 'superadmin-fleet-patches',
+                'route' => 'superadmin/fleet/patches',
             ];
         }
 
@@ -408,152 +497,6 @@ class FleetController extends BaseSuperadminController
     // ================================================================
     // SUB-PAGE METHODS
     // ================================================================
-
-    public function timeline()
-    {
-        $db = $this->getDb();
-
-        // Hourly heatmap for last 7 days
-        $hourly = $db->table('tbl_device_profiles')
-            ->select("
-                HOUR(FROM_UNIXTIME(extraction_timestamp / 1000)) as hour,
-                DATE(FROM_UNIXTIME(extraction_timestamp / 1000)) as date,
-                COUNT(DISTINCT device_id) as syncs
-            ")
-            ->where('extraction_timestamp >', (time() - 604800) * 1000)
-            ->groupBy('date', 'hour')
-            ->orderBy('date', 'ASC')
-            ->orderBy('hour', 'ASC')
-            ->get()
-            ->getResultArray();
-
-        // Daily totals
-        $daily = $this->getSyncTimeline();
-
-        return $this->renderView('superadmin/fleet/timeline', [
-            'pag' => 'superadmin-fleet-timeline',
-            'hourly_heatmap' => $hourly,
-            'daily_totals' => $this->getSyncTimeline(),
-        ]);
-    }
-
-    public function patches()
-    {
-        $db = $this->getDb();
-
-        $devices = $this->getLatestDeviceProfiles();
-
-        $patchData = [];
-        foreach ($devices as $device) {
-            $patch = $device['android_security_patch'] ?? '';
-            $patchDate = !empty($patch) ? strtotime($patch) : 0;
-            $daysOld = $patchDate ? (time() - $patchDate) / 86400 : null;
-
-            $patchData[] = [
-                'device_id' => $device['device_id'],
-                'owner_id' => $device['owner_id'] ?? 0,
-                'android_version' => $device['android_version'] ?? 'Unknown',
-                'patch_date' => $patch ?: 'Unknown',
-                'days_old' => $daysOld ? round($daysOld) : null,
-                'compliant' => $patchDate && $daysOld <= 90,
-            ];
-        }
-
-        usort($patchData, fn($a, $b) => ($a['days_old'] ?? 99999) - ($b['days_old'] ?? 99999));
-
-        $compliant = array_filter($patchData, fn($d) => $d['compliant']);
-        $nonCompliant = array_filter($patchData, fn($d) => !$d['compliant']);
-
-        return $this->renderView('superadmin/fleet/patches', [
-            'pag' => 'superadmin-fleet-patches',
-            'all_patches' => $patchData,
-            'compliant_count' => count($compliant),
-            'non_compliant_count' => count($nonCompliant),
-            'total_devices' => count($patchData),
-        ]);
-    }
-
-    public function alerts()
-    {
-        $devices = $this->getLatestDeviceProfiles();
-        $alerts = $this->getAlerts($devices);
-
-        // Add more detailed alerts
-        $detailedAlerts = [];
-
-        // Stale devices with details
-        $stale = array_filter($devices, function($d) {
-            $ts = $this->parseTimestamp($d['extraction_timestamp'] ?? '');
-            return !$ts || (time() - $ts) > 86400;
-        });
-        foreach ($stale as $device) {
-            $detailedAlerts[] = [
-                'type' => 'stale',
-                'severity' => 'warning',
-                'device_id' => $device['device_id'],
-                'message' => 'No sync in 24+ hours',
-                'last_sync' => $device['extraction_timestamp'],
-            ];
-        }
-
-        // Rooted devices
-        $rooted = array_filter($devices, fn($d) => $d['is_rooted'] ?? 0);
-        foreach ($rooted as $device) {
-            $detailedAlerts[] = [
-                'type' => 'security',
-                'severity' => 'danger',
-                'device_id' => $device['device_id'],
-                'message' => 'Device is rooted',
-            ];
-        }
-
-        // Low storage
-        $lowStorage = array_filter($devices, fn($d) => ($d['internal_storage_free_gb'] ?? 0) > 0 && $d['internal_storage_free_gb'] < 1);
-        foreach ($lowStorage as $device) {
-            $detailedAlerts[] = [
-                'type' => 'storage',
-                'severity' => 'warning',
-                'device_id' => $device['device_id'],
-                'message' => 'Low storage: ' . round($device['internal_storage_free_gb'], 1) . 'GB free',
-            ];
-        }
-
-        return $this->renderView('superadmin/fleet/alerts', [
-            'pag' => 'superadmin-fleet-alerts',
-            'summary_alerts' => $this->getAlerts($devices),
-            'detailed_alerts' => $detailedAlerts,
-        ]);
-    }
-
-    public function geo()
-    {
-        $db = $this->getDb();
-
-        $countries = $db->table('tbl_device_profiles')
-            ->select('country, COUNT(DISTINCT device_id) as device_count')
-            ->where('country IS NOT NULL')
-            ->where('country !=', '')
-            ->groupBy('country')
-            ->orderBy('device_count', 'DESC')
-            ->get()
-            ->getResultArray();
-
-        $carriers = $db->table('tbl_device_profiles')
-            ->select('network_operator, COUNT(DISTINCT device_id) as device_count')
-            ->where('network_operator IS NOT NULL')
-            ->where('network_operator !=', '')
-            ->groupBy('network_operator')
-            ->orderBy('device_count', 'DESC')
-            ->limit(20)
-            ->get()
-            ->getResultArray();
-
-        return $this->renderView('superadmin/fleet/geo', [
-            'pag' => 'superadmin-fleet-geo',
-            'countries' => $countries,
-            'carriers' => $carriers,
-        ]);
-    }
 
     public function deviceDetail(string $deviceId)
     {

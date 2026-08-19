@@ -348,6 +348,60 @@ class FinderEnvironment extends Model
         }
     }
 
+    /**
+     * Full location history for the correlation map view.
+     * Returns all GPS-valid rows ordered chronologically, capped at 2000 for map performance.
+     */
+    public function get_location_history(int $userId, int $limit = 2000): array
+    {
+        try {
+            return $this->db->table('tbl_extracted_locations')
+                ->select('latitude, longitude, accuracy, altitude, speed, bearing, location_time, place_name, transport_mode, is_home, is_work')
+                ->where('owner_id', $userId)
+                ->where('latitude IS NOT NULL')
+                ->where('longitude IS NOT NULL')
+                ->where('latitude !=', 0)
+                ->where('longitude !=', 0)
+                ->where('status', 'success')
+                ->orderBy('location_time', 'ASC')
+                ->limit($limit)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_location_history error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Location history filtered by a date range (YYYY-MM-DD strings).
+     */
+    public function get_location_history_filtered(int $userId, string $startDate, string $endDate, int $limit = 2000): array
+    {
+        try {
+            $startMs = strtotime($startDate . ' 00:00:00') * 1000;
+            $endMs   = strtotime($endDate   . ' 23:59:59') * 1000;
+
+            return $this->db->table('tbl_extracted_locations')
+                ->select('latitude, longitude, accuracy, altitude, speed, bearing, location_time, place_name, transport_mode, is_home, is_work')
+                ->where('owner_id', $userId)
+                ->where('latitude IS NOT NULL')
+                ->where('longitude IS NOT NULL')
+                ->where('latitude !=', 0)
+                ->where('longitude !=', 0)
+                ->where('status', 'success')
+                ->where('location_time >=', $startMs)
+                ->where('location_time <=', $endMs)
+                ->orderBy('location_time', 'ASC')
+                ->limit($limit)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'get_location_history_filtered error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function get_cell_towers(int $user_id, int $perPage = 25): array
     {
         try {

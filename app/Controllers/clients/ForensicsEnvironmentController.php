@@ -204,28 +204,7 @@ class ForensicsEnvironmentController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    /** GET /advanced/hardware/thermal */
-    public function thermal()
-    {
-        $data = array_merge($this->commonData('thermal', 'Thermal'), [
-            'rows' => $this->finderModel->get_thermal($this->userId),
-            'total' => $this->finderModel->get_count_Thermal($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/thermal', $data);
-    }
 
-    /** POST /advanced/hardware/thermal/delete/(:num) */
-    public function delete_thermal($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_thermal_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
 
     /** GET /advanced/hardware/nfc */
     public function nfc()

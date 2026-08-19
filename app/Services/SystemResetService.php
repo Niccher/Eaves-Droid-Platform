@@ -53,18 +53,32 @@ class SystemResetService
      *
      * @return array<string, int> Stats for the audit trail / UI.
      */
-    public function reset(): array
+    public function resetMode(string $mode = 'soft'): array
     {
         $db = Database::connect();
+        $stats = ['tables_wiped' => 0, 'files_deleted' => 0];
 
-        $stats = [
-            'tables_wiped'   => 0,
-            'files_deleted'  => 0,
-        ];
+        if ($mode === 'logs_only') {
+            $logDirs = ['cache', 'temp', 'reports', 'exports', 'debugbar'];
+            foreach ($logDirs as $dir) {
+                $stats['files_deleted'] += $this->wipeDirectoryContents(WRITEPATH . $dir);
+            }
+            if ($db->tableExists('tbl_admin_reports')) {
+                $db->table('tbl_admin_reports')->truncate();
+                $stats['tables_wiped']++;
+            }
+            return $stats;
+        }
 
         $db->query('SET FOREIGN_KEY_CHECKS = 0');
         try {
-            $wipeTables = array_values(array_diff($db->listTables(), self::PRESERVE_TABLES));
+            $preserve = self::PRESERVE_TABLES;
+            if ($mode === 'hard') {
+                // Hard mode wipes non-admin users & pairings too, preserving only migrations, settings, plans, cron_jobs
+                $preserve = ['migrations', 'settings', 'plans', 'plan_versions', 'cron_jobs'];
+            }
+
+            $wipeTables = array_values(array_diff($db->listTables(), $preserve));
             foreach ($wipeTables as $table) {
                 try {
                     $db->query("TRUNCATE TABLE `{$table}`");
@@ -83,6 +97,11 @@ class SystemResetService
         }
 
         return $stats;
+    }
+
+    public function reset(): array
+    {
+        return $this->resetMode('soft');
     }
 
     /**

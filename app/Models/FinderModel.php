@@ -1000,6 +1000,21 @@ class FinderModel extends Model
         return $this->system()->get_app_category_dist($userId);
     }
 
+    public function get_mobility_aggregates(int $userId): array
+    {
+        return $this->system()->get_mobility_aggregates($userId);
+    }
+
+    public function get_geospatial_clusters(int $userId): array
+    {
+        return $this->system()->get_geospatial_clusters($userId);
+    }
+
+    public function get_storage_forensics(int $userId): array
+    {
+        return $this->system()->get_storage_forensics($userId);
+    }
+
     public function delete_app(int $id, int $userId): bool
     {
         return $this->system()->delete_app($id, $userId);
@@ -1544,6 +1559,16 @@ class FinderModel extends Model
         return $this->environment()->get_locations($user_id, $perPage);
     }
 
+    public function get_location_history(int $userId, int $limit = 2000): array
+    {
+        return $this->environment()->get_location_history($userId, $limit);
+    }
+
+    public function get_location_history_filtered(int $userId, string $startDate, string $endDate, int $limit = 2000): array
+    {
+        return $this->environment()->get_location_history_filtered($userId, $startDate, $endDate, $limit);
+    }
+
     public function get_wifi_traffic(int $user_id, int $perPage = 25): array
     {
         return $this->environment()->get_wifi_traffic($user_id, $perPage);
@@ -1988,6 +2013,64 @@ class FinderModel extends Model
     public function get_app_usage_stats(int $user_id, int $perPage = 25): array
     {
         return $this->userModel()->get_app_usage_stats($user_id, $perPage);
+    }
+
+    public function get_app_usage_package_summary(int $user_id, string $package_name): array
+    {
+        $row = $this->db->table('tbl_system_app_usage')
+            ->select('package_name, app_name, is_system_app, SUM(foreground_time_ms) as foreground_time_ms, MAX(last_time_used) as last_time_used, COUNT(*) as snapshot_count')
+            ->where('owner_id', $user_id)
+            ->where('package_name', $package_name)
+            ->groupBy('package_name, app_name, is_system_app')
+            ->get()->getRowArray();
+        return $row ?: [];
+    }
+
+    public function get_app_usage_sessions_for_package(int $user_id, string $package_name, int $limit = 100): array
+    {
+        return $this->db->table('tbl_system_app_usage_sessions s')
+            ->select('s.*')
+            ->join('tbl_system_app_usage u', 's.app_usage_id = u.id')
+            ->where('s.owner_id', $user_id)
+            ->where('u.package_name', $package_name)
+            ->orderBy('s.timestamp', 'DESC')
+            ->limit($limit)
+            ->get()->getResultArray();
+    }
+
+    public function get_app_usage_for_package(int $user_id, string $package_name, int $perPage = 25): array
+    {
+        try {
+            $total = $this->get_count_app_usage_for_package($user_id, $package_name);
+            $page = service('request')->getGet('page') ?? 1;
+            $offset = ($page - 1) * $perPage;
+            
+            $results = $this->db->table('tbl_system_app_usage')
+                ->where('owner_id', $user_id)
+                ->where('package_name', $package_name)
+                ->orderBy('last_time_used', 'DESC')
+                ->limit($perPage, $offset)->get()->getResultArray();
+                
+            $this->pager = \Config\Services::pager();
+            $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
+            return $results;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_usage_for_package: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_count_app_usage_for_package(int $user_id, string $package_name): int
+    {
+        try {
+            return $this->db->table('tbl_system_app_usage')
+                ->where('owner_id', $user_id)
+                ->where('package_name', $package_name)
+                ->countAllResults();
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_app_usage_for_package: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     public function get_media_captured(int $user_id, int $perPage = 12): array

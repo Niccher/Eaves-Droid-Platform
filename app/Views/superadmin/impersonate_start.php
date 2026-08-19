@@ -25,13 +25,8 @@
     </div>
 
     <script>
-        // Open the target dashboard in a new tab
-        window.open('<?php echo htmlspecialchars($redirectUrl); ?>', '_blank', 'noopener,noreferrer');
-        
-        // Close this window/tab after a short delay
-        setTimeout(function() {
-            window.close();
-        }, 2000);
+        // Redirect directly to target user dashboard in same window
+        window.location.href = '<?php echo htmlspecialchars($redirectUrl); ?>';
     </script>
 </body>
 </html>

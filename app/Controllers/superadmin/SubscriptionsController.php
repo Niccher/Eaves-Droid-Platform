@@ -38,8 +38,12 @@ class SubscriptionsController extends BaseSuperadminController
                       s.canceled_at, s.trial_ends_at, s.payment_provider,
                       s.provider_subscription_id, s.payment_method,
                       ai.secret AS user_email,
-                      (SELECT COUNT(*) FROM user_payments p WHERE p.user_id = u.id AND p.status = "succeeded") AS payment_count')            ->join('user_subscriptions s', 's.user_id = u.id', 'left')
+                      (SELECT COUNT(*) FROM user_payments p WHERE p.user_id = u.id AND p.status = "succeeded") AS payment_count')
+            ->join('user_subscriptions s', 's.user_id = u.id', 'left')
             ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
+            ->whereNotIn('u.id', function (\CodeIgniter\Database\BaseBuilder $builder) {
+                return $builder->select('user_id')->from('auth_groups_users')->whereIn('group', ['admin', 'superadmin']);
+            })
             ->orderBy('s.current_period_end', 'DESC')
             ->orderBy('u.id', 'ASC');
 
@@ -207,29 +211,40 @@ class SubscriptionsController extends BaseSuperadminController
 
         $now = date('Y-m-d H:i:s');
 
-        $paidPlans = $db->table('user_subscriptions')
-            ->where('status', 'active')
-            ->where('plan !=', 'free')
-            ->where('current_period_end >=', $now)
+        $adminUserIdsSubquery = function (\CodeIgniter\Database\BaseBuilder $b) {
+            return $b->select('user_id')->from('auth_groups_users')->whereIn('group', ['admin', 'superadmin']);
+        };
+
+        $paidPlans = $db->table('user_subscriptions s')
+            ->where('s.status', 'active')
+            ->where('s.plan !=', 'free')
+            ->where('s.current_period_end >=', $now)
+            ->whereNotIn('s.user_id', $adminUserIdsSubquery)
             ->countAllResults();
 
-        $freeUsers = $db->table('users')
-            ->select('users.id')
-            ->get()->getNumRows()
-            - $db->table('user_subscriptions')
-                ->select('user_id')
-                ->where('status', 'active')
-                ->where('plan !=', 'free')
-                ->where('current_period_end >=', $now)
-                ->distinct()
-                ->countAllResults();
-
-        $activeSubs = $db->table('user_subscriptions')
-            ->where('status', 'active')
+        $totalNonAdminUsers = $db->table('users u')
+            ->whereNotIn('u.id', $adminUserIdsSubquery)
             ->countAllResults();
 
-        $canceled = $db->table('user_subscriptions')
-            ->where('status', 'canceled')
+        $paidUserCount = $db->table('user_subscriptions s')
+            ->select('s.user_id')
+            ->where('s.status', 'active')
+            ->where('s.plan !=', 'free')
+            ->where('s.current_period_end >=', $now)
+            ->whereNotIn('s.user_id', $adminUserIdsSubquery)
+            ->distinct()
+            ->countAllResults();
+
+        $freeUsers = max(0, $totalNonAdminUsers - $paidUserCount);
+
+        $activeSubs = $db->table('user_subscriptions s')
+            ->where('s.status', 'active')
+            ->whereNotIn('s.user_id', $adminUserIdsSubquery)
+            ->countAllResults();
+
+        $canceled = $db->table('user_subscriptions s')
+            ->where('s.status', 'canceled')
+            ->whereNotIn('s.user_id', $adminUserIdsSubquery)
             ->countAllResults();
 
         return [

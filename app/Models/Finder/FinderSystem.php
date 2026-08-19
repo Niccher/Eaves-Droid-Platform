@@ -1274,6 +1274,299 @@ class FinderSystem extends Model
         return array_filter($dist, fn($val) => $val > 0);
     }
 
+    /**
+     * Aggregate mobility/activity data for ML lifestyle classification.
+     * Returns transport mode counts, total screentime, and top apps by usage.
+     */
+    public function get_mobility_aggregates(int $userId): array
+    {
+        // 1. Count ALL transport modes (including TILTING, UNKNOWN, etc.)
+        $modes = $this->db->table('tbl_extracted_locations')
+            ->select('transport_mode, COUNT(*) as cnt')
+            ->where('owner_id', $userId)
+            ->where('transport_mode IS NOT NULL')
+            ->groupBy('transport_mode')
+            ->get()
+            ->getResultArray();
+
+        $result = [
+            'STILL'      => 0,
+            'WALKING'    => 0,
+            'IN_VEHICLE' => 0,
+            'ON_BICYCLE' => 0,
+            'RUNNING'    => 0,
+            'TILTING'    => 0,
+            'UNKNOWN'    => 0,
+        ];
+        foreach ($modes as $row) {
+            $key = strtoupper((string) $row['transport_mode']);
+            if (array_key_exists($key, $result)) {
+                $result[$key] = (int) $row['cnt'];
+            } else {
+                $result['UNKNOWN'] += (int) $row['cnt'];
+            }
+        }
+
+        // 2. Aggregate total screentime and top apps from app usage table
+        $usageRows = $this->db->table('tbl_system_app_usage')
+            ->select('app_name, package_name, SUM(foreground_time_ms) as total_time')
+            ->where('owner_id', $userId)
+            ->groupBy('package_name')
+            ->orderBy('total_time', 'DESC')
+            ->limit(5)
+            ->get()
+            ->getResultArray();
+
+        $totalScreentime = $this->db->table('tbl_system_app_usage')
+            ->selectSum('foreground_time_ms', 'total')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getRow();
+
+        $totalMs = (int) ($totalScreentime->total ?? 0);
+
+        // Approximate screen_on/screen_off from total device uptime (24h * days with data)
+        // since no dedicated screen events table exists
+        $daysRow = $this->db->table('tbl_system_app_usage')
+            ->select('MIN(created_at) as first_seen, MAX(created_at) as last_seen')
+            ->where('owner_id', $userId)
+            ->get()
+            ->getRow();
+        $daysDiff = 1;
+        if ($daysRow && $daysRow->first_seen && $daysRow->last_seen) {
+            $daysDiff = max(1, (int) ceil((strtotime($daysRow->last_seen) - strtotime($daysRow->first_seen)) / 86400));
+        }
+        $totalDayMs = $daysDiff * 86400000;
+
+        $result['total_screentime_ms'] = $totalMs;
+        $result['screen_on']  = $totalMs;
+        $result['screen_off'] = max(0, $totalDayMs - $totalMs);
+        $result['top_apps'] = array_map(fn($r) => [
+            'name'    => $r['app_name'] ?: $r['package_name'],
+            'package' => $r['package_name'],
+            'time'    => (int) $r['total_time'],
+        ], $usageRows);
+
+        return $result;
+    }
+
+    /**
+     * Produce geospatial clusters from location pings using a grid-cell grouping
+     * approach that approximates DBSCAN density clustering without PHP extensions.
+     * Grid resolution ε ≈ 0.002° (~222 m). Clusters with < 3 pings are discarded as noise.
+     */
+    public function get_geospatial_clusters(int $userId): array
+    {
+        $rows = $this->db->table('tbl_extracted_locations')
+            ->select('latitude, longitude, place_name, is_home, is_work, location_time')
+            ->where('owner_id', $userId)
+            ->where('latitude IS NOT NULL')
+            ->where('longitude IS NOT NULL')
+            ->where('status', 'success')
+            ->get()
+            ->getResultArray();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        // Grid cell resolution (~222 m per cell)
+        $eps = 0.002;
+        $cells = [];
+
+        foreach ($rows as $row) {
+            $lat = (float) $row['latitude'];
+            $lng = (float) $row['longitude'];
+            // Quantise to grid cell
+            $cellLat = round(floor($lat / $eps) * $eps, 6);
+            $cellLng = round(floor($lng / $eps) * $eps, 6);
+            $key = "{$cellLat}:{$cellLng}";
+
+            if (!isset($cells[$key])) {
+                $cells[$key] = [
+                    'lats'       => [],
+                    'lngs'       => [],
+                    'pings'      => 0,
+                    'is_home'    => false,
+                    'is_work'    => false,
+                    'place_name' => null,
+                    'last_seen'  => 0,
+                ];
+            }
+
+            $cells[$key]['lats'][]  = $lat;
+            $cells[$key]['lngs'][]  = $lng;
+            $cells[$key]['pings']++;
+            if ($row['is_home'])   $cells[$key]['is_home']    = true;
+            if ($row['is_work'])   $cells[$key]['is_work']    = true;
+            if (!$cells[$key]['place_name'] && !empty($row['place_name'])) {
+                $cells[$key]['place_name'] = $row['place_name'];
+            }
+            // Track the most recent ping timestamp (location_time is ms epoch)
+            $lt = (int) $row['location_time'];
+            if ($lt > $cells[$key]['last_seen']) {
+                $cells[$key]['last_seen'] = $lt;
+            }
+        }
+
+        // Filter noise (minPts = 3) and build output
+        $clusters = [];
+        foreach ($cells as $cell) {
+            if ($cell['pings'] < 3) continue;
+
+            $centLat = round(array_sum($cell['lats']) / $cell['pings'], 6);
+            $centLng = round(array_sum($cell['lngs']) / $cell['pings'], 6);
+
+            // Derive a human-readable label
+            if ($cell['is_home']) {
+                $label = 'Home';
+            } elseif ($cell['is_work']) {
+                $label = 'Work';
+            } elseif (!empty($cell['place_name'])) {
+                $label = $cell['place_name'];
+            } else {
+                $label = round($centLat, 4) . ', ' . round($centLng, 4);
+            }
+
+            $clusters[] = [
+                'label'     => $label,
+                'lat'       => $centLat,
+                'lng'       => $centLng,
+                'pings'     => $cell['pings'],
+                'last_seen' => $cell['last_seen'],
+            ];
+        }
+
+        // Sort by density descending
+        usort($clusters, fn($a, $b) => $b['pings'] <=> $a['pings']);
+
+        return $clusters;
+    }
+
+    /**
+     * Aggregate file storage data for ML forensic classification.
+     * Returns total size, file count, breakdown by source folder, age buckets,
+     * and the top large files (>50 MB) as space hogs.
+     */
+    public function get_storage_forensics(int $userId): array
+    {
+        $rows = $this->db->table('tbl_extracted_device_files')
+            ->select('name, path, extension, size_bytes, last_modified, formatted_size, formatted_date, category')
+            ->where('owner_id', $userId)
+            ->where('is_directory', 0)
+            ->where('size_bytes >', 0)
+            ->get()
+            ->getResultArray();
+
+        if (empty($rows)) {
+            return ['total_size' => 0, 'count' => 0, 'by_source' => [], 'by_age' => [], 'large_hogs' => [], 'top_files' => []];
+        }
+
+        $totalSize  = 0;
+        $bySource   = [
+            'WhatsApp'       => 0,
+            'Camera/DCIM'    => 0,
+            'Downloads'      => 0,
+            'Screenshots'    => 0,
+            'Documents'      => 0,
+            'APKs'           => 0,
+            'Other'          => 0,
+        ];
+        $byAge      = [
+            'Recent (<1 mo)' => 0,
+            'Mid (1-6 mo)'   => 0,
+            'Mid (6mo-1yr)'  => 0,
+            'Old (>1 year)'  => 0,
+        ];
+        $largeHogs  = [];
+
+        $now = time();
+
+        foreach ($rows as $row) {
+            $size  = (int) $row['size_bytes'];
+            $path  = strtolower((string) $row['path']);
+            $mtime = (int) $row['last_modified'];
+
+            $totalSize += $size;
+
+            // Source classification by path substring
+            if (str_contains($path, 'whatsapp')) {
+                $bySource['WhatsApp'] += $size;
+            } elseif (str_contains($path, 'dcim') || str_contains($path, 'camera')) {
+                $bySource['Camera/DCIM'] += $size;
+            } elseif (str_contains($path, 'download')) {
+                $bySource['Downloads'] += $size;
+            } elseif (str_contains($path, 'screenshot')) {
+                $bySource['Screenshots'] += $size;
+            } elseif (str_contains($path, 'document') || str_contains($path, '.pdf') || str_contains($path, '.doc')) {
+                $bySource['Documents'] += $size;
+            } elseif (str_contains($path, '.apk')) {
+                $bySource['APKs'] += $size;
+            } else {
+                $bySource['Other'] += $size;
+            }
+
+            // Age classification — last_modified may be ms epoch or seconds
+            $mtimeSec = $mtime > 1_000_000_000_000 ? (int) ($mtime / 1000) : $mtime;
+            $ageDays  = ($now - $mtimeSec) / 86400;
+            if ($ageDays < 30) {
+                $byAge['Recent (<1 mo)']++;
+            } elseif ($ageDays < 180) {
+                $byAge['Mid (1-6 mo)']++;
+            } elseif ($ageDays < 365) {
+                $byAge['Mid (6mo-1yr)']++;
+            } else {
+                $byAge['Old (>1 year)']++;
+            }
+
+            // Flag large files (>50 MB) with full display fields
+            if ($size > 50 * 1024 * 1024) {
+                $largeHogs[] = [
+                    'name'           => $row['name'] ?: basename($row['path']),
+                    'path'           => $row['path'],
+                    'extension'      => $row['extension'] ?? '',
+                    'size'           => $size,
+                    'formatted_size' => $row['formatted_size'] ?: number_format($size / (1024 * 1024), 2) . ' MB',
+                    'formatted_date' => $row['formatted_date'] ?: '',
+                ];
+            }
+        }
+
+        // Keep only populated source buckets; sort hogs descending
+        $bySource = array_filter($bySource, fn($v) => $v > 0);
+        usort($largeHogs, fn($a, $b) => $b['size'] <=> $a['size']);
+        $largeHogs = array_slice($largeHogs, 0, 50);
+
+        // top_files: largest 50 files with display fields for the file table fallback
+        $topFiles = $this->db->table('tbl_extracted_device_files')
+            ->select('name, path, extension, size_bytes as size, formatted_size, formatted_date')
+            ->where('owner_id', $userId)
+            ->where('is_directory', 0)
+            ->where('size_bytes >', 0)
+            ->orderBy('size_bytes', 'DESC')
+            ->limit(50)
+            ->get()
+            ->getResultArray();
+
+        // Ensure name is always populated
+        $topFiles = array_map(function ($f) {
+            $f['name']           = $f['name'] ?: basename($f['path']);
+            $f['extension']      = $f['extension'] ?? '';
+            $f['formatted_size'] = $f['formatted_size'] ?: number_format((int)$f['size'] / (1024 * 1024), 2) . ' MB';
+            $f['formatted_date'] = $f['formatted_date'] ?? '';
+            return $f;
+        }, $topFiles);
+
+        return [
+            'total_size'  => $totalSize,
+            'count'       => count($rows),
+            'by_source'   => $bySource,
+            'by_age'      => $byAge,
+            'large_hogs'  => $largeHogs,
+            'top_files'   => $topFiles,
+        ];
+    }
+
     public function delete_app(int $id, int $userId): bool
     {
         try {
@@ -1861,7 +2154,15 @@ class FinderSystem extends Model
 
     public function get_count_AppPermissions(int $user_id): int
     {
-        return $this->getCount('tbl_system_app_permissions', $user_id);
+        try {
+            $row = $this->fq('tbl_system_app_permissions', $user_id)
+                ->select('COUNT(DISTINCT(package_name)) as total')
+                ->get()->getRowArray();
+            return (int)($row['total'] ?? 0);
+        } catch (\Exception $e) {
+            log_message('error', 'get_count_AppPermissions: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     public function get_app_permissions(int $user_id, int $perPage = 25): array
@@ -1870,10 +2171,27 @@ class FinderSystem extends Model
             $total = $this->get_count_AppPermissions($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
-            $results = $this->fq('tbl_system_app_permissions', $user_id)
-                ->orderBy('extracted_at', 'DESC')
+
+            // Get unique packages for the current page
+            $pkgsRow = $this->fq('tbl_system_app_permissions', $user_id)
+                ->select('package_name, MAX(extracted_at) as max_ext')
+                ->groupBy('package_name')
+                ->orderBy('max_ext', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()->getResultArray();
+
+            if (empty($pkgsRow)) {
+                return [];
+            }
+
+            $pkgs = array_column($pkgsRow, 'package_name');
+
+            // Select all rows corresponding to these packages
+            $results = $this->fq('tbl_system_app_permissions', $user_id)
+                ->whereIn('package_name', $pkgs)
+                ->orderBy('package_name', 'ASC')
+                ->get()->getResultArray();
+
             $this->pager = \Config\Services::pager();
             $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
             return $results;

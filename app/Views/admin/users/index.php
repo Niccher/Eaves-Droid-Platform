@@ -81,8 +81,7 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Username</th>
-                                <th>Email</th>
+                                <th>User</th>
                                 <th>Role</th>
                                 <th>Status</th>
                                 <th>Created</th>
@@ -92,20 +91,22 @@
                         </thead>
                         <tbody>
                             <?php if (empty($users)): ?>
-                            <tr><td colspan="8" class="text-center text-muted py-4">No users match the selected filter.</td></tr>
+                            <tr><td colspan="7" class="text-center text-muted py-4">No users match the selected filter.</td></tr>
                             <?php else: ?>
                             <?php foreach ($users as $u): ?>
                             <?php
                                 $groups = $user_groups[$u['id']] ?? ['user'];
                                 $role = implode(', ', $groups);
-                                $isActive = $u['active'] ?? 1;
+                                $isActive = (int)($u['active'] ?? 0) === 1;
                                 $canManageRoles = auth()->user()->can('users.manage-roles');
                                 $targetPrivileged = array_intersect($groups, ['superadmin', 'admin', 'developer']) !== [];
                             ?>
                             <tr>
                                 <td><?= $u['id'] ?></td>
-                                <td><?= htmlspecialchars($u['username']) ?></td>
-                                <td><?= htmlspecialchars($u['email'] ?? '-') ?></td>
+                                <td>
+                                    <strong class="text-uppercase font-weight-bold d-block text-dark"><?= htmlspecialchars($u['username']) ?></strong>
+                                    <small class="text-muted font-italic"><?= htmlspecialchars($u['email'] ?? '-') ?></small>
+                                </td>
                                 <td>
                                     <?php foreach ($groups as $g): ?>
                                     <span class="badge badge-<?= $g === 'superadmin' ? 'danger' : ($g === 'admin' ? 'warning' : ($g === 'developer' ? 'info' : ($g === 'beta' ? 'secondary' : 'primary'))) ?>">
@@ -114,10 +115,10 @@
                                     <?php endforeach; ?>
                                 </td>
                                 <td>
-                                    <?php if ($u['deleted_at']): ?>
+                                    <?php if (!empty($u['deleted_at'])): ?>
                                     <span class="badge badge-danger">Deleted</span>
                                     <?php elseif (!$isActive): ?>
-                                    <span class="badge badge-secondary">Suspended</span>
+                                    <span class="badge badge-warning">Suspended</span>
                                     <?php else: ?>
                                     <span class="badge badge-success">Active</span>
                                     <?php endif; ?>

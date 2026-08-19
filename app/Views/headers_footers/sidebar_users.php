@@ -1,4 +1,16 @@
     <body class="hold-transition sidebar-mini layout-fixed">
+    <?php if (session()->get('impersonated_by') !== null): ?>
+    <div class="alert alert-warning mb-0 text-center" style="border-radius:0; margin-bottom:0 !important;">
+        <i class="fas fa-exclamation-triangle mr-1"></i>
+        You are acting as <strong><?php echo htmlspecialchars(session()->get('impersonated_username') ?? ($user_info['username'] ?? 'User')); ?></strong>
+        <form action="<?php echo base_url('superadmin/impersonate/stop'); ?>" method="post" class="d-inline">
+            <?php echo csrf_field(); ?>
+            <button type="submit" class="btn btn-sm btn-danger ml-2">
+                <i class="fas fa-sign-out-alt mr-1"></i>Exit Impersonation
+            </button>
+        </form>
+    </div>
+    <?php endif; ?>
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -294,7 +306,7 @@
 <!-- Hardware Button -->
                         <li class="nav-item">
                             <a href="<?php echo base_url('advanced/hardware'); ?>"
-                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'processes', 'proc_info', 'sim_configs', 'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network', 'hardware_landing', 'audio_devices', 'biometric', 'gnss_hardware', 'power_rails', 'usb_devices', 'vibration', 'network_connectivity', 'display_graphics', 'sensors_location', 'media_hardware', 'storage_peripherals', 'shortrange_auth', 'device_fingerprint', 'hardware_dashboard'])) ? 'active' : ''; ?>">
+                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info', 'battery_stats', 'proc_info', 'sim_configs', 'cell_towers', 'display_info', 'storage', 'nfc', 'hardware_graphics', 'hardware_network', 'hardware_landing', 'audio_devices', 'biometric', 'gnss_hardware', 'usb_devices', 'vibration', 'network_connectivity', 'display_graphics', 'sensors_location', 'media_hardware', 'storage_peripherals', 'shortrange_auth', 'device_fingerprint', 'hardware_dashboard'])) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-microchip"></i>
                                 <p>Hardware</p>
                             </a>
@@ -303,7 +315,7 @@
                         <!-- Software Button -->
                         <li class="nav-item">
                             <a href="<?php echo base_url('advanced/software'); ?>"
-                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'remote_media', 'accessibility', 'input_methods', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale', 'software_landing', 'app_permissions', 'browser_history', 'clipboard', 'content_providers', 'crash_logs', 'digital_wellbeing', 'doze_standby', 'email', 'health_data', 'keyboard_input', 'keyguard', 'screenshots', 'screen_state', 'vpn_config', 'running_processes'])) ? 'active' : ''; ?>">
+                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'remote_media', 'accessibility', 'input_methods', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale', 'software_landing', 'app_permissions', 'clipboard', 'content_providers', 'crash_logs', 'digital_wellbeing', 'doze_standby', 'email', 'health_data', 'keyguard', 'screenshots', 'screen_state', 'vpn_config'])) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-laptop-code"></i>
                                 <p>Software</p>
                             </a>

@@ -298,7 +298,7 @@
                                                 <div class="col-md-6">
                                                     <?php foreach ($chunk as $val => $t): ?>
                                                     <div class="custom-control custom-checkbox mb-1">
-                                                        <input type="checkbox" class="custom-control-input dt-checkbox" id="dt_<?= $val ?>" name="data_types[]" value="<?= $val ?>" <?= in_array($val, $selected_types) ? 'checked' : '' ?>>
+                                                        <input type="checkbox" class="custom-control-input dt-checkbox" id="dt_<?= $val ?>" name="data_types[]" value="<?= $val ?>" <?= (empty($selected_types) || in_array($val, $selected_types)) ? 'checked' : '' ?>>
                                                         <label class="custom-control-label" for="dt_<?= $val ?>"><i class="fas <?= $t['icon'] ?> text-muted mr-1" style="width:16px;"></i><?= $t['label'] ?></label>
                                                     </div>
                                                     <?php endforeach; ?>

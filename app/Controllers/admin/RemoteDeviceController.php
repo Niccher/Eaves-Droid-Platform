@@ -38,12 +38,13 @@ class RemoteDeviceController extends BaseAdminController
 
         // Fetch stats per user
         $stats = $db->table('users u')
-            ->select('u.id, u.username, 
+            ->select('u.id, u.username, ai.secret as email,
                 (SELECT COUNT(*) FROM tbl_extracted_media_files WHERE owner_id = u.id) as media_count,
                 (SELECT COALESCE(SUM(file_size), 0) FROM tbl_extracted_media_files WHERE owner_id = u.id) as media_size,
                 (SELECT COUNT(*) FROM tbl_uploaded_files WHERE token_owner_id = u.id AND file_category = \'files\') as files_count,
                 (SELECT COALESCE(SUM(file_size_bytes), 0) FROM tbl_uploaded_files WHERE token_owner_id = u.id AND file_category = \'files\') as files_size')
             ->join('tbl_device_profiles dp', 'dp.owner_id = u.id', 'inner')
+            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
             ->groupBy('u.id')
             ->orderBy('u.username', 'ASC')
             ->get()

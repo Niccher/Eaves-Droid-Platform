@@ -31,7 +31,7 @@ class ImpersonateController extends BaseSuperadminController
 
         $superAdminIds = $db->table('auth_groups_users')
             ->select('user_id')
-            ->where('group', 'superadmin')
+            ->whereIn('group', ['superadmin', 'admin'])
             ->get()
             ->getResultArray();
         $superAdminIds = array_map('intval', array_column($superAdminIds, 'user_id'));
@@ -75,8 +75,8 @@ class ImpersonateController extends BaseSuperadminController
         }
 
         $targetGroups = $this->getUserGroups($userId);
-        if (in_array('superadmin', $targetGroups, true)) {
-            return redirect()->back()->with('error', 'You cannot impersonate a superadmin account.');
+        if (in_array('superadmin', $targetGroups, true) || in_array('admin', $targetGroups, true)) {
+            return redirect()->back()->with('error', 'You cannot impersonate administrative accounts (admin or superadmin).');
         }
 
         $userModel = model(UserModel::class);
@@ -100,10 +100,10 @@ class ImpersonateController extends BaseSuperadminController
             ]),
         ]);
 
-        // Return view that opens admin dashboard in new tab
+        // Return view that redirects user to user dashboard /home
         return view('superadmin/impersonate_start', [
             'targetUser' => $targetUser,
-            'redirectUrl' => base_url('admin/dashboard'),
+            'redirectUrl' => base_url('home'),
         ]);
     }
 

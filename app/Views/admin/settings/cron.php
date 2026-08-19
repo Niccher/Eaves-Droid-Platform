@@ -193,7 +193,11 @@
                                         <optgroup label="System">
                                         <option value="maintenance:check">maintenance:check — Auto-activate/deactivate scheduled maintenance</option>
                                         </optgroup>
+                                        <optgroup label="Data Retention & Purge">
+                                        <option value="retention:purge">retention:purge — Purge expired fleet data according to retention policy</option>
+                                        </optgroup>
                                         <optgroup label="Backup & Storage">
+                                        <option value="db:backup">db:backup — Run full database backup</option>
                                         <option value="backup:create">backup:create — Create full database backup with gzip</option>
                                         <option value="storage:check">storage:check — Check disk usage and send alerts</option>
                                         </optgroup>

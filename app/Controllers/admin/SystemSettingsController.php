@@ -765,6 +765,56 @@ class SystemSettingsController extends BaseAdminController
             'section' => 'cron',
         ]);
 
+        $defaultJobs = [
+            [
+                'command'        => 'retention:purge',
+                'custom_command' => null,
+                'schedule'       => '0 2 * * *',
+                'description'    => 'Automatically purges expired fleet data according to retention policies.',
+                'arguments'      => json_encode([]),
+                'enabled'        => 1,
+                'created_at'     => date('Y-m-d H:i:s'),
+                'updated_at'     => date('Y-m-d H:i:s'),
+            ],
+            [
+                'command'        => 'logs:clear',
+                'custom_command' => null,
+                'schedule'       => '*/30 * * * *',
+                'description'    => 'System maintenance and log cleanup running every 30 minutes.',
+                'arguments'      => json_encode([]),
+                'enabled'        => 1,
+                'created_at'     => date('Y-m-d H:i:s'),
+                'updated_at'     => date('Y-m-d H:i:s'),
+            ],
+            [
+                'command'        => 'db:backup',
+                'custom_command' => null,
+                'schedule'       => '0 0 * * *',
+                'description'    => 'Takes full database backup every midnight.',
+                'arguments'      => json_encode([]),
+                'enabled'        => 1,
+                'created_at'     => date('Y-m-d H:i:s'),
+                'updated_at'     => date('Y-m-d H:i:s'),
+            ],
+            [
+                'command'        => 'queue:work',
+                'custom_command' => null,
+                'schedule'       => '0 */2 * * *',
+                'description'    => 'Processes upload queue jobs and clears stale/failed items every 2 hours.',
+                'arguments'      => json_encode([]),
+                'enabled'        => 1,
+                'created_at'     => date('Y-m-d H:i:s'),
+                'updated_at'     => date('Y-m-d H:i:s'),
+            ],
+        ];
+
+        foreach ($defaultJobs as $job) {
+            $exists = $db->table('cron_jobs')->where('command', $job['command'])->countAllResults();
+            if ($exists === 0) {
+                $db->table('cron_jobs')->insert($job);
+            }
+        }
+
         $cronJobs = $db->table('cron_jobs')
             ->orderBy('enabled', 'DESC')
             ->orderBy('command', 'ASC')
@@ -1009,18 +1059,24 @@ class SystemSettingsController extends BaseAdminController
         $counts = cache('retention_stats_counts');
         if (!is_array($counts)) {
             $counts = [];
-            foreach ($categories as $label => $table) {
-                $counts[$label] = $db->table($table)->countAllResults();
+            foreach ($categories as $label => $tables) {
+                $totalCount = 0;
+                foreach ((array) $tables as $table) {
+                    if ($db->tableExists($table)) {
+                        $totalCount += $db->table($table)->countAllResults();
+                    }
+                }
+                $counts[$label] = $totalCount;
             }
             cache()->save('retention_stats_counts', $counts, 300);
         }
 
         $stats = [];
-        foreach ($categories as $label => $table) {
+        foreach ($categories as $label => $tables) {
             $stats[$label] = [
                 'total' => $counts[$label] ?? 0,
-                'retention_days' => (int) ($saved["retention_{$label}_days"] ?? 365),
-                'enabled' => (bool) ($saved["retention_{$label}_enabled"] ?? false),
+                'retention_days' => (int) ($saved["retention_{$label}_days"] ?? 730),
+                'enabled' => isset($saved["retention_{$label}_enabled"]) ? (bool) $saved["retention_{$label}_enabled"] : true,
             ];
         }
 
@@ -1112,19 +1168,98 @@ class SystemSettingsController extends BaseAdminController
             return redirect()->to('admin/settings/retention')->with('error', 'Invalid request method.');
         }
 
+        $password = (string) $this->request->getPost('admin_password');
+        $user = auth()->user();
+
+        // Verify password against auth credentials
+        $validPassword = false;
+        if (method_exists($user, 'getPassword')) {
+            $validPassword = service('passwords')->verify($password, $user->getPassword());
+        } else {
+            $identity = $user->getEmailIdentity();
+            if ($identity && isset($identity->secret)) {
+                $validPassword = service('passwords')->verify($password, $identity->secret);
+            }
+        }
+
+        if (!$validPassword) {
+            $this->logAdminAction('factory_reset_denied', 'critical', false, [
+                'new_values' => json_encode(['reason' => 'invalid_password']),
+            ]);
+            return redirect()->to('admin/settings/retention')->with('error', 'Factory reset aborted: Incorrect admin password.');
+        }
+
         $confirm = strtoupper(trim((string) $this->request->getPost('confirm')));
         if ($confirm !== 'RESET') {
             return redirect()->to('admin/settings/retention')->with('error', 'Factory reset aborted: confirmation phrase did not match.');
         }
 
+        $resetMode = (string) ($this->request->getPost('reset_mode') ?? 'soft');
+        $doAutoBackup = (bool) $this->request->getPost('auto_backup');
+
+        $backupFile = null;
+        if ($doAutoBackup) {
+            try {
+                command('backup:create');
+                $backupFile = 'Database backup generated successfully.';
+            } catch (\Throwable $e) {
+                log_message('warning', 'Factory reset auto-backup failed: ' . $e->getMessage());
+            }
+        }
+
         $this->logAdminAction('factory_reset_run', 'critical', true, [
-            'new_values' => json_encode(['confirm' => $confirm]),
+            'new_values' => json_encode([
+                'confirm'    => $confirm,
+                'reset_mode' => $resetMode,
+                'auto_backup'=> $doAutoBackup,
+            ]),
         ]);
 
-        $stats = (new \App\Services\SystemResetService())->reset();
+        $stats = (new \App\Services\SystemResetService())->resetMode($resetMode);
 
         cache()->clean();
 
-        return redirect()->to('admin/settings/retention')->with('message', "Factory reset complete. Wiped {$stats['tables_wiped']} data table(s) and deleted {$stats['files_deleted']} file(s). All user accounts were retained but all of their data (device data, uploads, reports, backups, billing) was permanently removed.");
+        // Send email alert to ALL registered users
+        try {
+            helper('email');
+            $db = \Config\Database::connect();
+            $allUsers = $db->table('users')->select('users.id, users.username, auth_identities.secret as email')
+                ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
+                ->where('users.deleted_at IS NULL')
+                ->get()
+                ->getResultArray();
+
+            $modeText = match($resetMode) {
+                'hard'      => 'Full Hard System Reset (Accounts & Data Wiped)',
+                'logs_only' => 'Logs & Cache System Maintenance Purge',
+                default     => 'Soft Data Maintenance Reset (Extracted Data & Media Wiped)',
+            };
+
+            foreach ($allUsers as $u) {
+                if (!empty($u['email'])) {
+                    send_admin_notification(
+                        'CRITICAL NOTICE: System Reset Executed',
+                        'email/admin/settings_changed',
+                        [
+                            'changes' => [
+                                ['key' => 'Reset Mode', 'old' => '', 'new' => $modeText],
+                                ['key' => 'Initiated By', 'old' => '', 'new' => $user->username],
+                                ['key' => 'Auto-Backup Created', 'old' => '', 'new' => $doAutoBackup ? 'Yes' : 'No'],
+                                ['key' => 'Timestamp', 'old' => '', 'new' => date('Y-m-d H:i:s T')],
+                            ],
+                            'securityAction' => 'System Reset Alert',
+                            'securityDescription' => "A system reset ({$modeText}) has been performed by system administrators.",
+                            'securityStatus' => 'warning',
+                            'securityInitiatedBy' => $user->username,
+                        ]
+                    );
+                }
+            }
+        } catch (\Throwable $ex) {
+            log_message('warning', 'Failed to dispatch reset notification emails to all users: ' . $ex->getMessage());
+        }
+
+        $backupMsg = $backupFile ? ' Safety auto-backup was created.' : '';
+        return redirect()->to('admin/settings/retention')->with('message', "Factory reset complete ({$resetMode} mode). Wiped {$stats['tables_wiped']} data table(s) and deleted {$stats['files_deleted']} file(s).{$backupMsg} All users have been notified via email.");
     }
 }

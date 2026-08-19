@@ -43,13 +43,22 @@ class ReportsController extends BaseAdminController
         }
         $data['data_type_counts'] = $dataTypeCounts;
 
-        // User activity data
+        // User activity data (exclude admin and superadmin accounts)
+        $adminGroupRows = $db->table('auth_groups_users')
+            ->select('user_id')
+            ->whereIn('group', ['admin', 'superadmin'])
+            ->get()
+            ->getResultArray();
+        $adminUserIds = array_map('intval', array_column($adminGroupRows, 'user_id'));
+
         $usersQuery = $db->table('users')
             ->select('users.id, users.username, auth_identities.secret as email')
             ->join('auth_identities', "auth_identities.user_id = users.id AND auth_identities.type = 'email_password'", 'left')
             ->where('users.deleted_at IS NULL');
-        if ($hiddenIds !== []) {
-            $usersQuery->whereNotIn('users.id', $hiddenIds);
+
+        $excludeIds = array_unique(array_merge($hiddenIds, $adminUserIds));
+        if ($excludeIds !== []) {
+            $usersQuery->whereNotIn('users.id', $excludeIds);
         }
         $data['users'] = $usersQuery->orderBy('users.username', 'ASC')
             ->get()
@@ -179,9 +188,9 @@ class ReportsController extends BaseAdminController
         $data['format'] = 'html';
 
         $data['report_history'] = $db->table('tbl_admin_reports')
-            ->select('tbl_admin_reports.*, users.username as created_by_username')
+            ->select('tbl_admin_reports.*, COALESCE(users.username, "System") as created_by_username')
             ->join('users', 'users.id = tbl_admin_reports.created_by', 'left')
-            ->orderBy('tbl_admin_reports.created_at', 'DESC')
+            ->orderBy('tbl_admin_reports.id', 'DESC')
             ->limit(50)
             ->get()
             ->getResultArray();
@@ -210,7 +219,7 @@ class ReportsController extends BaseAdminController
 
     public function generate()
     {
-        if ($this->request->getMethod() !== 'POST') {
+        if (strtolower($this->request->getMethod()) !== 'post') {
             return $this->index('generate');
         }
 
@@ -234,19 +243,32 @@ class ReportsController extends BaseAdminController
 
         $results = [];
         $grandTotal = 0;
+        $dateFromFilter = $dateFrom ? $dateFrom . ' 00:00:00' : '1970-01-01 00:00:00';
+        $dateToFilter   = $dateTo ? $dateTo . ' 23:59:59' : date('Y-m-d 23:59:59');
+
         foreach ($dataTypes as $type) {
             if (!isset($allTypes[$type])) continue;
             $info = $allTypes[$type];
-            $table = $info['table'];
-            $dateCol = $type === 'uploads' ? 'uploaded_at' : 'created_at';
-            $query = $db->table($table)
-                ->where("{$dateCol} >=", $dateFrom ?: '1970-01-01')
-                ->where("{$dateCol} <=", $dateTo ?: date('Y-m-d'));
-            if ($userId && $userId !== 'all') {
-                $ownerCol = ($table === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
-                $query->where($ownerCol, $userId);
+            $tables = (array) $info['table'];
+
+            $count = 0;
+            foreach ($tables as $table) {
+                if ($db->tableExists($table)) {
+                    $dateCol = ($table === 'tbl_uploaded_files') ? 'uploaded_at' : 'created_at';
+                    $query = $db->table($table);
+                    if ($db->fieldExists($dateCol, $table)) {
+                        $query->where("{$dateCol} >=", $dateFromFilter)->where("{$dateCol} <=", $dateToFilter);
+                    }
+                    if ($userId && $userId !== 'all') {
+                        $ownerCol = ($table === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
+                        if ($db->fieldExists($ownerCol, $table)) {
+                            $query->where($ownerCol, $userId);
+                        }
+                    }
+                    $count += $query->countAllResults();
+                }
             }
-            $count = $query->countAllResults();
+
             $results[] = ['type' => $type, 'label' => $info['label'], 'icon' => $info['icon'], 'count' => $count];
             $grandTotal += $count;
         }
@@ -270,7 +292,7 @@ class ReportsController extends BaseAdminController
 
         // Save to file
         $timestamp = date('Ymd_His');
-        $hash = substr(md5($timestamp . json_encode($dataTypes) . $userId), 0, 8);
+        $hash = substr(md5($timestamp . json_encode($dataTypes) . (string)$userId), 0, 8);
         $filename = "report_{$timestamp}_{$hash}.html";
         $reportsDir = WRITEPATH . 'reports';
         $filePath = $reportsDir . '/' . $filename;
@@ -284,9 +306,9 @@ class ReportsController extends BaseAdminController
         // Insert into tbl_admin_reports
         $db->table('tbl_admin_reports')->insert([
             'user_scope'         => $userScope,
-            'user_id'            => $userId !== 'all' ? $userId : null,
-            'date_from'          => $dateFrom,
-            'date_to'            => $dateTo,
+            'user_id'            => ($userId && $userId !== 'all') ? (int)$userId : null,
+            'date_from'          => $dateFrom ?: null,
+            'date_to'            => $dateTo ?: null,
             'data_types'         => json_encode($dataTypes),
             'data_types_labels'  => $dataTypesLabels,
             'format'             => $format,
@@ -308,27 +330,32 @@ class ReportsController extends BaseAdminController
             ]),
         ]);
 
-        // Notify admins
-        helper('email');
-        send_admin_notification(
-            'Eaves Droid — Report Generated',
-            'email/admin/settings_changed', // reuse settings_changed template
-            [
-                'changes' => [
-                    ['key' => 'User', 'old' => '', 'new' => $userScope],
-                    ['key' => 'Data Types', 'old' => '', 'new' => $dataTypesLabels],
-                    ['key' => 'Format', 'old' => '', 'new' => $format],
-                    ['key' => 'Records', 'old' => '', 'new' => number_format($grandTotal)],
-                ],
-                'securityAction' => 'Report Generated',
-                'securityDescription' => 'A new report has been generated.',
-                'securityStatus' => 'success',
-                'securityInitiatedBy' => $this->userData['username'] ?? 'Admin',
-            ]
-        );
+        // Notify admins (optional - log if fails)
+        try {
+            helper('email');
+            send_admin_notification(
+                'Eaves Droid — Report Generated',
+                'email/admin/settings_changed',
+                [
+                    'changes' => [
+                        ['key' => 'User', 'old' => '', 'new' => $userScope],
+                        ['key' => 'Data Types', 'old' => '', 'new' => $dataTypesLabels],
+                        ['key' => 'Format', 'old' => '', 'new' => $format],
+                        ['key' => 'Records', 'old' => '', 'new' => number_format($grandTotal)],
+                    ],
+                    'securityAction' => 'Report Generated',
+                    'securityDescription' => 'A new report has been generated.',
+                    'securityStatus' => 'success',
+                    'securityInitiatedBy' => $this->userData['username'] ?? 'Admin',
+                ]
+            );
+        } catch (\Throwable $ex) {
+            log_message('warning', 'Failed to send admin notification for generated report: ' . $ex->getMessage());
+        }
 
-        return redirect()->to('admin/reports/generate')->with('success',
-            "Report generated — User: {$userScope}, Data: {$dataTypesLabels}, Format: {$format}, Records: " . number_format($grandTotal));
+        return redirect()->to('admin/reports/generate')
+            ->with('message', "Report generated — User: {$userScope}, Data: {$dataTypesLabels}, Format: {$format}, Records: " . number_format($grandTotal))
+            ->with('success', "Report generated — User: {$userScope}, Data: {$dataTypesLabels}, Format: {$format}, Records: " . number_format($grandTotal));
 
         } catch (\Throwable $e) {
             log_message('error', 'Report generation failed: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
@@ -382,38 +409,15 @@ class ReportsController extends BaseAdminController
     private function getDataTypeMap(): array
     {
         return [
-            'sms'           => ['table' => 'tbl_extracted_sms',            'icon' => 'fa-sms',           'label' => 'SMS'],
-            'calls'         => ['table' => 'tbl_extracted_call_logs',           'icon' => 'fa-phone',         'label' => 'Call Logs'],
-            'contacts'      => ['table' => 'tbl_extracted_contacts',       'icon' => 'fa-address-book',  'label' => 'Contacts'],
-            'apps'          => ['table' => 'tbl_extracted_installed_apps',           'icon' => 'fa-th',            'label' => 'Apps'],
-            'locations'     => ['table' => 'tbl_extracted_locations',       'icon' => 'fa-map-marker-alt','label' => 'Locations'],
-            'activities'    => ['table' => 'tbl_extracted_activities',       'icon' => 'fa-running',       'label' => 'Activities'],
-            'files'         => ['table' => 'tbl_extracted_device_files',   'icon' => 'fa-file',          'label' => 'Device Files'],
-            'network'       => ['table' => 'tbl_system_network_info',   'icon' => 'fa-wifi',          'label' => 'Network Info'],
-            'device_context'=> ['table' => 'tbl_device_hardware_contexts', 'icon' => 'fa-cog',           'label' => 'Device Context'],
-            'notifications' => ['table' => 'tbl_extracted_notifications',  'icon' => 'fa-bell',          'label' => 'Notifications'],
-            'accounts'      => ['table' => 'tbl_accounts',       'icon' => 'fa-user-circle',   'label' => 'Accounts'],
-            'bluetooth'     => ['table' => 'tbl_telemetry_bluetooth_devices',      'icon' => 'fa-bluetooth',     'label' => 'Bluetooth'],
-            'calendar'      => ['table' => 'tbl_extracted_calendar_events','icon' => 'fa-calendar',      'label' => 'Calendar'],
-            'app_usage'     => ['table' => 'tbl_system_app_usage',      'icon' => 'fa-clock',         'label' => 'App Usage'],
-            'sensors'       => ['table' => 'tbl_telemetry_sensors', 'icon' => 'fa-microchip',     'label' => 'Sensors'],
-            'security'      => ['table' => 'tbl_security_audit', 'icon' => 'fa-shield-alt',    'label' => 'Security Audit'],
-            'media'         => ['table' => 'tbl_extracted_media_files', 'icon' => 'fa-camera',        'label' => 'Captured Media'],
-            'sim'           => ['table' => 'tbl_sim_configs',    'icon' => 'fa-sim-card',      'label' => 'SIM Configs'],
-            'installed_apps'=> ['table' => 'tbl_installed_apps', 'icon' => 'fa-download',      'label' => 'Installed Apps'],
-            'device_info'   => ['table' => 'tbl_device_info',    'icon' => 'fa-info-circle',   'label' => 'Device Info'],
-            'battery'       => ['table' => 'tbl_telemetry_battery_stats',  'icon' => 'fa-battery-half',  'label' => 'Battery Stats'],
-            'data_usage'    => ['table' => 'tbl_data_usage',     'icon' => 'fa-chart-line',    'label' => 'Data Usage'],
-            'wifi'          => ['table' => 'tbl_telemetry_wifi_networks',     'icon' => 'fa-wifi',          'label' => 'Saved WiFi'],
-            'accessibility' => ['table' => 'tbl_accessibility',  'icon' => 'fa-universal-access','label' => 'Accessibility'],
-            'input_methods' => ['table' => 'tbl_system_input_methods',  'icon' => 'fa-keyboard',      'label' => 'Input Methods'],
-            'proc_info'     => ['table' => 'tbl_system_running_processes',      'icon' => 'fa-microchip',     'label' => 'Process Info'],
-            'thermal'       => ['table' => 'tbl_telemetry_thermal',        'icon' => 'fa-temperature-high','label' => 'Thermal'],
-            'nfc'           => ['table' => 'tbl_telemetry_nfc',            'icon' => 'fa-nfc-symbol',    'label' => 'NFC'],
-            'display_info'  => ['table' => 'tbl_telemetry_display_info',   'icon' => 'fa-tv',            'label' => 'Display Info'],
-            'cell_towers'   => ['table' => 'tbl_telemetry_cell_towers',    'icon' => 'fa-signal',        'label' => 'Cell Towers'],
-            'live_locations'=> ['table' => 'tbl_live_locations', 'icon' => 'fa-map-pin',       'label' => 'Live Locations'],
-            'uploads'       => ['table' => 'tbl_uploaded_files',     'icon' => 'fa-upload',        'label' => 'Uploads'],
+            'apps'                  => ['table' => ['tbl_extracted_installed_apps'], 'icon' => 'fa-cubes',          'label' => 'Installed Apps'],
+            'calls'                 => ['table' => ['tbl_extracted_call_logs'],      'icon' => 'fa-phone-alt',      'label' => 'Call Logs'],
+            'sms'                   => ['table' => ['tbl_extracted_sms'],            'icon' => 'fa-sms',            'label' => 'SMS Messages'],
+            'contacts'              => ['table' => ['tbl_extracted_contacts'],       'icon' => 'fa-address-book',   'label' => 'Contacts'],
+            'files'                 => ['table' => ['tbl_extracted_device_files', 'tbl_extracted_media_files'], 'icon' => 'fa-folder-open',    'label' => 'Files & Media'],
+            'location_activities'   => ['table' => ['tbl_extracted_locations', 'tbl_extracted_activities'],      'icon' => 'fa-map-marked-alt', 'label' => 'Location & Activities'],
+            'misc_hardware_software'=> ['table' => ['tbl_device_hardware_contexts', 'tbl_system_network_info', 'tbl_telemetry_bluetooth_devices', 'tbl_telemetry_sensors', 'tbl_sim_configs', 'tbl_security_audit'], 'icon' => 'fa-microchip',      'label' => 'Hardware & Software Misc'],
+            'app_usage'             => ['table' => ['tbl_system_app_usage'],         'icon' => 'fa-chart-pie',      'label' => 'App Usage Stats'],
+            'app_notifications'     => ['table' => ['tbl_extracted_notifications'],  'icon' => 'fa-bell',           'label' => 'App Notifications'],
         ];
     }
 
@@ -553,23 +557,35 @@ class ReportsController extends BaseAdminController
         }
 
         $tableMap = $this->getDataTypeMap();
-
         $rows = [];
         $grandTotal = 0;
+        $dateFromFilter = $dateFrom ? $dateFrom . ' 00:00:00' : '1970-01-01 00:00:00';
+        $dateToFilter   = $dateTo ? $dateTo . ' 23:59:59' : date('Y-m-d 23:59:59');
+
         $sourceKeys = !empty($dataTypes) ? $dataTypes : array_keys($tableMap);
         foreach ($sourceKeys as $type) {
             if (!isset($tableMap[$type])) continue;
             $info = $tableMap[$type];
-            $table = $info['table'];
-            $dateCol = $type === 'uploads' ? 'uploaded_at' : 'created_at';
-            $query = $db->table($table)
-                ->where("{$dateCol} >=", $dateFrom)
-                ->where("{$dateCol} <=", $dateTo);
-            if ($userId && $userId !== 'all') {
-                $ownerCol = ($table === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
-                $query->where($ownerCol, $userId);
+            $tables = (array) $info['table'];
+
+            $count = 0;
+            foreach ($tables as $table) {
+                if ($db->tableExists($table)) {
+                    $dateCol = ($table === 'tbl_uploaded_files') ? 'uploaded_at' : 'created_at';
+                    $query = $db->table($table);
+                    if ($db->fieldExists($dateCol, $table)) {
+                        $query->where("{$dateCol} >=", $dateFromFilter)->where("{$dateCol} <=", $dateToFilter);
+                    }
+                    if ($userId && $userId !== 'all') {
+                        $ownerCol = ($table === 'tbl_uploaded_files') ? 'token_owner_id' : 'owner_id';
+                        if ($db->fieldExists($ownerCol, $table)) {
+                            $query->where($ownerCol, $userId);
+                        }
+                    }
+                    $count += $query->countAllResults();
+                }
             }
-            $count = $query->countAllResults();
+
             $rows[] = ['label' => $info['label'], 'type' => $type, 'count' => $count];
             $grandTotal += $count;
         }
@@ -615,6 +631,31 @@ class ReportsController extends BaseAdminController
                     ->setHeader('Content-Disposition', 'attachment; filename="report_' . date('Y-m-d') . '.pdf"')
                     ->setBody($dompdf->output());
             }
+
+            return $this->response
+                ->setHeader('Content-Type', 'text/html')
+                ->setHeader('Content-Disposition', 'attachment; filename="report_' . date('Y-m-d') . '.html"')
+                ->setBody($html);
+        }
+
+        if ($format === 'html') {
+            $html = '<!DOCTYPE html><html><head><meta charset="utf-8">';
+            $html .= '<style>body{font-family:DejaVu Sans,sans-serif;font-size:12px;color:#333;}';
+            $html .= 'h1{font-size:18px;color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:8px;}';
+            $html .= 'table{width:100%;border-collapse:collapse;margin-top:16px;}';
+            $html .= 'th{background:#1a56db;color:#fff;padding:8px 12px;text-align:left;font-size:11px;}';
+            $html .= 'td{padding:8px 12px;border-bottom:1px solid #e2e8f0;}';
+            $html .= 'tr:nth-child(even){background:#f8fafc;}';
+            $html .= '.total{font-weight:bold;background:#e2e8f0!important;}';
+            $html .= '.meta{margin-top:8px;font-size:11px;color:#64748b;}</style></head><body>';
+            $html .= '<h1>Eaves Droid — Data Report</h1>';
+            $html .= '<div class="meta">Period: ' . $dateFrom . ' to ' . $dateTo . '</div>';
+            $html .= '<table><thead><tr><th>Data Type</th><th>Records</th></tr></thead><tbody>';
+            foreach ($rows as $r) {
+                $html .= '<tr><td>' . $r['label'] . '</td><td>' . number_format($r['count']) . '</td></tr>';
+            }
+            $html .= '<tr class="total"><td>Total</td><td>' . number_format($grandTotal) . '</td></tr>';
+            $html .= '</tbody></table></body></html>';
 
             return $this->response
                 ->setHeader('Content-Type', 'text/html')

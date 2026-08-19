@@ -29,9 +29,9 @@ class ForensicsUserController extends BaseClientController
         $hardware_tabs = [
             // Individual hardware pages
             'device_context', 'network_info', 'bluetooth', 'sensors', 'camera_info',
-            'battery_stats', 'processes', 'proc_info', 'cell_towers', 'display_info',
-            'storage', 'thermal', 'nfc', 'hardware_graphics', 'hardware_network',
-            'audio_devices', 'biometric', 'gnss_hardware', 'power_rails', 'usb_devices',
+            'battery_stats', 'proc_info', 'cell_towers', 'display_info',
+            'storage', 'nfc', 'hardware_graphics', 'hardware_network',
+            'audio_devices', 'biometric', 'gnss_hardware', 'usb_devices',
             'vibration', 'sim_configs',
             // Merged hardware pages
             'hardware_dashboard', 'battery_power', 'system_performance', 'network_connectivity',
@@ -42,10 +42,10 @@ class ForensicsUserController extends BaseClientController
             'accounts', 'calendar', 'app_usage', 'notifications', 'security_audit',
             'accessibility', 'input_methods', 'remote_media', 'data_usage', 'saved_wifi',
             'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network',
-            'system_locale', 'app_permissions', 'browser_history', 'clipboard',
+            'system_locale', 'app_permissions', 'clipboard',
             'content_providers', 'crash_logs', 'digital_wellbeing', 'doze_standby',
-            'email', 'health_data', 'keyboard_input', 'keyguard', 'screenshots',
-            'screen_state', 'vpn_config', 'running_processes', 'software_landing'
+            'health_data', 'keyguard', 'screenshots',
+            'screen_state', 'vpn_config', 'software_landing'
         ];
 
         $is_hardware = in_array($activeView, $hardware_tabs);
@@ -1123,27 +1123,7 @@ class ForensicsUserController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    /** GET /advanced/software/browser_history */
-    public function browser_history()
-    {
-        $data = array_merge($this->commonData('browser_history', 'Browser History'), [
-            'rows' => $this->finderModel->get_browser_history($this->userId),
-            'total' => $this->finderModel->get_count_BrowserHistory($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/browser_history', $data);
-    }
 
-    public function delete_browser_history($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_browser_history_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
 
     /** GET /advanced/software/clipboard */
     public function clipboard()
@@ -1211,28 +1191,6 @@ class ForensicsUserController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    /** GET /advanced/software/email */
-    public function email()
-    {
-        $data = array_merge($this->commonData('email', 'Email Accounts'), [
-            'rows' => $this->finderModel->get_email_accounts($this->userId),
-            'total' => $this->finderModel->get_count_EmailAccounts($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/email', $data);
-    }
-
-    public function delete_email($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_email_accounts_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
-
     /** GET /advanced/software/health_data */
     public function health_data()
     {
@@ -1255,27 +1213,7 @@ class ForensicsUserController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    /** GET /advanced/software/keyboard_input */
-    public function keyboard_input()
-    {
-        $data = array_merge($this->commonData('keyboard_input', 'Keyboard Input'), [
-            'rows' => $this->finderModel->get_keyboard_input($this->userId),
-            'total' => $this->finderModel->get_count_KeyboardInput($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/keyboard_input', $data);
-    }
 
-    public function delete_keyboard_input($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_keyboard_input_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
 
     /** GET /advanced/software/keyguard */
     public function keyguard()

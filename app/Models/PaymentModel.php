@@ -33,6 +33,9 @@ class PaymentModel extends Model
             ->select('p.*, u.id AS user_id, u.username, ai.secret AS user_email')
             ->join('users u', 'u.id = p.user_id', 'left')
             ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
+            ->whereNotIn('p.user_id', function (\CodeIgniter\Database\BaseBuilder $b) {
+                return $b->select('user_id')->from('auth_groups_users')->whereIn('group', ['admin', 'superadmin']);
+            })
             ->orderBy('p.paid_at', 'DESC');
 
         if ($status && $status !== 'all') {
@@ -46,23 +49,29 @@ class PaymentModel extends Model
     {
         $db = \Config\Database::connect();
 
-        $totalRevenue = $db->table('user_payments')
-            ->selectSum('amount_cents')
-            ->where('status', 'succeeded')
+        $adminSubquery = function (\CodeIgniter\Database\BaseBuilder $b) {
+            return $b->select('user_id')->from('auth_groups_users')->whereIn('group', ['admin', 'superadmin']);
+        };
+
+        $totalRevenue = $db->table('user_payments p')
+            ->selectSum('p.amount_cents')
+            ->where('p.status', 'succeeded')
+            ->whereNotIn('p.user_id', $adminSubquery)
             ->get()
             ->getRowArray()['amount_cents'] ?? 0;
 
-        $monthRevenue = $db->table('user_payments')
-            ->selectSum('amount_cents')
-            ->where('status', 'succeeded')
-            ->where('paid_at >=', date('Y-m-01'))
+        $monthRevenue = $db->table('user_payments p')
+            ->selectSum('p.amount_cents')
+            ->where('p.status', 'succeeded')
+            ->where('p.paid_at >=', date('Y-m-01'))
+            ->whereNotIn('p.user_id', $adminSubquery)
             ->get()
             ->getRowArray()['amount_cents'] ?? 0;
 
-        $succeeded = $db->table('user_payments')->where('status', 'succeeded')->countAllResults();
-        $failed = $db->table('user_payments')->where('status', 'failed')->countAllResults();
-        $pending = $db->table('user_payments')->where('status', 'pending')->countAllResults();
-        $refunded = $db->table('user_payments')->where('status', 'refunded')->countAllResults();
+        $succeeded = $db->table('user_payments p')->where('p.status', 'succeeded')->whereNotIn('p.user_id', $adminSubquery)->countAllResults();
+        $failed    = $db->table('user_payments p')->where('p.status', 'failed')->whereNotIn('p.user_id', $adminSubquery)->countAllResults();
+        $pending   = $db->table('user_payments p')->where('p.status', 'pending')->whereNotIn('p.user_id', $adminSubquery)->countAllResults();
+        $refunded  = $db->table('user_payments p')->where('p.status', 'refunded')->whereNotIn('p.user_id', $adminSubquery)->countAllResults();
 
         return [
             'total_revenue_cents' => (int)$totalRevenue,

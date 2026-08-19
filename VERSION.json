@@ -1,0 +1,11 @@
+{
+  "version": "2.4.0",
+  "build": 20400,
+  "release_name": "Enterprise Telemetry & Real-Time Forensic Suite",
+  "release_date": "2026-08-19",
+  "components": {
+    "webapp": "2.4.0",
+    "android": "2.4.0",
+    "ml_engine": "2.4.0"
+  }
+}

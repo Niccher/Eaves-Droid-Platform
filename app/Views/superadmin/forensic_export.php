@@ -69,24 +69,17 @@
                                     <div class="row">
                                         <?php 
                                         $categories = [
-                                            'sms' => 'SMS',
-                                            'calls' => 'Call Logs',
-                                            'contacts' => 'Contacts',
-                                            'apps' => 'Apps',
-                                            'files' => 'Files',
-                                            'locations' => 'Locations',
-                                            'activities' => 'Activities',
-                                            'accounts' => 'Accounts',
-                                            'network' => 'Network Info',
-                                            'device_context' => 'Device Context',
-                                            'bluetooth' => 'Bluetooth',
-                                            'sensors' => 'Sensors',
-                                            'security_audit' => 'Security Audit',
-                                            'notifications' => 'Notifications',
-                                            'calendar' => 'Calendar',
-                                            'app_usage' => 'App Usage',
-                                            'media' => 'Media',
-                                            'sim' => 'SIM Configs',
+                                            'sms'               => 'SMS Messages',
+                                            'calls'             => 'Call Logs',
+                                            'contacts'          => 'Contacts',
+                                            'files'             => 'Device Files',
+                                            'locations'         => 'Location & Activity',
+                                            'remote_data'       => 'Remote Data (Captured/Downloaded Files)',
+                                            'misc_hardware'     => 'Misc Hardware',
+                                            'misc_software'     => 'Misc Software',
+                                            'apps'              => 'Installed Apps',
+                                            'app_usage'         => 'App Usage',
+                                            'app_notifications' => 'App Notifications',
                                         ];
                                         foreach ($categories as $key => $label): ?>
                                             <div class="col-md-4 col-sm-6 mb-2">

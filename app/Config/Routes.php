@@ -457,20 +457,17 @@ $routes->group('', [
             $routes->get('sensors', 'AdvancedController::sensors', ['as' => 'adv-sensors']);
             $routes->get('camera_info', 'AdvancedController::camera_info', ['as' => 'adv-camera-info']);
             $routes->get('battery_stats', 'AdvancedController::battery_stats', ['as' => 'adv-battery-stats']);
-            $routes->get('processes', 'AdvancedController::processes', ['as' => 'adv-processes']);
             $routes->get('proc_info', 'AdvancedController::proc_info', ['as' => 'adv-proc-info']);
 
             $routes->get('cell_towers', 'AdvancedController::cell_towers', ['as' => 'adv-cell-towers']);
             $routes->get('display_info', 'AdvancedController::display_info', ['as' => 'adv-display-info']);
             $routes->get('storage', 'AdvancedController::storage', ['as' => 'adv-storage']);
-            $routes->get('thermal', 'AdvancedController::thermal', ['as' => 'adv-thermal']);
             $routes->get('nfc', 'AdvancedController::nfc', ['as' => 'adv-nfc']);
             $routes->get('hardware_graphics', 'AdvancedController::hardware_graphics', ['as' => 'adv-hardware-graphics']);
             $routes->get('hardware_network', 'AdvancedController::hardware_network', ['as' => 'adv-hardware-network']);
             $routes->get('audio_devices', 'AdvancedController::audio_devices', ['as' => 'adv-audio-devices']);
             $routes->get('biometric', 'AdvancedController::biometric', ['as' => 'adv-biometric']);
             $routes->get('gnss_hardware', 'AdvancedController::gnss_hardware', ['as' => 'adv-gnss-hardware']);
-            $routes->get('power_rails', 'AdvancedController::power_rails', ['as' => 'adv-power-rails']);
             $routes->get('usb_devices', 'AdvancedController::usb_devices', ['as' => 'adv-usb-devices']);
             $routes->get('vibration', 'AdvancedController::vibration', ['as' => 'adv-vibration']);
 
@@ -493,19 +490,16 @@ $routes->group('', [
             $routes->post('sensors/delete/(:num)', 'AdvancedController::delete_sensor_profile/$1');
             $routes->post('camera_info/delete/(:num)', 'AdvancedController::delete_camera_info/$1');
             $routes->post('battery_stats/delete/(:num)', 'AdvancedController::delete_battery_stats/$1');
-            $routes->post('processes/delete/(:num)', 'AdvancedController::delete_processes/$1');
             $routes->post('proc_info/delete/(:num)', 'AdvancedController::delete_proc_info/$1');
             $routes->post('cell_towers/delete/(:num)', 'AdvancedController::delete_cell_towers/$1');
             $routes->post('display_info/delete/(:num)', 'AdvancedController::delete_display_info/$1');
             $routes->post('storage/delete/(:num)', 'AdvancedController::delete_storage/$1');
-            $routes->post('thermal/delete/(:num)', 'AdvancedController::delete_thermal/$1');
             $routes->post('nfc/delete/(:num)', 'AdvancedController::delete_nfc/$1');
             $routes->post('hardware_graphics/delete/(:num)', 'AdvancedController::delete_hardware_graphics/$1');
             $routes->post('hardware_network/delete/(:num)', 'AdvancedController::delete_hardware_network/$1');
             $routes->post('audio_devices/delete/(:num)', 'AdvancedController::delete_audio_devices/$1');
             $routes->post('biometric/delete/(:num)', 'AdvancedController::delete_biometric/$1');
             $routes->post('gnss_hardware/delete/(:num)', 'AdvancedController::delete_gnss_hardware/$1');
-            $routes->post('power_rails/delete/(:num)', 'AdvancedController::delete_power_rails/$1');
             $routes->post('usb_devices/delete/(:num)', 'AdvancedController::delete_usb_devices/$1');
             $routes->post('vibration/delete/(:num)', 'AdvancedController::delete_vibration/$1');
             $routes->post('hardware_dashboard/delete/(:num)', 'AdvancedController::delete_hardware_dashboard/$1');
@@ -547,20 +541,16 @@ $routes->group('', [
             $routes->get('telephony_network', 'AdvancedController::telephony_network', ['as' => 'adv-telephony-network']);
             $routes->get('system_locale', 'AdvancedController::system_locale', ['as' => 'adv-system-locale']);
             $routes->get('app_permissions', 'AdvancedController::app_permissions', ['as' => 'adv-app-permissions']);
-            $routes->get('browser_history', 'AdvancedController::browser_history', ['as' => 'adv-browser-history']);
             $routes->get('clipboard', 'AdvancedController::clipboard', ['as' => 'adv-clipboard']);
             $routes->get('content_providers', 'AdvancedController::content_providers', ['as' => 'adv-content-providers']);
             $routes->get('crash_logs', 'AdvancedController::crash_logs', ['as' => 'adv-crash-logs']);
             $routes->get('digital_wellbeing', 'AdvancedController::digital_wellbeing', ['as' => 'adv-digital-wellbeing']);
             $routes->get('doze_standby', 'AdvancedController::doze_standby', ['as' => 'adv-doze-standby']);
-            $routes->get('email', 'AdvancedController::email', ['as' => 'adv-email']);
             $routes->get('health_data', 'AdvancedController::health_data', ['as' => 'adv-health-data']);
-            $routes->get('keyboard_input', 'AdvancedController::keyboard_input', ['as' => 'adv-keyboard-input']);
             $routes->get('keyguard', 'AdvancedController::keyguard', ['as' => 'adv-keyguard']);
             $routes->get('screenshots', 'AdvancedController::screenshots', ['as' => 'adv-screenshots']);
             $routes->get('screen_state', 'AdvancedController::screen_state', ['as' => 'adv-screen-state']);
             $routes->get('vpn_config', 'AdvancedController::vpn_config', ['as' => 'adv-vpn-config']);
-            $routes->get('running_processes', 'AdvancedController::running_processes', ['as' => 'adv-running-processes']);
 
             $routes->post('datatable/app-usage', '\App\Controllers\api\v1\DatatableAPI::getAppUsageDetails', ['as' => 'adv-datatable-app-usage']);
             $routes->post('datatable/notifications', '\App\Controllers\api\v1\DatatableAPI::getNotificationDetails', ['as' => 'adv-datatable-notifications']);
@@ -584,20 +574,16 @@ $routes->group('', [
             $routes->post('telephony_network/delete/(:num)', 'AdvancedController::delete_telephony_network/$1');
             $routes->post('system_locale/delete/(:num)', 'AdvancedController::delete_system_locale/$1');
             $routes->post('app_permissions/delete/(:num)', 'AdvancedController::delete_app_permissions/$1');
-            $routes->post('browser_history/delete/(:num)', 'AdvancedController::delete_browser_history/$1');
             $routes->post('clipboard/delete/(:num)', 'AdvancedController::delete_clipboard/$1');
             $routes->post('content_providers/delete/(:num)', 'AdvancedController::delete_content_providers/$1');
             $routes->post('crash_logs/delete/(:num)', 'AdvancedController::delete_crash_logs/$1');
             $routes->post('digital_wellbeing/delete/(:num)', 'AdvancedController::delete_digital_wellbeing/$1');
             $routes->post('doze_standby/delete/(:num)', 'AdvancedController::delete_doze_standby/$1');
-            $routes->post('email/delete/(:num)', 'AdvancedController::delete_email/$1');
             $routes->post('health_data/delete/(:num)', 'AdvancedController::delete_health_data/$1');
-            $routes->post('keyboard_input/delete/(:num)', 'AdvancedController::delete_keyboard_input/$1');
             $routes->post('keyguard/delete/(:num)', 'AdvancedController::delete_keyguard/$1');
             $routes->post('screenshots/delete/(:num)', 'AdvancedController::delete_screenshots/$1');
             $routes->post('screen_state/delete/(:num)', 'AdvancedController::delete_screen_state/$1');
             $routes->post('vpn_config/delete/(:num)', 'AdvancedController::delete_vpn_config/$1');
-            $routes->post('running_processes/delete/(:num)', 'AdvancedController::delete_running_processes/$1');
         });
     });
 
@@ -1889,12 +1875,6 @@ $routes->group('superadmin', [
      * @return string
      */
     $routes->get('fleet', 'FleetController::index', ['as' => 'superadmin-fleet']);
-
-    // Fleet sub-pages (must come before generic fleet/(:any))
-    $routes->get('fleet/timeline', 'FleetController::timeline', ['as' => 'superadmin-fleet-timeline']);
-    $routes->get('fleet/patches', 'FleetController::patches', ['as' => 'superadmin-fleet-patches']);
-    $routes->get('fleet/alerts', 'FleetController::alerts', ['as' => 'superadmin-fleet-alerts']);
-    $routes->get('fleet/geo', 'FleetController::geo', ['as' => 'superadmin-fleet-geo']);
     $routes->get('fleet/device/(:any)', 'FleetController::deviceDetail/$1', ['as' => 'superadmin-fleet-device']);
 
     // Forensic Export

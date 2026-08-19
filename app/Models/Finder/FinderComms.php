@@ -1314,9 +1314,16 @@ class FinderComms extends Model
                 $name = $contact['display_name'];
 
                 if (is_array($nums)) {
-                    foreach ($nums as $num) {
-                        if (isset($social_map[$num])) {
-                            $social_map[$num]['name'] = $name;
+                    foreach ($nums as $numEntry) {
+                        // Each entry is an object: {number, normalized_number, type, ...}
+                        $candidates = [];
+                        if (!empty($numEntry['number']))            $candidates[] = $numEntry['number'];
+                        if (!empty($numEntry['normalized_number'])) $candidates[] = $numEntry['normalized_number'];
+
+                        foreach ($candidates as $num) {
+                            if (isset($social_map[$num])) {
+                                $social_map[$num]['name'] = $name;
+                            }
                         }
                     }
                 }
@@ -1382,9 +1389,15 @@ class FinderComms extends Model
         foreach ($contacts as $contact) {
             $nums = json_decode($contact['phone_numbers'], true);
             if (is_array($nums)) {
-                foreach ($nums as $num) {
-                    if (isset($interaction[$num])) {
-                        $interaction[$num]['name'] = $contact['display_name'];
+                foreach ($nums as $numEntry) {
+                    $candidates = [];
+                    if (!empty($numEntry['number']))            $candidates[] = $numEntry['number'];
+                    if (!empty($numEntry['normalized_number'])) $candidates[] = $numEntry['normalized_number'];
+
+                    foreach ($candidates as $num) {
+                        if (isset($interaction[$num])) {
+                            $interaction[$num]['name'] = $contact['display_name'];
+                        }
                     }
                 }
             }
@@ -1583,9 +1596,15 @@ class FinderComms extends Model
         foreach ($contacts as $contact) {
             $nums = json_decode($contact['phone_numbers'], true);
             if (is_array($nums)) {
-                foreach ($nums as $num) {
-                    if (isset($sentiment[$num])) {
-                        $sentiment[$num]['name'] = $contact['display_name'];
+                foreach ($nums as $numEntry) {
+                    $candidates = [];
+                    if (!empty($numEntry['number']))            $candidates[] = $numEntry['number'];
+                    if (!empty($numEntry['normalized_number'])) $candidates[] = $numEntry['normalized_number'];
+
+                    foreach ($candidates as $num) {
+                        if (isset($sentiment[$num])) {
+                            $sentiment[$num]['name'] = $contact['display_name'];
+                        }
                     }
                 }
             }

@@ -105,8 +105,11 @@ class PlanGate
 
         foreach ($rows as $row) {
             $features = $row['features'] ?? [];
-            if (($features[$feature] ?? false) === true) {
+            $val = $features[$feature] ?? false;
+            if ($val === true) {
                 $allowed[] = $row['slug'];            // 'gold', 'platinum', …
+            } elseif ($feature === 'wellbeing' && isset($features['wellbeing_summary_days']) && (int)$features['wellbeing_summary_days'] > 0) {
+                $allowed[] = $row['slug'];
             }
         }
         return array_unique($allowed);
@@ -118,8 +121,8 @@ class PlanGate
      */
     public function currentPlanKey(int $userId): string
     {
-        $active = $this->subscriptions->getActivePlan($userId);
-        return $active['plan'] ?? 'free';
+        $limits = $this->subscriptions->getPlanLimits($userId);
+        return $limits['plan'] ?? 'free';
     }
 
     /**

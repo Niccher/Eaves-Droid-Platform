@@ -1,6 +1,4 @@
 <?php
-helper('coalesce'); $rows = coalesce_snapshots($rows, 'device_id');
-
 /** @var array $rows @var int $total @var int $total_notifications @var object $pager @var string $nav_urls */
 /** @var bool $detail_mode @var string|null $group_key @var array|null $summary @var array|null $app_detail @var string|null $back_url */
 if (!empty($detail_mode)) {
@@ -50,10 +48,10 @@ if (!empty($detail_mode)) {
             <div class="row mb-3">
                 <div class="col-md-4">
                     <div class="info-box bg-warning">
-                        <span class="info-box-icon"><i class="fas fa-bell"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Total Notifications</span>
-                            <span class="info-box-number"><?= (int) ($summary['notification_count'] ?? $total) ?></span>
+                        <span class="info-box-icon"><i class="fas fa-bell text-dark"></i></span>
+                        <div class="info-box-content text-dark">
+                            <span class="info-box-text font-weight-bold">Total Notifications</span>
+                            <span class="info-box-number font-weight-bold"><?= (int) ($summary['notification_count'] ?? $total) ?></span>
                         </div>
                     </div>
                 </div>
@@ -61,8 +59,8 @@ if (!empty($detail_mode)) {
                     <div class="info-box bg-info">
                         <span class="info-box-icon"><i class="fas fa-tv"></i></span>
                         <div class="info-box-content">
-                            <span class="info-box-text">Screen Alerts</span>
-                            <span class="info-box-number"><?= (int) ($summary['screen_count'] ?? 0) ?></span>
+                            <span class="info-box-text font-weight-bold">Screen Alerts</span>
+                            <span class="info-box-number font-weight-bold"><?= (int) ($summary['screen_count'] ?? 0) ?></span>
                         </div>
                     </div>
                 </div>
@@ -70,74 +68,72 @@ if (!empty($detail_mode)) {
                     <div class="info-box bg-secondary">
                         <span class="info-box-icon"><i class="fas fa-clock"></i></span>
                         <div class="info-box-content">
-                            <span class="info-box-text">Last Arrived</span>
-                            <span class="info-box-number" style="font-size:1rem;"><?= esc($summary['latest_ts_rel'] ?? '—') ?></span>
+                            <span class="info-box-text font-weight-bold">Last Arrived</span>
+                            <span class="info-box-number font-weight-bold" style="font-size:1rem;"><?= esc($summary['latest_ts_rel'] ?? '—') ?></span>
                             <span class="progress-description"><?= esc($summary['latest_ts_abs'] ?? '—') ?></span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Redesigned Push Notification Feed -->
             <div class="row">
                 <div class="col-12">
-                    <div class="card card-primary shadow-sm">
-                        <div class="card-header text-white d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0"><i class="fas fa-list mr-2"></i>All Notifications <small class="ml-2"><?= count($rows) ?> on this page</small></h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool btn-sm text-white" data-card-widget="collapse" data-toggle="tooltip" title="Collapse / Expand"><i class="fas fa-minus"></i></button>
-                            </div>
+                    <div class="card card-outline card-warning shadow-sm">
+                        <div class="card-header bg-white py-2">
+                            <h3 class="card-title font-weight-bold mb-0 text-dark"><i class="fas fa-stream mr-2"></i>Notifications Feed</h3>
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0">
-                                    <thead class="thead-light text-white">
-                                    <tr>
-                                        <th><i class="fas fa-clock mr-1"></i>Arrived</th>
-                                        <th><i class="fas fa-user mr-1"></i>Sender</th>
-                                        <th><i class="fas fa-heading mr-1"></i>Title</th>
-                                        <th><i class="fas fa-comment-alt mr-1"></i>Content</th>
-                                        <th><i class="fas fa-tv mr-1"></i>Screen</th>
-                                        <th><i class="fas fa-tag mr-1"></i>Action</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
+                        <div class="card-body bg-light px-3 py-4">
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8 col-md-10">
                                     <?php if (empty($rows)): ?>
-                                        <tr><td colspan="6" class="text-center py-4 text-muted">No notifications for this app.</td></tr>
+                                        <div class="text-center py-5 bg-white rounded shadow-sm">
+                                            <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                                            <p class="mb-0 text-muted">No notifications cataloged for this app.</p>
+                                        </div>
                                     <?php else: foreach ($rows as $r): ?>
                                         <?php
-                                            $act   = strtoupper($r['action'] ?? '');
+                                            $act = strtoupper($r['action'] ?? 'POSTED');
                                             $actCol = $act === 'POSTED' ? 'success' : 'secondary';
                                             $isScreen = !empty($r['is_screen_notification']);
-                                            $rowClass = $isScreen ? 'table-warning' : '';
+                                            $senderName = $r['sender'] ?: ($r['title'] ?: 'Alert');
                                         ?>
-                                        <tr class="<?= $rowClass ?>">
-                                            <td>
-                                                <small class="d-block font-weight-bold"><?= esc($r['ts_rel'] ?? '—') ?></small>
-                                                <small class="text-muted"><?= esc($r['ts_abs'] ?? '—') ?></small>
-                                            </td>
-                                            <td>
-                                                <small><?= htmlspecialchars($r['sender'] ?? '—') ?></small>
+                                        <!-- Simulated Mobile Notification Card -->
+                                        <div class="card shadow-sm border mb-3" style="border-radius: 12px; overflow: hidden; border-left: 5px solid <?= $isScreen ? '#ffc107' : '#17a2b8' ?> !important;">
+                                            <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #f4f6f9;">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-light rounded-circle p-1 mr-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                                        <i class="fas fa-bell text-muted" style="font-size: 0.85rem;"></i>
+                                                    </div>
+                                                    <span class="font-weight-bold text-dark" style="font-size: 0.9rem;"><?= htmlspecialchars($appName) ?></span>
+                                                    <span class="text-muted mx-2">•</span>
+                                                    <span class="text-muted small"><?= esc($r['ts_rel'] ?? '—') ?></span>
+                                                </div>
+                                                <div>
+                                                    <span class="badge badge-<?= $actCol ?> small"><?= $act ?></span>
+                                                    <?php if ($isScreen): ?>
+                                                        <span class="badge badge-warning text-dark ml-1"><i class="fas fa-tv mr-1"></i>Screen</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <div class="card-body py-2 px-3 bg-white">
+                                                <h6 class="font-weight-bold text-dark mb-1"><?= htmlspecialchars($r['title'] ?: $senderName) ?></h6>
+                                                <p class="text-muted mb-0" style="font-size: 0.9rem;"><?= htmlspecialchars($r['text'] ?? '') ?></p>
                                                 <?php if (!empty($r['sub_text'])): ?>
-                                                    <small class="text-muted d-block"><?= htmlspecialchars(mb_strimwidth($r['sub_text'], 0, 40, '…')) ?></small>
+                                                    <div class="mt-2 text-muted small border-top pt-1">
+                                                        <i class="fas fa-info-circle mr-1"></i><?= htmlspecialchars($r['sub_text']) ?>
+                                                    </div>
                                                 <?php endif; ?>
-                                            </td>
-                                            <td class="font-weight-bold"><?= htmlspecialchars($r['title'] ?? '—') ?></td>
-                                            <td><small class="text-muted"><?= htmlspecialchars(mb_strimwidth($r['text'] ?? '—', 0, 120, '…')) ?></small></td>
-                                            <td>
-                                                <?php if ($isScreen): ?>
-                                                    <span class="badge badge-warning"><i class="fas fa-tv mr-1"></i>Screen</span>
-                                                <?php else: ?>
-                                                    <span class="badge badge-light text-muted">—</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td><span class="badge badge-<?= $actCol ?>"><?= $act ?></span></td>
-                                        </tr>
+                                            </div>
+                                            <div class="card-footer py-1 px-3 bg-light text-right text-muted small" style="font-size: 0.75rem;">
+                                                <i class="far fa-clock mr-1"></i><?= esc($r['ts_abs'] ?? '—') ?>
+                                            </div>
+                                        </div>
                                     <?php endforeach; endif; ?>
-                                    </tbody>
-                                </table>
+                                </div>
                             </div>
                         </div>
-                        <div class="card-footer bg-primary text-white"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
+                        <div class="card-footer bg-white"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
                     </div>
                 </div>
             </div>
@@ -146,46 +142,137 @@ if (!empty($detail_mode)) {
 </div>
 <?php
 } else {
+    // Redesigned Summary Mode
 ?>
-<?php
-    $actions = static function ($r) {
-        $pkgEnc = $r['group_url_enc'] ?? '';
-        $html = '';
-        if ($pkgEnc !== '') {
-            $html .= '<a href="' . base_url('advanced/software/notifications/' . $pkgEnc) . '" class="btn btn-sm btn-outline-warning mr-1" title="View all notifications"><i class="fas fa-eye"></i></a>';
-            $html .= '<button type="button" class="btn btn-sm btn-outline-danger delete-notifications-group" data-pkg="' . esc($pkgEnc) . '" data-name="' . esc($r['app_name'] ?? '') . '" title="Delete all notifications for this app"><i class="fas fa-trash-alt"></i></button>';
-        }
-        return $html;
-    };
-?>
-<?= view('users/advanced/_card_table', [
-    'title'    => 'Notifications',
-    'subtitle' => 'Notification log grouped by app name (sender or package when unnamed)',
-    'icon'     => 'fas fa-bell',
-    'tableId'  => 'notificationsTable',
-    'columns'  => [
-        ['field' => 'app_name',          'sub_field' => 'group_key', 'label' => 'Source', 'format' => 'stacked', 'icon' => 'fas fa-mobile-alt'],
-        ['field' => 'notification_count','label' => 'Alerts',        'format' => 'badge', 'default' => 'warning', 'icon' => 'fas fa-bell'],
-        ['field' => 'latest_ts_abs',     'label' => 'Last Arrived',  'format' => 'text', 'icon' => 'fas fa-clock'],
-        ['field' => 'latest_title_short','label' => 'Latest Preview','format' => 'text', 'truncate' => 60, 'icon' => 'fas fa-comment-alt'],
-    ],
-    'rows'     => $rows,
-    'pager'    => $pager,
-    'total'    => $total,
-    'nav_urls' => $nav_urls ?? '',
-    'perPage'  => 25,
-    'actions'  => $actions,
-    'noExpand' => true,
-]) ?>
+<div class="content-wrapper">
+    <!-- Page Header -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-3 align-items-center">
+                <div class="col-lg-7">
+                    <div class="d-flex align-items-center flex-wrap">
+                        <h1 class="h2 mb-0 mr-3">
+                            <i class="fas fa-bell text-primary mr-2"></i>Notifications
+                        </h1>
+                        <span class="badge badge-primary border p-2">
+                            <i class="fas fa-database mr-1"></i>Active Senders: <b><?= (int)$total ?></b>
+                        </span>
+                    </div>
+                    <p class="text-muted mt-1 mb-0">Notifications log grouped by application or sender source.</p>
+                </div>
+                <div class="col-lg-5 text-right"><?= $nav_urls ?? '' ?></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Informative Callout Alert -->
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-info-circle text-info mr-2"></i>About Notifications Logs</h5>
+                <p class="mb-0">Captures in-flight notification stream events posted or dismissed by applications, allowing inspection of message payloads, confirmation codes, and background alerts.</p>
+            </div>
+
+            <!-- Notifications List -->
+            <div class="card card-outline card-warning shadow-sm">
+                <div class="card-header d-flex align-items-center py-2">
+                    <h5 class="card-title font-weight-bold mb-0 text-dark"><i class="fas fa-history mr-2"></i>Recent Notifications Activity</h5>
+                    <div class="card-tools ml-auto">
+                        <input type="text" id="notificationSearch" class="form-value form-control form-control-sm" placeholder="Search apps...">
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Source / Application</th>
+                                    <th>Alerts Count</th>
+                                    <th>Last Received</th>
+                                    <th>Latest Preview</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="notificationTableBody">
+                                <?php if (empty($rows)): ?>
+                                    <tr><td colspan="5" class="text-center py-5 text-muted">No notification logs recorded.</td></tr>
+                                <?php else: foreach ($rows as $row): 
+                                    $pkgEnc = $row['group_url_enc'] ?? '';
+                                    $appName = $row['app_name'] ?? '';
+                                    $groupKey = $row['group_key'] ?? '';
+                                ?>
+                                    <tr class="notification-row" data-name="<?= esc(strtolower($appName)) ?>" data-key="<?= esc(strtolower($groupKey)) ?>">
+                                        <td>
+                                            <span class="font-weight-bold d-block text-dark"><?= esc($appName ?: 'Unknown App') ?></span>
+                                            <small class="text-muted"><?= esc($groupKey) ?></small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-warning px-3 py-1 font-weight-bold text-dark">
+                                                <?= esc($row['notification_count']) ?> alerts
+                                            </span>
+                                        </td>
+                                        <td><small class="text-muted"><?= esc($row['latest_ts_abs'] ?? '—') ?></small></td>
+                                        <td>
+                                            <span class="text-secondary small d-block text-truncate" style="max-width: 260px;" title="<?= esc($row['latest_title_short']) ?>">
+                                                <?= esc($row['latest_title_short']) ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-right">
+                                            <div class="btn-group" role="group">
+                                                <?php if ($pkgEnc !== ''): ?>
+                                                    <a href="<?= base_url('advanced/software/notifications/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-warning text-dark mr-1" title="View alerts timeline">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-notifications-group" data-pkg="<?= esc($pkgEnc) ?>" data-name="<?= esc($appName ?: $groupKey) ?>" title="Delete alerts history">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light py-2">
+                    <div class="float-right"><?= $pager->links('default', 'bootstrap5_full') ?></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
 <?php
 }
 ?>
-<?php include __DIR__ . '/_adv_style.php'; ?>
+
 <?php include __DIR__ . '/_adv_delete_script.php'; ?>
 <script>
 var CSRF_TOKEN_NAME = '<?= csrf_token() ?>';
 var CSRF_TOKEN_HASH = '<?= csrf_hash() ?>';
 document.addEventListener('DOMContentLoaded', function() {
+    // Search filter
+    const searchInput = document.getElementById('notificationSearch');
+    const tableRows = document.querySelectorAll('.notification-row');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            tableRows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const key = row.getAttribute('data-key');
+                if (name.includes(query) || key.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Delete group trigger
     document.querySelectorAll('.delete-notifications-group').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();

@@ -64,7 +64,7 @@ class preload
                 '/system/Publisher/',
                 '/system/ComposerScripts.php',
                 '/Views/',
-                // Errors occur.
+                // ErrorsController occur.
                 '/system/Config/Routes.php',
                 '/system/ThirdParty/',
             ],

@@ -76,12 +76,12 @@
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-warning">
                         <div class="inner">
-                            <h3>—</h3>
+                            <h3><?= $roaming_count ?? 0 ?></h3>
                             <p>Roaming Risk</p>
                         </div>
                         <div class="icon"><i class="fas fa-plane"></i></div>
                         <div class="small-box-footer">
-                            Detection TBD
+                            SIM / Network Mismatch
                         </div>
                     </div>
                 </div>

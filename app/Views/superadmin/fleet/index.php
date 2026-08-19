@@ -35,10 +35,7 @@
                         <div class="<?= $colClass ?> mb-2">
                             <div class="alert alert-<?= $alert['type'] ?> alert-dismissible fade show h-100" role="alert">
                                 <h6 class="mb-1"><i class="fas fa-exclamation-triangle mr-2"></i><?= $alert['title'] ?></h6>
-                                <p class="mb-1 small"><?= $alert['message'] ?></p>
-                                <a href="<?= base_url($alert['route']) ?>" class="btn btn-sm btn-outline-<?= $alert['type'] ?>">
-                                    <i class="fas fa-eye mr-1"></i> View
-                                </a>
+                                <p class="mb-0 small"><?= $alert['message'] ?></p>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -124,105 +121,121 @@
             </style>
 
             <!-- Row 1: Core Metrics -->
-            <div class="row mb-2">
+            <div class="row mb-3">
                 <!-- Sync Health -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0"><i class="fas fa-sync-alt mr-2"></i>Sync Health</h3>
-                            <a href="<?= base_url('superadmin/fleet/timeline') ?>" class="btn btn-sm btn-danger ml-auto">View <i class="fas fa-arrow-right ml-1"></i></a>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-primary h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-sync-alt text-primary mr-2"></i>Sync Health
+                            </h3>
+                            <div class="card-tools">
+                                <span class="badge badge-success px-2 py-1"><?= $health_stats['sync_success_rate'] ?>% Rate</span>
+                            </div>
                         </div>
-                        <div class="card-body bg-light d-flex flex-column" style="padding: 1rem;">
+                        <div class="card-body p-3">
                             <div class="row text-center mb-3">
-                                <div class="col-4">
-                                    <div class="h4 mb-0 text-success"><?= $health_stats['sync_success_rate'] ?>%</div>
-                                    <small>Success Rate</small>
+                                <div class="col-4 border-right">
+                                    <h4 class="font-weight-bold text-success mb-0"><?= $health_stats['sync_success_rate'] ?>%</h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Success</small>
+                                </div>
+                                <div class="col-4 border-right">
+                                    <h4 class="font-weight-bold text-danger mb-0"><?= $health_stats['failed_uploads_24h'] ?></h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Failed 24h</small>
                                 </div>
                                 <div class="col-4">
-                                    <div class="h4 mb-0 text-danger"><?= $health_stats['failed_uploads_24h'] ?></div>
-                                    <small>Failed (24h)</small>
-                                </div>
-                                <div class="col-4">
-                                    <div class="h4 mb-0 text-warning"><?= $health_stats['pending_uploads'] ?></div>
-                                    <small>Pending</small>
+                                    <h4 class="font-weight-bold text-warning mb-0"><?= $health_stats['pending_uploads'] ?></h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Pending</small>
                                 </div>
                             </div>
-                            <div class="row text-center">
-                                <div class="col-6">
-                                    <div class="h4 mb-0 text-info"><?= $health_stats['low_storage_devices'] ?></div>
-                                    <small>Low Storage</small>
-                                </div>
-                                <div class="col-6">
-                                    <div class="h4 mb-0"><?= $health_stats['avg_battery_level'] ?>%</div>
-                                    <small>Avg Battery</small>
-                                </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small text-muted"><i class="fas fa-hdd text-info mr-1"></i>Low Free Storage Devices:</span>
+                                <span class="badge badge-info font-weight-bold"><?= $health_stats['low_storage_devices'] ?> device(s)</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small text-muted"><i class="fas fa-battery-half text-warning mr-1"></i>Avg Battery Level:</span>
+                                <span class="badge badge-dark font-weight-bold"><?= $health_stats['avg_battery_level'] ?>%</span>
                             </div>
                         </div>
-                        <div class="card-footer bg-light">
-                            <small class="text-muted">Updated: <?= date('H:i:s') ?></small>
+                        <div class="card-footer bg-light py-2">
+                            <small class="text-muted"><i class="far fa-clock mr-1"></i>Updated: <?= date('H:i:s') ?></small>
                         </div>
                     </div>
                 </div>
 
                 <!-- Security Posture -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0"><i class="fas fa-shield-alt mr-2"></i>Security Posture</h3>
-                            <a href="<?= base_url('superadmin/fleet/patches') ?>" class="btn btn-sm btn-danger ml-auto">View <i class="fas fa-arrow-right ml-1"></i></a>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-danger h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-shield-alt text-danger mr-2"></i>Security Posture
+                            </h3>
+                            <div class="card-tools">
+                                <span class="badge badge-<?= $security_stats['patch_compliance_rate'] >= 80 ? 'success' : 'danger' ?> px-2 py-1">
+                                    <?= $security_stats['patch_compliance_rate'] ?>% Patch
+                                </span>
+                            </div>
                         </div>
-                        <div class="card-body bg-light d-flex flex-column" style="padding: 1rem;">
+                        <div class="card-body p-3">
                             <div class="row text-center mb-3">
-                                <div class="col-3">
-                                    <div class="h4 mb-0 text-danger"><?= $security_stats['rooted_devices'] ?></div>
-                                    <small>Rooted</small>
+                                <div class="col-4 border-right">
+                                    <h4 class="font-weight-bold text-danger mb-0"><?= $security_stats['rooted_devices'] ?></h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Rooted</small>
                                 </div>
-                                <div class="col-3">
-                                    <div class="h4 mb-0 text-warning"><?= $security_stats['debuggable_devices'] ?></div>
-                                    <small>Debuggable</small>
+                                <div class="col-4 border-right">
+                                    <h4 class="font-weight-bold text-warning mb-0"><?= $security_stats['debuggable_devices'] ?></h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Debuggable</small>
                                 </div>
-                                <div class="col-3">
-                                    <div class="h4 mb-0 text-warning"><?= $security_stats['sideloaded_apps'] ?></div>
-                                    <small>Sideloaded</small>
-                                </div>
-                                <div class="col-3">
-                                    <div class="h4 mb-0 <?= $security_stats['patch_compliance_rate'] >= 80 ? 'text-success' : 'text-danger' ?>"><?= $security_stats['patch_compliance_rate'] ?>%</div>
-                                    <small>Patch Compliance</small>
+                                <div class="col-4">
+                                    <h4 class="font-weight-bold text-secondary mb-0"><?= $security_stats['sideloaded_apps'] ?></h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Sideloaded</small>
                                 </div>
                             </div>
-                            <div class="progress mb-2" style="height: 8px;">
-                                <div class="progress-bar bg-success" role="progressbar" style="width: <?= $security_stats['patch_compliance_rate'] ?>%"></div>
-                                <div class="progress-bar bg-warning" role="progressbar" style="width: <?= 100 - $security_stats['patch_compliance_rate'] ?>%"></div>
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted font-weight-bold">Security Patch Compliance:</small>
+                                    <small class="font-weight-bold text-dark"><?= $security_stats['patched_devices'] ?> / <?= $security_stats['total_devices'] ?> Devices</small>
+                                </div>
+                                <div class="progress" style="height: 10px; border-radius: 5px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: <?= $security_stats['patch_compliance_rate'] ?>%"></div>
+                                </div>
                             </div>
-                            <small class="text-muted">
-                                <?= $security_stats['patched_devices'] ?> of <?= $security_stats['patched_devices'] + $security_stats['sideloaded_apps'] + $security_stats['rooted_devices'] + $security_stats['debuggable_devices'] ?> devices patched within 90 days
+                            <small class="text-muted d-block mt-2" style="font-size:11px;">
+                                <i class="fas fa-info-circle mr-1"></i>Devices with Android security patch within last 90 days.
                             </small>
                         </div>
                     </div>
                 </div>
 
                 <!-- Alerts Summary -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0"><i class="fas fa-bell mr-2"></i>Alerts</h3>
-                            <a href="<?= base_url('superadmin/fleet/alerts') ?>" class="btn btn-sm btn-danger ml-auto">View All <i class="fas fa-arrow-right ml-1"></i></a>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-warning h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-bell text-warning mr-2"></i>Active Alerts
+                            </h3>
+                            <div class="card-tools">
+                                <span class="badge badge-warning px-2 py-1"><?= count($alerts) ?> Issue(s)</span>
+                            </div>
                         </div>
-                        <div class="card-body bg-light d-flex flex-column" style="padding: 1rem;">
+                        <div class="card-body p-3 d-flex flex-column">
                             <?php if (empty($alerts)): ?>
-                                <div class="text-center py-4 flex-grow-1 d-flex flex-column justify-content-center">
+                                <div class="text-center py-4 my-auto">
                                     <i class="fas fa-check-circle text-success fa-3x mb-2"></i>
-                                    <p class="text-muted mb-0">No active alerts</p>
+                                    <p class="text-muted font-weight-bold mb-0">All fleet systems operating normally.</p>
                                 </div>
                             <?php else: ?>
-                                <ul class="list-group list-group-flush flex-grow-1">
+                                <ul class="list-group list-group-flush w-100">
                                     <?php foreach ($alerts as $alert): ?>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
                                             <div>
-                                                <h6 class="mb-1"><i class="fas fa-exclamation-triangle text-<?= $alert['type'] ?> mr-2"></i><?= $alert['title'] ?></h6>
+                                                <strong class="d-block text-dark mb-0" style="font-size:13px;">
+                                                    <i class="fas fa-exclamation-triangle text-<?= $alert['type'] ?> mr-1"></i><?= $alert['title'] ?>
+                                                </strong>
                                                 <small class="text-muted"><?= $alert['message'] ?></small>
                                             </div>
-                                            <span class="badge badge-<?= $alert['type'] ?>"><?= $alert['type'] ?></span>
+                                            <span class="badge badge-<?= $alert['type'] ?> text-uppercase"><?= $alert['type'] ?></span>
                                         </li>
                                     <?php endforeach; ?>
                                 </ul>
@@ -233,35 +246,37 @@
             </div>
 
             <!-- Row 2: Intelligence & Analytics -->
-            <div class="row mb-2">
+            <div class="row mb-3">
                 <!-- Device Types -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-secondary text-white">
-                            <h3 class="card-title mb-0"><i class="fas fa-mobile-alt mr-2"></i>Device Types</h3>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-info h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-mobile-alt text-info mr-2"></i>Device Hardware Types
+                            </h3>
                         </div>
-                        <div class="card-body bg-light d-flex flex-column" style="padding: 1rem;">
+                        <div class="card-body p-3">
                             <div class="mb-3">
-                                <small class="text-muted">Top Android Versions</small>
-                                <div class="mt-1">
+                                <small class="text-muted font-weight-bold text-uppercase d-block mb-1" style="font-size:10px;">Top Android OS Versions</small>
+                                <div>
                                     <?php foreach (array_slice($device_types['android_versions'], 0, 5, true) as $ver => $cnt): ?>
-                                        <span class="badge badge-secondary mr-1 mb-1"><?= htmlspecialchars($ver) ?> (<?= $cnt ?>)</span>
+                                        <span class="badge badge-secondary px-2 py-1 mr-1 mb-1 font-weight-bold">Android <?= htmlspecialchars($ver) ?> (<?= $cnt ?>)</span>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <small class="text-muted">Top Brands</small>
-                                <div class="mt-1">
+                                <small class="text-muted font-weight-bold text-uppercase d-block mb-1" style="font-size:10px;">Top Device Brands</small>
+                                <div>
                                     <?php foreach (array_slice($device_types['brands'], 0, 5, true) as $brand => $cnt): ?>
-                                        <span class="badge badge-info mr-1 mb-1"><?= htmlspecialchars($brand) ?> (<?= $cnt ?>)</span>
+                                        <span class="badge badge-info px-2 py-1 mr-1 mb-1 font-weight-bold"><?= htmlspecialchars($brand) ?> (<?= $cnt ?>)</span>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <small class="text-muted">Top Models</small>
-                                <div class="mt-1">
+                            <div>
+                                <small class="text-muted font-weight-bold text-uppercase d-block mb-1" style="font-size:10px;">Top Device Models</small>
+                                <div>
                                     <?php foreach (array_slice($device_types['models'], 0, 5, true) as $model => $cnt): ?>
-                                        <span class="badge badge-secondary mr-1 mb-1"><?= htmlspecialchars($model) ?> (<?= $cnt ?>)</span>
+                                        <span class="badge badge-dark px-2 py-1 mr-1 mb-1 font-weight-bold"><?= htmlspecialchars($model) ?> (<?= $cnt ?>)</span>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
@@ -270,15 +285,17 @@
                 </div>
 
                 <!-- User Fleet -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-secondary text-white">
-                            <h3 class="card-title mb-0"><i class="fas fa-users mr-2"></i>User Fleet</h3>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-primary h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-users text-primary mr-2"></i>User Fleet Ownership
+                            </h3>
                         </div>
-                        <div class="card-body bg-light d-flex flex-column" style="padding: 1rem;">
-                            <div class="table-responsive flex-grow-1">
-                                <table class="table table-sm mb-0">
-                                    <thead>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover mb-0" style="font-size:13px;">
+                                    <thead class="thead-light">
                                         <tr>
                                             <th>User</th>
                                             <th class="text-center">Devices</th>
@@ -287,20 +304,12 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach (array_slice($user_fleet, 0, 10) as $user): ?>
+                                        <?php foreach (array_slice($user_fleet, 0, 8) as $user): ?>
                                             <tr>
-                                                <td>
-                                                    <small><?= htmlspecialchars($user['username']) ?></small>
-                                                </td>
-                                                <td class="text-center">
-                                                    <span class="badge badge-primary"><?= $user['devices'] ?></span>
-                                                </td>
-                                                <td class="text-center text-success">
-                                                    <small><?= $user['active'] ?></small>
-                                                </td>
-                                                <td class="text-center text-warning">
-                                                    <small><?= $user['stale'] ?></small>
-                                                </td>
+                                                <td class="font-weight-bold text-dark"><?= htmlspecialchars($user['username']) ?></td>
+                                                <td class="text-center"><span class="badge badge-primary px-2"><?= $user['devices'] ?></span></td>
+                                                <td class="text-center text-success font-weight-bold"><?= $user['active'] ?></td>
+                                                <td class="text-center text-warning font-weight-bold"><?= $user['stale'] ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -311,24 +320,25 @@
                 </div>
 
                 <!-- Sync Activity (7d) -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0"><i class="fas fa-chart-line mr-2"></i>Sync Activity (7d)</h3>
-                            <a href="<?= base_url('superadmin/fleet/timeline') ?>" class="btn btn-sm btn-danger ml-auto">View <i class="fas fa-arrow-right ml-1"></i></a>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-success h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-chart-line text-success mr-2"></i>Sync Activity (7 Days)
+                            </h3>
                         </div>
-                        <div class="card-body bg-light d-flex flex-column" style="padding: 1rem;">
-                            <div class="chart-container" style="height: 180px; position: relative;">
+                        <div class="card-body p-3 d-flex flex-column">
+                            <div class="chart-container flex-grow-1" style="height: 170px; position: relative;">
                                 <canvas id="syncTimelineChart"></canvas>
                             </div>
-                        </div>
-                        <div class="card-footer bg-light">
-                            <div class="row text-center text-muted small">
-                                <div class="col-6">
-                                    <strong><?= array_sum($sync_timeline) ?></strong> total syncs
+                            <div class="row text-center mt-3 pt-2 border-top">
+                                <div class="col-6 border-right">
+                                    <span class="font-weight-bold text-dark h5 mb-0 d-block"><?= array_sum($sync_timeline) ?></span>
+                                    <small class="text-muted text-uppercase" style="font-size:10px;">Total Syncs</small>
                                 </div>
                                 <div class="col-6">
-                                    <strong><?= count(array_filter($sync_timeline)) ?>/7</strong> active days
+                                    <span class="font-weight-bold text-success h5 mb-0 d-block"><?= count(array_filter($sync_timeline)) ?> / 7</span>
+                                    <small class="text-muted text-uppercase" style="font-size:10px;">Active Days</small>
                                 </div>
                             </div>
                         </div>
@@ -336,119 +346,109 @@
                 </div>
             </div>
 
-            <!-- Row 3: Geography & Navigation -->
-            <div class="row mb-2">
+            <!-- Row 3: Geography & Activity -->
+            <div class="row mb-3">
                 <!-- Geo Distribution -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0"><i class="fas fa-globe mr-2"></i>Geography</h3>
-                            <a href="<?= base_url('superadmin/fleet/geo') ?>" class="btn btn-sm btn-danger ml-auto">View <i class="fas fa-arrow-right ml-1"></i></a>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-secondary h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-globe text-secondary mr-2"></i>Geography & Carriers
+                            </h3>
                         </div>
-                        <div class="card-body bg-light d-flex flex-column" style="padding: 1rem;">
-                            <small class="text-muted">Top Countries</small>
-                            <div class="mt-2">
-                                <span class="badge badge-secondary mr-1 mb-1">TECNO (62)</span>
-                                <span class="badge badge-secondary mr-1 mb-1">Android 16 (62)</span>
+                        <div class="card-body p-3">
+                            <small class="text-muted font-weight-bold text-uppercase d-block mb-1" style="font-size:10px;">Top Countries</small>
+                            <div class="mb-3">
+                                <?php if (!empty($geo_overview['top_countries'])): ?>
+                                    <?php foreach ($geo_overview['top_countries'] as $c): ?>
+                                        <span class="badge badge-secondary px-2 py-1 mr-1 mb-1 font-weight-bold">
+                                            <i class="fas fa-flag mr-1"></i><?= htmlspecialchars(strtoupper($c['country'])) ?> (<?= $c['cnt'] ?>)
+                                        </span>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <small class="text-muted d-block">No country data recorded</small>
+                                <?php endif; ?>
                             </div>
-                            <hr>
-                            <small class="text-muted">Top Carriers</small>
-                            <div class="mt-2">
-                                <span class="badge badge-info mr-1 mb-1">Unknown</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Activity (placeholder) -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-light">
-                            <h3 class="card-title mb-0"><i class="fas fa-chart-bar mr-2"></i>User Activity</h3>
-                        </div>
-                        <div class="card-body d-flex flex-column justify-content-center text-center" style="padding: 1rem;">
-                            <i class="fas fa-chart-area fa-3x text-muted mb-2"></i>
-                            <h5 class="text-muted">Coming Soon</h5>
-                            <p class="text-muted small">User activity analytics in development</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Health (placeholder) -->
-                <div class="col-lg-4 col-md-6 mb-2">
-                    <div class="card h-100 d-flex flex-column" style="min-height: 340px;">
-                        <div class="card-header bg-light">
-                            <h3 class="card-title mb-0"><i class="fas fa-cogs mr-2"></i>System Health</h3>
-                        </div>
-                        <div class="card-body d-flex flex-column justify-content-center text-center" style="padding: 1rem;">
-                            <i class="fas fa-heartbeat fa-3x text-muted mb-2"></i>
-                            <h5 class="text-muted">Coming Soon</h5>
-                            <p class="text-muted small">System health metrics in development</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fleet Intelligence Navigation -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="callout callout-info bg-light shadow-sm border-left-info mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-cube text-info fa-2x mr-3"></i>
+                            <hr class="my-2">
+                            <small class="text-muted font-weight-bold text-uppercase d-block mb-1" style="font-size:10px;">Top Network Operators</small>
                             <div>
-                                <h5 class="text-info font-weight-bold mb-1">Fleet Intelligence</h5>
-                                <p class="mb-0 small text-muted">Detailed fleet analytics and management tools</p>
+                                <?php if (!empty($geo_overview['top_carriers'])): ?>
+                                    <?php foreach ($geo_overview['top_carriers'] as $car): ?>
+                                        <span class="badge badge-info px-2 py-1 mr-1 mb-1 font-weight-bold">
+                                            <i class="fas fa-signal mr-1"></i><?= htmlspecialchars($car['network_operator']) ?> (<?= $car['cnt'] ?>)
+                                        </span>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <small class="text-muted d-block">No carrier operator data recorded</small>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-lg-3 col-md-6 mb-2">
-                            <a href="<?= base_url('superadmin/fleet/timeline') ?>" class="small-box bg-info">
-                                <div class="inner">
-                                    <h3><i class="fas fa-chart-line fa-2x"></i></h3>
-                                    <p>Sync Timeline</p>
-                                </div>
-                                <div class="icon"><i class="fas fa-chart-line fa-3x"></i></div>
-                                <div class="small-box-footer">
-                                    Hourly heatmap, daily trends, sync patterns
-                                </div>
-                            </a>
+                </div>
+
+                <!-- Admin & Remote Activity -->
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-dark h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-tasks text-dark mr-2"></i>Admin & Remote Activity
+                            </h3>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-2">
-                            <a href="<?= base_url('superadmin/fleet/patches') ?>" class="small-box bg-danger">
-                                <div class="inner">
-                                    <h3><i class="fas fa-shield-alt fa-2x"></i></h3>
-                                    <p>OS Patch Tracker</p>
+                        <div class="card-body p-3">
+                            <div class="row text-center mb-3">
+                                <div class="col-6 border-right">
+                                    <h4 class="font-weight-bold text-primary mb-0"><?= $user_activity['fcm_commands_24h'] ?></h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">FCM Commands (24h)</small>
                                 </div>
-                                <div class="icon"><i class="fas fa-shield-alt fa-3x"></i></div>
-                                <div class="small-box-footer">
-                                    Patch compliance, CVE exposure, upgrade timeline
+                                <div class="col-6">
+                                    <div class="h4 font-weight-bold text-info mb-0"><?= $user_activity['admin_actions_24h'] ?></div>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Admin Logs (24h)</small>
                                 </div>
-                            </a>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted font-weight-bold">Top FCM Command:</small>
+                                <span class="badge badge-dark px-2 py-1 font-weight-bold"><?= htmlspecialchars(strtoupper($user_activity['top_command'])) ?> (<?= $user_activity['top_command_count'] ?>)</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted font-weight-bold">Most Active Admin (7d):</small>
+                                <span class="badge badge-success px-2 py-1 font-weight-bold"><?= htmlspecialchars($user_activity['top_admin']) ?></span>
+                            </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-2">
-                            <a href="<?= base_url('superadmin/fleet/alerts') ?>" class="small-box bg-warning">
-                                <div class="inner">
-                                    <h3><i class="fas fa-bell fa-2x"></i></h3>
-                                    <p>Alert Center</p>
-                                </div>
-                                <div class="icon"><i class="fas fa-bell fa-3x"></i></div>
-                                <div class="small-box-footer">
-                                    Stale devices, failed syncs, low storage, security issues
-                                </div>
-                            </a>
+                    </div>
+                </div>
+
+                <!-- System & Storage Health -->
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="card card-outline card-info h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <h3 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="fas fa-heartbeat text-info mr-2"></i>System & Storage Health
+                            </h3>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-2">
-                            <a href="<?= base_url('superadmin/fleet/geo') ?>" class="small-box bg-success">
-                                <div class="inner">
-                                    <h3><i class="fas fa-globe fa-2x"></i></h3>
-                                    <p>Geo / Carrier Map</p>
+                        <div class="card-body p-3">
+                            <div class="row text-center mb-3">
+                                <div class="col-6 border-right">
+                                    <h4 class="font-weight-bold text-success mb-0"><?= $health_stats['avg_free_gb'] ?> GB</h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Avg Free Storage</small>
                                 </div>
-                                <div class="icon"><i class="fas fa-globe fa-3x"></i></div>
-                                <div class="small-box-footer">
-                                    Country distribution, carrier analysis, roaming detection
+                                <div class="col-6">
+                                    <h4 class="font-weight-bold text-warning mb-0"><?= $health_stats['avg_battery_level'] ?>%</h4>
+                                    <small class="text-muted text-uppercase font-weight-bold" style="font-size:10px;">Avg Battery Level</small>
                                 </div>
-                            </a>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted font-weight-bold">FCM Reachable Devices:</small>
+                                <div>
+                                    <strong class="text-dark font-weight-bold" style="font-size:13px;"><?= $health_stats['fcm_reachable_devices'] ?></strong>
+                                    <span class="badge badge-success ml-1"><?= $health_stats['fcm_reachability_rate'] ?>%</span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted font-weight-bold">Pending Upload Jobs:</small>
+                                <span class="badge badge-warning font-weight-bold"><?= $health_stats['pending_uploads'] ?> queued</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -16,11 +16,31 @@ class ForensicExportController extends BaseSuperadminController
             ->select('users.id, users.username, auth_identities.secret as email')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = \'email_password\'', 'left')
             ->where('users.deleted_at IS NULL')
+            ->whereNotIn('users.id', function (\CodeIgniter\Database\BaseBuilder $builder) {
+                return $builder->select('user_id')->from('auth_groups_users')->whereIn('group', ['admin', 'superadmin']);
+            })
             ->orderBy('users.username', 'ASC')
             ->get()
             ->getResultArray();
 
-        $recentJobs = (new ExportJobModel())->recentFor($this->userId, 15);
+        $jobModel = new ExportJobModel();
+        $stuckJobs = $jobModel->getQueuedBatch(10);
+        if (!empty($stuckJobs)) {
+            $service = new \App\Services\ForensicExportService();
+            foreach ($stuckJobs as $sj) {
+                try {
+                    $jobModel->markProcessing((int)$sj['id']);
+                    $sjParams = json_decode($sj['params'] ?? '[]', true);
+                    $res = $service->build($sjParams);
+                    $jobModel->markCompleted((int)$sj['id'], $res['path'], $res['size']);
+                } catch (\Throwable $ex) {
+                    log_message('error', 'Auto-flush export error: ' . $ex->getMessage());
+                    $jobModel->markFailed((int)$sj['id'], $ex->getMessage());
+                }
+            }
+        }
+
+        $recentJobs = $jobModel->recentFor($this->userId, 15);
 
         return $this->renderView('superadmin/forensic_export', [
             'pag' => 'superadmin-forensics',
@@ -65,7 +85,8 @@ class ForensicExportController extends BaseSuperadminController
             return redirect()->back()->with('error', 'User not found.');
         }
 
-        $jobId = (new ExportJobModel())->enqueue([
+        $jobModel = new ExportJobModel();
+        $jobId = $jobModel->enqueue([
             'job_type'       => 'forensics',
             'requester_id'   => $this->userId,
             'target_user_id' => (int) $userId,
@@ -84,8 +105,30 @@ class ForensicExportController extends BaseSuperadminController
             return redirect()->back()->with('error', 'Failed to enqueue export job. Please try again.');
         }
 
+        // Synchronously process the export so it generates immediately without relying on external cron workers
+        try {
+            $jobModel->markProcessing($jobId);
+            $service = new \App\Services\ForensicExportService();
+            $result = $service->build([
+                'user_id'    => (int) $userId,
+                'username'   => $user['username'],
+                'email'      => $user['email'] ?? '',
+                'categories' => $categories,
+                'date_from'  => $dateFrom,
+                'date_to'    => $dateTo,
+                'exporter'   => $this->userData['username'] ?? 'Unknown',
+            ]);
+            $jobModel->markCompleted($jobId, $result['path'], $result['size']);
+            $this->sendExportReadyEmail($user, $jobId, $result['size']);
+        } catch (\Throwable $e) {
+            log_message('error', 'Forensic export execution error: ' . $e->getMessage());
+            $jobModel->markFailed($jobId, $e->getMessage());
+            return redirect()->to('superadmin/forensic-export')
+                ->with('error', "Export job #{$jobId} failed: " . $e->getMessage());
+        }
+
         return redirect()->to('superadmin/forensic-export')
-            ->with('message', "Export job #{$jobId} queued. It will be ready shortly — the download link appears below when complete.");
+            ->with('message', "Export job #{$jobId} generated successfully. Your download link is ready below.");
     }
 
     /**
@@ -150,5 +193,78 @@ class ForensicExportController extends BaseSuperadminController
         $filename = 'forensic_export_' . $username . '_' . date('Ymd_His', strtotime($job['completed_at'] ?? 'now')) . '.zip';
 
         return $this->response->download($job['result_path'], null)->setFileName($filename);
+    }
+
+    /**
+     * Send email notification to user with download link upon export completion.
+     */
+    private function sendExportReadyEmail(array $user, int $jobId, int $fileSizeBytes): bool
+    {
+        $email = $user['email'] ?? null;
+        if (empty($email)) {
+            return false;
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            $smtpSettings = [];
+            $settingsRows = $db->table('system_settings')
+                ->whereIn('key', ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from_email', 'smtp_from_name'])
+                ->get()
+                ->getResultArray();
+            foreach ($settingsRows as $r) {
+                $smtpSettings[$r['key']] = $r['value'];
+            }
+
+            $emailService = \Config\Services::email();
+
+            if (!empty($smtpSettings['smtp_host'])) {
+                $emailService->initialize([
+                    'protocol'   => 'smtp',
+                    'SMTPHost'   => $smtpSettings['smtp_host'] ?? '',
+                    'SMTPPort'   => $smtpSettings['smtp_port'] ?? 587,
+                    'SMTPUser'   => $smtpSettings['smtp_user'] ?? '',
+                    'SMTPPass'   => $smtpSettings['smtp_pass'] ?? '',
+                    'SMTPCrypto' => 'tls',
+                    'mailType'   => 'html',
+                    'wordWrap'   => true,
+                ]);
+                $fromEmail = $smtpSettings['smtp_from_email'] ?? $emailService->getFromEmail();
+                $fromName  = $smtpSettings['smtp_from_name'] ?? 'Eaves Droid System';
+                $emailService->setFrom($fromEmail, $fromName);
+            }
+
+            $downloadUrl = base_url("superadmin/forensic-export/download/{$jobId}");
+            $formattedSize = number_format($fileSizeBytes / 1024, 2) . ' KB';
+            $username = esc($user['username'] ?? 'User');
+
+            $htmlMessage = "
+                <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
+                    <h2 style='color: #2c3e50;'>Eaves Droid — Forensic Export Ready</h2>
+                    <p>Hello <strong>{$username}</strong>,</p>
+                    <p>Your requested forensic telemetry export (Job #<strong>{$jobId}</strong>) has been generated successfully.</p>
+                    <div style='background: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0;'>
+                        <p style='margin: 0;'><strong>Archive Size:</strong> {$formattedSize}</p>
+                        <p style='margin: 5px 0 0 0;'><strong>Status:</strong> Completed & Verified</p>
+                    </div>
+                    <p>Click the button below to download your export archive:</p>
+                    <p style='margin-top: 25px;'>
+                        <a href='{$downloadUrl}' style='background-color: #007bff; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;'>Download Forensic Export</a>
+                    </p>
+                    <p style='margin-top: 30px; font-size: 12px; color: #777;'>
+                        Direct link: <a href='{$downloadUrl}'>{$downloadUrl}</a>
+                    </p>
+                </div>
+            ";
+
+            $emailService->setTo($email);
+            $emailService->setSubject("Forensic Export Archive Ready (Job #{$jobId}) — Eaves Droid");
+            $emailService->setMessage($htmlMessage);
+
+            return $emailService->send();
+        } catch (\Throwable $e) {
+            log_message('error', 'sendExportReadyEmail exception: ' . $e->getMessage());
+            return false;
+        }
     }
 }

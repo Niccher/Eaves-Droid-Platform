@@ -596,12 +596,15 @@ hr { border: none; border-top: 1px solid #dee2e6; margin: 10pt 0; }
                 <tr><th>Time</th><th>Latitude</th><th>Longitude</th><th class="text-right">Accuracy</th></tr>
             </thead>
             <tbody>
-                <?php foreach ($recent_locations as $loc): ?>
+                <?php foreach ($recent_locations as $loc): 
+                    $tsVal = $loc['location_time'] ?? $loc['extracted_at'] ?? $loc['fetched_at'] ?? $loc['created_at'] ?? time();
+                    $formattedTs = is_numeric($tsVal) ? date('M d, H:i', (int)$tsVal > 100000000000 ? $tsVal / 1000 : $tsVal) : date('M d, H:i', strtotime((string)$tsVal));
+                ?>
                 <tr>
-                    <td><?= date('M d, H:i', is_numeric($loc['extracted_at']) ? $loc['extracted_at']/1000 : strtotime($loc['extracted_at'])) ?></td>
-                    <td><?= $loc['latitude'] ?></td>
-                    <td><?= $loc['longitude'] ?></td>
-                    <td class="text-right"><?= $loc['accuracy'] ?>m</td>
+                    <td><?= $formattedTs ?></td>
+                    <td><?= $loc['latitude'] ?? '—' ?></td>
+                    <td><?= $loc['longitude'] ?? '—' ?></td>
+                    <td class="text-right"><?= isset($loc['accuracy']) ? $loc['accuracy'] . 'm' : '—' ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

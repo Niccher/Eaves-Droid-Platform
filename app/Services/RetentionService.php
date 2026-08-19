@@ -7,24 +7,15 @@ use Config\Database;
 class RetentionService
 {
     public const CATEGORIES_MAP = [
-        'sms' => 'tbl_extracted_sms',
-        'calls' => 'tbl_extracted_call_logs',
-        'contacts' => 'tbl_extracted_contacts',
-        'locations' => 'tbl_extracted_locations',
-        'activities' => 'tbl_extracted_activities',
-        'apps' => 'tbl_extracted_installed_apps',
-        'files' => 'tbl_extracted_device_files',
-        'network' => 'tbl_system_network_info',
-        'device_context' => 'tbl_device_hardware_contexts',
-        'bluetooth' => 'tbl_telemetry_bluetooth_devices',
-        'sensors' => 'tbl_telemetry_sensors',
-        'security_audit' => 'tbl_security_audit',
-        'notifications' => 'tbl_extracted_notifications',
-        'calendar' => 'tbl_extracted_calendar_events',
-        'app_usage' => 'tbl_system_app_usage',
-        'media' => 'tbl_extracted_media_files',
-        'sim' => 'tbl_sim_configs',
-        'accounts' => 'tbl_accounts',
+        'apps'                  => ['tbl_extracted_installed_apps'],
+        'calls'                 => ['tbl_extracted_call_logs'],
+        'sms'                   => ['tbl_extracted_sms'],
+        'contacts'              => ['tbl_extracted_contacts'],
+        'files'                 => ['tbl_extracted_device_files', 'tbl_extracted_media_files'],
+        'location_activities'   => ['tbl_extracted_locations', 'tbl_extracted_activities'],
+        'misc_hardware_software'=> ['tbl_device_hardware_contexts', 'tbl_system_network_info', 'tbl_telemetry_bluetooth_devices', 'tbl_telemetry_sensors', 'tbl_sim_configs', 'tbl_security_audit'],
+        'app_usage'             => ['tbl_system_app_usage'],
+        'app_notifications'     => ['tbl_extracted_notifications'],
     ];
 
     public function getSettings(): array
@@ -93,8 +84,8 @@ class RetentionService
 
         if (empty($categories)) {
             $categories = [];
-            foreach (self::CATEGORIES_MAP as $cat => $table) {
-                if ((bool) ($saved["retention_{$cat}_enabled"] ?? false)) {
+            foreach (self::CATEGORIES_MAP as $cat => $tables) {
+                if ((bool) ($saved["retention_{$cat}_enabled"] ?? true)) {
                     $categories[] = $cat;
                 }
             }
@@ -105,8 +96,8 @@ class RetentionService
                 continue;
             }
 
-            $table = self::CATEGORIES_MAP[$cat];
-            $retentionDays = (int) ($saved["retention_{$cat}_days"] ?? 365);
+            $tables = (array) self::CATEGORIES_MAP[$cat];
+            $retentionDays = (int) ($saved["retention_{$cat}_days"] ?? 730);
 
             if ($retentionDays <= 0) {
                 $results[$cat] = ['deleted' => 0, 'skipped' => true];
@@ -114,12 +105,18 @@ class RetentionService
             }
 
             $cutoff = date('Y-m-d H:i:s', strtotime("-{$retentionDays} days"));
+            $totalDeleted = 0;
 
-            $deleted = $db->table($table)
-                ->where('created_at <', $cutoff)
-                ->delete();
+            foreach ($tables as $table) {
+                if ($db->tableExists($table)) {
+                    $deleted = $db->table($table)
+                        ->where('created_at <', $cutoff)
+                        ->delete();
+                    $totalDeleted += $deleted;
+                }
+            }
 
-            $results[$cat] = ['deleted' => $deleted];
+            $results[$cat] = ['deleted' => $totalDeleted];
         }
 
         return $results;

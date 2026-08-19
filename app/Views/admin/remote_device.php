@@ -30,37 +30,54 @@
 
             <!-- Target Selection Card -->
             <div class="card card-outline card-info shadow-sm mb-4">
-                <div class="card-header">
-                    <h3 class="card-title font-weight-bold">
-                        <i class="fas fa-users text-info mr-2"></i>Target Selection
+                <div class="card-header bg-white border-bottom">
+                    <h3 class="card-title font-weight-bold text-dark mb-0">
+                        <i class="fas fa-crosshairs text-info mr-2"></i>Target Selection
                     </h3>
                 </div>
-                <div class="card-body">
-                    <div class="row align-items-end">
-                        <div class="col-md-8">
-                            <label class="font-weight-600">
-                                <i class="fas fa-user text-muted mr-1"></i> Apply to Device(s)
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-7 mb-3 mb-md-0">
+                            <label for="targetUserId" class="font-weight-bold text-dark mb-2">
+                                <i class="fas fa-mobile-alt text-secondary mr-1"></i> Target Device / User
                             </label>
-                            <select class="form-control" id="targetUserId">
-                                <option value="all">All Users (Broadcast to all registered devices)</option>
-                                <?php if (!empty($users)): ?>
-                                    <?php foreach ($users as $u): ?>
-                                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['username']) ?></option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                            <small class="text-muted d-block mt-1">Choose a specific user or broadcast the same command to all active devices.</small>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light border-right-0"><i class="fas fa-user text-muted"></i></span>
+                                </div>
+                                <select class="form-control border-left-0 font-weight-600" id="targetUserId" style="height: 42px;">
+                                    <option value="all">⚡ Broadcast to All Registered Devices</option>
+                                    <?php if (!empty($users)): ?>
+                                        <?php foreach ($users as $u): ?>
+                                        <option value="<?= $u['id'] ?>">👤 <?= htmlspecialchars($u['username']) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle mr-1"></i>Select a target user to send push commands to, or broadcast to all active devices.
+                            </small>
                         </div>
-                        <div class="col-md-4 mt-3 mt-md-0">
-                            <label class="font-weight-600">
-                                <i class="fas fa-dot-circle text-muted mr-1"></i> Selection Status
+                        <div class="col-md-5">
+                            <label class="font-weight-bold text-dark mb-2">
+                                <i class="fas fa-signal text-secondary mr-1"></i> Fleet Reachability Status
                             </label>
-                            <div class="form-control bg-light" id="currentTargetDisplay" style="min-height:38px; display:flex; align-items:center;">
-                                <?php if (empty($users)): ?>
-                                    <span class="text-warning font-weight-600"><i class="fas fa-exclamation-triangle mr-1"></i> No registered devices</span>
-                                <?php else: ?>
-                                    <span class="text-success font-weight-600"><i class="fas fa-check-circle mr-1"></i> <?= count($users) ?> user(s) available</span>
-                                <?php endif; ?>
+                            <div class="card bg-light border-0 mb-0 shadow-none">
+                                <div class="card-body p-3 d-flex align-items-center justify-content-between" id="currentTargetDisplay" style="min-height: 42px;">
+                                    <?php if (empty($users)): ?>
+                                        <div class="d-flex align-items-center text-warning font-weight-bold">
+                                            <i class="fas fa-exclamation-triangle mr-2 fa-lg"></i>
+                                            <span>No FCM-registered devices</span>
+                                        </div>
+                                        <span class="badge badge-warning px-2 py-1">Offline</span>
+                                    <?php else: ?>
+                                        <div class="d-flex align-items-center text-success font-weight-bold">
+                                            <i class="fas fa-check-circle mr-2 fa-lg"></i>
+                                            <span><?= count($users) ?> Device(s) Ready</span>
+                                        </div>
+                                        <span class="badge badge-success px-2 py-1">Active</span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -83,7 +100,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#tab-loot-stats" role="tab">
-                                <i class="fas fa-chart-bar mr-1"></i> Downloaded Loot
+                                <i class="fas fa-download mr-1"></i> Downloaded Loot
                             </a>
                         </li>
                     </ul>
@@ -251,8 +268,9 @@
                                             ?>
                                             <tr>
                                                 <td>
-                                                    <strong><?= htmlspecialchars($s['username']) ?></strong>
-                                                    <small class="text-muted d-block">ID: #<?= $s['id'] ?></small>
+                                                    <strong class="text-uppercase font-weight-bold d-block text-dark"><?= htmlspecialchars($s['username']) ?></strong>
+                                                    <small class="text-muted font-italic d-block"><?= htmlspecialchars($s['email'] ?? '-') ?></small>
+                                                    <small class="text-muted d-block" style="font-size: 11px;">ID: #<?= $s['id'] ?></small>
                                                 </td>
                                                 <td class="text-center font-weight-bold text-primary">
                                                     <?= $s['media_count'] ?>

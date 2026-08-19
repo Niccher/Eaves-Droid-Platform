@@ -84,6 +84,11 @@ class PlanGate implements FilterInterface
             return null;
         }
 
+        $user = auth()->user();
+        if ($user && ($user->inGroup('admin') || $user->inGroup('superadmin'))) {
+            return null; // Admin and Superadmin bypass subscription gates
+        }
+
         $userId = (int) auth()->id();
         $subModel = new SubscriptionModel();
         $limits = $subModel->getPlanLimits($userId);

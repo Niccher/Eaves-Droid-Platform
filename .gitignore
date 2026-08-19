@@ -185,3 +185,8 @@ writable/logs/*
 !writable/logs/index.html
 writable/debugbar/*
 !writable/debugbar/index.html
+
+# Local downloads & scratch scripts
+public/downloads/*
+update_plan_features.php
+

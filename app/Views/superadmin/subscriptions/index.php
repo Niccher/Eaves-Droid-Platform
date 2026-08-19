@@ -31,7 +31,7 @@
                     <div class="small-box bg-info">
                         <div class="inner">
                             <h3><?= $stats['active_subs'] ?></h3>
-                            <p>Active SubscriptionsController</p>
+                            <p>Active Subscriptions</p>
                         </div>
                         <div class="icon"><i class="fas fa-user-check"></i></div>
                     </div>
@@ -58,7 +58,7 @@
 
             <div class="card card-primary card-outline">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-list mr-2"></i>All Users & SubscriptionsController</h3>
+                    <h3 class="card-title"><i class="fas fa-list mr-2"></i>All Users & Subscriptions</h3>
                     <div class="card-tools">
                         <a href="<?= base_url('superadmin/payments') ?>" class="btn btn-outline-primary btn-sm mr-2">
                             <i class="fas fa-credit-card mr-1"></i> Payment History

@@ -1,6 +1,4 @@
 <?php
-helper('coalesce'); $rows = coalesce_snapshots($rows, 'device_id');
-
 /** @var array $rows @var int $total @var int $total_snapshots @var object $pager @var string $nav_urls */
 /** @var bool $detail_mode @var string|null $package_name @var array|null $summary @var array|null $app_detail @var array|null $sessions @var string|null $back_url */
 if (!empty($detail_mode)) {
@@ -89,30 +87,28 @@ if (!empty($detail_mode)) {
             </div>
 
             <div class="row">
-                <div class="col-12">
-                    <div class="card card-primary shadow-sm">
-                        <div class="card-header text-white d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0"><i class="fas fa-list mr-2"></i>App Usage Intervals <small class="ml-2"><?= count($rows) ?> records</small></h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool btn-sm text-white" data-card-widget="collapse" data-toggle="tooltip" title="Collapse / Expand"><i class="fas fa-minus"></i></button>
+                <div class="col-md-7">
+                    <div class="card card-primary card-outline shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3 class="card-title font-weight-bold mb-0 text-primary"><i class="fas fa-list mr-2"></i>App Usage Intervals <small class="ml-2"><?= count($rows) ?> records</small></h3>
+                            <div class="card-tools ml-auto">
+                                <button type="button" class="btn btn-tool btn-sm text-secondary" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
                             </div>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover table-striped mb-0">
-                                    <thead class="thead-light text-white">
+                                    <thead class="thead-light">
                                     <tr>
                                         <th>#</th>
-                                        <th><i class="fas fa-stopwatch mr-1"></i>Total App Screen Time</th>
-                                        <th><i class="fas fa-history mr-1"></i>Time App Was Opened</th>
-                                        <th><i class="fas fa-hourglass-half mr-1"></i>Foreground Duration</th>
-                                        <th><i class="fas fa-mobile-alt mr-1"></i>Device</th>
-                                        <th><i class="fas fa-clock mr-1"></i>Extracted</th>
+                                        <th><i class="fas fa-stopwatch mr-1"></i>Total Screen Time</th>
+                                        <th><i class="fas fa-history mr-1"></i>Opened Time</th>
+                                        <th><i class="fas fa-hourglass-half mr-1"></i>Duration</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <?php if (empty($rows)): ?>
-                                        <tr><td colspan="6" class="text-center py-4 text-muted">No snapshots for this app.</td></tr>
+                                        <tr><td colspan="4" class="text-center py-4 text-muted">No snapshots for this app.</td></tr>
                                     <?php else: foreach ($rows as $i => $r): ?>
                                         <?php
                                             $ms  = $r['foreground_time_ms'] ?? 0;
@@ -134,106 +130,206 @@ if (!empty($detail_mode)) {
                                         <tr>
                                             <td><?= $i + 1 ?></td>
                                             <td>
-                                                <span class="font-weight-bold"><?= $hrs ?> h</span>
+                                                <span class="font-weight-bold text-dark"><?= $hrs ?> h</span>
                                                 <small class="text-muted d-block"><?= number_format($ms) ?> ms</small>
                                             </td>
-                                            <td><small><?= esc($r['last_used_display'] ?? '—') ?></small></td>
+                                            <td><small class="text-muted font-weight-bold"><?= esc($r['last_used_display'] ?? '—') ?></small></td>
                                             <td>
                                                 <span class="text-success font-weight-bold"><?= $timeTakenStr ?></span>
                                                 <?php if ($timeTakenMs !== null): ?>
                                                     <small class="text-muted d-block">+<?= number_format($timeTakenMs) ?> ms</small>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><small class="text-muted"><?= htmlspecialchars($r['device_id'] ?? '—') ?></small></td>
-                                            <td><small><?= esc($r['extracted_display'] ?? '—') ?></small></td>
                                         </tr>
                                     <?php endforeach; endif; ?>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        <div class="card-footer bg-primary text-white"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
+                        <div class="card-footer bg-light"><div class="float-right"><?php if (isset($pager)): ?><?= $pager->links('default', 'bootstrap5_full') ?><?php endif; ?></div></div>
                     </div>
                 </div>
-            </div>
 
-            <?php if (!empty($sessions)): ?>
-            <div class="row">
-                <div class="col-12">
-                    <div class="card card-primary shadow-sm">
-                        <div class="card-header text-white d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0"><i class="fas fa-stream mr-2"></i>Session Events <small class="ml-2">latest <?= count($sessions) ?></small></h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool btn-sm text-white" data-card-widget="collapse" data-toggle="tooltip" title="Collapse / Expand"><i class="fas fa-minus"></i></button>
-                            </div>
+                <div class="col-md-5">
+                    <div class="card card-warning card-outline shadow-sm">
+                        <div class="card-header">
+                            <h3 class="card-title font-weight-bold mb-0 text-warning"><i class="fas fa-stream mr-2"></i>Sessions Timeline</h3>
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-striped mb-0">
-                                    <thead class="thead-light text-white">
-                                    <tr>
-                                        <th>Event</th>
-                                        <th>Timestamp</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php foreach ($sessions as $s): ?>
-                                        <tr>
-                                            <td><span class="badge badge-secondary"><?= htmlspecialchars($s['event_type'] ?? '—') ?></span></td>
-                                            <td><small><?= esc($s['timestamp_display'] ?? '—') ?></small></td>
-                                        </tr>
+                        <div class="card-body" style="max-height: 580px; overflow-y: auto;">
+                            <?php if (empty($sessions)): ?>
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fas fa-history fa-3x mb-3 text-light"></i>
+                                    <p>No lifecycle sessions logged.</p>
+                                </div>
+                            <?php else: ?>
+                                <div class="timeline timeline-inverse mb-0">
+                                    <?php foreach ($sessions as $s): 
+                                        $type = strtoupper($s['event_type'] ?? 'UNKNOWN');
+                                        $badgeColor = 'secondary';
+                                        $icon = 'fa-info-circle';
+                                        if (strpos($type, 'FOREGROUND') !== false) {
+                                            $badgeColor = 'success';
+                                            $icon = 'fa-play-circle';
+                                        } elseif (strpos($type, 'BACKGROUND') !== false) {
+                                            $badgeColor = 'primary';
+                                            $icon = 'fa-pause-circle';
+                                        } elseif (strpos($type, 'STOP') !== false || strpos($type, 'DESTROY') !== false) {
+                                            $badgeColor = 'danger';
+                                            $icon = 'fa-stop-circle';
+                                        }
+                                    ?>
+                                        <div>
+                                            <i class="fas <?= $icon ?> bg-<?= $badgeColor ?>"></i>
+                                            <div class="timeline-item shadow-none border">
+                                                <span class="time text-muted small"><i class="far fa-clock mr-1"></i><?= esc($s['timestamp_display'] ?? '—') ?></span>
+                                                <h3 class="timeline-header font-weight-bold" style="font-size:0.85rem; border-bottom:0;">
+                                                    <span class="badge badge-<?= $badgeColor ?>"><?= $type ?></span>
+                                                </h3>
+                                            </div>
+                                        </div>
                                     <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
+                                    <div>
+                                        <i class="far fa-clock bg-gray"></i>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </div>
-            <?php endif; ?>
         </div>
     </section>
 </div>
 <?php
 } else {
+    // Redesigned Summary Mode
 ?>
-<?php
-    $actions = static function ($r) {
-        $pkgEnc = $r['package_url_enc'] ?? '';
-        $name = $r['app_name'] ?? '';
-        $html = '';
-        if ($pkgEnc !== '') {
-            $html .= '<a href="' . base_url('advanced/software/app-usage/' . $pkgEnc) . '" class="btn btn-sm btn-outline-info" title="View all details"><i class="fas fa-eye"></i></a>';
-        }
-        $html .= '<button class="btn btn-sm btn-outline-danger delete-app-usage-pkg" data-pkg="' . esc($pkgEnc) . '" data-name="' . esc($name) . '" title="Delete all usage data for this app"><i class="fas fa-trash"></i></button>';
-        return $html;
-    };
-?>
-<?= view('users/advanced/_card_table', [
-    'title'    => 'App Usage',
-    'subtitle' => 'Foreground screen time per application',
-    'tableId'  => 'appUsageTable',
-    'columns'  => [
-        ['field' => 'app_name',            'sub_field' => 'package_name', 'label' => 'App',       'format' => 'stacked', 'icon' => 'fas fa-mobile-alt'],
-        ['field' => 'foreground_time_ms',  'label' => 'Screen Time', 'format' => 'ms', 'icon' => 'fas fa-stopwatch'],
-        ['field' => 'last_used_display',   'label' => 'Last Used',   'format' => 'text', 'icon' => 'fas fa-clock'],
-        ['field' => 'snapshot_count',      'label' => 'Snapshots',   'format' => 'badge', 'default' => 'info', 'icon' => 'fas fa-camera'],
-        ['field' => 'is_system_app',       'label' => 'Type',        'format' => 'badge', 'map' => [1 => 'secondary', 0 => 'primary', '1' => 'secondary', '0' => 'primary'], 'default' => 'primary', 'icon' => 'fas fa-cog'],
-    ],
-    'secondary' => [
-        ['field' => 'device_id', 'label' => 'Device ID', 'format' => 'text', 'icon' => 'fas fa-mobile-alt'],
-    ],
-    'rows'     => $rows,
-    'pager'    => $pager,
-    'total'    => $total,
-    'nav_urls' => $nav_urls ?? '',
-    'perPage'  => 25,
-    'actions'  => $actions,
-]) ?>
+<div class="content-wrapper">
+    <!-- Page Header -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-3 align-items-center">
+                <div class="col-lg-7">
+                    <div class="d-flex align-items-center flex-wrap">
+                        <h1 class="h2 mb-0 mr-3">
+                            <i class="fas fa-chart-bar text-primary mr-2"></i>App Usage
+                        </h1>
+                        <span class="badge badge-primary border p-2">
+                            <i class="fas fa-database mr-1"></i>Total Checked Apps: <b><?= (int)$total ?></b>
+                        </span>
+                    </div>
+                    <p class="text-muted mt-1 mb-0">Foreground active screen time captured per application.</p>
+                </div>
+                <div class="col-lg-5 text-right"><?= $nav_urls ?? '' ?></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Informative Callout Alert -->
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-info-circle text-info mr-2"></i>About App Usage</h5>
+                <p class="mb-0">Audits daily active foreground screen time metrics per package. Helps identify high-engagement apps, usage patterns, and standby buckets assigned by OS power managers.</p>
+            </div>
+
+            <!-- Interactive App Usage List -->
+            <div class="card card-outline card-primary shadow-sm">
+                <div class="card-header d-flex align-items-center py-2">
+                    <h5 class="card-title font-weight-bold mb-0 text-primary"><i class="fas fa-list mr-2"></i>Applications List</h5>
+                    <div class="card-tools ml-auto">
+                        <input type="text" id="appUsageSearch" class="form-value form-control form-control-sm" placeholder="Search apps...">
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>App / Package</th>
+                                    <th>Screen Time</th>
+                                    <th>Last Used</th>
+                                    <th>Snapshots</th>
+                                    <th>Type</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appUsageTableBody">
+                                <?php if (empty($rows)): ?>
+                                    <tr><td colspan="6" class="text-center py-5 text-muted">No application usage details logged.</td></tr>
+                                <?php else: foreach ($rows as $row): 
+                                    $pkgEnc = $row['package_url_enc'] ?? '';
+                                    $appName = $row['app_name'] ?? '';
+                                    $pkgName = $row['package_name'] ?? '';
+                                ?>
+                                    <tr class="app-usage-row" data-name="<?= esc(strtolower($appName)) ?>" data-package="<?= esc(strtolower($pkgName)) ?>">
+                                        <td>
+                                            <span class="font-weight-bold d-block text-dark"><?= esc($appName ?: 'Unknown App') ?></span>
+                                            <small class="text-muted"><?= esc($pkgName) ?></small>
+                                        </td>
+                                        <td>
+                                            <span class="font-weight-bold"><?= round(((int)$row['foreground_time_ms']) / 3600000, 1) ?>h</span>
+                                            <small class="text-muted d-block"><?= number_format($row['foreground_time_ms']) ?> ms</small>
+                                        </td>
+                                        <td><small class="text-muted"><?= esc($row['last_used_display'] ?? '—') ?></small></td>
+                                        <td><span class="badge badge-info"><?= esc($row['snapshot_count']) ?></span></td>
+                                        <td>
+                                            <span class="badge badge-<?= !empty($row['is_system_app']) ? 'secondary' : 'primary' ?>">
+                                                <?= !empty($row['is_system_app']) ? 'System' : 'User' ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-right">
+                                            <div class="btn-group" role="group">
+                                                <?php if ($pkgEnc !== ''): ?>
+                                                    <a href="<?= base_url('advanced/software/app-usage/' . $pkgEnc) ?>" class="btn btn-sm btn-outline-info" title="View details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                <?php endif; ?>
+                                                <button class="btn btn-sm btn-outline-danger delete-app-usage-pkg" data-pkg="<?= esc($pkgEnc) ?>" data-name="<?= esc($appName ?: $pkgName) ?>" title="Delete record">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer py-2 bg-light">
+                    <div class="float-right"><?= $pager->links('default', 'bootstrap5_full') ?></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
 <script>
 var CSRF_TOKEN_NAME = '<?= csrf_token() ?>';
 var CSRF_TOKEN_HASH = '<?= csrf_hash() ?>';
 document.addEventListener('DOMContentLoaded', function() {
+    // Search Filter
+    const searchInput = document.getElementById('appUsageSearch');
+    const tableRows = document.querySelectorAll('.app-usage-row');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            tableRows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const pkg = row.getAttribute('data-package');
+                if (name.includes(query) || pkg.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Delete Trigger
     document.querySelectorAll('.delete-app-usage-pkg').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();

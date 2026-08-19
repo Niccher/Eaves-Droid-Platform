@@ -498,20 +498,6 @@ class AdvancedController extends BaseClientController
         return $c->delete_battery_stats($id);
     }
 
-    public function processes()
-    {
-        $c = new ForensicsSystemController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->processes();
-    }
-
-    public function delete_processes($id)
-    {
-        $c = new ForensicsSystemController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_processes($id);
-    }
-
     public function proc_info()
     {
         $c = new ForensicsSystemController();
@@ -524,20 +510,6 @@ class AdvancedController extends BaseClientController
         $c = new ForensicsSystemController();
         $c->initController($this->request, $this->response, $this->logger);
         return $c->delete_proc_info($id);
-    }
-
-    public function running_processes()
-    {
-        $c = new ForensicsSystemController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->running_processes();
-    }
-
-    public function delete_running_processes($id)
-    {
-        $c = new ForensicsSystemController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_running_processes($id);
     }
 
     public function display_info()
@@ -624,19 +596,7 @@ class AdvancedController extends BaseClientController
         return $c->delete_hardware_network($id);
     }
 
-    public function power_rails()
-    {
-        $c = new ForensicsSystemController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->power_rails();
-    }
 
-    public function delete_power_rails($id)
-    {
-        $c = new ForensicsSystemController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_power_rails($id);
-    }
 
     public function usb_devices()
     {
@@ -865,19 +825,7 @@ class AdvancedController extends BaseClientController
         return $c->delete_cell_towers($id);
     }
 
-    public function thermal()
-    {
-        $c = new ForensicsEnvironmentController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->thermal();
-    }
 
-    public function delete_thermal($id)
-    {
-        $c = new ForensicsEnvironmentController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_thermal($id);
-    }
 
     public function nfc()
     {
@@ -1225,19 +1173,7 @@ class AdvancedController extends BaseClientController
         return $c->delete_app_permissions($id);
     }
 
-    public function browser_history()
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->browser_history();
-    }
 
-    public function delete_browser_history($id)
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_browser_history($id);
-    }
 
     public function clipboard()
     {
@@ -1281,20 +1217,6 @@ class AdvancedController extends BaseClientController
         return $c->delete_digital_wellbeing($id);
     }
 
-    public function email()
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->email();
-    }
-
-    public function delete_email($id)
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_email($id);
-    }
-
     public function health_data()
     {
         $c = new ForensicsUserController();
@@ -1309,19 +1231,7 @@ class AdvancedController extends BaseClientController
         return $c->delete_health_data($id);
     }
 
-    public function keyboard_input()
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->keyboard_input();
-    }
 
-    public function delete_keyboard_input($id)
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_keyboard_input($id);
-    }
 
     public function keyguard()
     {

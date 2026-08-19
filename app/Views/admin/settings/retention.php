@@ -109,29 +109,54 @@
                                     <table class="table table-bordered table-sm mb-0">
                                         <thead class="bg-light">
                                             <tr>
-                                                <th style="width: 200px;">Category</th>
-                                                <th class="text-center" style="width: 100px;">Total Records</th>
-                                                <th class="text-center" style="width: 150px;">Retention (Days)</th>
-                                                <th class="text-center" style="width: 100px;">Auto Purge</th>
+                                                <th style="width: 280px;">Datapoint Category</th>
+                                                <th class="text-center" style="width: 130px;">Total Records</th>
+                                                <th class="text-center" style="width: 160px;">Retention (Days)</th>
+                                                <th class="text-center" style="width: 120px;">Auto Purge</th>
                                                 <th class="text-center" style="width: 100px;">Purge?</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <?php
+                                                $categoryMeta = [
+                                                    'apps'                  => ['icon' => 'fas fa-cubes text-primary', 'name' => 'Installed Apps'],
+                                                    'calls'                 => ['icon' => 'fas fa-phone-alt text-success', 'name' => 'Call Logs'],
+                                                    'sms'                   => ['icon' => 'fas fa-sms text-info', 'name' => 'SMS Messages'],
+                                                    'contacts'              => ['icon' => 'fas fa-address-book text-warning', 'name' => 'Contacts'],
+                                                    'files'                 => ['icon' => 'fas fa-folder-open text-danger', 'name' => 'Files & Media'],
+                                                    'location_activities'   => ['icon' => 'fas fa-map-marked-alt text-purple', 'name' => 'Location & Activities'],
+                                                    'misc_hardware_software'=> ['icon' => 'fas fa-microchip text-secondary', 'name' => 'Hardware & Software Misc'],
+                                                    'app_usage'             => ['icon' => 'fas fa-chart-pie text-indigo', 'name' => 'App Usage Stats'],
+                                                    'app_notifications'     => ['icon' => 'fas fa-bell text-dark', 'name' => 'App Notifications'],
+                                                ];
+                                            ?>
                                             <?php foreach ($stats as $label => $stat): ?>
+                                                <?php 
+                                                    $meta = $categoryMeta[$label] ?? ['icon' => 'fas fa-database text-muted', 'name' => ucfirst(str_replace('_', ' ', $label))];
+                                                ?>
                                                 <tr>
-                                                    <td class="bg-light"><strong><?= $label ?></strong></td>
-                                                    <td class="text-center"><?= number_format($stat['total']) ?></td>
-                                                    <td class="text-center">
-                                                        <input type="number" form="configForm" name="retention_<?= $label ?>_days" class="form-control form-control-sm" value="<?= $stat['retention_days'] ?>" min="0" style="width: 80px;">
+                                                    <td class="bg-white">
+                                                        <i class="<?= $meta['icon'] ?> mr-2 fa-lg"></i>
+                                                        <strong class="text-dark"><?= $meta['name'] ?></strong>
+                                                        <small class="text-muted d-block font-mono" style="font-size:11px;"><?= $label ?></small>
                                                     </td>
-                                                    <td class="text-center">
+                                                    <td class="text-center align-middle font-weight-bold"><?= number_format($stat['total']) ?></td>
+                                                    <td class="text-center align-middle">
+                                                        <div class="input-group input-group-sm mx-auto" style="max-width: 120px;">
+                                                            <input type="number" form="configForm" name="retention_<?= $label ?>_days" class="form-control text-center font-weight-bold" value="<?= $stat['retention_days'] ?>" min="0">
+                                                            <div class="input-group-append">
+                                                                <span class="input-group-text">days</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center align-middle">
                                                         <div class="custom-control custom-switch">
                                                             <input type="hidden" form="configForm" name="retention_<?= $label ?>_enabled" value="0">
                                                             <input type="checkbox" form="configForm" class="custom-control-input" id="ret_<?= $label ?>_enabled" name="retention_<?= $label ?>_enabled" value="1" <?= $stat['enabled'] ? 'checked' : '' ?>>
                                                             <label class="custom-control-label" for="ret_<?= $label ?>_enabled"></label>
                                                         </div>
                                                     </td>
-                                                    <td class="text-center">
+                                                    <td class="text-center align-middle">
                                                         <div class="custom-control custom-checkbox">
                                                             <input type="checkbox" form="purgeForm" class="custom-control-input" id="ret_<?= $label ?>_purge" name="categories[]" value="<?= $label ?>">
                                                             <label class="custom-control-label" for="ret_<?= $label ?>_purge"></label>
@@ -156,26 +181,67 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-12">
-                    <div class="card card-outline card-danger">
+                    <div class="card card-outline card-danger shadow">
                         <div class="card-header bg-danger">
-                            <h3 class="card-title mb-0 text-white">
+                            <h3 class="card-title mb-0 text-white font-weight-bold">
                                 <i class="fas fa-bomb mr-2"></i>Danger Zone — Factory Reset
                             </h3>
                         </div>
                         <div class="card-body">
-                            <p class="mb-2"><strong>Factory reset returns the platform to a fresh install state.</strong> This will:</p>
-                            <ul class="mb-3">
-                                <li>Keep <strong>all user accounts</strong> intact — users retain their logins, but their accounts become <strong>completely empty</strong>.</li>
-                                <li>Permanently delete <strong>all of every user's data</strong>: SMS, calls, contacts, locations, media, activity, app usage, uploads, captured media, exports, reports, backups and billing/subscription records.</li>
-                                <li>Reset every data table to defaults and clear the cache/temporary files.</li>
-                                <li>Keep system configuration (settings, cron jobs, subscription plans).</li>
-                            </ul>
-                            <p class="mb-2 text-danger"><strong>This action is IRREVERSIBLE.</strong> It is recommended to create a database backup first.</p>
                             <form method="post" action="<?= base_url('admin/settings/retention/reset') ?>" id="factoryResetForm">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="confirm" id="factoryResetConfirm" value="">
-                                <button type="button" class="btn btn-danger btn-sm" id="factoryResetBtn">
-                                    <i class="fas fa-bomb mr-1"></i> Wipe Everything & Reset
+
+                                <div class="row mb-3">
+                                    <div class="col-md-7">
+                                        <label class="font-weight-bold"><i class="fas fa-list-ul mr-1"></i> Reset Mode</label>
+                                        <div class="custom-control custom-radio mb-2">
+                                            <input type="radio" class="custom-control-input" id="mode_soft" name="reset_mode" value="soft" checked>
+                                            <label class="custom-control-label" for="mode_soft">
+                                                <strong>Option A: Soft Data Wipe (Default)</strong><br>
+                                                <small class="text-muted">Keep user accounts & system configs intact. Wipe extracted device data (SMS, calls, locations, media, app stats).</small>
+                                            </label>
+                                        </div>
+                                        <div class="custom-control custom-radio mb-2">
+                                            <input type="radio" class="custom-control-input" id="mode_hard" name="reset_mode" value="hard">
+                                            <label class="custom-control-label" for="mode_hard">
+                                                <strong>Option B: Full Hard Wipe</strong><br>
+                                                <small class="text-muted">Delete everything including non-admin user accounts, device pairings, and extracted data.</small>
+                                            </label>
+                                        </div>
+                                        <div class="custom-control custom-radio mb-2">
+                                            <input type="radio" class="custom-control-input" id="mode_logs" name="reset_mode" value="logs_only">
+                                            <label class="custom-control-label" for="mode_logs">
+                                                <strong>Option C: Logs & Temp Files Only</strong><br>
+                                                <small class="text-muted">Wipe cache, reports, exports, and debug logs while leaving user accounts & device data intact.</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5 border-left">
+                                        <div class="form-group mb-3">
+                                            <label class="font-weight-bold"><i class="fas fa-shield-alt mr-1"></i> Safety Net & Security</label>
+                                            <div class="custom-control custom-checkbox mb-3">
+                                                <input type="checkbox" class="custom-control-input" id="auto_backup" name="auto_backup" value="1" checked>
+                                                <label class="custom-control-label font-weight-bold" for="auto_backup">
+                                                    <i class="fas fa-database text-success mr-1"></i> Auto-Backup Before Reset
+                                                </label>
+                                                <br><small class="text-muted">Generates a compressed database backup before running the wipe operation.</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="admin_password" class="font-weight-bold text-danger"><i class="fas fa-key mr-1"></i> Confirm Admin Password</label>
+                                            <input type="password" name="admin_password" id="admin_password" class="form-control" placeholder="Enter your login password" required>
+                                            <small class="text-muted">Required to verify superadmin authorization.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-warning py-2 small mb-3">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i> <strong>Important:</strong> An immediate alert notification will be sent to <strong>all registered users</strong> notifying them of this system reset.
+                                </div>
+
+                                <button type="button" class="btn btn-danger btn-block font-weight-bold py-2" id="factoryResetBtn">
+                                    <i class="fas fa-bomb mr-1"></i> Wipe & Reset System
                                 </button>
                             </form>
                         </div>
@@ -212,10 +278,26 @@ $(function() {
 
     // Proper confirmation popup for the factory reset.
     $('#factoryResetBtn').on('click', function(e) {
+        var pwd = $('#admin_password').val();
+        if (!pwd) {
+            Swal.fire({
+                title: 'Password Required',
+                text: 'Please enter your admin account password in the field provided to authorize this reset.',
+                icon: 'error'
+            });
+            $('#admin_password').focus();
+            return false;
+        }
+
+        var mode = $('input[name="reset_mode"]:checked').val();
+        var modeDesc = 'Soft Data Wipe (Extracted data & media)';
+        if (mode === 'hard') modeDesc = 'FULL HARD WIPE (User accounts & all data)';
+        if (mode === 'logs_only') modeDesc = 'Logs & Temp Files Only';
+
         Swal.fire({
-            title: 'Factory Reset',
-            html: 'This will <strong>PERMANENTLY DELETE all data</strong> for <strong>every user</strong> — SMS, calls, contacts, locations, media, app usage, uploaded files, reports, backups and billing records.<br><br>' +
-                  '<strong>User accounts are retained</strong> (everyone keeps their login), but become completely empty.<br><br>' +
+            title: 'System Factory Reset',
+            html: 'Selected Mode: <strong>' + modeDesc + '</strong><br><br>' +
+                  'This action is <strong>IRREVERSIBLE</strong>. An email notification will be dispatched to <strong>all registered users</strong>.<br><br>' +
                   'Type <strong>RESET</strong> in the box below to confirm.',
             icon: 'warning',
             input: 'text',
@@ -226,7 +308,7 @@ $(function() {
             },
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
-            confirmButtonText: 'Yes, wipe everything',
+            confirmButtonText: 'Yes, execute reset',
             cancelButtonText: 'Cancel',
             reverseButtons: true,
             inputValidator: function(value) {

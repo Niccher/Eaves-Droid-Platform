@@ -45,9 +45,69 @@ class SubscriptionModel extends Model
 
     public function getPlanLimits(int $userId): array
     {
+        // Check if user is admin or superadmin to grant full unlimited access
+        if (function_exists('auth') && auth()->loggedIn() && (int)auth()->id() === $userId) {
+            $user = auth()->user();
+            if ($user && ($user->inGroup('admin') || $user->inGroup('superadmin'))) {
+                return $this->getAdminLimits();
+            }
+        } else {
+            // Out of context (e.g. CLI/Background worker checking user id)
+            $usersModel = model(\CodeIgniter\Shield\Models\UserModel::class);
+            if ($usersModel) {
+                $user = $usersModel->find($userId);
+                if ($user && ($user->inGroup('admin') || $user->inGroup('superadmin'))) {
+                    return $this->getAdminLimits();
+                }
+            }
+        }
+
         $plan = $this->getActivePlan($userId);
         if (!$plan) return $this->getFreeLimits();
         return $plan;
+    }
+
+    public function getAdminLimits(): array
+    {
+        return [
+            'plan' => 'platinum',
+            'max_devices' => 9999,
+            'history_days' => 3650,
+            'hardware_profile' => 'all',
+            'software_profile' => 'all',
+            'features' => [
+                'risk_score'           => true,
+                'geofencing'           => true,
+                'push_notifications'   => true,
+                'forensic_export'      => true,
+                'wellbeing'            => true,
+                'wellbeing_summary_days' => 3650,
+                'smart_timeline'       => true,
+                'correlation'          => true,
+                'care_plan'            => true,
+                'fcm_fetch_contacts'   => true,
+                'fcm_cmd_beep'         => true,
+                'fcm_cmd_health'       => true,
+                'fcm_fetch_apps'       => true,
+                'fcm_fetch_calls'      => true,
+                'fcm_fetch_sms'        => true,
+                'fcm_fetch_location'   => true,
+                'fcm_fetch_usage'      => true,
+                'fcm_cmd_camera'       => true,
+                'fcm_cmd_audio'        => true,
+                'fcm_fetch_files'      => true,
+                'fcm_fetch_soft_misc'  => true,
+                'fcm_fetch_hard_misc'  => true,
+                'fcm_fetch_all'        => true,
+                'fcm_cmd_reset_app'    => true,
+                'fcm_cmd_deactivate'   => true,
+                'fcm_cmd_logout'       => true,
+                'fcm_cmd_uninstall_preserve' => true,
+                'fcm_cmd_uninstall_wipe'     => true,
+                'fcm_file_management'  => true,
+            ],
+            'ml_algorithms' => ['core', 'advanced', 'deep'],
+        ];
     }
 
     public function getFreeLimits(): array
@@ -108,7 +168,14 @@ class SubscriptionModel extends Model
     public function hasFeature(int $userId, string $feature): bool
     {
         $limits = $this->getPlanLimits($userId);
-        return ($limits['features'][$feature] ?? false) === true;
+        $val = $limits['features'][$feature] ?? false;
+        if ($val === true) {
+            return true;
+        }
+        if ($feature === 'wellbeing' && isset($limits['features']['wellbeing_summary_days']) && (int)$limits['features']['wellbeing_summary_days'] > 0) {
+            return true;
+        }
+        return false;
     }
 
     public function getAllowedAlgorithms(int $userId): array

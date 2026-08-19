@@ -208,29 +208,6 @@ class ForensicsSystemController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    /** GET /advanced/processes */
-    public function processes()
-    {
-        $data = array_merge($this->commonData('processes', 'Running Processes'), [
-            'rows' => $this->finderModel->get_processes($this->userId),
-            'total' => $this->finderModel->get_count_Processes($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/processes', $data);
-    }
-
-    /** POST /advanced/processes/delete/(:num) */
-    public function delete_processes($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_processes_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
-
     /** GET /advanced/proc_info */
     public function proc_info()
     {
@@ -251,29 +228,6 @@ class ForensicsSystemController extends BaseClientController
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
         }
         if ($this->finderModel->delete_proc_info_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
-
-    /** GET /advanced/software/running_processes */
-    public function running_processes()
-    {
-        $data = array_merge($this->commonData('running_processes', 'Running Processes'), [
-            'rows' => $this->finderModel->get_running_processes_detailed($this->userId),
-            'total' => $this->finderModel->get_count_RunningProcessesDetailed($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/running_processes', $data);
-    }
-
-    /** POST /advanced/software/running_processes/delete/(:num) */
-    public function delete_running_processes($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_running_processes_detailed_row((int) $id, $this->userId)) {
             return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
         }
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
@@ -416,27 +370,7 @@ class ForensicsSystemController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    /** GET /advanced/hardware/power_rails */
-    public function power_rails()
-    {
-        $data = array_merge($this->commonData('power_rails', 'Power Rails'), [
-            'rows' => $this->finderModel->get_power_rails($this->userId),
-            'total' => $this->finderModel->get_count_PowerRails($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/power_rails', $data);
-    }
 
-    public function delete_power_rails($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_power_rails_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
 
     /** GET /advanced/hardware/usb_devices */
     public function usb_devices()

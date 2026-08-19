@@ -1,4 +1,16 @@
     <body class="hold-transition sidebar-mini layout-fixed">
+    <?php if (session()->get('impersonated_by') !== null): ?>
+    <div class="alert alert-warning mb-0 text-center" style="border-radius:0; margin-bottom:0 !important;">
+        <i class="fas fa-exclamation-triangle mr-1"></i>
+        You are acting as <strong><?php echo htmlspecialchars(session()->get('impersonated_username') ?? 'User'); ?></strong>
+        <form action="<?php echo base_url('superadmin/impersonate/stop'); ?>" method="post" class="d-inline">
+            <?php echo csrf_field(); ?>
+            <button type="submit" class="btn btn-sm btn-danger ml-2">
+                <i class="fas fa-sign-out-alt mr-1"></i>Exit Impersonation
+            </button>
+        </form>
+    </div>
+    <?php endif; ?>
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light">

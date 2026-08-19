@@ -7,24 +7,17 @@ use Config\Database;
 class ForensicExportService
 {
     private const DATA_TYPES = [
-        'sms' => ['table' => 'tbl_extracted_sms', 'date_col' => 'created_at', 'label' => 'SMS'],
-        'calls' => ['table' => 'tbl_extracted_call_logs', 'date_col' => 'created_at', 'label' => 'Call Logs'],
-        'contacts' => ['table' => 'tbl_extracted_contacts', 'date_col' => 'created_at', 'label' => 'Contacts'],
-        'apps' => ['table' => 'tbl_extracted_installed_apps', 'date_col' => 'created_at', 'label' => 'Apps'],
-        'files' => ['table' => 'tbl_extracted_device_files', 'date_col' => 'created_at', 'label' => 'Files'],
-        'locations' => ['table' => 'tbl_extracted_locations', 'date_col' => 'created_at', 'label' => 'Locations'],
-        'activities' => ['table' => 'tbl_extracted_activities', 'date_col' => 'created_at', 'label' => 'Activities'],
-        'accounts' => ['table' => 'tbl_accounts', 'date_col' => 'created_at', 'label' => 'Accounts'],
-        'network' => ['table' => 'tbl_system_network_info', 'date_col' => 'created_at', 'label' => 'Network Info'],
-        'device_context' => ['table' => 'tbl_device_hardware_contexts', 'date_col' => 'created_at', 'label' => 'Device Context'],
-        'bluetooth' => ['table' => 'tbl_telemetry_bluetooth_devices', 'date_col' => 'created_at', 'label' => 'Bluetooth'],
-        'sensors' => ['table' => 'tbl_telemetry_sensors', 'date_col' => 'created_at', 'label' => 'Sensors'],
-        'security_audit' => ['table' => 'tbl_security_audit', 'date_col' => 'created_at', 'label' => 'Security Audit'],
-        'notifications' => ['table' => 'tbl_extracted_notifications', 'date_col' => 'created_at', 'label' => 'Notifications'],
-        'calendar' => ['table' => 'tbl_extracted_calendar_events', 'date_col' => 'created_at', 'label' => 'Calendar'],
-        'app_usage' => ['table' => 'tbl_system_app_usage', 'date_col' => 'created_at', 'label' => 'App Usage'],
-        'media' => ['table' => 'tbl_extracted_media_files', 'date_col' => 'created_at', 'label' => 'Media'],
-        'sim' => ['table' => 'tbl_sim_configs', 'date_col' => 'created_at', 'label' => 'SIM Configs'],
+        'sms'               => ['table' => 'tbl_extracted_sms',             'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'SMS Messages'],
+        'calls'             => ['table' => 'tbl_extracted_call_logs',       'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'Call Logs'],
+        'contacts'          => ['table' => 'tbl_extracted_contacts',        'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'Contacts'],
+        'files'             => ['table' => 'tbl_extracted_device_files',    'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'Device Files'],
+        'locations'         => ['table' => 'tbl_extracted_locations',       'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'Location & Activity'],
+        'remote_data'       => ['table' => 'tbl_uploaded_files',            'date_col' => 'uploaded_at', 'owner_col' => 'token_owner_id', 'label' => 'Remote Data (Captured Files)'],
+        'misc_hardware'     => ['table' => 'tbl_device_hardware_contexts',  'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'Misc Hardware'],
+        'misc_software'     => ['table' => 'tbl_system_app_security',       'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'Misc Software'],
+        'apps'              => ['table' => 'tbl_extracted_installed_apps', 'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'Installed Apps'],
+        'app_usage'         => ['table' => 'tbl_system_app_usage',          'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'App Usage'],
+        'app_notifications'  => ['table' => 'tbl_extracted_notifications',  'date_col' => 'created_at',  'owner_col' => 'owner_id',       'label' => 'App Notifications'],
     ];
 
     /**
@@ -76,12 +69,32 @@ class ForensicExportService
 
             $info = self::DATA_TYPES[$cat];
             $table = $info['table'];
-            $dateCol = $info['date_col'];
+            $ownerCol = $info['owner_col'] ?? 'owner_id';
 
-            $query = $db->table($table)
-                ->where($dateCol . ' >=', $dateFrom)
-                ->where($dateCol . ' <=', $dateTo)
-                ->where('owner_id', $userId);
+            if (!$db->tableExists($table)) {
+                continue;
+            }
+
+            $fields = $db->getFieldNames($table);
+            $dateCol = $info['date_col'];
+            if (!in_array($dateCol, $fields, true)) {
+                if (in_array('created_at', $fields, true)) {
+                    $dateCol = 'created_at';
+                } elseif (in_array('uploaded_at', $fields, true)) {
+                    $dateCol = 'uploaded_at';
+                } elseif (in_array('updated_at', $fields, true)) {
+                    $dateCol = 'updated_at';
+                } else {
+                    $dateCol = null;
+                }
+            }
+
+            $query = $db->table($table)->where($ownerCol, $userId);
+
+            if ($dateCol) {
+                $query->where($dateCol . ' >=', $dateFrom . ' 00:00:00')
+                      ->where($dateCol . ' <=', $dateTo . ' 23:59:59');
+            }
 
             $count = $query->countAllResults(false);
             $rows = $query->get()->getResultArray();
