@@ -372,32 +372,18 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="<?php echo base_url('analysis/behavioral-anomalies'); ?>"
-                                       class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'behavioral') ? 'active' : ''; ?>">
-                                        <i class="fas fa-brain nav-icon"></i>
-                                        <p>Behavioral Analysis</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('analysis/correlation-engine'); ?>"
-                                       class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'correlation_engine') ? 'active' : ''; ?>">
-                                        <i class="fas fa-project-diagram nav-icon"></i>
-<p>Correlation Engine</p>
+                                        <a href="<?php echo base_url('analysis/behavioral-anomalies'); ?>"
+                                        class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'behavioral') ? 'active' : ''; ?>">
+                                         <i class="fas fa-brain nav-icon"></i>
+                                         <p>Behavioral Analysis</p>
                                      </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('analysis/care-plan'); ?>"
-                                       class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'risk_care_plan') ? 'active' : ''; ?>">
-                                        <i class="fas fa-shield-alt nav-icon"></i>
-<p>Care Plan</p>
-                                     </a>
-                                </li>
-                            </ul>
-                        </li>
+                                 </li>
+                             </ul>
+                         </li>
 
                         <!-- Account Section (Collapsible) -->
                         <?php 
-                            $account_pages = ['account_profile', 'account_setting', 'account_devices', 'account_logs', 'billing'];
+                            $account_pages = ['account_profile', 'account_setting', 'account_devices', 'account_logs'];
                             $is_account_open = (isset($pag) && in_array($pag, $account_pages)) || (isset($sub_pag) && $sub_pag == 'blocklist');
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_account_open ? 'menu-open' : ''; ?>">
@@ -442,14 +428,6 @@
                                 </li>
 
                                 <li class="nav-item">
-                                    <a href="<?php echo base_url('billing'); ?>"
-                                       class="nav-link <?php echo (isset($pag) && $pag == 'billing') ? 'active' : ''; ?>">
-                                        <i class="fas fa-credit-card nav-icon"></i>
-                                        <p>Billing / Upgrade</p>
-                                    </a>
-                                </li>
-
-                                <li class="nav-item">
                                     <a href="<?php echo base_url('account/logs'); ?>"
                                        class="nav-link <?php echo (isset($pag) && $pag == 'account_logs') ? 'active' : ''; ?>">
                                         <i class="fas fa-history nav-icon"></i>
@@ -459,8 +437,16 @@
                             </ul>
                         </li>
 
-                        <!-- Help Section -->
-                        <li class="nav-header">HELP</li>
+                        <!-- Subscriptions & Help Section -->
+                        <li class="nav-header">SUBSCRIPTIONS &amp; HELP</li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('billing'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'billing') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-credit-card text-info"></i>
+                                <p>Billing / Upgrade</p>
+                            </a>
+                        </li>
 
                         <li class="nav-item">
                             <a href="<?php echo base_url('faqs'); ?>"

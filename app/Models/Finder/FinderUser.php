@@ -922,4 +922,109 @@ class FinderUser extends Model
             return 0;
         }
     }
+
+    public function get_app_bandwidth_usage(int $userId): array
+    {
+        try {
+            if (!$this->db->tableExists('tbl_data_usage')) {
+                return [];
+            }
+            $usage = $this->fq('tbl_data_usage', $userId)
+                ->select('package_name, is_wifi, SUM(rx_bytes) as total_rx, SUM(tx_bytes) as total_tx, SUM(total_bytes) as grand_total')
+                ->groupBy(['package_name', 'is_wifi'])
+                ->orderBy('grand_total', 'DESC')
+                ->limit(30)
+                ->get()
+                ->getResultArray();
+
+            $result = [];
+            foreach ($usage as $row) {
+                $pkg = $row['package_name'] ?: 'System / Kernel';
+                $rx = (float)($row['total_rx'] ?? 0);
+                $tx = (float)($row['total_tx'] ?? 0);
+                $total = (float)($row['grand_total'] ?? ($rx + $tx));
+                $exfiltrationRatio = $total > 0 ? round($tx / $total, 2) : 0;
+
+                $result[] = [
+                    'package_name' => $pkg,
+                    'is_wifi' => (bool)$row['is_wifi'],
+                    'rx_mb' => round($rx / 1048576, 2),
+                    'tx_mb' => round($tx / 1048576, 2),
+                    'total_mb' => round($total / 1048576, 2),
+                    'exfiltration_risk' => ($exfiltrationRatio > 0.8 && $total > 10485760) ? 'HIGH (Trojan Upload Risk)' : 'Normal',
+                ];
+            }
+            return $result;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_bandwidth_usage error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_app_crash_analytics(int $userId): array
+    {
+        try {
+            if (!$this->db->tableExists('tbl_system_crash_logs')) {
+                return [];
+            }
+            $crashes = $this->fq('tbl_system_crash_logs', $userId)
+                ->select('package_name, crash_type, exception_class, exception_message, COUNT(*) as crash_count')
+                ->groupBy(['package_name', 'crash_type'])
+                ->orderBy('crash_count', 'DESC')
+                ->limit(20)
+                ->get()
+                ->getResultArray();
+
+            $analytics = [];
+            foreach ($crashes as $c) {
+                $count = (int)$c['crash_count'];
+                $isANR = str_contains(strtolower($c['crash_type'] ?? ''), 'anr');
+                $instabilityScore = ($isANR ? 3 : 2) * $count;
+
+                $analytics[] = [
+                    'package_name' => $c['package_name'] ?: 'Unknown App',
+                    'crash_type' => $c['crash_type'] ?: 'Fatal Exception',
+                    'exception' => $c['exception_class'] ?: 'RuntimeError',
+                    'message' => $c['exception_message'] ?: 'Null pointer / memory fault',
+                    'count' => $count,
+                    'instability_score' => $instabilityScore,
+                    'status' => $instabilityScore > 6 ? 'Critical Instability' : 'Moderate',
+                ];
+            }
+            return $analytics;
+        } catch (\Exception $e) {
+            log_message('error', 'get_app_crash_analytics error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function get_unused_bloatware_apps(int $userId): array
+    {
+        try {
+            $apps = $this->fq('tbl_extracted_installed_apps', $userId)
+                ->select('package_name, app_name, first_install_time, last_update_time')
+                ->get()
+                ->getResultArray();
+
+            $cutoff30Days = (time() - (30 * 86400)) * 1000;
+            $bloatware = [];
+
+            foreach ($apps as $app) {
+                $installTime = (int)($app['first_install_time'] ?? 0);
+                if ($installTime > 0 && $installTime < $cutoff30Days) {
+                    $bloatware[] = [
+                        'app_name' => $app['app_name'] ?: $app['package_name'],
+                        'package_name' => $app['package_name'],
+                        'installed_days_ago' => max(30, (int)round((time() - ($installTime / 1000)) / 86400)),
+                        'usage_status' => 'Zero Foreground Usage (Bloatware)',
+                    ];
+                }
+            }
+            return array_slice($bloatware, 0, 15);
+        } catch (\Exception $e) {
+            log_message('error', 'get_unused_bloatware_apps error: ' . $e->getMessage());
+            return [];
+        }
+    }
 }
+

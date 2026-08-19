@@ -8,65 +8,77 @@
     </div>
     <?php endif; ?>
         <!-- Content Header -->
-        <section class="content-header">
+        <section class="content-header pt-3 pb-2">
             <div class="container-fluid">
-                <div class="row mb-4 align-items-center">
-                    <div class="col-lg-8 col-md-6">
-                        <div class="d-flex align-items-center">
-                            <h1 class="h2 mb-0">
-                                <i class="fas fa-microchip text-info mr-2"></i>
-                                AdvancedController Analysis Suite
-                            </h1>
-                            <div class="ml-3">
-                                <span class="badge badge-info border p-2">
-                                    <i class="fas fa-magic mr-1"></i> Data Intelligence
-                                </span>
-                            </div>
-                        </div>
-                        <p class="text-muted mt-2 mb-0">Deep vertical insights and predictive modeling across mobile data streams</p>
+                <div class="row align-items-center mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="h3 mb-0 text-dark font-weight-bold">
+                            <i class="fas fa-microchip text-info mr-2"></i> Cross-Stream Analysis Suite
+                        </h1>
+                        <p class="text-muted mb-0 small">Cross-vector correlation engine analyzing financial, spatial, social, and telemetry streams.</p>
                     </div>
-                    <div class="col-lg-4 col-md-6 text-right">
-                        <a class="btn btn-outline-info btn-sm" href="<?= base_url('analysis/refresh-ml') ?>"><i class="fas fa-sync-alt mr-1"></i> Refresh ML Analysis</a>
+                    <div class="col-sm-6 text-right">
+                        <a class="btn btn-info btn-sm shadow-sm" href="<?= base_url('analysis/refresh-ml') ?>">
+                            <i class="fas fa-sync-alt mr-1"></i> Refresh ML Models
+                        </a>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- Main content -->
-        <section class="content">
+        <section class="content mb-4">
             <?php if (isset($ml_insight_finance) && !empty($ml_insight_finance['insights'])): ?>
+            <?php $_eng = (new \App\Models\AnomaliesModel())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
             <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="card card-outline card-info shadow-sm">
-                            <div class="card-header">
-                                <?php $_eng = (new \App\Models\AnomaliesModel())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
-                        <h3 class="card-title"><i class="fas fa-brain mr-2"></i> <?= $_engLabel ?> Intelligence</h3>
+                <div class="card bg-secondary text-white shadow-sm border-0" style="border-radius: 8px;">
+                    <div class="card-header border-0 bg-transparent pt-4 px-4 pb-0 d-flex align-items-center justify-content-between flex-wrap">
+                        <div class="d-flex align-items-center mb-2 mb-md-0">
+                            <div class="rounded-circle p-3 mr-3 shadow" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+                                <i class="fas fa-brain fa-lg text-white"></i>
                             </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <span class="badge badge-info p-2"><?= $ml_insight_finance['algorithm'] ?></span>
-                                        <p class="text-muted mt-2 mb-0"><small><?= $ml_insight_finance['data_source'] ?></small></p>
-                                    </div>
-                                    <div class="col-md-8">
-                                        <p><?= $ml_insight_finance['description'] ?></p>
-                                        <ul class="mb-0">
-                                            <?php foreach ($ml_insight_finance['insights'] as $insight): ?>
-                                            <li><?= $insight ?></li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </div>
+                            <div>
+                                <h4 class="mb-0 font-weight-bold text-white"><?= $_engLabel ?> Cross-Stream Correlation &amp; Synthesis</h4>
+                                <small class="text-light opacity-75">Multi-vector analysis of spending, location paths, and social connections</small>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="badge badge-pill badge-info px-3 py-2 shadow-sm" style="font-size: 0.85rem;">
+                                <i class="fas fa-microchip mr-1"></i> <?= esc($ml_insight_finance['algorithm'] ?? 'PHP-ML Correlation') ?>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-lg-4 col-md-5 mb-3 mb-md-0 border-right-md border-secondary pr-md-4">
+                                <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <h6 class="text-info font-weight-bold mb-2"><i class="fas fa-database mr-2"></i> What Is Happening</h6>
+                                    <p class="mb-0 text-light opacity-90" style="font-size: 0.9rem; line-height: 1.5;">
+                                        <?= esc($ml_insight_finance['description'] ?? 'Correlates mobile wallet transactions, location clusters, and communication frequency to detect behavioral anomalies.') ?>
+                                    </p>
                                 </div>
+                            </div>
+                            <div class="col-lg-8 col-md-7 pl-md-4">
+                                <h6 class="text-warning font-weight-bold mb-2"><i class="fas fa-lightbulb mr-2"></i> Key Intelligence Findings</h6>
+                                <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                                    <?php foreach ($ml_insight_finance['insights'] as $insight): ?>
+                                    <li class="mb-2 d-flex align-items-start">
+                                        <i class="fas fa-check-circle text-success mt-1 mr-2"></i>
+                                        <span><?= $insight ?></span>
+                                    </li>
+                                    <?php endforeach; ?>
+                                </ul>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            </section>
             <?php endif; ?>
-            <div class="container-fluid">
-                
-                <!-- AdvancedController Features Grid -->
+
+            <section class="content">
+                <div class="container-fluid">
+                    <!-- AdvancedController Features Grid -->
                 <div class="row">
                     <!-- Financial Intelligence -->
                     <div class="col-md-6">

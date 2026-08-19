@@ -1,42 +1,62 @@
 <div class="content-wrapper">
-    <section class="content-header">
+    <!-- Content Header -->
+    <section class="content-header pt-3 pb-2">
         <div class="container-fluid">
-            <div class="row mb-2">
+            <div class="row align-items-center mb-2">
                 <div class="col-sm-6">
-                    <h1><i class="fas fa-user-shield text-danger mr-2"></i> Privacy & Permission Audit</h1>
+                    <h1 class="h3 mb-0 text-dark font-weight-bold">
+                        <i class="fas fa-user-shield text-danger mr-2"></i> Privacy &amp; Surveillance Audit
+                    </h1>
+                    <p class="text-muted mb-0 small">Surveillance detection across background sensors, clipboard reads, and accessibility services.</p>
                 </div>
                 <div class="col-sm-6 text-right">
-                    <a class="btn btn-outline-info btn-sm" href="<?= base_url('analysis') ?>"><i class="fas fa-arrow-left mr-1"></i> Back to Analysis</a>
+                    <a class="btn btn-outline-secondary btn-sm shadow-sm" href="<?= base_url('analysis') ?>"><i class="fas fa-arrow-left mr-1"></i> Back to Analysis</a>
                 </div>
             </div>
         </div>
     </section>
 
 <?php if (isset($ml_insight) && !empty($ml_insight['insights'])): ?>
-<section class="content">
+<?php $_eng = (new \App\Models\AnomaliesModel())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
+<section class="content mb-4">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card card-outline card-info shadow-sm">
-                    <div class="card-header">
-                        <?php $_eng = (new \App\Models\AnomaliesModel())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>
-                        <h3 class="card-title"><i class="fas fa-brain mr-2"></i> <?= $_engLabel ?> Intelligence</h3>
+        <div class="card bg-secondary text-white shadow-sm border-0" style="border-radius: 8px;">
+            <div class="card-header border-0 bg-transparent pt-4 px-4 pb-0 d-flex align-items-center justify-content-between flex-wrap">
+                <div class="d-flex align-items-center mb-2 mb-md-0">
+                    <div class="rounded-circle p-3 mr-3 shadow" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);">
+                        <i class="fas fa-shield-alt fa-lg text-white"></i>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <span class="badge badge-info p-2"><?= $ml_insight['algorithm'] ?></span>
-                                <p class="text-muted mt-2 mb-0"><small><?= $ml_insight['data_source'] ?></small></p>
-                            </div>
-                            <div class="col-md-8">
-                                <p><?= $ml_insight['description'] ?></p>
-                                <ul class="mb-0">
-                                    <?php foreach ($ml_insight['insights'] as $insight): ?>
-                                    <li><?= $insight ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
+                    <div>
+                        <h4 class="mb-0 font-weight-bold text-white"><?= $_engLabel ?> Privacy Risk Assessment &amp; Threat Synthesis</h4>
+                        <small class="text-light opacity-75">Automated detection of silent camera/mic captures, clipboard snooping, &amp; keylogger services</small>
+                    </div>
+                </div>
+                <div>
+                    <span class="badge badge-pill badge-danger px-3 py-2 shadow-sm" style="font-size: 0.85rem;">
+                        <i class="fas fa-microchip mr-1"></i> Algorithm: <?= esc($ml_insight['algorithm'] ?? 'Permission Risk Scorer') ?>
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-4 col-md-5 mb-3 mb-md-0 border-right-md border-rose pr-md-4">
+                        <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                            <h6 class="text-rose font-weight-bold mb-2" style="color: #fb7185;"><i class="fas fa-database mr-2"></i> What Is Happening</h6>
+                            <p class="mb-0 text-light opacity-90" style="font-size: 0.9rem; line-height: 1.5;">
+                                <?= esc($ml_insight['description'] ?? 'Audits installed app permissions, detects background hardware capture while display is off, scans clipboard reads for credit cards/passwords, and flags sideloaded APK origins.') ?>
+                            </p>
                         </div>
+                    </div>
+                    <div class="col-lg-8 col-md-7 pl-md-4">
+                        <h6 class="text-warning font-weight-bold mb-2"><i class="fas fa-lightbulb mr-2"></i> Privacy Threat Audit Findings</h6>
+                        <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                            <?php foreach ($ml_insight['insights'] as $insight): ?>
+                            <li class="mb-2 d-flex align-items-start">
+                                <i class="fas fa-check-circle text-success mt-1 mr-2"></i>
+                                <span><?= $insight ?></span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -44,6 +64,7 @@
     </div>
 </section>
 <?php endif; ?>
+
 
 <?= view('analysis/anomaly_alert_card', ['anomaly_alerts' => $anomaly_alerts ?? []]) ?>
 
@@ -158,75 +179,154 @@
                         </div>
                         <?php endif; ?>
                     </div>
-                </div>
-            </div>
-            <!-- Scam SMS Audit Table -->
-            <div class="row mt-4">
-                <div class="col-md-12">
-                    <div class="card shadow-sm">
-                        <div class="card-header border-0 bg-light">
-                            <h3 class="card-title text-danger"><i class="fas fa-sms mr-2"></i> Scam & Phishing SMS Audit</h3>
+
+                    <!-- 🎙️ Silent Background Mic & Camera Access -->
+                    <div class="card card-outline card-danger shadow-sm mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-video-slash text-danger mr-2"></i> Silent Mic &amp; Camera Hardware Access (Screen-Off Surveillance)</h3>
                         </div>
                         <div class="card-body p-0">
-                            <div class="table-responsive p-3">
-                                <table id="scamSmsTable" class="table table-hover table-bordered table-valign-middle">
-                                    <thead>
+                            <table class="table table-sm table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Hardware Sensor</th>
+                                        <th>Application</th>
+                                        <th>Screen State</th>
+                                        <th>Timestamp</th>
+                                        <th>Threat Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($silent_captures)): ?>
+                                        <?php foreach ($silent_captures as $cap): ?>
                                         <tr>
-                                            <th>Sender Address</th>
-                                            <th>Message Snippet</th>
-                                            <th>Last Received</th>
-                                            <th>Flag</th>
+                                            <td><b><i class="fas fa-microphone text-danger mr-1"></i> <?= esc($cap['sensor']) ?></b></td>
+                                            <td><code><?= esc($cap['package_name']) ?></code></td>
+                                            <td><span class="badge badge-dark"><?= esc($cap['screen_state']) ?></span></td>
+                                            <td><?= $cap['timestamp'] ?></td>
+                                            <td><span class="badge badge-danger"><?= esc($cap['severity']) ?></span></td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (!empty($scams)): ?>
-                                            <?php foreach ($scams as $scam): ?>
-                                            <tr>
-                                                <td>
-                                                    <b><?= esc($scam['address']) ?></b>
-                                                </td>
-                                                <td>
-                                                    <span class="text-muted"><?= esc(substr($scam['body'], 0, 80)) ?>...</span>
-                                                </td>
-                                                <td>
-                                                    <?= date('M j, Y, g:i a', $scam['date'] / 1000) ?>
-                                                </td>
-                                                <td>
-                                                    <span class="badge badge-warning p-2"><i class="fas fa-exclamation-circle mr-1"></i> Suspicious</span>
-                                                </td>
-                                            </tr>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <tr>
-                                                <td colspan="4" class="text-center p-4">
-                                                    <i class="fas fa-shield-check text-success fa-2x mb-2"></i>
-                                                    <p>No suspicious scam or phishing SMS detected.</p>
-                                                </td>
-                                            </tr>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <?php if (isset($scam_pager)): ?>
-                            <div class="card-footer">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="entry-info">
-                                            Showing <?= (($scam_currentPage-1)*$scam_perPage+1) ?> to <?= min($scam_currentPage*$scam_perPage, $scam_total) ?> of <?= $scam_total ?> entries
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="float-right">
-                                            <?= $scam_pager ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr><td colspan="5" class="text-center text-muted py-3">No silent hardware accesses recorded during screen-off intervals.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+
+                    <!-- 📋 Clipboard Data Monitor -->
+                    <div class="card card-outline card-warning shadow-sm mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-clipboard-check text-warning mr-2"></i> Clipboard Sensitive Data Interception Monitor</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-striped table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Reading Package</th>
+                                        <th>Sensitive Data Classification</th>
+                                        <th>Masked Clip Content</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($clipboard_alerts)): ?>
+                                        <?php foreach ($clipboard_alerts as $clip): ?>
+                                        <tr>
+                                            <td><code><?= esc($clip['package_name']) ?></code></td>
+                                            <td>
+                                                <span class="badge badge-<?= str_contains($clip['clip_type'], 'PASSWORD') || str_contains($clip['clip_type'], 'CREDIT') ? 'danger' : 'warning' ?>">
+                                                    <?= esc($clip['clip_type']) ?>
+                                                </span>
+                                            </td>
+                                            <td><code><?= esc($clip['masked_text']) ?></code></td>
+                                            <td><?= $clip['created_at'] ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr><td colspan="4" class="text-center text-muted py-3">Zero clipboard sensitive text reads detected.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 📦 Sideloaded APK Store Origin & ♿ Accessibility Abuses -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card card-outline card-danger shadow-sm">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-box-open text-danger mr-2"></i> Sideloaded APK &amp; Untrusted Store Origin</h3>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm table-striped mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Application / Package</th>
+                                                <th>Installer Source</th>
+                                                <th>Risk</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (!empty($sideloaded_apps)): ?>
+                                                <?php foreach ($sideloaded_apps as $side): ?>
+                                                <tr>
+                                                    <td>
+                                                        <div><b><?= esc($side['app_name']) ?></b></div>
+                                                        <small class="text-muted"><code><?= esc($side['package_name']) ?></code></small>
+                                                    </td>
+                                                    <td><small><?= esc($side['installer_source']) ?></small></td>
+                                                    <td><span class="badge badge-danger"><?= esc($side['risk_level']) ?></span></td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <tr><td colspan="3" class="text-center text-muted py-3">100% of installed applications originate from verified official app stores.</td></tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card card-outline card-danger shadow-sm">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-universal-access text-danger mr-2"></i> Accessibility Service Abuse Audit</h3>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm table-striped mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Service ID</th>
+                                                <th>Package</th>
+                                                <th>Over-Privileged Capability</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (!empty($accessibility_abuses)): ?>
+                                                <?php foreach ($accessibility_abuses as $acc): ?>
+                                                <tr>
+                                                    <td><code><?= esc($acc['service_id']) ?></code></td>
+                                                    <td><code><?= esc($acc['package_name']) ?></code></td>
+                                                    <td><small class="text-danger"><b><?= esc($acc['capability']) ?></b></small></td>
+                                                    <td><span class="badge badge-warning"><?= esc($acc['status']) ?></span></td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <tr><td colspan="4" class="text-center text-muted py-3">Zero active accessibility service abuses or keylogger threats.</td></tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
         </div>
     </section>
 </div>

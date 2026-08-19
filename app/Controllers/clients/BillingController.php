@@ -69,13 +69,11 @@ class BillingController extends BaseClientController
 
         // Feature labels shared by the comparison table.
         $featureLabels = [
-            'geofencing'         => 'Geo-Fencing & LocationController Intelligence',
-            'risk_score'         => 'Anomaly Detection (Risk Scoring)',
-            'forensic_export'    => 'Forensic Export & ReportsController',
+            'geofencing'         => 'Geo-Fencing & Location Intelligence',
+            'risk_score'         => 'Anomaly Detection & Risk Scoring',
+            'forensic_export'    => 'Forensic Export & Reports',
             'push_notifications' => 'Real-time Push Alerts',
             'wellbeing'          => 'Digital Wellbeing Analytics',
-            'correlation'        => 'CorrelationController Engine',
-            'care_plan'          => 'Risk Score & Care PlansController',
             'smart_timeline'     => 'Unified Smart Timeline',
         ];
 

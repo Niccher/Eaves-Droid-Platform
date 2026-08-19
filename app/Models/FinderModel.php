@@ -376,6 +376,84 @@ class FinderModel extends Model
         return $this->comms()->get_sentiment_profile($userId);
     }
 
+    public function get_circadian_sleep_profile(int $userId): array
+    {
+        return $this->environment()->get_circadian_sleep_profile($userId);
+    }
+
+    public function get_daily_travel_distances(int $userId): array
+    {
+        return $this->environment()->get_daily_travel_distances($userId);
+    }
+
+    public function get_cell_tower_fallbacks(int $userId): array
+    {
+        return $this->environment()->get_cell_tower_fallbacks($userId);
+    }
+
+    public function get_geofence_events(int $userId): array
+    {
+        return $this->environment()->get_geofence_events($userId);
+    }
+
+    public function get_paired_bluetooth_colocation(int $userId): array
+    {
+        return $this->environment()->get_paired_bluetooth_colocation($userId);
+    }
+
+    public function get_cross_channel_contact_matrix(int $userId, string $contactNumber): array
+    {
+        return $this->comms()->get_cross_channel_contact_matrix($userId, $contactNumber);
+    }
+
+    public function get_contact_response_metrics(int $userId): array
+    {
+        return $this->comms()->get_contact_response_metrics($userId);
+    }
+
+    public function get_first_last_contact_timestamps(int $userId): array
+    {
+        return $this->comms()->get_first_last_contact_timestamps($userId);
+    }
+
+    public function get_app_bandwidth_usage(int $userId): array
+    {
+        return $this->userModel()->get_app_bandwidth_usage($userId);
+    }
+
+    public function get_app_crash_analytics(int $userId): array
+    {
+        return $this->userModel()->get_app_crash_analytics($userId);
+    }
+
+    public function get_unused_bloatware_apps(int $userId): array
+    {
+        return $this->userModel()->get_unused_bloatware_apps($userId);
+    }
+
+
+    public function get_clipboard_privacy_monitor(int $userId): array
+    {
+        return $this->environment()->get_clipboard_privacy_monitor($userId);
+    }
+
+    public function get_sideloaded_app_audit(int $userId): array
+    {
+        return $this->environment()->get_sideloaded_app_audit($userId);
+    }
+
+    public function get_accessibility_abuse_audit(int $userId): array
+    {
+        return $this->environment()->get_accessibility_abuse_audit($userId);
+    }
+
+    public function get_silent_hardware_captures(int $userId): array
+    {
+        return $this->environment()->get_silent_hardware_captures($userId);
+    }
+
+
+
     public function delete_call_log(int $id, int $userId): bool
     {
         return $this->comms()->delete_call_log($id, $userId);

@@ -218,9 +218,11 @@ class FilesController extends BaseClientController
 
     /**
      * Apply shared exclusion filters to a query on tbl_extracted_device_files:
-     *  - skip app-internal paths under /data/user/0/
-     *  - skip hidden files/dirs (name starts with '.', e.g. .nomedia, .database_uuid)
-     *  - skip 0-byte files (directories are kept)
+     *  - Exclude directories / folders (is_directory = 0)
+     *  - Exclude 0-byte files (size_bytes > 0)
+     *  - Exclude hidden files/dirs starting with '.' (.nomedia, .thumbnails, .cache)
+     *  - Exclude internal system/cache paths (/.thumbnails/, /.cache/, /Android/data/, /Android/obb/, /LOST.DIR/)
+     *  - Exclude temporary / junk file extensions (.tmp, .log, .bak, .swp, .part, .crdownload, Thumbs.db)
      *
      * @param \CodeIgniter\Database\BaseBuilder $query
      * @return \CodeIgniter\Database\BaseBuilder
@@ -228,12 +230,43 @@ class FilesController extends BaseClientController
     private function applyExclusionFilters($query)
     {
         $query->where('owner_id', $this->userId);
-        $query->where('path NOT LIKE', '/data/user/0/%');
+        
+        // 1. Exclude directories / folders and 0-byte empty files
+        $query->where('is_directory', 0);
+        $query->where('size_bytes >', 0);
+
+        // 2. Exclude hidden files starting with '.'
         $query->where('name NOT LIKE', '.%');
-        $query->groupStart()
-            ->where('size_bytes >', 0)
-            ->orWhere('is_directory', 1)
-            ->groupEnd();
+
+        // 3. Exclude hidden, cache, thumbnail, and system path patterns
+        $excludedPaths = [
+            '%/.thumbnails/%',
+            '%/.cache/%',
+            '%/.trashed-%',
+            '%/.nomedia/%',
+            '%/.telegram/%',
+            '%/.whatsapp/%',
+            '%/Android/data/%',
+            '%/Android/obb/%',
+            '%/LOST.DIR/%',
+            '/data/user/0/%',
+            '/sys/%',
+            '/proc/%',
+            '/dev/%'
+        ];
+
+        foreach ($excludedPaths as $p) {
+            $query->where('path NOT LIKE', $p);
+        }
+
+        // 4. Exclude system temp/junk files and logs
+        $junkExtensions = ['tmp', 'temp', 'bak', 'swp', 'log', 'chk', 'part', 'crdownload'];
+        foreach ($junkExtensions as $ext) {
+            $query->where('extension !=', $ext);
+            $query->where('extension !=', strtoupper($ext));
+        }
+
+        $query->whereNotIn('name', ['Thumbs.db', '.DS_Store', 'desktop.ini']);
 
         return $query;
     }

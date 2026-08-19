@@ -781,16 +781,6 @@ $routes->group('', [
         $routes->get('timeline', 'CorrelationController::intelligenceTimeline', ['as' => 'analysis-timeline']);
 
         /**
-         * CorrelationController Engine (Platinum).
-         */
-        $routes->get('correlation-engine', 'CorrelationController::correlationEngine', ['as' => 'analysis-correlation-engine']);
-
-        /**
-         * Risk Score & Care Plan.
-         */
-        $routes->get('care-plan', 'CorrelationController::riskCarePlan', ['as' => 'analysis-care-plan']);
-
-        /**
          * BlocklistController Management
          */
         $routes->get('blocklist', 'BlocklistController::index', ['as' => 'analysis-blocklist']);

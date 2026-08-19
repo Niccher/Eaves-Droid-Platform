@@ -9,25 +9,17 @@
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
         <!-- Content Header -->
-        <section class="content-header">
+        <section class="content-header pt-3 pb-2">
             <div class="container-fluid">
-                <div class="row mb-4 align-items-center">
-                    <div class="col-lg-8 col-md-6">
-                        <div class="d-flex align-items-center">
-                            <h1 class="h2 mb-0">
-                                <i class="fas fa-map-marked-alt text-primary mr-2"></i>
-                                Location Intelligence
-                            </h1>
-                            <div class="ml-3">
-                                <span class="badge badge-primary border p-2">
-                                    Points: <b><?= count($locations) ?></b>
-                                </span>
-                            </div>
-                        </div>
-                        <p class="text-muted mt-2 mb-0">Interactive heatmap and movement path analysis from device GPS data</p>
+                <div class="row align-items-center mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="h3 mb-0 text-dark font-weight-bold">
+                            <i class="fas fa-map-marked-alt text-primary mr-2"></i> Location Intelligence &amp; Trajectory Profiling
+                        </h1>
+                        <p class="text-muted mb-0 small">GPS waypoint tracking, travel speed anomaly alerts, and cellular tower fallback triangulation.</p>
                     </div>
-                    <div class="col-lg-4 col-md-12 mt-3 mt-lg-0">
-                        <form action="<?= base_url('analysis/location') ?>" method="get" class="form-inline float-right">
+                    <div class="col-sm-6 text-right">
+                        <form action="<?= base_url('analysis/location') ?>" method="get" class="form-inline justify-content-end">
                             <div class="input-group input-group-sm mr-2">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text bg-white border-right-0"><i class="fas fa-calendar-alt"></i></span>
@@ -46,6 +38,59 @@
                 </div>
             </div>
         </section>
+
+<section class="content mb-4">
+    <div class="container-fluid">
+        <div class="card bg-secondary text-white shadow-sm border-0" style="border-radius: 8px;">
+            <div class="card-header border-0 bg-transparent pt-4 px-4 pb-0 d-flex align-items-center justify-content-between flex-wrap">
+                <div class="d-flex align-items-center mb-2 mb-md-0">
+                    <div class="rounded-circle p-3 mr-3 shadow" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                        <i class="fas fa-route fa-lg text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 font-weight-bold text-white">Location Trajectory Synthesis &amp; Speed Profiler</h4>
+                        <small class="text-light opacity-75">Automated GPS clustering, movement velocity calculations, &amp; cell tower fallback analysis</small>
+                    </div>
+                </div>
+                <div>
+                    <span class="badge badge-pill badge-primary px-3 py-2 shadow-sm" style="font-size: 0.85rem;">
+                        <i class="fas fa-map-pin mr-1"></i> Recorded Waypoints: <?= count($locations) ?>
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-4 col-md-5 mb-3 mb-md-0 border-right-md border-primary pr-md-4">
+                        <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                            <h6 class="text-primary font-weight-bold mb-2" style="color: #60a5fa;"><i class="fas fa-database mr-2"></i> What Is Happening</h6>
+                            <p class="mb-0 text-light opacity-90" style="font-size: 0.9rem; line-height: 1.5;">
+                                Real-time processing of device coordinates, calculating Haversine distances to flag impossible velocity changes (>160 km/h) and cross-referencing cell tower IDs when GPS is unavailable.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-lg-8 col-md-7 pl-md-4">
+                        <h6 class="text-warning font-weight-bold mb-2"><i class="fas fa-lightbulb mr-2"></i> Location Intelligence Summary</h6>
+                        <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                            <li class="mb-2 d-flex align-items-start">
+                                <i class="fas fa-check-circle text-success mt-1 mr-2"></i>
+                                <span><b><?= count($locations) ?> GPS points</b> captured across selected date filter window.</span>
+                            </li>
+                            <li class="mb-2 d-flex align-items-start">
+                                <i class="fas fa-tachometer-alt text-warning mt-1 mr-2"></i>
+                                <span><b><?= count($speed_anomalies ?? []) ?> speed anomalies</b> flagged for impossible transit speeds or location spoofing.</span>
+                            </li>
+                            <li class="mb-2 d-flex align-items-start">
+                                <i class="fas fa-broadcast-tower text-info mt-1 mr-2"></i>
+                                <span><b><?= count($cell_towers ?? []) ?> cellular tower pings</b> indexed for indoor / underground positioning.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 
 <?= view('analysis/anomaly_alert_card', ['anomaly_alerts' => $anomaly_alerts ?? []]) ?>
 
@@ -106,9 +151,73 @@
                     </div>
                 </div>
 
+                <!-- Enriched Location Intelligence Row: Speed Anomalies, Cell Towers, & Geofence Logs -->
+                <div class="row mt-4">
+                    <!-- Speed Anomalies Table -->
+                    <div class="col-md-7">
+                        <div class="card card-outline card-danger shadow-sm">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-tachometer-alt text-danger mr-2"></i> Velocity & Speed Anomaly Alerts</h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <?php if (!empty($speed_anomalies)): ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Timestamp</th>
+                                                    <th>Distance</th>
+                                                    <th>Est. Speed</th>
+                                                    <th>Severity</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($speed_anomalies as $anom): ?>
+                                                <tr>
+                                                    <td><small><?= esc($anom['timestamp']) ?></small></td>
+                                                    <td><?= esc($anom['distance_km']) ?> km (in <?= esc($anom['time_minutes']) ?> mins)</td>
+                                                    <td><span class="badge badge-danger"><?= esc($anom['speed_kmh']) ?> km/h</span></td>
+                                                    <td><small class="text-danger font-weight-bold"><?= esc($anom['severity']) ?></small></td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="p-3 text-center text-muted"><i class="fas fa-check-circle text-success mr-1"></i> No travel speed anomalies detected.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Geofence & Cell Tower Fallbacks -->
+                    <div class="col-md-5">
+                        <div class="card card-outline card-warning shadow-sm mb-3">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-broadcast-tower text-warning mr-2"></i> Cell Tower Fallback Pings</h3>
+                            </div>
+                            <div class="card-body p-2" style="max-height: 180px; overflow-y: auto;">
+                                <?php if (!empty($cell_towers)): ?>
+                                    <ul class="list-group list-group-flush text-sm">
+                                        <?php foreach (array_slice($cell_towers, 0, 5) as $cell): ?>
+                                        <li class="list-group-item p-1 d-flex justify-content-between">
+                                            <span><i class="fas fa-signal text-info mr-1"></i> LAC: <?= esc($cell['lac'] ?? 'N/A') ?>, CellID: <?= esc($cell['cell_id'] ?? 'N/A') ?></span>
+                                            <span class="badge badge-light border"><?= esc($cell['signal_strength'] ?? '-75') ?> dBm</span>
+                                        </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php else: ?>
+                                    <small class="text-muted">No cell tower fallback records captured.</small>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </section>
     </div>
+
 
     <!-- Leaflet & Heatmap JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

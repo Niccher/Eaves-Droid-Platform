@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.0] - 2026-08-20 — Analysis Suites Feature-Gating & Clean File Management
+
+### Added
+- **Feature-Gating Strategy Across 11 Analysis Suites**: Enforced 3-tier access control matrix mapping **Free** (`storage`, `apps`, `lifestyle`), **Gold** (`social`, `privacy`, `subscriptions`, `sentiment`), and **Platinum** (`finance`, `location`, `hotspots`, `report`) via `PlanGate.php` filter.
+- **Feature Tiers Migration & Seeder**: Created migration `20260820000500_configure_analysis_page_tiers.php` and seeder `AnalysisTiersSeeder.php` registering 11 analysis routes in `tbl_feature_tiers`.
+- **Sentiment Profiler & Polarity Score Display**: Upgraded Sentiment Analysis view (`sentiment_analysis.php`) with contact names in bold, italicized muted phone numbers, polarity progress bars, numerical sentiment scores (e.g., `+0.75`, `88%`), Swahili/Sheng lexicons, and brand/bank shortcode filtering.
+- **Subscriptions Intelligence & Renewal Forecasting**: Added regex-based billing extraction for utilities (`KPLC`, `Zuku`, `DStv`, `GOtv`, `Showmax`, `Netflix`) with renewal date projections and formatted merchant icons.
+- **System Version v2.5.0 Migration**: Created migration `20260820005000_update_system_version_to_v2_5_0.php` updating `system_versions` and `db_versions` database tables.
+
+### Changed
+- **File Manager Exclusions & Censorship**: Overhauled `applyExclusionFilters()` in `FilesController.php` to exclude folder entries (`is_directory = 0`), 0-byte empty files (`size_bytes > 0`), hidden/thumbnail paths (`/.thumbnails/`, `/.cache/`, `/.trashed-*`, `/.nomedia/`, `/Android/data/`, `/Android/obb/`, `/LOST.DIR/`), and temp/junk extensions (`.tmp`, `.log`, `.bak`, `.swp`, `Thumbs.db`).
+- **Sidebar Menu Restructuring**: Moved `Billing / Upgrade` out of the collapsible Account Accordion to a top-level item directly above `FAQs` under `SUBSCRIPTIONS & HELP` in `sidebar_users.php`.
+- **Billing & Plan Comparison View**: Cleaned up feature labels on `/billing` to reflect active tier capabilities and simulated checkout workflows.
+
+### Removed
+- **Obsolete Correlation Engine & Care Plan Modules**: Completely deleted `/analysis/care-plan` and `/analysis/correlation-engine` routes, controller methods, view templates, and sidebar links per user request.
+
+---
+
 ## [2.4.0] - 2026-08-19 — Enterprise Telemetry & Real-Time Forensic Suite
 
 ### Added

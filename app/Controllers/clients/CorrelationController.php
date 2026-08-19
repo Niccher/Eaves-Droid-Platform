@@ -246,6 +246,11 @@ class CorrelationController extends BaseClientController
         } else {
             $data['locations'] = $this->finderModel->get_location_history($this->userId);
         }
+        
+        // Enriched Location Datasets
+        $data['cell_towers'] = $this->finderModel->get_cell_tower_fallbacks($this->userId);
+        $data['speed_anomalies'] = $this->correlationHelper->calculateSpeedAnomalies($data['locations']);
+        $data['geofence_events'] = $this->finderModel->get_geofence_events($this->userId);
         $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['locations']);
 
         return view('headers_footers/head_users')
@@ -290,6 +295,10 @@ class CorrelationController extends BaseClientController
         $data['perPage'] = $socialData['perPage'];
         $data['total'] = $socialData['total'];
         $data['ml_insight'] = $socialData['ml_insight'];
+        
+        // Enriched Social Metrics
+        $data['contact_response'] = $this->finderModel->get_contact_response_metrics($this->userId);
+        $data['relationship_age'] = $this->finderModel->get_first_last_contact_timestamps($this->userId);
         $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['contacts']);
 
         return view('headers_footers/head_users')
@@ -309,7 +318,18 @@ class CorrelationController extends BaseClientController
         $data['user_info'] = $this->finderModel->basic_user();
         $data['counts'] = $this->getUserDataCounts();
 
-        $reportData = $this->correlationHelper->getReportData($this->userId);
+        // Get selected section filter from POST / GET
+        $rawSections = $this->request->getPost('sections') ?? $this->request->getGet('sections') ?? [];
+        if (is_string($rawSections)) {
+            $rawSections = explode(',', $rawSections);
+        }
+        $selectedSections = array_filter(array_map('trim', (array)$rawSections));
+
+        $reportData = $this->correlationHelper->getReportData($this->userId, $selectedSections);
+
+        $data['sections_filter'] = $reportData['sections_filter'];
+        $data['executive_threat_score'] = $reportData['executive_threat_score'];
+        $data['chain_of_custody_hash'] = $reportData['chain_of_custody_hash'];
 
         $data['sms_analysis'] = $reportData['sms_analysis'];
         $data['call_analysis'] = $reportData['call_analysis'];
@@ -370,6 +390,8 @@ class CorrelationController extends BaseClientController
         $data = array_merge($data, $counts);
 
         $data['mobility'] = $this->finderModel->get_mobility_aggregates($this->userId);
+        $data['circadian'] = $this->finderModel->get_circadian_sleep_profile($this->userId);
+        $data['travel_dist'] = $this->finderModel->get_daily_travel_distances($this->userId);
         $data['ml_insight'] = MLAnalyzerModel::analyzeMobility($data['mobility']);
         $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['activity']);
         
@@ -378,6 +400,7 @@ class CorrelationController extends BaseClientController
             . view('users/correlation/lifestyle_analysis', $data)
             . view('headers_footers/footer_users');
     }
+
 
     /**
      * Universal Intelligence Timeline.
@@ -458,6 +481,12 @@ class CorrelationController extends BaseClientController
         $data['scam_perPage'] = $privacyData['scam_perPage'];
         $data['scam_total'] = $privacyData['scam_total'];
 
+        // Enriched Privacy Data Arrays
+        $data['clipboard_alerts'] = $privacyData['clipboard_alerts'];
+        $data['sideloaded_apps'] = $privacyData['sideloaded_apps'];
+        $data['accessibility_abuses'] = $privacyData['accessibility_abuses'];
+        $data['silent_captures'] = $privacyData['silent_captures'];
+
         $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['apps', 'device_info']);
 
         return view('headers_footers/head_users')
@@ -495,6 +524,10 @@ class CorrelationController extends BaseClientController
         $data = array_merge($data, $this->getUserDataCounts());
 
         $data['categories'] = $this->finderModel->get_app_category_dist($this->userId);
+        $data['bandwidth_usage'] = $this->finderModel->get_app_bandwidth_usage($this->userId);
+        $data['crash_analytics'] = $this->finderModel->get_app_crash_analytics($this->userId);
+        $data['bloatware_apps']  = $this->finderModel->get_unused_bloatware_apps($this->userId);
+
         $data['ml_insight'] = MLAnalyzerModel::analyzeApps($data['categories']);
         $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['apps']);
 
@@ -503,6 +536,7 @@ class CorrelationController extends BaseClientController
             . view('users/correlation/app_portfolio', $data)
             . view('headers_footers/footer_users');
     }
+
 
     /**
      * Media & Storage Intelligence.
@@ -572,8 +606,17 @@ class CorrelationController extends BaseClientController
 
         $hotspotsData = $this->correlationHelper->getGeoclusteringHotspotsData($this->userId);
 
-        $data['clusters'] = $hotspotsData['clusters'];
+        $clusters = $hotspotsData['clusters'];
+        foreach ($clusters as &$c) {
+            if (!empty($c['lat']) && !empty($c['lng'])) {
+                $c['address_label'] = $this->correlationHelper->reverseGeocodeCluster((float)$c['lat'], (float)$c['lng']);
+            }
+        }
+        unset($c);
+
+        $data['clusters'] = $clusters;
         $data['ml_insight'] = $hotspotsData['ml_insight'];
+        $data['bluetooth_colocation'] = $this->finderModel->get_paired_bluetooth_colocation($this->userId);
         $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['locations']);
 
         return view('headers_footers/head_users')
@@ -581,6 +624,7 @@ class CorrelationController extends BaseClientController
             . view('users/correlation/geospatial_hotspots', $data)
             . view('headers_footers/footer_users');
     }
+
 
     /**
      * Fetches anomaly alerts from the most recent completed ml_job
@@ -668,53 +712,6 @@ class CorrelationController extends BaseClientController
         $data['anomalies'] = $this->finderModel->get_behavioral_anomalies($this->userId);
 
         return $this->renderAppView('users/correlation/behavioral_anomalies', $data);
-    }
-
-    /**
-     * Cross-category CorrelationController Engine (Platinum).
-     */
-    public function correlationEngine()
-    {
-        $data['pag']       = 'intelligence';
-        $data['sub_pag']   = 'correlation_engine';
-        $data['user_info'] = $this->finderModel->basic_user();
-        $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
-
-        $engineData = $this->correlationHelper->getCorrelationEngineData($this->userId);
-
-        $data['graph'] = $engineData['graph'];
-        $data['graph_json'] = $engineData['graph_json'];
-        $data['top_links'] = $engineData['top_links'];
-        $data['clusters'] = $engineData['clusters'];
-
-        return $this->renderAppView('users/correlation/correlation_engine', $data);
-    }
-
-    /**
-     * Risk Score & Care Plan (Free/Gold/Platinum).
-     */
-    public function riskCarePlan()
-    {
-        $data['pag']       = 'intelligence';
-        $data['sub_pag']   = 'risk_care_plan';
-        $data['user_info'] = $this->finderModel->basic_user();
-        $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
-
-        $gate = new \App\Services\PlanGate();
-        $limits = $gate->limits($this->userId);
-        $data['plan'] = $limits['plan'] ?? 'free';
-        $data['is_platinum'] = ($data['plan'] === 'platinum');
-        $data['is_gold'] = ($data['plan'] === 'gold');
-
-        $carePlanService = new \App\Services\CarePlanService();
-        $risk = $carePlanService->current($this->userId);
-
-        $data['risk'] = $risk;
-        $data['trend'] = $risk ? $carePlanService->trend($this->userId, $risk['device_id'] ?? null) : [];
-        $data['percentile'] = $risk ? $carePlanService->percentile((int)$risk['score'], $this->userId) : null;
-        $data['actions'] = ($risk && $data['is_platinum']) ? $carePlanService->actionPlan($this->userId, $risk['device_id'] ?? null, $risk) : [];
-
-        return $this->renderAppView('users/correlation/risk_care_plan', $data);
     }
 
     /**

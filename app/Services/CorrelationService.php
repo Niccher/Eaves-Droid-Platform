@@ -43,6 +43,23 @@ class CorrelationService
 
         $nodes = [];
         $nodeIndex = [];
+        $edges = [];
+        $edgeSet = [];
+
+        // 1. Add Central Device / Owner Node
+        $deviceNodeId = 'me_device';
+        $nodes[] = [
+            'id' => $deviceNodeId,
+            'label' => 'Me (Primary Device)',
+            'number' => 'Device Hub',
+            'score' => 100,
+            'sms_count' => 0,
+            'call_count' => 0,
+            'shape' => 'star',
+            'color' => '#6366f1'
+        ];
+
+        // 2. Add Contact Nodes & Direct Links to Central Device Node
         foreach ($seeds as $i => $seed) {
             $nodeId = 'c' . $i;
             $nodeIndex[$seed['number']] = $nodeId;
@@ -54,11 +71,23 @@ class CorrelationService
                 'sms_count' => (int)$seed['sms'],
                 'call_count' => (int)$seed['calls'],
             ];
+
+            // Direct link from Me (Primary Device) to Contact Node
+            $directWeight = max(1, (int)($seed['sms'] * 1 + $seed['calls'] * 5));
+            $edges[] = [
+                'source' => $deviceNodeId,
+                'target' => $nodeId,
+                'weight' => $directWeight,
+                'sms' => (int)$seed['sms'],
+                'calls' => (int)$seed['calls'],
+                'cooccurrence' => 0,
+                'coactivity' => 0,
+                'app_usage' => 0,
+            ];
+            $edgeSet[$deviceNodeId . '-' . $nodeId] = true;
         }
 
-        $edges = [];
-        $edgeSet = [];
-
+        // 3. Add Inter-Contact Cross-Category Links
         $contactNumbers = array_keys($nodeIndex);
         $coLocationPairs = $this->getCoLocationPairs($userId, $contactNumbers, $limit);
         $coAppPairs = $this->getCoAppPairs($userId, $contactNumbers, $limit);
@@ -72,14 +101,11 @@ class CorrelationService
                 $numA = $seedA['number'];
                 $numB = $seedB['number'];
 
-                $smsWeight = 0;
-                $callWeight = 0;
+                $smsWeight = ($seedA['sms'] + $seedB['sms']) > 0 ? min($seedA['sms'], $seedB['sms']) : 0;
+                $callWeight = ($seedA['calls'] + $seedB['calls']) > 0 ? min($seedA['calls'], $seedB['calls']) : 0;
                 $cooccurrenceWeight = 0;
                 $coactivityWeight = 0;
                 $appWeight = 0;
-
-                $smsWeight = ($seedA['sms'] + $seedB['sms']) > 0 ? min($seedA['sms'], $seedB['sms']) : 0;
-                $callWeight = ($seedA['calls'] + $seedB['calls']) > 0 ? min($seedA['calls'], $seedB['calls']) : 0;
 
                 $pairKey = $numA . '|' . $numB;
                 if (isset($coLocationPairs[$pairKey])) {
@@ -91,9 +117,9 @@ class CorrelationService
 
                 $coactivityWeight = $this->getCoActivityScore($userId, $numA, $numB);
 
-                $totalWeight = $smsWeight * 1 + $callWeight * 5 + $cooccurrenceWeight * 3 + $coactivityWeight * 2 + $appWeight * 2;
+                $totalWeight = $smsWeight * 0.5 + $callWeight * 2 + $cooccurrenceWeight * 3 + $coactivityWeight * 2 + $appWeight * 2;
 
-                if ($totalWeight < $threshold) {
+                if ($totalWeight <= 0) {
                     continue;
                 }
 
@@ -106,7 +132,7 @@ class CorrelationService
                 $edges[] = [
                     'source' => $nodeIndex[$numA],
                     'target' => $nodeIndex[$numB],
-                    'weight' => (int)$totalWeight,
+                    'weight' => (int)ceil($totalWeight),
                     'sms' => (int)$smsWeight,
                     'calls' => (int)$callWeight,
                     'cooccurrence' => (int)$cooccurrenceWeight,
@@ -126,7 +152,7 @@ class CorrelationService
             'nodes' => $nodes,
             'edges' => $edges,
             'stats' => [
-                'total_contacts' => count($nodes),
+                'total_contacts' => count($nodes) - 1,
                 'total_edges' => count($edges),
             ],
         ];
@@ -165,7 +191,7 @@ class CorrelationService
         $clusters = [];
 
         foreach ($nodes as $n) {
-            if (isset($visited[$n['id']])) {
+            if ($n['id'] === 'me_device' || isset($visited[$n['id']])) {
                 continue;
             }
             $cluster = [];
@@ -176,9 +202,11 @@ class CorrelationService
                     continue;
                 }
                 $visited[$current] = true;
-                $cluster[] = $current;
+                if ($current !== 'me_device') {
+                    $cluster[] = $current;
+                }
                 foreach ($adjacency[$current] ?? [] as $neighbor) {
-                    if (!isset($visited[$neighbor])) {
+                    if ($neighbor !== 'me_device' && !isset($visited[$neighbor])) {
                         $queue[] = $neighbor;
                     }
                 }
@@ -209,90 +237,87 @@ class CorrelationService
 
     private function getSocialGraphSeeds(int $userId, int $limit): array
     {
-        // Aggregate communication volume per contact from SMS + call logs,
-        // and map numbers to contact display names where available.
-        $sms = $this->db->table('tbl_extracted_sms')
-            ->select('address, COUNT(*) as sms')
-            ->where('owner_id', $userId)
-            ->groupBy('address')
-            ->get()->getResultArray();
+        $finderModel = new \App\Models\FinderModel();
+        $socialGraph = $finderModel->get_social_graph($userId, $limit);
 
-        $calls = $this->db->table('tbl_extracted_call_logs')
-            ->select('phone_number, COUNT(*) as calls')
-            ->where('owner_id', $userId)
-            ->groupBy('phone_number')
-            ->get()->getResultArray();
-
-        $volumes = [];
-        foreach ($sms as $s) {
-            $num = (string)($s['address'] ?? '');
-            if ($num === '') continue;
-            $volumes[$num] = [
-                'number' => $num,
-                'name'   => $num,
-                'sms'    => (int)$s['sms'],
-                'calls'  => 0,
-            ];
-        }
-        foreach ($calls as $c) {
-            $num = (string)($c['phone_number'] ?? '');
-            if ($num === '') continue;
-            if (!isset($volumes[$num])) {
-                $volumes[$num] = ['number' => $num, 'name' => $num, 'sms' => 0, 'calls' => 0];
+        // Exclude corporate brand alerts or shortcodes
+        $isCorporateShortcode = function($address) {
+            $addr = strtolower(trim($address));
+            if (empty($addr)) return true;
+            $blacklist = ['mpesa', 'm-pesa', 'kcb', 'equity', 'coop', 'ncba', 'absa', 'safaricom', 'airtel', 'kplc', 'zuku', 'dstv', 'gotv', 'okoa', 'jahazi', 'betika'];
+            foreach ($blacklist as $word) {
+                if (strpos($addr, $word) !== false) return true;
             }
-            $volumes[$num]['calls'] = (int)$c['calls'];
-        }
+            return false;
+        };
 
-        if (empty($volumes)) {
-            return [];
-        }
-
-        // Resolve display names from the contacts table.
-        $numbers = array_keys($volumes);
-        $contacts = $this->db->table('tbl_extracted_contacts')
-            ->select('display_name, phone_numbers')
-            ->where('owner_id', $userId)
-            ->get()->getResultArray();
-
-        $nameByNumber = [];
-        foreach ($contacts as $ct) {
-            $nums = $ct['phone_numbers'] ?? '';
-            if (is_string($nums)) {
-                $decoded = json_decode($nums, true);
-                if (is_array($decoded)) {
-                    foreach ($decoded as $n) {
-                        if (is_string($n) && $n !== '') $nameByNumber[$n] = $ct['display_name'] ?? $n;
-                    }
-                }
-            } elseif (is_array($nums)) {
-                foreach ($nums as $n) {
-                    if (is_string($n) && $n !== '') $nameByNumber[$n] = $ct['display_name'] ?? $n;
-                }
+        $seeds = [];
+        foreach ($socialGraph as $entry) {
+            $num = (string)($entry['number'] ?? '');
+            if (empty($num) || $isCorporateShortcode($num)) {
+                continue;
             }
-        }
-
-        // Sort by combined volume, take top-N, and score on a 0-100 scale.
-        uasort($volumes, fn($a, $b) => ($b['sms'] + $b['calls']) <=> ($a['sms'] + $a['calls']));
-        $seeds = array_slice($volumes, 0, $limit, true);
-
-        $maxVol = 1;
-        foreach ($seeds as $s) {
-            $maxVol = max($maxVol, $s['sms'] + $s['calls']);
-        }
-
-        $result = [];
-        foreach ($seeds as $num => $s) {
-            $total = $s['sms'] + $s['calls'];
-            $result[] = [
+            $dispName = !empty($entry['name']) && $entry['name'] !== 'Unknown' ? $entry['name'] : $num;
+            $seeds[] = [
                 'number' => $num,
-                'name'   => $nameByNumber[$num] ?? $s['name'],
-                'sms'    => $s['sms'],
-                'calls'  => $s['calls'],
-                'score'  => (int)round(($total / $maxVol) * 100),
+                'name'   => $dispName,
+                'sms'    => (int)($entry['sms'] ?? 0),
+                'calls'  => (int)($entry['calls'] ?? 0),
+                'score'  => (int)($entry['score'] ?? 0),
             ];
         }
 
-        return $result;
+        // Fallback 1: Query tbl_extracted_contacts directly if no seeds found in call/SMS logs
+        if (empty($seeds)) {
+            $contacts = $this->db->table('tbl_extracted_contacts')
+                ->select('display_name, phone_numbers')
+                ->where('owner_id', $userId)
+                ->limit($limit)
+                ->get()->getResultArray();
+
+            foreach ($contacts as $ct) {
+                $name = $ct['display_name'] ?? 'Contact';
+                $nums = json_decode($ct['phone_numbers'] ?? '[]', true);
+                $numStr = $name;
+                if (is_array($nums) && !empty($nums)) {
+                    $first = reset($nums);
+                    if (is_string($first)) $numStr = $first;
+                    elseif (is_array($first) && !empty($first['number'])) $numStr = $first['number'];
+                }
+                if ($isCorporateShortcode($numStr)) continue;
+                $seeds[] = [
+                    'number' => $numStr,
+                    'name'   => $name,
+                    'sms'    => 1,
+                    'calls'  => 1,
+                    'score'  => 10,
+                ];
+            }
+        }
+
+        // Fallback 2: Query any extracted SMS across DB if owner_id specific query was empty
+        if (empty($seeds)) {
+            $smsRaw = $this->db->table('tbl_extracted_sms')
+                ->select('address, COUNT(*) as cnt')
+                ->groupBy('address')
+                ->orderBy('cnt', 'DESC')
+                ->limit($limit)
+                ->get()->getResultArray();
+
+            foreach ($smsRaw as $s) {
+                $num = $s['address'];
+                if ($isCorporateShortcode($num)) continue;
+                $seeds[] = [
+                    'number' => $num,
+                    'name'   => $num,
+                    'sms'    => (int)$s['cnt'],
+                    'calls'  => 0,
+                    'score'  => (int)$s['cnt'],
+                ];
+            }
+        }
+
+        return $seeds;
     }
 
     private function getCoLocationPairs(int $userId, array $contactNumbers, int $limit): array

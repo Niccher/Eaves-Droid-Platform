@@ -23,9 +23,6 @@ class PlanGate implements FilterInterface
      * Map feature => list of route prefixes that require it.
      */
     protected array $featureRoutes = [
-        // NOTE: anomaly detection is NOT blocked here — it renders for all
-        // users and is tiered inside the AnomaliesController controller (free=empty,
-        // gold=basic, platinum=all).
         'geofencing' => [
             'location',
         ],
@@ -34,12 +31,6 @@ class PlanGate implements FilterInterface
         ],
         'wellbeing' => [
             'analysis/wellbeing',
-        ],
-        'correlation' => [
-            'analysis/correlation-engine',
-        ],
-        'care_plan' => [
-            'analysis/care-plan',
         ],
     ];
 
@@ -63,8 +54,6 @@ class PlanGate implements FilterInterface
      * the matching sidebar item stays highlighted and the section stays open.
      */
     protected array $navMap = [
-        'analysis/care-plan'           => ['intelligence', 'risk_care_plan'],
-        'analysis/correlation-engine'  => ['intelligence', 'correlation_engine'],
         'analysis/wellbeing'           => ['intelligence', 'wellbeing'],
         'analysis/anomalies'           => ['intelligence', 'anomalies'],
         'location'                     => ['data', 'location'],
@@ -101,14 +90,33 @@ class PlanGate implements FilterInterface
         $allowedHardware = $featuresArr['hardware_profile'] ?? 'basic'; // basic | advanced | all
         $allowedSoftware = $featuresArr['software_profile'] ?? 'basic'; // basic | advanced | all
 
+        // 1. Check Analysis Suite Feature Gates (Free, Gold, Platinum)
+        $analysisSlugMap = [
+            'analysis/storage'       => 'storage_analysis',
+            'analysis/apps'          => 'apps_analysis',
+            'analysis/lifestyle'     => 'lifestyle_analysis',
+            'analysis/social'        => 'social_analysis',
+            'analysis/privacy'       => 'privacy_analysis',
+            'analysis/subscriptions' => 'subscriptions_analysis',
+            'analysis/sentiment'     => 'sentiment_analysis',
+            'analysis/finance'       => 'finance_analysis',
+            'analysis/location'      => 'location_analysis',
+            'analysis/hotspots'      => 'hotspots_analysis',
+            'analysis/report'        => 'report_export',
+        ];
+
+        $analysisSlug = $analysisSlugMap[$route] ?? null;
+
         // Query required tier dynamically from database
-        $slug = null;
-        if (str_starts_with($route, 'advanced/hardware/')) {
-            $parts = explode('/', substr($route, strlen('advanced/hardware/')));
-            $slug = $parts[0] ?? null;
-        } elseif (str_starts_with($route, 'advanced/software/')) {
-            $parts = explode('/', substr($route, strlen('advanced/software/')));
-            $slug = $parts[0] ?? null;
+        $slug = $analysisSlug;
+        if (!$slug) {
+            if (str_starts_with($route, 'advanced/hardware/')) {
+                $parts = explode('/', substr($route, strlen('advanced/hardware/')));
+                $slug = $parts[0] ?? null;
+            } elseif (str_starts_with($route, 'advanced/software/')) {
+                $parts = explode('/', substr($route, strlen('advanced/software/')));
+                $slug = $parts[0] ?? null;
+            }
         }
 
         if ($slug) {
@@ -116,28 +124,17 @@ class PlanGate implements FilterInterface
             $feature = $db->table('tbl_feature_tiers')->where('slug', $slug)->get()->getRowArray();
 
             if ($feature) {
-                $requiredTier = $feature['required_tier'];
-                $categoryType = $feature['category_type'];
+                $requiredTier = strtolower($feature['required_tier']);
                 $label = $feature['label'];
+                $currentPlan = strtolower($limits['plan'] ?? 'free');
 
-                if ($categoryType === 'hardware') {
-                    if ($requiredTier === 'platinum' && $allowedHardware !== 'all') {
-                        session()->setFlashdata('error', "Upgrade your plan to access advanced {$label} telemetry.");
-                        return redirect()->to(base_url('billing'));
-                    }
-                    if ($requiredTier === 'gold' && $allowedHardware === 'basic') {
-                        session()->setFlashdata('error', "Upgrade your plan to access {$label} metrics.");
-                        return redirect()->to(base_url('billing'));
-                    }
-                } elseif ($categoryType === 'software') {
-                    if ($requiredTier === 'platinum' && $allowedSoftware !== 'all') {
-                        session()->setFlashdata('error', "Upgrade your plan to access advanced {$label} logs.");
-                        return redirect()->to(base_url('billing'));
-                    }
-                    if ($requiredTier === 'gold' && $allowedSoftware === 'basic') {
-                        session()->setFlashdata('error', "Upgrade your plan to access {$label} diagnostics.");
-                        return redirect()->to(base_url('billing'));
-                    }
+                if ($requiredTier === 'platinum' && $currentPlan !== 'platinum') {
+                    session()->setFlashdata('error', "Upgrade to Platinum plan to unlock {$label}.");
+                    return redirect()->to(base_url('billing'));
+                }
+                if ($requiredTier === 'gold' && $currentPlan === 'free') {
+                    session()->setFlashdata('error', "Upgrade to Gold or Platinum plan to unlock {$label}.");
+                    return redirect()->to(base_url('billing'));
                 }
             }
         }
