@@ -622,7 +622,10 @@ class ReportsController extends BaseAdminController
             $html .= '</tbody></table></body></html>';
 
             if (class_exists('\Dompdf\Dompdf')) {
-                $dompdf = new \Dompdf\Dompdf();
+                $options = new \Dompdf\Options();
+                $options->set('isRemoteEnabled', false); // Prevent SSRF
+                $options->set('isLocalFilesystemEnabled', false); // Prevent LFI
+                $dompdf = new \Dompdf\Dompdf($options);
                 $dompdf->loadHtml($html);
                 $dompdf->setPaper('A4', 'portrait');
                 $dompdf->render();
@@ -767,7 +770,10 @@ class ReportsController extends BaseAdminController
             $html .= '</tbody></table></body></html>';
 
             if (class_exists('\Dompdf\Dompdf')) {
-                $dompdf = new \Dompdf\Dompdf();
+                $options = new \Dompdf\Options();
+                $options->set('isRemoteEnabled', false); // Prevent SSRF
+                $options->set('isLocalFilesystemEnabled', false); // Prevent LFI
+                $dompdf = new \Dompdf\Dompdf($options);
                 $dompdf->loadHtml($html);
                 $dompdf->setPaper('A4', 'landscape');
                 $dompdf->render();
