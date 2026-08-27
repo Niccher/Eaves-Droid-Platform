@@ -2243,10 +2243,10 @@ class FinderModel extends Model
      * Every source is wrapped in try/catch so a missing table never
      * breaks the page. Final list is sorted DESC and sliced to $limit.
      */
-    public function get_unified_timeline(int $userId, int $limit = 100, int $sinceDays = 0): array
+    public function get_unified_timeline(int $userId, int $limit = 100, int $sinceDays = 0, bool $applyLimits = true): array
     {
         $timeline = [];
-        $src      = (int) ceil($limit / 10); // per-source cap
+        $src      = $applyLimits ? 100 : (int) ceil($limit / 10); // per-source cap
 
         // ── 1. SMS ────────────────────────────────────────────────────────────
         try {
@@ -2259,10 +2259,15 @@ class FinderModel extends Model
 
             foreach ($rows as $r) {
                 $inbox = strtolower($r['sms_type'] ?? '') === 'inbox';
+                $address = $r['address'] ?? '?';
+                $title = $inbox 
+                    ? 'Received SMS from <span class="text-primary font-weight-bold"><i class="fas fa-arrow-down text-xs mr-1"></i>' . esc($address) . '</span>'
+                    : 'Sent SMS to <span class="text-indigo font-weight-bold"><i class="fas fa-arrow-up text-xs mr-1"></i>' . esc($address) . '</span>';
+                
                 $timeline[] = [
                     'type'  => 'sms',
-                    'title' => ($inbox ? 'Received SMS from ' : 'Sent SMS to ') . ($r['address'] ?? '?'),
-                    'body'  => mb_strimwidth($this->decode_sms_body($r['body'] ?? ''), 0, 300, '…'),
+                    'title' => $title,
+                    'body'  => '<p class="font-italic text-muted mb-0"><i class="fas fa-quote-left mr-1 text-secondary" style="font-size:0.8rem;"></i>' . esc(mb_strimwidth($this->decode_sms_body($r['body'] ?? ''), 0, 300, '…')) . '</p>',
                     'time'  => (int) ($r['sms_date'] ?? 0),
                     'icon'  => $inbox ? 'fas fa-envelope-open-text' : 'fas fa-paper-plane',
                     'color' => $inbox ? 'bg-primary' : 'bg-indigo',
@@ -2283,11 +2288,15 @@ class FinderModel extends Model
                 $who  = !empty($r['contact_name']) ? $r['contact_name'] : ($r['phone_number'] ?? '?');
                 $type = strtolower($r['call_type'] ?? 'call');
                 $dur  = (int) ($r['duration_seconds'] ?? 0);
+                
+                $callSubIcon = $type === 'missed' ? 'fas fa-phone-slash text-danger' : ($type === 'outgoing' ? 'fas fa-phone-alt text-success' : 'fas fa-phone-incoming text-teal');
+                $title = ucfirst($type) . ' call — <span class="text-success font-weight-bold"><i class="' . $callSubIcon . ' text-xs mr-1"></i>' . esc($who) . '</span>';
+                
                 $timeline[] = [
                     'type'     => 'call',
                     'subtitle' => $type,
-                    'title'    => ucfirst($type) . ' call — ' . $who,
-                    'body'     => 'Duration: ' . $dur . 's' . ($dur === 0 && $type === 'missed' ? ' (missed)' : ''),
+                    'title'    => $title,
+                    'body'     => '<span class="badge badge-light border text-muted"><i class="fas fa-hourglass-half mr-1 text-secondary"></i>Duration: ' . $dur . 's</span>' . ($dur === 0 && $type === 'missed' ? ' <span class="badge badge-danger">missed</span>' : ''),
                     'time'     => (int) ($r['call_date'] ?? 0),
                     'icon'     => $type === 'missed' ? 'fas fa-phone-slash' : ($type === 'outgoing' ? 'fas fa-phone-alt' : 'fas fa-phone-incoming'),
                     'color'    => $type === 'missed' ? 'bg-danger' : ($type === 'outgoing' ? 'bg-success' : 'bg-teal'),
@@ -2295,64 +2304,93 @@ class FinderModel extends Model
             }
         } catch (\Throwable $e) { log_message('error', 'timeline CallsController: ' . $e->getMessage()); }
 
-        // ── 3. Physical activity ──────────────────────────────────────────────
+        // ── 3 & 4. Physical activity & Location (Merged on fetched_at) ────────
+        $activities = [];
         try {
-            $rows = $this->db->table('tbl_extracted_activities')
-                ->select('activity_type, activity_time, confidence, screen_on, battery_level, network_type, info')
+            $activities = $this->db->table('tbl_extracted_activities')
+                ->select('activity_type, activity_time, confidence, screen_on, battery_level, network_type, info, fetched_at')
                 ->where('owner_id', $userId)
                 ->where('confidence >', 60)
                 ->orderBy('activity_time', 'DESC')
                 ->limit($src)
                 ->get()->getResultArray();
+        } catch (\Throwable $e) { log_message('error', 'timeline Activity query: ' . $e->getMessage()); }
 
-            $actIcons = [
-                'still'      => 'fas fa-bed',
-                'walking'    => 'fas fa-walking',
-                'running'    => 'fas fa-running',
-                'in_vehicle' => 'fas fa-car',
-                'on_bicycle' => 'fas fa-bicycle',
-                'tilting'    => 'fas fa-redo',
-            ];
-            foreach ($rows as $r) {
-                $atype  = strtolower($r['activity_type'] ?? 'unknown');
-                $screen = ($r['screen_on'] ?? 0) ? 'Screen ON' : 'Screen OFF';
-                $bat    = !empty($r['battery_level']) ? ' · Battery ' . $r['battery_level'] . '%' : '';
-                $net    = !empty($r['network_type'])  ? ' · Network: ' . $r['network_type']      : '';
-                $timeline[] = [
-                    'type'     => 'activity',
-                    'subtitle' => ucfirst($atype),
-                    'title'    => 'Activity: ' . ucfirst($atype),
-                    'body'     => $screen . $bat . $net . ' · Confidence: ' . $r['confidence'] . '%'
-                                  . (!empty($r['info']) ? ' · ' . $r['info'] : ''),
-                    'time'     => (int) ($r['activity_time'] ?? 0),
-                    'icon'     => $actIcons[$atype] ?? 'fas fa-running',
-                    'color'    => 'bg-info',
-                ];
-            }
-        } catch (\Throwable $e) { log_message('error', 'timeline Activity: ' . $e->getMessage()); }
-
-        // ── 4. LocationController check-ins ─────────────────────────────────────────────
+        $locations = [];
         try {
-            $rows = $this->db->table('tbl_extracted_locations')
-                ->select('latitude, longitude, provider, accuracy, location_time')
+            $locations = $this->db->table('tbl_extracted_locations')
+                ->select('latitude, longitude, provider, accuracy, altitude, speed, bearing, location_time, fetched_at')
                 ->where('owner_id', $userId)
                 ->orderBy('location_time', 'DESC')
                 ->limit($src)
                 ->get()->getResultArray();
+        } catch (\Throwable $e) { log_message('error', 'timeline Location query: ' . $e->getMessage()); }
 
-            foreach ($rows as $r) {
-                $acc = !empty($r['accuracy']) ? ' · Accuracy: ' . round((float)$r['accuracy'], 1) . 'm' : '';
-                $timeline[] = [
-                    'type'     => 'location',
-                    'subtitle' => $r['provider'] ?? 'gps',
-                    'title'    => 'LocationController Update via ' . strtoupper($r['provider'] ?? 'GPS'),
-                    'body'     => 'Lat: ' . $r['latitude'] . '  Lng: ' . $r['longitude'] . $acc,
-                    'time'     => (int) ($r['location_time'] ?? 0),
-                    'icon'     => 'fas fa-map-marker-alt',
-                    'color'    => 'bg-warning',
-                ];
+        // Merge logic in PHP based on fetched_at
+        $matchedActivityKeys = [];
+        
+        // Map locations by fetched_at for fast lookup
+        $locsByFetch = [];
+        foreach ($locations as $idx => $loc) {
+            $fetchKey = (int)($loc['fetched_at'] ?? 0);
+            if ($fetchKey > 0) {
+                $locsByFetch[$fetchKey] = $idx;
             }
-        } catch (\Throwable $e) { log_message('error', 'timeline LocationController: ' . $e->getMessage()); }
+        }
+
+        // Loop through activities to find matches
+        foreach ($activities as $actIdx => $act) {
+            $fetchKey = (int)($act['fetched_at'] ?? 0);
+            if ($fetchKey > 0 && isset($locsByFetch[$fetchKey])) {
+                $locIdx = $locsByFetch[$fetchKey];
+                $locations[$locIdx]['activity'] = $act;
+                $matchedActivityKeys[$actIdx] = true;
+            }
+        }
+
+        // Compile locations ONLY IF they have a merged activity (excl. standalone)
+        foreach ($locations as $l) {
+            if (!isset($l['activity'])) {
+                continue; // Do not show standalone locations
+            }
+            
+            $time = (int) ($l['location_time'] ?? 0);
+            $acc = !empty($l['accuracy']) ? ' · <span class="text-muted"><i class="fas fa-crosshairs mr-1"></i>Accuracy: ' . round((float)$l['accuracy'], 1) . 'm</span>' : '';
+            $alt = !empty($l['altitude']) ? ' · <span class="badge badge-light border text-muted"><i class="fas fa-mountain mr-1 text-secondary"></i>Altitude: ' . round((float)$l['altitude'], 1) . 'm</span>' : '';
+            $spd = !empty($l['speed']) ? ' · <span class="badge badge-light border text-muted"><i class="fas fa-tachometer-alt mr-1 text-secondary"></i>Speed: ' . round((float)$l['speed'] * 3.6, 1) . ' km/h</span>' : '';
+            $brg = !empty($l['bearing']) ? ' · <span class="badge badge-light border text-muted"><i class="fas fa-compass mr-1 text-secondary"></i>Bearing: ' . round((float)$l['bearing'], 1) . '°</span>' : '';
+            
+            $locDetails = '<code class="text-xs bg-light px-1 border rounded text-dark"><i class="fas fa-map-marker-alt mr-1 text-danger"></i>Lat: ' . $l['latitude'] . '  Lng: ' . $l['longitude'] . '</code>' . $acc . $alt . $spd . $brg;
+            
+            $act = $l['activity'];
+            $atype = strtolower($act['activity_type'] ?? 'unknown');
+            $screen = ($act['screen_on'] ?? 0) ? '<span class="badge badge-light border text-success"><i class="fas fa-sun mr-1"></i>Screen ON</span>' : '<span class="badge badge-light border text-muted"><i class="fas fa-moon mr-1"></i>Screen OFF</span>';
+            $bat = !empty($act['battery_level']) ? ' · <span class="badge badge-light border text-muted"><i class="fas fa-battery-three-quarters mr-1 text-secondary"></i>Battery ' . $act['battery_level'] . '%</span>' : '';
+            $net = !empty($act['network_type']) ? ' · <span class="badge badge-light border text-muted"><i class="fas fa-wifi mr-1 text-secondary"></i>Network: ' . $act['network_type'] . '</span>' : '';
+            $conf = ' · <span class="text-muted">Confidence: ' . $act['confidence'] . '%</span>';
+            $info = '';
+            if (!empty($act['info'])) {
+                $cleanInfo = str_ireplace('Detected by ActivityRecognitionReceiver', '', $act['info']);
+                $cleanInfo = trim($cleanInfo, " ·\t\n\r\0\x0B");
+                if (!empty($cleanInfo)) {
+                    $info = ' · <span class="text-muted">' . esc($cleanInfo) . '</span>';
+                }
+            }
+            
+            $title = 'Movement: <span class="text-warning font-weight-bold"><i class="fas fa-walking text-xs mr-1"></i>' . ucfirst($atype) . '</span> Detected';
+            $body = '<strong>Activity:</strong> ' . $screen . $bat . $net . $conf . $info . '<br>'
+                  . '<strong>Location:</strong> ' . $locDetails;
+
+            $timeline[] = [
+                'type'     => 'location',
+                'subtitle' => $l['provider'] ?? 'gps',
+                'title'    => $title,
+                'body'     => $body,
+                'time'     => $time,
+                'icon'     => 'fas fa-map-marker-alt',
+                'color'    => 'bg-warning',
+            ];
+        }
 
         // ── 5. App usage / screen sessions ───────────────────────────────────
         try {
@@ -2372,8 +2410,8 @@ class FinderModel extends Model
                 $timeline[] = [
                     'type'     => 'app_usage',
                     'subtitle' => $r['package_name'] ?? '',
-                    'title'    => 'App Opened: ' . $appLabel,
-                    'body'     => 'Package: ' . ($r['package_name'] ?? '?') . ' · Session: ' . $mins,
+                    'title'    => 'App Opened: <span class="text-purple font-weight-bold"><i class="fas fa-play text-xs mr-1"></i>' . esc($appLabel) . '</span>',
+                    'body'     => '<code class="text-xs bg-light px-1 border rounded">' . esc($r['package_name'] ?? '?') . '</code> · <span class="text-muted"><i class="fas fa-clock mr-1 text-secondary"></i>Session: ' . $mins . '</span>',
                     'time'     => (int) ($r['last_time_used'] ?? 0),
                     'icon'     => 'fas fa-mobile-alt',
                     'color'    => 'bg-indigo',
@@ -2398,8 +2436,8 @@ class FinderModel extends Model
                 $timeline[] = [
                     'type'     => 'upload',
                     'subtitle' => 'app',
-                    'title'    => 'App Installed: ' . $label . $ver,
-                    'body'     => 'Package: ' . ($r['package_name'] ?? '?') . $isSystem,
+                    'title'    => 'App Installed: <span class="text-indigo font-weight-bold"><i class="fas fa-download text-xs mr-1"></i>' . esc($label) . '</span>' . esc($ver),
+                    'body'     => '<code class="text-xs bg-light px-1 border rounded">' . esc($r['package_name'] ?? '?') . '</code>' . $isSystem,
                     'time'     => (int) ($r['first_install_time'] ?? 0),
                     'icon'     => 'fas fa-mobile-alt',
                     'color'    => 'bg-indigo',
@@ -2411,8 +2449,8 @@ class FinderModel extends Model
                     $timeline[] = [
                         'type'     => 'upload',
                         'subtitle' => 'app',
-                        'title'    => 'App Updated: ' . $label . $ver,
-                        'body'     => 'Package: ' . ($r['package_name'] ?? '?'),
+                        'title'    => 'App Updated: <span class="text-teal font-weight-bold"><i class="fas fa-sync text-xs mr-1"></i>' . esc($label) . '</span>' . esc($ver),
+                        'body'     => '<code class="text-xs bg-light px-1 border rounded">' . esc($r['package_name'] ?? '?') . '</code>',
                         'time'     => $upd,
                         'icon'     => 'fas fa-sync-alt',
                         'color'    => 'bg-teal',
@@ -2439,38 +2477,62 @@ class FinderModel extends Model
                 ->get()->getResultArray();
 
             foreach ($rows as $r) {
+                $name = $r['name'] ?? '';
+                $path = $r['path'] ?? '';
+
+                // Filter dot files, folders starting with dot, thumbnails, and 0 bytes
+                if (substr($name, 0, 1) === '.') {
+                    continue;
+                }
+                if (strpos(strtolower($path), '.thumbnails') !== false || preg_match('/\/(\.[^\/]+)\//', $path)) {
+                    continue;
+                }
+
                 $sizeBytes = (int)($r['size_bytes'] ?? 0);
                 $sizeHuman = $this->humanFileSize($sizeBytes);
                 $mime = $r['mime_type'] ?? '';
-                $ext  = strtolower(pathinfo($r['name'] ?? '', PATHINFO_EXTENSION));
-                // Determine file category for icon/label
+                $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+
                 $fileIcon = 'fas fa-file';
                 $fileLabel = 'File';
-                if ($mime) {
-                    if (strpos($mime, 'pdf') !== false) { $fileIcon = 'fas fa-file-pdf'; $fileLabel = 'PDF'; }
-                    elseif (strpos($mime, 'image') !== false) { $fileIcon = 'fas fa-file-image'; $fileLabel = 'Image'; }
-                    elseif (strpos($mime, 'video') !== false) { $fileIcon = 'fas fa-file-video'; $fileLabel = 'Video'; }
-                    elseif (strpos($mime, 'audio') !== false) { $fileIcon = 'fas fa-file-audio'; $fileLabel = 'Audio'; }
-                    elseif (strpos($mime, 'text') !== false) { $fileIcon = 'fas fa-file-alt'; $fileLabel = 'Text'; }
-                    elseif (strpos($mime, 'zip') !== false || strpos($mime, 'compressed') !== false) { $fileIcon = 'fas fa-file-archive'; $fileLabel = 'Archive'; }
-                } elseif ($ext) {
-                    if (in_array($ext, ['pdf'])) { $fileIcon = 'fas fa-file-pdf'; $fileLabel = 'PDF'; }
-                    elseif (in_array($ext, ['jpg','jpeg','png','gif','webp','bmp'])) { $fileIcon = 'fas fa-file-image'; $fileLabel = 'Image'; }
-                    elseif (in_array($ext, ['mp4','mkv','mov','avi','3gp'])) { $fileIcon = 'fas fa-file-video'; $fileLabel = 'Video'; }
-                    elseif (in_array($ext, ['mp3','wav','ogg','m4a','aac'])) { $fileIcon = 'fas fa-file-audio'; $fileLabel = 'Audio'; }
-                    elseif (in_array($ext, ['txt','log','csv','json','xml','html','md'])) { $fileIcon = 'fas fa-file-alt'; $fileLabel = 'Text'; }
-                    elseif (in_array($ext, ['zip','rar','7z','tar','gz'])) { $fileIcon = 'fas fa-file-archive'; $fileLabel = 'Archive'; }
-                    elseif (in_array($ext, ['apk'])) { $fileIcon = 'fas fa-file-code'; $fileLabel = 'APK'; }
+
+                $isCameraImage = (
+                    (strpos($mime, 'image') !== false || in_array($ext, ['jpg','jpeg','png','gif','webp','bmp'], true))
+                    && (strpos(strtolower($path), '/dcim/') !== false || strpos(strtolower($path), '/camera/') !== false)
+                );
+
+                if ($isCameraImage) {
+                    $fileIcon = 'fas fa-camera';
+                    $fileLabel = 'Camera';
+                    $title = 'Captured a picture';
+                } else {
+                    if ($mime) {
+                        if (strpos($mime, 'pdf') !== false) { $fileIcon = 'fas fa-file-pdf'; $fileLabel = 'PDF'; }
+                        elseif (strpos($mime, 'image') !== false) { $fileIcon = 'fas fa-file-image'; $fileLabel = 'Image'; }
+                        elseif (strpos($mime, 'video') !== false) { $fileIcon = 'fas fa-file-video'; $fileLabel = 'Video'; }
+                        elseif (strpos($mime, 'audio') !== false) { $fileIcon = 'fas fa-file-audio'; $fileLabel = 'Audio'; }
+                        elseif (strpos($mime, 'text') !== false) { $fileIcon = 'fas fa-file-alt'; $fileLabel = 'Text'; }
+                        elseif (strpos($mime, 'zip') !== false || strpos($mime, 'compressed') !== false) { $fileIcon = 'fas fa-file-archive'; $fileLabel = 'Archive'; }
+                    } elseif ($ext) {
+                        if (in_array($ext, ['pdf'])) { $fileIcon = 'fas fa-file-pdf'; $fileLabel = 'PDF'; }
+                        elseif (in_array($ext, ['jpg','jpeg','png','gif','webp','bmp'])) { $fileIcon = 'fas fa-file-image'; $fileLabel = 'Image'; }
+                        elseif (in_array($ext, ['mp4','mkv','mov','avi','3gp'])) { $fileIcon = 'fas fa-file-video'; $fileLabel = 'Video'; }
+                        elseif (in_array($ext, ['mp3','wav','ogg','m4a','aac'])) { $fileIcon = 'fas fa-file-audio'; $fileLabel = 'Audio'; }
+                        elseif (in_array($ext, ['txt','log','csv','json','xml','html','md'])) { $fileIcon = 'fas fa-file-alt'; $fileLabel = 'Text'; }
+                        elseif (in_array($ext, ['zip','rar','7z','tar','gz'])) { $fileIcon = 'fas fa-file-archive'; $fileLabel = 'Archive'; }
+                        elseif (in_array($ext, ['apk'])) { $fileIcon = 'fas fa-file-code'; $fileLabel = 'APK'; }
+                    }
+                    $title = 'File: ' . ($name ?: 'Unknown');
                 }
 
                 $timeline[] = [
                     'type'     => 'file',
                     'subtitle' => $fileLabel,
-                    'title'    => 'File: ' . ($r['name'] ?? 'Unknown'),
-                    'body'     => 'Path: ' . ($r['path'] ?? '?') . ' · Size: ' . $sizeHuman . ($mime ? ' · ' . $mime : ''),
+                    'title'    => $title,
+                    'body'     => 'File: ' . $name . '<br>Path: ' . $path . ' · Size: ' . $sizeHuman . ($mime ? ' · ' . $mime : ''),
                     'time'     => (int) ($r['last_modified'] ?? 0),
                     'icon'     => $fileIcon,
-                    'color'    => 'bg-secondary',
+                    'color'    => $isCameraImage ? 'bg-pink' : 'bg-secondary',
                 ];
             }
         } catch (\Throwable $e) { log_message('error', 'timeline FilesController: ' . $e->getMessage()); }
@@ -2526,7 +2588,16 @@ class FinderModel extends Model
 
                 if ($dtype === 'steps' && !empty($r['step_count'])) {
                     $title = 'Steps Recorded';
-                    $body = number_format((int)$r['step_count']) . ' steps';
+                    $steps = (int)$r['step_count'];
+                    $distance = $steps * 0.75;
+                    if ($distance >= 1000) {
+                        $km = floor($distance / 1000);
+                        $meters = round($distance - ($km * 1000));
+                        $distStr = $km . ' KM' . ($meters > 0 ? ', ' . $meters . ' Metres' : '');
+                    } else {
+                        $distStr = round($distance) . ' Metres';
+                    }
+                    $body = number_format($steps) . ' steps (approx. ' . $distStr . ')';
                 } elseif ($dtype === 'heart_rate' && !empty($r['heart_rate_bpm'])) {
                     $title = 'Heart Rate Measured';
                     $body = $r['heart_rate_bpm'] . ' bpm';
@@ -2614,7 +2685,7 @@ class FinderModel extends Model
             }
         } catch (\Throwable $e) { log_message('error', 'timeline Keyguard: ' . $e->getMessage()); }
 
-        // Sort all events DESC by time and slice
+        // Sort all events DESC by time
         usort($timeline, fn($a, $b) => $b['time'] <=> $a['time']);
 
         // Apply recency window bound (milliseconds)
@@ -2623,12 +2694,46 @@ class FinderModel extends Model
             $timeline = array_values(array_filter($timeline, fn($e) => ($e['time'] ?? 0) >= $cutoffMs));
         }
 
-        return array_slice($timeline, 0, $limit);
+        // Apply dynamic plan gates (per-type limit & total limit) if requested
+        if ($applyLimits) {
+            $gate = new \App\Services\PlanGate();
+            $limits = $gate->limits($userId);
+            $plan = strtolower($limits['plan'] ?? 'free');
+
+            $limitPerType = 5;
+            $totalLimit = 50;
+            if ($plan === 'gold') {
+                $limitPerType = 15;
+                $totalLimit = 100;
+            } elseif ($plan === 'platinum') {
+                $limitPerType = 25;
+                $totalLimit = 150;
+            }
+
+            $typeCounts = [];
+            $filteredTimeline = [];
+            foreach ($timeline as $e) {
+                $type = $e['type'] ?? 'other';
+                
+                // Enforce type limit
+                $typeCounts[$type] = ($typeCounts[$type] ?? 0) + 1;
+                if ($typeCounts[$type] > $limitPerType) {
+                    continue;
+                }
+                
+                $filteredTimeline[] = $e;
+            }
+            $timeline = array_slice($filteredTimeline, 0, $totalLimit);
+        } else {
+            $timeline = array_slice($timeline, 0, $limit);
+        }
+
+        return $timeline;
     }
 
     public function get_unified_timeline_filtered(int $userId, string $filterType = 'all', int $perPage = 100, array $excludeTypes = [], int $sinceDays = 0): array
     {
-        $all = $this->get_unified_timeline($userId, 1000, $sinceDays);
+        $all = $this->get_unified_timeline($userId, 1000, $sinceDays, true);
         if (!empty($excludeTypes)) {
             $all = array_filter($all, fn($e) => !in_array(($e['type'] ?? ''), $excludeTypes, true));
             $all = array_values($all);
