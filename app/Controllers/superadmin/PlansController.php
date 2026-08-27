@@ -55,7 +55,7 @@ class PlansController extends BaseSuperadminController
             'pag' => 'superadmin-plans',
             'plan' => $plan,
             'current' => $current,
-            'featuresList' => $this->getFeatureDefinitions(),
+            'featuresList' => $this->getStandardFeatures(),
             'algorithmsList' => $this->getAlgorithmDefinitions(),
             'wellbeingDepthOptions' => [
                 '3' => '3 Days',
@@ -80,11 +80,35 @@ class PlansController extends BaseSuperadminController
         
         // Normalize JSON fields
         $features = [];
-        foreach ($this->getFeatureDefinitions() as $feat) {
+        foreach ($this->getStandardFeatures() as $feat) {
             $features[$feat['key']] = (bool)($data['feature_' . $feat['key']] ?? false);
         }
-        $features['hardware_profile'] = $data['hardware_profile'] ?? 'basic';
-        $features['software_profile'] = $data['software_profile'] ?? 'basic';
+        // Map Hardware Profile Checkboxes
+        if (!empty($data['hw_profile_deep'])) {
+            $features['hardware_profile'] = 'all';
+        } elseif (!empty($data['hw_profile_advanced'])) {
+            $features['hardware_profile'] = 'advanced';
+        } else {
+            $features['hardware_profile'] = 'basic';
+        }
+
+        // Map Software Profile Checkboxes
+        if (!empty($data['sw_profile_deep'])) {
+            $features['software_profile'] = 'all';
+        } elseif (!empty($data['sw_profile_advanced'])) {
+            $features['software_profile'] = 'advanced';
+        } else {
+            $features['software_profile'] = 'basic';
+        }
+
+        // Save selected FCM command tiers
+        $fcmGroups = [];
+        foreach (['core', 'advanced', 'deep'] as $tier) {
+            if (!empty($data['fcm_group_' . $tier])) {
+                $fcmGroups[] = $tier;
+            }
+        }
+        $features['fcm_groups'] = $fcmGroups;
 
         $algorithms = [];
         foreach ($this->getAlgorithmDefinitions() as $algo) {
@@ -102,11 +126,11 @@ class PlansController extends BaseSuperadminController
             'features' => json_encode($features),
             'ml_algorithms' => json_encode($algorithms),
             'alert_email' => !empty($data['alert_email']) ? 1 : 0,
-            'alert_push' => !empty($data['alert_push']) ? 1 : 0,
+            'alert_push' => 0, // Push notifications removed
             'wellbeing_depth' => $data['wellbeing_depth'] ?? '7day',
             'support_tier' => $data['support_tier'] ?? 'standard',
-            'stripe_price_id_monthly' => $data['stripe_monthly'] ?? null,
-            'stripe_price_id_yearly' => $data['stripe_yearly'] ?? null,
+            'stripe_price_id_monthly' => null, // Stripe monthly removed
+            'stripe_price_id_yearly' => null, // Stripe yearly removed
             'effective_from' => $data['effective_from'] ?? date('Y-m-d H:i:s'),
             'change_reason' => $data['change_reason'] ?? '',
         ];
@@ -152,50 +176,61 @@ class PlansController extends BaseSuperadminController
         ]);
     }
 
-    private function getFeatureDefinitions(): array
+    public function definitions()
+    {
+        $db = \Config\Database::connect();
+        $features = $db->table('tbl_feature_tiers')
+            ->orderBy('category_type', 'ASC')
+            ->orderBy('slug', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        return $this->renderView('superadmin/plans/definitions', [
+            'pag' => 'superadmin-plans',
+            'features' => $features,
+        ]);
+    }
+
+    public function updateDefinitions()
+    {
+        $db = \Config\Database::connect();
+        $tiers = $this->request->getPost('tiers') ?? [];
+
+        foreach ($tiers as $slug => $tier) {
+            if (in_array($tier, ['free', 'gold', 'platinum'], true)) {
+                $db->table('tbl_feature_tiers')
+                    ->where('slug', $slug)
+                    ->update(['required_tier' => $tier]);
+            }
+        }
+
+        return redirect()->to('/superadmin/plans/definitions')
+            ->with('success', 'Plan feature tier definitions updated successfully.');
+    }
+
+    private function getStandardFeatures(): array
     {
         return [
             ['key' => 'risk_score', 'label' => 'Device Risk Score', 'desc' => 'ML-based risk scoring'],
-            ['key' => 'geofencing', 'label' => 'LocationController Safety & Geofencing', 'desc' => 'Places, transitions, alerts'],
-            ['key' => 'push_notifications', 'label' => 'Push Notifications', 'desc' => 'Real-time FCM alerts'],
+            ['key' => 'geofencing', 'label' => 'Location Safety & Geofencing', 'desc' => 'Places, transitions, alerts'],
             ['key' => 'forensic_export', 'label' => 'Forensic/Audit Export', 'desc' => 'Full data export'],
-            ['key' => 'wellbeing', 'label' => 'Wellbeing & Lifestyle ReportsController', 'desc' => 'Lifestyle insights'],
+            ['key' => 'wellbeing', 'label' => 'Wellbeing & Lifestyle Reports', 'desc' => 'Lifestyle insights'],
             ['key' => 'smart_timeline', 'label' => 'Smart Timeline', 'desc' => 'AI-powered timeline intelligence'],
-            ['key' => 'correlation', 'label' => 'CorrelationController Analysis', 'desc' => 'Cross-event correlation engine'],
-            ['key' => 'care_plan', 'label' => 'Care PlansController', 'desc' => 'Structured care plan management'],
-            
-            // FCM Data Fetch Actions
-            ['key' => 'fcm_fetch_contacts', 'label' => 'FCM: Fetch ContactsController', 'desc' => 'Extract device phonebook contacts'],
-            ['key' => 'fcm_cmd_beep', 'label' => 'FCM: Test Beep', 'desc' => 'Trigger audible test alert beep on device'],
-            ['key' => 'fcm_cmd_health', 'label' => 'FCM: Check Device Health', 'desc' => 'Fetch real-time hardware diagnostics (battery, screen, network)'],
-            ['key' => 'fcm_fetch_apps', 'label' => 'FCM: Fetch AppsController', 'desc' => 'Extract list of installed applications'],
-            ['key' => 'fcm_fetch_calls', 'label' => 'FCM: Fetch CallsController', 'desc' => 'Extract call log database'],
-            ['key' => 'fcm_fetch_sms', 'label' => 'FCM: Fetch SMS', 'desc' => 'Extract text message database'],
-            ['key' => 'fcm_fetch_location', 'label' => 'FCM: Fetch LocationController & Activity', 'desc' => 'Track GPS coordinates and user motion activity'],
-            ['key' => 'fcm_fetch_usage', 'label' => 'FCM: Fetch App Usage & Notifications', 'desc' => 'Extract package screen time and notification streams'],
-            ['key' => 'fcm_cmd_camera', 'label' => 'FCM: Remote Camera Capture', 'desc' => 'Command remote camera snapshot'],
-            ['key' => 'fcm_cmd_audio', 'label' => 'FCM: Remote Audio Record', 'desc' => 'Command remote microphone audio clip recording'],
-            ['key' => 'fcm_fetch_files', 'label' => 'FCM: Fetch FilesController', 'desc' => 'Browse and extract device filesystem files'],
-            ['key' => 'fcm_fetch_soft_misc', 'label' => 'FCM: Fetch Misc Software details', 'desc' => 'Extract accounts, calendar, and clipboard data'],
-            ['key' => 'fcm_fetch_hard_misc', 'label' => 'FCM: Fetch Misc Hardware details', 'desc' => 'Extract bluetooth devices, sensors, and thermal metrics'],
-            ['key' => 'fcm_fetch_all', 'label' => 'FCM: Sync All Data', 'desc' => 'Execute complete device extraction backup sync'],
-
-            // FCM Device Management Actions
-            ['key' => 'fcm_cmd_reset_app',          'label' => 'FCM: Reset App Command',          'desc' => 'Allow remote application reset to defaults'],
-            ['key' => 'fcm_cmd_deactivate',          'label' => 'FCM: Deactivate Command',          'desc' => 'Allow remote lock and stealth dummy deactivation'],
-            ['key' => 'fcm_cmd_logout',              'label' => 'FCM: Logout User Command',         'desc' => 'Allow remote user log out and session clear'],
-            ['key' => 'fcm_cmd_uninstall_preserve',  'label' => 'FCM: Uninstall & Preserve Command','desc' => 'Allow remote uninstall but keep backup data'],
-            ['key' => 'fcm_cmd_uninstall_wipe',      'label' => 'FCM: Uninstall & Wipe Command',   'desc' => 'Allow remote uninstall with complete data wipe'],
-
-            // FCM File Management (Platinum only)
-            ['key' => 'fcm_file_management', 'label' => 'FCM: File Management (Platinum)', 'desc' => 'Download or permanently delete a specific file directly from the device'],
+            ['key' => 'correlation', 'label' => 'Correlation Analysis', 'desc' => 'Cross-event correlation engine'],
+            ['key' => 'care_plan', 'label' => 'Care Plans', 'desc' => 'Structured care plan management'],
         ];
     }
+
+    private function getFeatureDefinitions(): array
+    {
+        return $this->getStandardFeatures();
+    }
+
     private function getAlgorithmDefinitions(): array
     {
         return [
             ['key' => 'core', 'label' => 'Core (8 algorithms) — Basic statistical detection', 'tier' => 'free'],
-            ['key' => 'advanced', 'label' => 'AdvancedController (10 algorithms) — PHP-ML pattern analysis', 'tier' => 'gold'],
+            ['key' => 'advanced', 'label' => 'Advanced (10 algorithms) — PHP-ML pattern analysis', 'tier' => 'gold'],
             ['key' => 'deep', 'label' => 'Deep (7 algorithms) — Full Python neural models', 'tier' => 'platinum'],
         ];
     }

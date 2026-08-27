@@ -1939,6 +1939,8 @@ $routes->group('superadmin', [
      * View version history for a plan
      */
     $routes->get('plans/history/(:num)', 'PlansController::versionHistory/$1', ['as' => 'superadmin-plans-history']);
+    $routes->get('plans/definitions', 'PlansController::definitions', ['as' => 'superadmin-plans-definitions']);
+    $routes->post('plans/updateDefinitions', 'PlansController::updateDefinitions', ['as' => 'superadmin-plans-update-definitions']);
 
     // -------------------------------------------------------------
     // 7.7.3 SUBSCRIPTIONS & PAYMENTS
