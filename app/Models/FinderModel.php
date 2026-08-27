@@ -3095,7 +3095,7 @@ class FinderModel extends Model
 
         try {
             $db = $this->db;
-            $textDumpPath = WRITEPATH . 'uploads/text_dump/';
+            $textDumpPath = WRITEPATH . 'uploads/raw_telemetry/';
 
             $records = $db->table('tbl_uploaded_files')
                 ->select('stored_filename, upload_path')
@@ -3145,9 +3145,14 @@ class FinderModel extends Model
                     continue;
                 }
 
-                $dir = ($record['media_type'] ?? 'image') === 'audio'
-                    ? WRITEPATH . 'uploads/audio/'
-                    : WRITEPATH . 'uploads/captured/';
+                $type = $record['media_type'] ?? 'image';
+                if ($type === 'audio') {
+                    $dir = WRITEPATH . 'uploads/android_captured_audio/';
+                } elseif ($type === 'image') {
+                    $dir = WRITEPATH . 'uploads/android_captured_images/';
+                } else {
+                    $dir = WRITEPATH . 'uploads/android_captured_files/';
+                }
 
                 if (file_exists($dir . $stored)) {
                     @unlink($dir . $stored);

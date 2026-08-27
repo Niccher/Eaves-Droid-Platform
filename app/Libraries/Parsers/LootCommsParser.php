@@ -38,13 +38,13 @@ class LootCommsParser
             $cryptModel = new CryptModel();
             $dated = date('Y-m-d H:i:s');
 
-            $loot_data = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            $loot_data = file_get_contents(WRITEPATH . 'uploads/raw_telemetry/' . $file_name);
             if ($loot_data === false) {
                 log_message('error', 'Failed to read file: ' . $file_name);
                 return false;
             }
 
-            $loot_decoded = $cryptModel->decode_content($loot_data);
+            $loot_decoded = $cryptModel->decrypt_file($loot_data);
             if ($loot_decoded === false) {
                 log_message('error', 'Failed to decode file: ' . $file_name);
                 return false;
@@ -172,13 +172,13 @@ class LootCommsParser
             $cryptModel = new CryptModel();
             $dated = date('Y-m-d H:i:s');
 
-            $loot_data = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            $loot_data = file_get_contents(WRITEPATH . 'uploads/raw_telemetry/' . $file_name);
             if ($loot_data === false) {
                 log_message('error', 'Failed to read file: ' . $file_name);
                 return false;
             }
 
-            $loot_decoded = $cryptModel->decode_content($loot_data);
+            $loot_decoded = $cryptModel->decrypt_file($loot_data);
             if ($loot_decoded === false) {
                 log_message('error', 'Failed to decode file: ' . $file_name);
                 return false;
@@ -322,7 +322,7 @@ class LootCommsParser
             /* ---------------------------------------------------------
              * Read encrypted dump file
              * --------------------------------------------------------- */
-            $filePath = WRITEPATH . 'uploads/text_dump/' . $file_name;
+            $filePath = WRITEPATH . 'uploads/raw_telemetry/' . $file_name;
             $rawData  = file_get_contents($filePath);
 
             if ($rawData === false) {
@@ -333,7 +333,7 @@ class LootCommsParser
             /* ---------------------------------------------------------
              * Decode encrypted content
              * --------------------------------------------------------- */
-            $decoded = $cryptModel->decode_content($rawData);
+            $decoded = $cryptModel->decrypt_file($rawData);
             if ($decoded === false) {
                 log_message('error', 'Failed to decode file: ' . $file_name);
                 return false;

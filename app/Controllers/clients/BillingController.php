@@ -107,13 +107,13 @@ class BillingController extends BaseClientController
     }
 
     /**
-     * POST /billing/simulate
+     * POST /billing/checkout
      *
      * Body: plan, billing (monthly|yearly), payment_method, redirect_to (optional)
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    public function simulateUpgrade()
+    public function checkout()
     {
         $body = $this->request->getJSON(true) ?? [];
 
@@ -144,33 +144,56 @@ class BillingController extends BaseClientController
             return $this->fail('Selected plan is not available.', 422);
         }
 
-        $days = $billing === 'monthly' ? 30 : 365;
-        $ok = $this->subscriptions->setPlan($this->userId, $plan, $days, $billing, 'active');
-
-        if (!$ok) {
-            return $this->fail('Could not update your subscription. Please try again.', 500);
-        }
-
-        // ── Determine the payable amount for the receipt ──
+        // ── Determine the payable amount for the order ──
         $amountCents = $billing === 'monthly'
             ? (int) $version['price_monthly_cents']
             : (int) $version['price_yearly_cents'];
 
-        // ── Send a simulated "upgrade confirmed" email to the account holder ──
-        $this->sendUpgradeConfirmationEmail($current, $plan, $billing, $amountCents, $version);
+        // ── Resolve the account holder's email ──
+        $db = \Config\Database::connect();
+        $row = $db->table('auth_identities')
+            ->where('user_id', $this->userId)
+            ->where('type', 'email_password')
+            ->get()
+            ->getRowArray();
+        $email = $row['secret'] ?? '';
+
+        // ── Initialize Pesapal ──
+        $pesapal = new \App\Libraries\PesapalService();
+        
+        // Register IPN URL
+        $ipnUrl = base_url('billing/pesapal/ipn');
+        $ipnId = $pesapal->registerIPN($ipnUrl);
+
+        if (!$ipnId) {
+            return $this->fail('Could not establish connection with payment provider (IPN registration failed).', 500);
+        }
+
+        // Generate merchant reference: user_{userId}_{plan}_{billing}_{timestamp}
+        $merchantRef = 'user_' . $this->userId . '_' . $plan . '_' . $billing . '_' . time();
+        $callbackUrl = base_url('billing/pesapal/callback');
+
+        $orderData = [
+            'merchant_reference' => $merchantRef,
+            'amount'             => $amountCents / 100,
+            'currency'           => $version['currency'] ?? 'KES',
+            'description'        => 'Eaves Droid ' . ucfirst($plan) . ' Subscription (' . ucfirst($billing) . ')',
+            'email'              => $email,
+            'first_name'         => $this->userData['username'] ?? 'User',
+            'last_name'          => '',
+        ];
+
+        $orderResult = $pesapal->submitOrder($orderData, $ipnId, $callbackUrl);
+
+        if (!$orderResult || !isset($orderResult['redirect_url'])) {
+            return $this->fail('Failed to initialize Pesapal checkout session.', 500);
+        }
 
         $this->response->setHeader('Cache-Control', 'no-store');
 
         return $this->respond([
-            'success'        => true,
-            'message'        => 'Subscription upgraded successfully.',
-            'plan'           => $plan,
-            'billing'        => $billing,
-            'payment_method' => $method,
-            'amount_cents'   => $amountCents,
-            'currency'       => $version['currency'] ?? 'USD',
-            'plan_name'      => ucfirst($plan),
-            'redirect_to'    => $redirectTo ?: base_url('home'),
+            'success'      => true,
+            'redirect_url' => $orderResult['redirect_url'],
         ], 200);
     }
 

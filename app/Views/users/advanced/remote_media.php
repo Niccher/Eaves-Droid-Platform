@@ -8,8 +8,10 @@
         $html = '';
         if ($type === 'image') {
             $html .= '<button class="btn btn-sm btn-outline-info view-media" data-type="image" data-url="' . esc($serve) . '" data-title="' . $title . '"><i class="fas fa-eye mr-1"></i> View</button>';
-        } else {
+        } elseif ($type === 'audio') {
             $html .= '<button class="btn btn-sm btn-outline-danger view-media" data-type="audio" data-url="' . esc($serve) . '" data-title="' . $title . '"><i class="fas fa-play mr-1"></i> Play</button>';
+        } else {
+            $html .= '<a href="' . esc($serve) . '" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-alt mr-1"></i> Open</a>';
         }
         $html .= ' <a href="' . esc($serve) . '" class="btn btn-sm btn-outline-secondary" download title="Download"><i class="fas fa-download"></i></a>';
         $html .= ' <button class="btn btn-sm btn-outline-danger delete-media" data-id="' . (int) ($r['id'] ?? 0) . '" data-filename="' . $title . '" title="Delete"><i class="fas fa-trash"></i></button>';
@@ -24,7 +26,7 @@
     'columns'  => [
         ['field' => 'original_filename', 'label' => 'File Info',       'format' => 'text'],
         ['field' => 'mime_type',         'label' => 'MIME',            'format' => 'code'],
-        ['field' => 'media_type',        'label' => 'Type',            'format' => 'badge', 'map' => ['image' => 'info', 'audio' => 'danger'], 'default' => 'secondary'],
+        ['field' => 'media_type',        'label' => 'Type',            'format' => 'badge', 'map' => ['image' => 'info', 'audio' => 'danger', 'file' => 'success'], 'default' => 'secondary'],
         ['field' => 'file_size',         'label' => 'Size',            'format' => 'bytes'],
         ['field' => 'created_at_display','label' => 'Captured At',     'format' => 'text'],
     ],

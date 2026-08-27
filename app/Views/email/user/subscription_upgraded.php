@@ -48,7 +48,7 @@ $money = fn($cents) => strtoupper($currency ?? 'USD') . ' ' . number_format(($ce
                 <td style="padding:10px 0;color:#0f172a;text-align:right;text-transform:capitalize;"><?= esc($billing ?? 'yearly') ?></td>
             </tr>
             <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:10px 0;color:#64748b;font-weight:600;">Amount paid (simulated)</td>
+                <td style="padding:10px 0;color:#64748b;font-weight:600;">Amount paid</td>
                 <td style="padding:10px 0;color:#0f172a;text-align:right;"><?= $money($amountCents ?? 0) ?></td>
             </tr>
             <tr>

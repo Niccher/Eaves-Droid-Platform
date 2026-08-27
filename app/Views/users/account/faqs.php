@@ -39,8 +39,8 @@
                             </a>
                             <div id="faq1" class="collapse show" data-parent="#accordion-getting-started">
                                 <div class="card-body pt-0 text-muted">
-                                    Yes! Eaves Droid is completely free for personal use. There are no subscription fees, hidden charges, or paid plans.
-                                    <div class="mt-2 small text-info"><i class="fas fa-info-circle mr-1"></i> We believe everyone should have access to powerful data insights without cost barriers.</div>
+                                    We offer a generous <strong>Free Plan</strong> which includes 1 device and 10 days of basic data logs. If you need advanced analytics, real-time push alerts, geofencing, wellbeing metrics, or to monitor multiple devices, you can upgrade to our paid plans (Gold or Platinum) via our billing portal.
+                                    <div class="mt-2 small text-info"><i class="fas fa-info-circle mr-1"></i> The basic timeline features remain fully free.</div>
                                 </div>
                             </div>
                         </div>
@@ -340,6 +340,53 @@
                                     <div class="text-muted small mt-3">
                                         <i class="fas fa-calendar-alt mr-1"></i> Last updated: December 12, 2025
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Billing & Payments -->
+                <div class="mb-4">
+                    <h5 class="text-warning font-weight-bold mb-3">
+                        <i class="fas fa-credit-card mr-2"></i> Billing & Payments
+                    </h5>
+                    <div id="accordion-billing">
+                        <div class="card card-warning card-outline shadow-sm border-0 rounded-lg mb-3">
+                            <a class="d-block w-100" data-toggle="collapse" href="#billing-faq1">
+                                <div class="card-header bg-white border-bottom-0 rounded-lg">
+                                    <h6 class="card-title w-100 mb-0 d-flex align-items-center">
+                                        <span class="badge badge-warning mr-3">8</span>
+                                        <span class="text-dark">What payment methods are supported?</span>
+                                        <i class="fas fa-chevron-down ml-auto text-muted"></i>
+                                    </h6>
+                                </div>
+                            </a>
+                            <div id="billing-faq1" class="collapse" data-parent="#accordion-billing">
+                                <div class="card-body pt-0 text-muted">
+                                    Through our partnership with <strong>Pesapal</strong>, we support all major payment networks in Kenya and internationally:
+                                    <ul class="mt-2 mb-0">
+                                        <li class="mb-1"><strong>Safaricom M-Pesa</strong> (via instant STK Push prompt on your phone or manual Paybill/Till instruction)</li>
+                                        <li class="mb-1"><strong>Airtel Money</strong> (mobile money wallet transfers)</li>
+                                        <li class="mb-1"><strong>Debit & Credit Cards</strong> (Visa, Mastercard, American Express issued by local banks like KCB, Equity, NCBA, Coop, etc. or international institutions)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-warning card-outline shadow-sm border-0 rounded-lg mb-3">
+                            <a class="d-block w-100" data-toggle="collapse" href="#billing-faq2">
+                                <div class="card-header bg-white border-bottom-0 rounded-lg">
+                                    <h6 class="card-title w-100 mb-0 d-flex align-items-center">
+                                        <span class="badge badge-warning mr-3">9</span>
+                                        <span class="text-dark">Are my payment details secure?</span>
+                                        <i class="fas fa-chevron-down ml-auto text-muted"></i>
+                                    </h6>
+                                </div>
+                            </a>
+                            <div id="billing-faq2" class="collapse" data-parent="#accordion-billing">
+                                <div class="card-body pt-0 text-muted">
+                                    Yes. All transactions are securely routed, processed, and backed by <strong>Pesapal</strong> (which is fully PCI-DSS certified). Eaves Droid does not store or process your credit card numbers, CVVs, or mobile money PINs on our servers. All sensitive financial authentication occurs directly on Pesapal's secure checkout page.
                                 </div>
                             </div>
                         </div>

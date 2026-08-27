@@ -26,26 +26,28 @@
     <!-- Pricing Cards -->
     <section class="content py-5">
         <div class="container">
-            <div class="row">
-
-                <!-- Free Plan -->
+            <div class="row">                <!-- Free Plan -->
                 <div class="col-lg-4 mb-4">
                     <div class="card card-outline shadow-sm h-100 text-center border-primary">
                         <div class="card-header bg-gradient-secondary border-bottom-0">
                             <h3 class="card-title text-bold text-white" style="float:none"><i class="fas fa-star mr-2"></i>Free</h3>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <h2 class="text-primary"><?= $free ? $money($free['price_monthly_cents']) : '$0' ?><span class="h4 text-muted">/month</span></h2>
-                            <p class="text-muted small">For getting started with one device</p>
+                        <div class="card-body d-flex flex-column text-left">
+                            <div class="text-center">
+                                <h2 class="text-primary font-weight-bold"><?= $free ? $money($free['price_monthly_cents']) : '$0' ?><span class="h4 text-muted">/month</span></h2>
+                                <p class="text-muted small">For getting started with basic monitoring</p>
+                            </div>
                             <hr>
-                            <ul class="list-unstyled mb-4 text-left flex-grow-1">
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <?= $devices($free, 'free') ?> connected device<?= $devices($free, 'free') != 1 ? 's' : '' ?></li>
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <?= $history($free, 'free') ?> days of data history</li>
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> Device health &amp; battery monitoring</li>
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> Basic data overview</li>
-                                <li class="mb-2 <?= $hasAlgo($free, 'core') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $hasAlgo($free, 'core') ? 'check text-success' : 'times' ?> mr-2"></i> ML / anomaly analysis</li>
-                                <li class="mb-2 <?= ($free['alert_email'] ?? 0) || ($free['alert_push'] ?? 0) ? '' : 'text-muted' ?>"><i class="fas fa-<?= (($free['alert_email'] ?? 0) || ($free['alert_push'] ?? 0)) ? 'check text-success' : 'times' ?> mr-2"></i> Real-time security alerts</li>
-                                <li class="mb-2 <?= $f($free, 'forensic_export') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($free, 'forensic_export') ? 'check text-success' : 'times' ?> mr-2"></i> Forensic export</li>
+                            <ul class="list-unstyled mb-4 flex-grow-1">
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong><?= $devices($free, 'free') ?> Connected Device</strong> (Maximum 1 device)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong><?= $history($free, 'free') ?> Days History Retention</strong> (Standard logs)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Device Health Telemetry</strong> (Real-time battery, CPU, and memory)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Standard Timeline Overview</strong> (Basic events feed)</li>
+                                <li class="mb-2 text-muted"><i class="fas fa-times mr-2"></i> Location Safety &amp; Geofencing</li>
+                                <li class="mb-2 text-muted"><i class="fas fa-times mr-2"></i> Real-time Push &amp; Email Alerts</li>
+                                <li class="mb-2 text-muted"><i class="fas fa-times mr-2"></i> Anomaly Detection &amp; Risk Scoring</li>
+                                <li class="mb-2 text-muted"><i class="fas fa-times mr-2"></i> Wellbeing Analytics</li>
+                                <li class="mb-2 text-muted"><i class="fas fa-times mr-2"></i> Priority support tier</li>
                             </ul>
                             <a href="<?= url_to('register') ?>" class="btn btn-gradient-secondary btn-block shadow-sm mt-auto">Get Started Free</a>
                         </div>
@@ -59,18 +61,21 @@
                             <span class="badge badge-light float-right mt-1">Popular</span>
                             <h3 class="card-title text-bold text-white" style="float:none"><i class="fas fa-crown mr-2"></i>Gold</h3>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <h2 class="text-success"><?= $gold ? $money($gold['price_monthly_cents']) : '$4.99' ?><span class="h4 text-muted">/month</span></h2>
-                            <p class="text-muted small">For monitoring a small circle of devices</p>
+                        <div class="card-body d-flex flex-column text-left">
+                            <div class="text-center">
+                                <h2 class="text-success font-weight-bold"><?= $gold ? $money($gold['price_monthly_cents']) : '$4.99' ?><span class="h4 text-muted">/month</span></h2>
+                                <p class="text-muted small">For monitoring a small circle of devices</p>
+                            </div>
                             <hr>
-                            <ul class="list-unstyled mb-4 text-left flex-grow-1">
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> Up to <?= $devices($gold, 'gold') ?> connected devices</li>
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <?= $history($gold, 'gold') ?> days of data history</li>
-                                <li class="mb-2 <?= $hasAlgo($gold, 'core') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $hasAlgo($gold, 'core') ? 'check text-success' : 'times' ?> mr-2"></i> ML analysis with core algorithms</li>
-                                <li class="mb-2 <?= ($gold['alert_email'] ?? 0) || ($gold['alert_push'] ?? 0) ? '' : 'text-muted' ?>"><i class="fas fa-<?= (($gold['alert_email'] ?? 0) || ($gold['alert_push'] ?? 0)) ? 'check text-success' : 'times' ?> mr-2"></i> Real-time security alerts (<?= $alertLine($gold) ?>)</li>
-                                <li class="mb-2 <?= $f($gold, 'geofencing') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($gold, 'geofencing') ? 'check text-success' : 'times' ?> mr-2"></i> Location safety &amp; geofencing</li>
-                                <li class="mb-2 <?= $f($gold, 'wellbeing') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($gold, 'wellbeing') ? 'check text-success' : 'times' ?> mr-2"></i> <?= $wellbeingLine($gold) ?> wellbeing summary</li>
-                                <li class="mb-2 <?= $f($gold, 'forensic_export') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($gold, 'forensic_export') ? 'check text-success' : 'times' ?> mr-2"></i> Forensic export</li>
+                            <ul class="list-unstyled mb-4 flex-grow-1">
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Up to <?= $devices($gold, 'gold') ?> Connected Devices</strong></li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong><?= $history($gold, 'gold') ?> Days Extended Retention</strong> (Long-term data archiving)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Core Machine Learning Analysis</strong> (Identifies patterns &amp; anomalies)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Location Safety &amp; Geofencing</strong> (Define boundary logs)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Real-time Security Alerts</strong> (Instant <?= $alertLine($gold) ?> alerts)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong><?= $wellbeingLine($gold) ?> Wellbeing Reports</strong> (Usage &amp; habit analysis)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Forensic Data Export</strong> (PDF and CSV format logs)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Standard Support</strong> (Access to helpdesk email support)</li>
                             </ul>
                             <a href="<?= url_to('register') ?>" class="btn btn-gradient-pink btn-block shadow-sm mt-auto">Choose Gold</a>
                         </div>
@@ -83,105 +88,25 @@
                         <div class="card-header bg-gradient-purple border-bottom-0">
                             <h3 class="card-title text-bold text-white" style="float:none"><i class="fas fa-gem mr-2"></i>Platinum</h3>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <h2 class="text-warning"><?= $plat ? $money($plat['price_monthly_cents']) : '$9.99' ?><span class="h4 text-muted">/month</span></h2>
-                            <p class="text-muted small">Full intelligence for you and your whole family</p>
+                        <div class="card-body d-flex flex-column text-left">
+                            <div class="text-center">
+                                <h2 class="text-warning font-weight-bold"><?= $plat ? $money($plat['price_monthly_cents']) : '$9.99' ?><span class="h4 text-muted">/month</span></h2>
+                                <p class="text-muted small">Full intelligence for you and your whole family</p>
+                            </div>
                             <hr>
-                            <ul class="list-unstyled mb-4 text-left flex-grow-1">
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> Up to <?= $devices($plat, 'platinum') ?> connected devices</li>
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <?= $history($plat, 'platinum') ?> days of data history</li>
-                                <li class="mb-2 <?= $hasAlgo($plat, 'deep') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $hasAlgo($plat, 'deep') ? 'check text-success' : 'times' ?> mr-2"></i> All ML algorithms (engine detectors)</li>
-                                <li class="mb-2 <?= ($plat['alert_email'] ?? 0) || ($plat['alert_push'] ?? 0) ? '' : 'text-muted' ?>"><i class="fas fa-<?= (($plat['alert_email'] ?? 0) || ($plat['alert_push'] ?? 0)) ? 'check text-success' : 'times' ?> mr-2"></i> Real-time alerts (<?= $alertLine($plat) ?>)</li>
-                                <li class="mb-2 <?= $f($plat, 'risk_score') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($plat, 'risk_score') ? 'check text-success' : 'times' ?> mr-2"></i> Device risk score &amp; correlation</li>
-                                <li class="mb-2 <?= $f($plat, 'wellbeing') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($plat, 'wellbeing') ? 'check text-success' : 'times' ?> mr-2"></i> <?= $wellbeingLine($plat) ?> wellbeing trends</li>
-                                <li class="mb-2 <?= $f($plat, 'forensic_export') ? '' : 'text-muted' ?>"><i class="fas fa-<?= $f($plat, 'forensic_export') ? 'check text-success' : 'times' ?> mr-2"></i> Forensic / audit-ready export</li>
-                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <?= $supportLine($plat) ?> support</li>
+                            <ul class="list-unstyled mb-4 flex-grow-1">
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Up to <?= $devices($plat, 'platinum') ?> Connected Devices</strong> (Ideal for families)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong><?= $history($plat, 'platinum') ?> Days Deep Retention</strong> (Half-year historical logs)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Advanced ML-Engine Detectors</strong> (Deep anomaly algorithms)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Location Safety &amp; Address Caching</strong> (Reverse geocoding address mapping)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Instant Alert Integration</strong> (Email + Push notifications)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Device Risk Score &amp; Correlation</strong> (Combines logs to score threat severity)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong><?= $wellbeingLine($plat) ?> Wellbeing Trends</strong> (Predictive lifestyle insight charts)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong>Audit-Ready Forensic Export</strong> (Signed reports with cryptographic signature)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success mr-2"></i> <strong><?= $supportLine($plat) ?> Support</strong> (Dedicated 24/7 priority response)</li>
                             </ul>
                             <a href="<?= url_to('register') ?>" class="btn btn-gradient-purple btn-block shadow-sm mt-auto">Choose Platinum</a>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Comparison Table -->
-            <div class="card mt-4 shadow-sm">
-                <div class="card-header bg-light">
-                    <h3 class="card-title text-bold mb-0">Detailed Comparison</h3>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-valign-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Capability</th>
-                                    <th class="text-center">Free</th>
-                                    <th class="text-center">Gold</th>
-                                    <th class="text-center">Platinum</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Connected devices</td>
-                                    <td class="text-center"><span class="badge badge-primary"><?= $devices($free, 'free') ?></span></td>
-                                    <td class="text-center"><span class="badge badge-success"><?= $devices($gold, 'gold') ?></span></td>
-                                    <td class="text-center"><span class="badge badge-warning"><?= $devices($plat, 'platinum') ?></span></td>
-                                </tr>
-                                <tr>
-                                    <td>Data history depth</td>
-                                    <td class="text-center"><?= $history($free, 'free') ?> days</td>
-                                    <td class="text-center"><?= $history($gold, 'gold') ?> days</td>
-                                    <td class="text-center"><?= $history($plat, 'platinum') ?> days</td>
-                                </tr>
-                                <tr>
-                                    <td>Monthly price</td>
-                                    <td class="text-center"><?= $free ? $money($free['price_monthly_cents']) : '$0' ?></td>
-                                    <td class="text-center"><?= $gold ? $money($gold['price_monthly_cents']) : '$4.99' ?></td>
-                                    <td class="text-center"><?= $plat ? $money($plat['price_monthly_cents']) : '$9.99' ?></td>
-                                </tr>
-                                <tr>
-                                    <td>ML / anomaly analysis</td>
-                                    <td class="text-center <?= $hasAlgo($free, 'core') ? '' : 'text-muted' ?>"><?= $hasAlgo($free, 'core') ? 'Core' : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $hasAlgo($gold, 'core') ? '' : 'text-muted' ?>"><?= $hasAlgo($gold, 'core') ? 'Core algorithms' : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $hasAlgo($plat, 'deep') ? '' : 'text-muted' ?>"><?= $hasAlgo($plat, 'deep') ? 'All algorithms' : '<i class="fas fa-times"></i>' ?></td>
-                                </tr>
-                                <tr>
-                                    <td>Device risk score &amp; correlation</td>
-                                    <td class="text-center <?= $f($free, 'risk_score') ? '' : 'text-muted' ?>"><?= $f($free, 'risk_score') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $f($gold, 'risk_score') ? '' : 'text-muted' ?>"><?= $f($gold, 'risk_score') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $f($plat, 'risk_score') ? '' : 'text-muted' ?>"><?= $f($plat, 'risk_score') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                </tr>
-                                <tr>
-                                    <td>Real-time security alerts</td>
-                                    <td class="text-center <?= (($free['alert_email'] ?? 0) || ($free['alert_push'] ?? 0)) ? '' : 'text-muted' ?>"><?= (($free['alert_email'] ?? 0) || ($free['alert_push'] ?? 0)) ? $alertLine($free) : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= (($gold['alert_email'] ?? 0) || ($gold['alert_push'] ?? 0)) ? '' : 'text-muted' ?>"><?= (($gold['alert_email'] ?? 0) || ($gold['alert_push'] ?? 0)) ? $alertLine($gold) : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= (($plat['alert_email'] ?? 0) || ($plat['alert_push'] ?? 0)) ? '' : 'text-muted' ?>"><?= (($plat['alert_email'] ?? 0) || ($plat['alert_push'] ?? 0)) ? $alertLine($plat) : '<i class="fas fa-times"></i>' ?></td>
-                                </tr>
-                                <tr>
-                                    <td>Location safety &amp; geofencing</td>
-                                    <td class="text-center <?= $f($free, 'geofencing') ? '' : 'text-muted' ?>"><?= $f($free, 'geofencing') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $f($gold, 'geofencing') ? '' : 'text-muted' ?>"><?= $f($gold, 'geofencing') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $f($plat, 'geofencing') ? '' : 'text-muted' ?>"><?= $f($plat, 'geofencing') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                </tr>
-                                <tr>
-                                    <td>Wellbeing &amp; lifestyle reports</td>
-                                    <td class="text-center <?= $f($free, 'wellbeing') ? '' : 'text-muted' ?>"><?= $f($free, 'wellbeing') ? $wellbeingLine($free) : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $f($gold, 'wellbeing') ? '' : 'text-muted' ?>"><?= $f($gold, 'wellbeing') ? $wellbeingLine($gold) : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $f($plat, 'wellbeing') ? '' : 'text-muted' ?>"><?= $f($plat, 'wellbeing') ? $wellbeingLine($plat) : '<i class="fas fa-times"></i>' ?></td>
-                                </tr>
-                                <tr>
-                                    <td>Forensic / audit export</td>
-                                    <td class="text-center <?= $f($free, 'forensic_export') ? '' : 'text-muted' ?>"><?= $f($free, 'forensic_export') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $f($gold, 'forensic_export') ? '' : 'text-muted' ?>"><?= $f($gold, 'forensic_export') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                    <td class="text-center <?= $f($plat, 'forensic_export') ? '' : 'text-muted' ?>"><?= $f($plat, 'forensic_export') ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times"></i>' ?></td>
-                                </tr>
-                                <tr>
-                                    <td>Support</td>
-                                    <td class="text-center"><?= $supportLine($free) ?></td>
-                                    <td class="text-center"><?= $supportLine($gold) ?></td>
-                                    <td class="text-center"><?= $supportLine($plat) ?></td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
@@ -191,6 +116,28 @@
                 <i class="fas fa-info-circle mr-2"></i>
                 Free accounts keep their <?= $history($free, 'free') ?>-day window until you upgrade. Gold unlocks <?= $history($gold, 'gold') ?> days and core ML analysis; Platinum unlocks the full
                 intelligence suite, deepest history, and forensic exports. Admin &amp; Superadmin accounts are unaffected by these plans.
+            </div>
+
+            <!-- Pesapal Backing Info -->
+            <div class="card mt-4 shadow-sm">
+                <div class="card-body bg-light rounded p-4 text-center">
+                    <h5 class="font-weight-bold mb-3"><i class="fas fa-shield-alt mr-2 text-success"></i>Secure Payments Powered by Pesapal</h5>
+                    <p class="text-muted mb-3">All subscriptions are billed securely via <strong>Pesapal</strong>, a fully PCI-DSS certified payment aggregator. We support:</p>
+                    <div class="row justify-content-center text-dark">
+                        <div class="col-sm-3 mb-2">
+                            <i class="fas fa-mobile-alt fa-2x text-success d-block mb-1"></i>
+                            <strong>Safaricom M-Pesa</strong><br><small class="text-muted">STK Push / Paybill</small>
+                        </div>
+                        <div class="col-sm-3 mb-2">
+                            <i class="fas fa-mobile-alt fa-2x text-primary d-block mb-1"></i>
+                            <strong>Airtel Money</strong><br><small class="text-muted">Mobile Wallet Transfer</small>
+                        </div>
+                        <div class="col-sm-3 mb-2">
+                            <i class="far fa-credit-card fa-2x text-info d-block mb-1"></i>
+                            <strong>Debit & Credit Cards</strong><br><small class="text-muted">Visa / Mastercard</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

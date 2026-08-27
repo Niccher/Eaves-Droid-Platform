@@ -150,7 +150,11 @@ class CorrelationController extends BaseClientController
 
     public function advanced()
     {
+        $subModel = new \App\Models\SubscriptionModel();
+        $userTier = $subModel->getPlanTier($this->userId);
+
         $data['pag'] = 'analysis';
+        $data['userTier'] = $userTier;
         $data["user_info"] = $this->finderModel->basic_user();
         
         // Stats

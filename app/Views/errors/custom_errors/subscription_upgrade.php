@@ -456,88 +456,45 @@ $color = 'warning';
 
         <!-- Payment methods tabs -->
         <ul class="nav nav-pills nav-fill mb-3" id="pay-tabs" role="tablist">
-            <li class="nav-item"><a class="nav-link active" data-toggle="pill" href="#pay-card" data-method="card"><i class="far fa-credit-card mr-1"></i>Card</a></li>
-            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#pay-mpesa" data-method="mpesa"><i class="fas fa-mobile-alt mr-1"></i>M-Pesa</a></li>
-            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#pay-paypal" data-method="paypal"><i class="fab fa-paypal mr-1"></i>PayPal</a></li>
-            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#pay-stripe" data-method="stripe"><i class="fab fa-stripe mr-1"></i>Stripe</a></li>
+            <li class="nav-item"><a class="nav-link active" data-toggle="pill" href="#pay-mpesa" data-method="mpesa"><i class="fas fa-mobile-alt mr-1"></i>Safaricom M-Pesa</a></li>
+            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#pay-airtel" data-method="airtel"><i class="fas fa-mobile-alt mr-1"></i>Airtel Money</a></li>
+            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#pay-card" data-method="card"><i class="far fa-credit-card mr-1"></i>Debit/Credit Card</a></li>
         </ul>
 
         <div class="tab-content" id="pay-tabs-content">
-            <!-- Card -->
-            <div class="tab-pane fade show active" id="pay-card" role="tabpanel">
-                <div class="form-row">
-                    <div class="form-group col-12">
-                        <label>Cardholder Name</label>
-                        <input type="text" class="form-control" id="cc-name" placeholder="John Doe" autocomplete="cc-name">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-12">
-                        <label>Card Number</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend"><span class="input-group-text"><i class="far fa-credit-card"></i></span></div>
-                            <input type="text" class="form-control" id="cc-number" placeholder="4242 4242 4242 4242" inputmode="numeric" autocomplete="cc-number">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-4"><label>Expiry</label><input type="text" class="form-control" id="cc-exp" placeholder="MM/YY" autocomplete="cc-exp"></div>
-                    <div class="form-group col-4"><label>CVC</label><input type="text" class="form-control" id="cc-cvc" placeholder="123" autocomplete="cc-csc"></div>
-                    <div class="form-group col-4"><label>Country</label><input type="text" class="form-control" id="cc-country" placeholder="Kenya"></div>
-                </div>
-            </div>
-
             <!-- M-Pesa -->
-            <div class="tab-pane fade" id="pay-mpesa" role="tabpanel">
-                <div class="text-center mb-3">
-                    <i class="fas fa-mobile-alt fa-3x text-success"></i>
-                    <p class="text-muted mb-0">You will receive an STK push prompt on your phone to approve the payment.</p>
-                </div>
-                <div class="form-group">
-                    <label>M-Pesa Phone Number</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend"><span class="input-group-text">+254</span></div>
-                        <input type="text" class="form-control" id="mpesa-phone" placeholder="712 345 678" inputmode="numeric">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>M-Pesa PIN</label>
-                    <input type="password" class="form-control" id="mpesa-pin" placeholder="••••" inputmode="numeric">
+            <div class="tab-pane fade show active" id="pay-mpesa" role="tabpanel">
+                <div class="text-center py-4">
+                    <i class="fas fa-mobile-alt fa-3x text-success mb-3"></i>
+                    <p class="text-dark font-weight-bold">Pay via Safaricom M-Pesa</p>
+                    <p class="text-muted small">You will be redirected to complete your payment. Enter your phone number on Pesapal's secure checkout page to receive an instant **STK Push PIN Prompt** on your phone, or use the provided Paybill/Till number instructions.</p>
                 </div>
             </div>
 
-            <!-- PayPal -->
-            <div class="tab-pane fade" id="pay-paypal" role="tabpanel">
-                <div class="text-center py-2">
-                    <i class="fab fa-paypal fa-4x text-primary mb-3"></i>
-                    <p class="text-muted">You will be redirected to PayPal to complete your purchase securely.</p>
-                    <div id="paypal-button-container" class="mt-2">
-                        <button class="btn btn-primary btn-lg w-100" id="btn-paypal-sim"><i class="fab fa-paypal mr-2"></i>Pay with PayPal</button>
-                    </div>
+            <!-- Airtel Money -->
+            <div class="tab-pane fade" id="pay-airtel" role="tabpanel">
+                <div class="text-center py-4">
+                    <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
+                    <p class="text-dark font-weight-bold">Pay via Airtel Money</p>
+                    <p class="text-muted small">You will be redirected to Pesapal's secure page where you can enter your mobile number and approve the wallet transaction transfer instantly.</p>
                 </div>
             </div>
 
-            <!-- Stripe -->
-            <div class="tab-pane fade" id="pay-stripe" role="tabpanel">
-                <div class="form-row">
-                    <div class="form-group col-12">
-                        <label>Card Number</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend"><span class="input-group-text"><i class="fab fa-stripe"></i></span></div>
-                            <input type="text" class="form-control" id="stripe-number" placeholder="4242 4242 4242 4242" inputmode="numeric">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-6"><label>Expiry</label><input type="text" class="form-control" id="stripe-exp" placeholder="MM/YY"></div>
-                    <div class="form-group col-6"><label>CVC</label><input type="text" class="form-control" id="stripe-cvc" placeholder="123"></div>
+            <!-- Card -->
+            <div class="tab-pane fade" id="pay-card" role="tabpanel">
+                <div class="text-center py-4">
+                    <i class="far fa-credit-card fa-3x text-info mb-3"></i>
+                    <p class="text-dark font-weight-bold">Debit & Credit Cards (Visa / Mastercard)</p>
+                    <p class="text-muted small">Securely process payments using Visa, Mastercard, or American Express issued by your bank (KCB, Equity, NCBA, Co-operative Bank, or any international bank). You will be redirected to enter your card details securely.</p>
                 </div>
             </div>
         </div>
 
-        <div class="alert alert-warning small mt-3 mb-0">
-            <i class="fas fa-info-circle mr-1"></i> This is a <strong>demo checkout</strong>. No real payment is charged — your subscription will be upgraded instantly.
+        <div class="alert alert-info text-center small mt-3 mb-0">
+            <i class="fas fa-shield-alt text-success mr-1"></i> Payments are fully secured and processed by <strong>Pesapal (PCI-DSS Certified Gateway)</strong>. Eaves Droid does not store or process your financial card info or PINs.
         </div>
+
+
 
       </div>
       <div class="modal-footer" style="border:0;">
@@ -644,27 +601,10 @@ function currentMethod() {
 document.getElementById('btn-pay').addEventListener('click', function () {
     var btn = this;
     var method = currentMethod();
-
-    // Validate per-method minimal fields
-    if (method === 'card' || method === 'stripe') {
-        var num = method === 'card' ? document.getElementById('cc-number') : document.getElementById('stripe-number');
-        if (num.value.trim().replace(/\s+/g, '').length < 12) {
-            Swal.fire('Invalid card', 'Please enter a valid card number.', 'warning');
-            return;
-        }
-    }
-    if (method === 'mpesa') {
-        var ph = document.getElementById('mpesa-phone').value.replace(/\s+/g, '');
-        if (ph.length < 9) {
-            Swal.fire('Invalid number', 'Please enter a valid M-Pesa phone number.', 'warning');
-            return;
-        }
-    }
-
     var payBtnAmountText = document.getElementById('pay-btn-amount').textContent;
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span>Processing...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span>Redirecting to secure checkout...';
 
     var payload = {
         plan: upgradeTarget.plan,
@@ -673,28 +613,28 @@ document.getElementById('btn-pay').addEventListener('click', function () {
         redirect_to: '<?= esc($redirectTo, 'js') ?>'
     };
 
-    fetch('<?= base_url('billing/simulate') ?>', {
+    fetch('<?= base_url('billing/checkout') ?>', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
         body: JSON.stringify(payload)
     })
     .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, d: d }; }); })
     .then(function (r) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay <span id="pay-btn-amount">' + payBtnAmountText + '</span>';
-        if (r.ok && r.d.success) {
-            $('#paymentModal').modal('hide');
-            Swal.fire({
-                title: 'Payment Successful!',
-                html: '<i class="fas fa-check-circle text-success fa-3x d-block mb-3"></i>You have upgraded to <strong>' + r.d.plan_name + '</strong>. Your new plan is now active.',
-                icon: 'success',
-                confirmButtonText: 'Continue',
-                allowOutsideClick: false
-            }).then(function () {
-                window.location.href = r.d.redirect_to || '<?= esc($redirectTo, 'js') ?>';
-            });
+        if (r.ok && r.d.success && r.d.redirect_url) {
+            window.location.href = r.d.redirect_url;
         } else {
-            Swal.fire('Payment failed', (r.d && r.d.messages) || 'Something went wrong. Please try again.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay <span id="pay-btn-amount">' + payBtnAmountText + '</span>';
+            
+            var errMsg = 'Could not initiate payment session. Please try again.';
+            if (r.d && r.d.messages) {
+                if (typeof r.d.messages === 'object' && r.d.messages.error) {
+                    errMsg = r.d.messages.error;
+                } else if (typeof r.d.messages === 'string') {
+                    errMsg = r.d.messages;
+                }
+            }
+            Swal.fire('Payment failed', errMsg, 'error');
         }
     })
     .catch(function (err) {
@@ -702,19 +642,5 @@ document.getElementById('btn-pay').addEventListener('click', function () {
         btn.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay <span id="pay-btn-amount">' + payBtnAmountText + '</span>';
         Swal.fire('Error', 'Could not reach the server. Please try again.', 'error');
     });
-});
-
-document.getElementById('btn-paypal-sim').addEventListener('click', function () {
-    var btn = this;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span>Redirecting to PayPal...';
-    setTimeout(function () {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fab fa-paypal mr-2"></i>Pay with PayPal';
-        // Treat as the selected method
-        document.querySelectorAll('#pay-tabs .nav-link').forEach(function (t) { t.classList.remove('active'); });
-        document.querySelector('#pay-tabs .nav-link[data-method="paypal"]').classList.add('active');
-        document.getElementById('btn-pay').click();
-    }, 1200);
 });
 </script>

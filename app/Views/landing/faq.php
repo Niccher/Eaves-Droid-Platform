@@ -371,6 +371,49 @@
                     </div>
                 </div>
 
+                <!-- Billing & Payments -->
+                <h3 class="font-weight-bold text-warning mb-4 mt-5">
+                    <i class="fas fa-credit-card mr-2"></i>Billing & Payments
+                </h3>
+                <hr class="border-warning mb-4">
+
+                <div class="accordion mb-5" id="faqBilling">
+                    <div class="card card-warning card-outline shadow-sm mb-3">
+                        <div class="card-header p-0" id="billOne">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link btn-block text-left py-3 text-bold text-dark" type="button" data-toggle="collapse" data-target="#collapseBillOne">
+                                    <i class="fas fa-money-check-alt mr-2 text-warning"></i> What payment methods are supported?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseBillOne" class="collapse show" data-parent="#faqBilling">
+                            <div class="card-body">
+                                <p class="mb-2">Through our partnership with <strong>Pesapal</strong>, we support all major payment networks in Kenya and internationally:</p>
+                                <ul class="mb-0">
+                                    <li><strong>Safaricom M-Pesa</strong> (via instant STK Push prompt on your phone or manual Paybill/Till instruction)</li>
+                                    <li><strong>Airtel Money</strong> (mobile money wallet transfers)</li>
+                                    <li><strong>Debit & Credit Cards</strong> (Visa, Mastercard, American Express issued by local banks like KCB, Equity, NCBA, Coop, etc. or international institutions)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-warning card-outline shadow-sm mb-3">
+                        <div class="card-header p-0" id="billTwo">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link btn-block text-left py-3 text-bold text-dark collapsed" type="button" data-toggle="collapse" data-target="#collapseBillTwo">
+                                    <i class="fas fa-shield-alt mr-2 text-warning"></i> Are my payment details secure?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseBillTwo" class="collapse" data-parent="#faqBilling">
+                            <div class="card-body">
+                                <p class="mb-0">Yes. All transactions are securely routed, processed, and backed by <strong>Pesapal</strong> (which is fully PCI-DSS certified). Eaves Droid does not store or process your credit card numbers, CVVs, or mobile money PINs on our servers. All sensitive financial authentication occurs directly on Pesapal's secure checkout page.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- CTA -->
                 <div class="text-center mt-5 pt-4 border-top">
                     <h4 class="font-weight-bold mb-2">Still have questions?</h4>

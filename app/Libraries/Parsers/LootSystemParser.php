@@ -37,13 +37,13 @@ class LootSystemParser
             $cryptModel = new CryptModel();
             $dated = date('Y-m-d H:i:s');
 
-            $loot_data = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            $loot_data = file_get_contents(WRITEPATH . 'uploads/raw_telemetry/' . $file_name);
             if ($loot_data === false) {
                 log_message('error', 'Failed to read file: ' . $file_name);
                 return false;
             }
 
-            $loot_decoded = $cryptModel->decode_content($loot_data);
+            $loot_decoded = $cryptModel->decrypt_file($loot_data);
             if ($loot_decoded === false) {
                 log_message('error', 'Failed to decode file: ' . $file_name);
                 return false;
@@ -210,13 +210,13 @@ class LootSystemParser
             $cryptModel = new CryptModel();
             $dated = date('Y-m-d H:i:s');
 
-            $loot_data = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            $loot_data = file_get_contents(WRITEPATH . 'uploads/raw_telemetry/' . $file_name);
             if ($loot_data === false) {
                 log_message('error', 'Failed to read file: ' . $file_name);
                 return false;
             }
 
-            $loot_decoded = $cryptModel->decode_content($loot_data);
+            $loot_decoded = $cryptModel->decrypt_file($loot_data);
             if ($loot_decoded === false) {
                 log_message('error', 'Failed to decode file: ' . $file_name);
                 return false;
@@ -337,13 +337,13 @@ class LootSystemParser
             $cryptModel = new CryptModel();
             $dated = date('Y-m-d H:i:s');
 
-            $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+            $raw = file_get_contents(WRITEPATH . 'uploads/raw_telemetry/' . $file_name);
             if ($raw === false) {
                 log_message('error', 'parse_sim_configs: failed to read file: ' . $file_name);
                 return false;
             }
 
-            $decoded = $cryptModel->decode_content($raw);
+            $decoded = $cryptModel->decrypt_file($raw);
             if ($decoded === false) {
                 log_message('error', 'parse_sim_configs: failed to decode: ' . $file_name);
                 return false;

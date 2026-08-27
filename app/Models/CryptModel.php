@@ -99,101 +99,12 @@ class CryptModel extends Model
     }
 
     /**
-     * Decrypts binary file content with AES-128-CBC.
-     *
-     * @param string $value
-     * @return string|false
-     */
-    public function decrypt_media(string $value)
-    {
-        try {
-            $cipher_algo = "AES-128-CBC";
-            $crypt_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW'; // Prefer .env
-            $crypt_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f="; // Prefer .env
-
-            // First, try assuming raw data
-            $dec_val = openssl_decrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
-            if ($dec_val !== false) {
-                return $dec_val;
-            }
-
-            // Second, try assuming base64 input
-            $base64_decoded_input = base64_decode($value);
-            if ($base64_decoded_input !== false) {
-                $dec_val2 = openssl_decrypt($base64_decoded_input, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
-                if ($dec_val2 !== false) {
-                    return $dec_val2;
-                }
-            }
-
-            return false;
-        } catch (\Exception $e) {
-            log_message('error', 'decrypt_media error: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
      * Decrypts file content with AES-128-CBC.
      *
      * @param string $value
      * @return string|false
      */
-    public function Dec_File(string $value)
-    {
-        try {
-            $cipher_algo = "AES-128-CBC";
-            $crypt_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW'; // Prefer .env
-            $crypt_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f="; // Prefer .env
-
-            // Try decryption with different approaches
-            // First, try with raw data (OPENSSL_RAW_DATA)
-            $dec_val = openssl_decrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
-            if ($dec_val !== false) {
-                log_message('info', 'File decryption successful (raw mode)');
-                // Check if decrypted data is valid JSON
-                $json_test = json_decode($dec_val, true);
-                if ($json_test !== null) {
-                    return $dec_val;
-                }
-                // If not JSON, try base64 decode
-                $base64_decoded = base64_decode($dec_val);
-                if ($base64_decoded !== false) {
-                    $json_test2 = json_decode($base64_decoded, true);
-                    if ($json_test2 !== null) {
-                        return $base64_decoded;
-                    }
-                }
-            }
-
-            // Second, try assuming the input is base64 encoded encrypted data
-            $base64_decoded_input = base64_decode($value);
-            if ($base64_decoded_input !== false) {
-                $dec_val2 = openssl_decrypt($base64_decoded_input, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
-                if ($dec_val2 !== false) {
-                    log_message('info', 'File decryption successful (base64 input mode)');
-                    $json_test3 = json_decode($dec_val2, true);
-                    if ($json_test3 !== null) {
-                        return $dec_val2;
-                    }
-                }
-            }
-
-            log_message('error', 'File decryption failed - tried multiple methods');
-            return false;
-        } catch (\Exception $e) {
-            log_message('error', 'Dec_File error: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Decodes content with AES-128-CBC.
-     *
-     * @param string $value
-     * @return string|false
-     */
-    public function decode_content(string $value)
+    public function decrypt_file(string $value)
     {
         // Plaintext passthrough: composite dispatchers write unencrypted JSON
         // sub-files (e.g. parse_apps_notifications). If the input is already
@@ -202,31 +113,77 @@ class CryptModel extends Model
             return $value;
         }
 
-        return $this->Dec_File($value); // Reuses Dec_File
+        try {
+            $cipher_algo = "AES-128-CBC";
+            $crypt_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f=";
+
+            // 1. Try assuming raw data with dynamic IV (first 16 bytes)
+            if (strlen($value) > 16) {
+                $iv = substr($value, 0, 16);
+                $ciphertext = substr($value, 16);
+                $dec_val = openssl_decrypt($ciphertext, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $iv);
+                if ($dec_val !== false) {
+                    return $dec_val;
+                }
+            }
+
+            // 2. Try assuming base64-encoded data with dynamic IV (first 16 bytes of decoded output)
+            $base64_decoded_input = base64_decode($value, true);
+            if ($base64_decoded_input !== false && strlen($base64_decoded_input) > 16) {
+                $iv = substr($base64_decoded_input, 0, 16);
+                $ciphertext = substr($base64_decoded_input, 16);
+                $dec_val2 = openssl_decrypt($ciphertext, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $iv);
+                if ($dec_val2 !== false) {
+                    return $dec_val2;
+                }
+            }
+
+            // 3. Fallback: Try static IV (legacy mode)
+            $legacy_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW';
+            $dec_legacy = openssl_decrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $legacy_iv);
+            if ($dec_legacy !== false) {
+                return $dec_legacy;
+            }
+
+            if ($base64_decoded_input !== false) {
+                $dec_legacy2 = openssl_decrypt($base64_decoded_input, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $legacy_iv);
+                if ($dec_legacy2 !== false) {
+                    return $dec_legacy2;
+                }
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'decrypt_file error: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
-     * Encodes content with AES-128-CBC, matching the raw-mode format used by Dec_File.
+     * Encodes content with AES-128-CBC.
      *
      * @param string $value
      * @return string|false
      */
-    public function encode_content(string $value)
+    public function encrypt_file(string $value)
     {
         try {
             $cipher_algo = "AES-128-CBC";
-            $crypt_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW';
             $crypt_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f=";
+
+            // Generate a secure 16-byte random IV
+            $crypt_iv = openssl_random_pseudo_bytes(16);
 
             $enc_val = openssl_encrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $crypt_iv);
             if ($enc_val !== false) {
-                return $enc_val;
+                // Prepend the raw IV to the encrypted value
+                return $crypt_iv . $enc_val;
             }
 
-            log_message('error', 'encode_content: encryption failed');
+            log_message('error', 'encrypt_file: encryption failed');
             return false;
         } catch (\Exception $e) {
-            log_message('error', 'encode_content error: ' . $e->getMessage());
+            log_message('error', 'encrypt_file error: ' . $e->getMessage());
             return false;
         }
     }

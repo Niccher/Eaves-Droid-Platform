@@ -18,7 +18,7 @@ class TelemetryReceiverService
     private $uploadConfig = [
         'max_size'      => 209715200, // 200MB
         'allowed_types' => ['txt', 'enc', 'bin', 'gz', 'json', 'csv', 'dat', 'xml', 'log', 'jpg', 'jpeg', 'png', '3gp', 'mp3', 'wav'],
-        'upload_path'   => WRITEPATH . 'uploads/text_dump/',
+        'upload_path'   => WRITEPATH . 'uploads/raw_telemetry/',
         'encrypt_name'  => true,
     ];
 
@@ -347,7 +347,25 @@ class TelemetryReceiverService
         try {
             $parsedCountOrBool = false;
 
-            if (isset($methodMap[$category]) && method_exists($modelParse, $methodMap[$category])) {
+            // Route 'files' category depending on whether it is a files catalog list or a fetched file
+            if ($category === 'files') {
+                $db = \Config\Database::connect();
+                $originalName = '';
+                if ($fileRecordId) {
+                    $fileRecord = $db->table('tbl_uploaded_files')->where('id', $fileRecordId)->get()->getRowArray();
+                    if ($fileRecord) {
+                        $originalName = $fileRecord['original_filename'];
+                    }
+                }
+
+                // A fetched file has the original filename (not starting with 'files_')
+                if ($originalName !== '' && !str_starts_with(strtolower($originalName), 'files_')) {
+                    $modelAdvanced = new ParseAdvancedModel();
+                    $parsedCountOrBool = $modelAdvanced->parse_captured_media($filename, $ownerId, $devicePrintId, $fileRecordId, 'file');
+                } else {
+                    $parsedCountOrBool = $modelParse->get_files($filename, $ownerId, $devicePrintId, $fileRecordId);
+                }
+            } elseif (isset($methodMap[$category]) && method_exists($modelParse, $methodMap[$category])) {
                 $parsedCountOrBool = $modelParse->{$methodMap[$category]}($filename, $ownerId, $devicePrintId, $fileRecordId);
             } elseif (isset($advancedMethodMap[$category])) {
                 $modelAdvanced     = new ParseAdvancedModel();

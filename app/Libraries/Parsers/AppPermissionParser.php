@@ -24,13 +24,13 @@ class AppPermissionParser
         }
 
         $cryptModel = new CryptModel();
-        $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+        $raw = file_get_contents(WRITEPATH . 'uploads/raw_telemetry/' . $file_name);
         if ($raw === false) {
             log_message('error', '[payloadToArray] Cannot read file: ' . $file_name);
             return null;
         }
 
-        $decoded = $cryptModel->decode_content($raw);
+        $decoded = $cryptModel->decrypt_file($raw);
         if ($decoded === false) {
             log_message('error', '[payloadToArray] Decryption failed: ' . $file_name);
             return null;

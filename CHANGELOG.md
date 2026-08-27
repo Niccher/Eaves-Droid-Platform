@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.6.0] - 2026-08-27 — Pesapal Payment Gateway, Forensics Path Fixes & Correlation Tier Gating
+
+### Added
+- **Pesapal Payment Gateway Integration**: Replaced the placeholder `simulateUpgrade()` billing flow with a live Pesapal checkout pipeline in `BillingController.php`. The `checkout()` method now resolves the account holder's email from `auth_identities`, registers an IPN URL with Pesapal, submits a payment order (merchant reference, amount in KES, plan description), and returns a hosted `redirect_url` to the frontend. Subscription activation is deferred to post-payment IPN/callback confirmation.
+- **PesapalCallbackController.php** (new): Handles both user redirect (`GET /billing/pesapal/callback`) and server-to-server IPN webhook (`GET /billing/pesapal/ipn`). Maps Pesapal status codes (1 = Success, 0 = Pending, 2/3 = Failed/Refunded) to subscription activation, flash messages, and appropriate HTTP responses.
+- **Pesapal Billing Routes**: Added `POST billing/checkout` (alias: `billing-checkout`), `GET billing/pesapal/callback` (authenticated, alias: `billing-pesapal-callback`), and `GET billing/pesapal/ipn` (global, no session filter — server webhook endpoint).
+
+### Changed
+- **Forensics Media Serve & Delete Paths**: Updated upload directory references in `ForensicsUserController::serve_media()` and the media delete handler to match the restructured upload directory layout:
+  - `uploads/captured/` → `uploads/android_captured_images/`
+  - `uploads/audio/` → `uploads/android_captured_audio/`
+  - Added 3rd fallback: `uploads/android_captured_files/`
+  - `uploads/text_dump/` → `uploads/raw_telemetry/`
+  - `CryptModel::decrypt_media()` → `CryptModel::decrypt_file()`
+- **Correlation Subscription Tier Injection**: `CorrelationController::advanced()` now resolves the authenticated user's subscription tier via `SubscriptionModel::getPlanTier()` and passes `$userTier` to the advanced analysis view for frontend feature-gating overlays.
+- **Billing Route Renamed**: `POST billing/simulate` → `POST billing/checkout`.
+
+### Fixed
+- **Forensics 404 on Media Preview/Delete**: Resolved broken media preview and deletion for all captured files, audio recordings, and encrypted telemetry blobs caused by stale upload directory path references.
+
+---
+
 ## [2.5.0] - 2026-08-20 — Analysis Suites Feature-Gating & Clean File Management
 
 ### Added

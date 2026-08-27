@@ -1,3 +1,174 @@
+<?php
+/** @var string $userTier */
+$userTier = $userTier ?? 'free';
+
+if (!function_exists('isAnalysisLocked')) {
+    function isAnalysisLocked($requiredTier, $userTier) {
+        if ($requiredTier === 'free' || empty($requiredTier)) return false;
+        if ($requiredTier === 'gold') {
+            return !in_array($userTier, ['gold', 'platinum'], true);
+        }
+        if ($requiredTier === 'platinum') {
+            return $userTier !== 'platinum';
+        }
+        return false;
+    }
+}
+
+$analysisTiers = [
+    'finance'       => 'platinum',
+    'location'      => 'platinum',
+    'social'        => 'gold',
+    'lifestyle'     => 'free',
+    'privacy'       => 'gold',
+    'subscriptions' => 'gold',
+    'apps'          => 'free',
+    'storage'       => 'free',
+    'sentiment'     => 'gold',
+    'hotspots'      => 'platinum',
+    'report'        => 'platinum',
+];
+
+$analysisFeatures = [
+    [
+        'slug' => 'finance',
+        'label' => 'Financial Intelligence',
+        'icon' => 'fas fa-money-bill-wave',
+        'color' => '#28a745',
+        'desc' => 'Mobile money transaction history & analysis',
+        'stat' => 'Ksh ' . number_format($financial_summary['totalSpending'] ?? 0, 0)
+    ],
+    [
+        'slug' => 'location',
+        'label' => 'Location Intelligence',
+        'icon' => 'fas fa-map-marked-alt',
+        'color' => '#007bff',
+        'desc' => 'Stay durations & interactive heatmap paths',
+        'stat' => 'View heatmap'
+    ],
+    [
+        'slug' => 'social',
+        'label' => 'Relationship Mapping',
+        'icon' => 'fas fa-users',
+        'color' => '#fd7e14',
+        'desc' => 'Communication frequency & social graph',
+        'stat' => 'Social map'
+    ],
+    [
+        'slug' => 'lifestyle',
+        'label' => 'Lifestyle & Mobility',
+        'icon' => 'fas fa-walking',
+        'color' => '#6c757d',
+        'desc' => 'Activity pattern (walking/still) & screen habits',
+        'stat' => 'Lifestyle'
+    ],
+    [
+        'slug' => 'privacy',
+        'label' => 'Privacy & Permission Audit',
+        'icon' => 'fas fa-user-shield',
+        'color' => '#dc3545',
+        'desc' => 'Dangerous app permissions & APK risk scoring',
+        'stat' => 'Security Audit'
+    ],
+    [
+        'slug' => 'subscriptions',
+        'label' => 'Subscription Tracker',
+        'icon' => 'fas fa-calendar-check',
+        'color' => '#28a745',
+        'desc' => 'Detect recurring billing patterns in SMS',
+        'stat' => 'Subscription forecast'
+    ],
+    [
+        'slug' => 'apps',
+        'label' => 'App Portfolio Profiling',
+        'icon' => 'fas fa-th-large',
+        'color' => '#007bff',
+        'desc' => 'Installed apps distribution & categorization',
+        'stat' => 'Apps list'
+    ],
+    [
+        'slug' => 'storage',
+        'label' => 'Media & Storage Forensics',
+        'icon' => 'fas fa-hdd',
+        'color' => '#17a2b8',
+        'desc' => 'WhatsApp vs Camera storage distribution',
+        'stat' => 'Storage clean'
+    ],
+    [
+        'slug' => 'sentiment',
+        'label' => 'Sentiment & Social Tone',
+        'icon' => 'fas fa-smile',
+        'color' => '#fd7e14',
+        'desc' => 'Tone tracking & relationship health score',
+        'stat' => 'Tone score'
+    ],
+    [
+        'slug' => 'hotspots',
+        'label' => 'Geo-Hotspot Clustering',
+        'icon' => 'fas fa-draw-polygon',
+        'color' => '#28a745',
+        'desc' => 'Name and cluster bases (Home, Work, etc.)',
+        'stat' => 'Physical bases'
+    ],
+    [
+        'slug' => 'report',
+        'label' => 'Automated Reports',
+        'icon' => 'fas fa-file-pdf',
+        'color' => '#dc3545',
+        'desc' => 'Download forensic intelligence PDF reports',
+        'stat' => 'PDF export'
+    ]
+];
+?>
+<style>
+    .btn-remote-cmd {
+        border-radius: 10px;
+        transition: all 0.25s ease;
+        background: #fff;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #dee2e6;
+        min-height: 165px;
+    }
+    .btn-remote-cmd:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.08) !important;
+    }
+    .btn-remote-cmd.locked {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+        cursor: default;
+    }
+    .locked-blur {
+        filter: grayscale(0.8) blur(0.6px);
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    .lock-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 10px;
+    }
+    .cmd-icon-wrapper {
+        font-size: 1.9rem; 
+        width: 52px; 
+        height: 52px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        background: rgba(0,0,0,0.03); 
+        border-radius: 50%;
+    }
+</style>
 <div class="content-wrapper">
     <?php if (session()->getFlashdata('success')): ?>
     <div class="container-fluid mt-3">
@@ -78,291 +249,41 @@
 
             <section class="content">
                 <div class="container-fluid">
-                    <!-- AdvancedController Features Grid -->
-                <div class="row">
-                    <!-- Financial Intelligence -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-success shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-money-bill-wave mr-2"></i>
-                                    Financial Intelligence
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-success">Live</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>Vertical analysis of financial transactions, mobile money (M-Pesa, etc.), and billing cycles.</p>
-                                <div class="row mb-3">
-                                    <div class="col-6">
-                                        <div class="description-block border-right">
-                                            <h5 class="description-header text-danger">Ksh <?= number_format($financial_summary['totalSpending'] ?? 0, 2) ?></h5>
-                                            <span class="description-text">TOTAL SPENT</span>
+                    <div class="row">
+                        <?php foreach ($analysisFeatures as $feat): ?>
+                            <?php 
+                            $reqTier = $analysisTiers[$feat['slug']] ?? 'free';
+                            $isLock = isAnalysisLocked($reqTier, $userTier);
+                            ?>
+                            <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
+                                <div class="btn-remote-cmd p-3 shadow-sm h-100 d-flex flex-column align-items-center justify-content-center <?php echo $isLock ? 'locked' : ''; ?>">
+                                    <?php if ($isLock): ?>
+                                        <div class="lock-overlay">
+                                            <span class="badge <?php echo $reqTier === 'platinum' ? 'badge-danger' : 'badge-warning'; ?> shadow-sm mb-2 px-2 py-1" style="font-size: 10px;">
+                                                <i class="fas fa-lock mr-1"></i> Unlock <?php echo ucfirst($reqTier); ?>
+                                            </span>
+                                            <a href="<?php echo base_url('billing'); ?>" class="btn btn-xs <?php echo $reqTier === 'platinum' ? 'btn-danger text-white' : 'btn-warning text-dark'; ?> font-weight-bold px-2 py-0" style="font-size: 9px; border-radius: 4px;">Upgrade</a>
                                         </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="description-block">
-                                            <h5 class="description-header text-success"><?= count($financial_summary['transactions'] ?? []) ?></h5>
-                                            <span class="description-text">RECENT TX</span>
+                                    <?php endif; ?>
+                                    
+                                    <div class="d-flex flex-column align-items-center text-center <?php echo $isLock ? 'locked-blur' : ''; ?>">
+                                        <div class="cmd-icon-wrapper mb-2" style="color: <?php echo $feat['color']; ?>;">
+                                            <i class="<?php echo esc($feat['icon']); ?>"></i>
                                         </div>
+                                        <span class="font-weight-bold text-dark mb-1" style="font-size: 13px;"><?php echo esc($feat['label']); ?></span>
+                                        <small class="text-muted mb-2 d-none d-sm-block font-weight-bold" style="font-size: 10.5px; line-height:1.2;"><?php echo esc($feat['desc']); ?></small>
+                                        <span class="badge badge-pill text-white" style="font-size: 9.5px; background-color: <?php echo $feat['color']; ?>;"><?php echo $feat['stat']; ?></span>
                                     </div>
-                                </div>
-                                <a href="<?= base_url('analysis/finance') ?>" class="btn btn-success btn-block">
-                                    <i class="fas fa-chart-line mr-1"></i> Open Finance Dashboard
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Location Heatmap -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-primary shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-map-marked-alt mr-2"></i>
-                                    Location Intelligence
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-primary">Heatmap</span>
+                                    
+                                    <?php if (!$isLock): ?>
+                                        <a href="<?php echo base_url('analysis/' . $feat['slug']); ?>" <?php echo $feat['slug'] === 'report' ? 'target="_blank"' : ''; ?> class="stretched-link"></a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <p>Visualize frequent locations, stay durations, and movement paths on an interactive map.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-thmr-2"></i> Heatmap & Daily Pathing Visualization.
-                                </div>
-                                <a href="<?= base_url('analysis/location') ?>" class="btn btn-primary btn-block">
-                                    <i class="fas fa-map mr-1"></i> View Heatmap & Paths
-                                </a>
-                            </div>
-                        </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
-
-                <div class="row mt-4">
-                    <!-- Social Mapping -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-warning shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-users mr-2"></i>
-                                    Relationship Mapping
-                                </h3>
-                            </div>
-                            <div class="card-body">
-                                <p>AnalyzeController communication frequency to map out the social circle and interaction heatmaps.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-project-diagram mr-2"></i> Top 10 Connections & New Contact Alerts.
-                                </div>
-                                <a href="<?= base_url('analysis/social') ?>" class="btn btn-warning btn-block">
-                                    <i class="fas fa-network-wired mr-1"></i> Open Social Map
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Lifestyle Profile -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-secondary shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-walking mr-2"></i>
-                                    Lifestyle & Mobility
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-secondary">New</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>AnalyzeController activity patterns (walking, driving, still) and screen time habits to build a lifestyle profile.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-history mr-2"></i> Movement Trends & Digital Balance.
-                                </div>
-                                <a href="<?= base_url('analysis/lifestyle') ?>" class="btn btn-secondary btn-block">
-                                    <i class="fas fa-fingerprint mr-1"></i> View Lifestyle Profile
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Privacy & Finance Intelligence -->
-                <div class="row mt-4">
-                    <!-- Privacy Audit -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-danger shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-user-shield mr-2"></i>
-                                    Privacy & Permission Audit
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-danger">Security</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>Identify high-risk applications based on dangerous permission combinations and background access patterns.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-shield-alt mr-2"></i> Risk Scoring & Sensitivity Evaluation.
-                                </div>
-                                <a href="<?= base_url('analysis/privacy') ?>" class="btn btn-danger btn-block">
-                                    <i class="fas fa-search-plus mr-1"></i> Start Privacy Audit
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Subscription Tracker -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-success shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-calendar-check mr-2"></i>
-                                    Subscription Tracker
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-success">Proactive</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>Forecast monthly financial commitments by detecting recurring billing patterns in SMS history.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-coins mr-2"></i> Bill Detection & Expense Forecasting.
-                                </div>
-                                <a href="<?= base_url('analysis/subscriptions') ?>" class="btn btn-success btn-block">
-                                    <i class="fas fa-receipt mr-1"></i> View SubscriptionsController
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Portfolio & Storage Intelligence -->
-                <div class="row mt-4">
-                    <!-- App Portfolio -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-primary shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-th-large mr-2"></i>
-                                    App Portfolio Profiling
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-primary">Logic</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>Categorize the user's digital life (Social, Finance, Productivity) based on installed application distribution.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-chart-pie mr-2"></i> Usage Categorization & Patterns.
-                                </div>
-                                <a href="<?= base_url('analysis/apps') ?>" class="btn btn-primary btn-block">
-                                    <i class="fas fa-briefcase mr-1"></i> View App Portfolio
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Storage Forensics -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-info shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-hdd mr-2"></i>
-                                    Media & Storage Forensics
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-info">FilesController</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>AnalyzeController disk usage by source (WhatsApp vs Camera) and identify aging media content or large space hogs.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-folder-open mr-2"></i> Storage Health & Source Auditing.
-                                </div>
-                                <a href="<?= base_url('analysis/storage') ?>" class="btn btn-info btn-block">
-                                    <i class="fas fa-database mr-1"></i> Open Storage Forensics
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Psychographic & Geospatial Intelligence -->
-                <div class="row mt-4">
-                    <!-- Sentiment Analysis -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-warning shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-smile mr-2"></i>
-                                    Sentiment & Social Tone
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-warning">Pro</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>Perform automated sentiment analysis on SMS history to identify the emotional health of key relationships.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-heartbeat mr-2"></i> Emotional Profiling & Social Health.
-                                </div>
-                                <a href="<?= base_url('analysis/sentiment') ?>" class="btn btn-warning btn-block">
-                                    <i class="fas fa-brain mr-1"></i> AnalyzeController Relationship Tone
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Geospatial Hotspots -->
-                    <div class="col-md-6">
-                        <div class="card card-outline card-success shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-map-marked-alt mr-2"></i>
-                                    Geo-Hotspot Clustering
-                                </h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-success">Location</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p>Automatically cluster coordinate pings to identify and name "Home," "Work," and frequent social bases.</p>
-                                <div class="alert alert-light border">
-                                    <i class="fas fa-draw-polygon mr-2"></i> Base of Operations Analysis.
-                                </div>
-                                <a href="<?= base_url('analysis/hotspots') ?>" class="btn btn-success btn-block">
-                                    <i class="fas fa-thumbtack mr-1"></i> View Physical Bases
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Intelligence Reports -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card card-outline card-danger shadow-sm">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-file-pdf mr-2"></i>
-                                    Automated Intelligence Reports
-                                </h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <p>Generate professional-grade summary reports in PDF format for weekly activity or specific investigation cases.</p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <a href="<?= base_url('analysis/report') ?>" target="_blank" class="btn btn-danger btn-block">
-                                            <i class="fas fa-download mr-1"></i> Generate Weekly Report
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            </section>
 
             </div>
         </section>

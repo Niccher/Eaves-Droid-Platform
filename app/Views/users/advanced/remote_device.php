@@ -114,6 +114,29 @@
                                 <?php
                                 $gate = new \App\Services\PlanGate();
                                 $ownerId = isset($targetDevice['owner_id']) ? (int)$targetDevice['owner_id'] : 0;
+
+                                if (!function_exists('getRequiredTierForFeat')) {
+                                    function getRequiredTierForFeat($feat) {
+                                        $goldFeatures = [
+                                            'fcm_fetch_apps',
+                                            'fcm_fetch_calls',
+                                            'fcm_fetch_sms',
+                                            'fcm_fetch_location',
+                                            'fcm_fetch_usage'
+                                        ];
+                                        $platFeatures = [
+                                            'fcm_cmd_camera',
+                                            'fcm_cmd_audio',
+                                            'fcm_fetch_files',
+                                            'fcm_fetch_soft_misc',
+                                            'fcm_fetch_hard_misc',
+                                            'fcm_fetch_all'
+                                        ];
+                                        if (in_array($feat, $goldFeatures, true)) return 'gold';
+                                        if (in_array($feat, $platFeatures, true)) return 'platinum';
+                                        return 'free';
+                                    }
+                                }
                                 
                                 $commands = [
                                     ['id' => 'contacts',      'feat' => 'fcm_fetch_contacts',   'label' => 'Contacts',       'icon' => 'fas fa-address-book',   'color' => '#17a2b8', 'desc' => 'Phonebook contacts'],
@@ -137,8 +160,8 @@
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
                                     <?php if ($isAllowed): ?>
                                     <button class="btn btn-block btn-remote-cmd p-3 shadow-sm border h-100 d-flex flex-column align-items-center justify-content-center"
-                                            data-cmd="<?= $cmd['id'] ?>"
-                                            style="border-radius: 10px; transition: all 0.25s ease; background: #fff; cursor:pointer;">
+                                             data-cmd="<?= $cmd['id'] ?>"
+                                             style="border-radius: 10px; transition: all 0.25s ease; background: #fff; cursor:pointer;">
                                         <div class="cmd-icon-wrapper mb-2" style="color: <?= $cmd['color'] ?>; font-size: 1.9rem; width:52px; height:52px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.03); border-radius:50%;">
                                             <i class="<?= $cmd['icon'] ?>"></i>
                                         </div>
@@ -146,17 +169,22 @@
                                         <small class="text-muted d-none d-sm-block" style="font-size:10.5px; line-height:1.3;"><?= $cmd['desc'] ?></small>
                                     </button>
                                     <?php else: ?>
-                                    <button class="btn btn-block p-3 shadow-sm border h-100 d-flex flex-column align-items-center justify-content-center"
-                                            disabled
-                                            onclick="toastr.warning('Upgrade plan to access this telemetry data.');"
-                                            style="border-radius: 10px; background: #f8f9fa; opacity: 0.6; cursor: not-allowed;">
-                                        <div class="cmd-icon-wrapper mb-2 text-muted" style="font-size: 1.9rem; width:52px; height:52px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.03); border-radius:50%; position:relative;">
-                                            <i class="<?= $cmd['icon'] ?>"></i>
-                                            <i class="fas fa-lock" style="position:absolute; bottom:0; right:0; font-size:11px; background:#fff; padding:2px; border-radius:50%; color:#dc3545;"></i>
+                                    <?php $reqTier = getRequiredTierForFeat($cmd['feat']); ?>
+                                    <div class="btn-remote-cmd p-3 shadow-sm h-100 d-flex flex-column align-items-center justify-content-center locked">
+                                        <div class="lock-overlay">
+                                            <span class="badge <?php echo $reqTier === 'platinum' ? 'badge-danger' : 'badge-warning'; ?> shadow-sm mb-2 px-2 py-1" style="font-size: 10px;">
+                                                <i class="fas fa-lock mr-1"></i> Unlock <?php echo ucfirst($reqTier); ?>
+                                            </span>
+                                            <a href="<?php echo base_url('billing'); ?>" class="btn btn-xs <?php echo $reqTier === 'platinum' ? 'btn-danger text-white' : 'btn-warning text-dark'; ?> font-weight-bold px-2 py-0" style="font-size: 9px; border-radius: 4px;">Upgrade</a>
                                         </div>
-                                        <span class="font-weight-bold text-muted mb-1" style="font-size:13px;"><?= $cmd['label'] ?> (Locked)</span>
-                                        <small class="text-muted d-none d-sm-block" style="font-size:10.5px; line-height:1.3;"><?= $cmd['desc'] ?></small>
-                                    </button>
+                                        <div class="d-flex flex-column align-items-center text-center locked-blur">
+                                            <div class="cmd-icon-wrapper mb-2" style="color: <?= $cmd['color'] ?>;">
+                                                <i class="<?= $cmd['icon'] ?>"></i>
+                                            </div>
+                                            <span class="font-weight-bold text-dark mb-1" style="font-size: 13px;"><?= $cmd['label'] ?></span>
+                                            <small class="text-muted d-none d-sm-block" style="font-size:10.5px; line-height:1.3;"><?= $cmd['desc'] ?></small>
+                                        </div>
+                                    </div>
                                     <?php endif; ?>
                                 </div>
                                 <?php endforeach; ?>
@@ -321,7 +349,7 @@
                                             // Extract specs for modal popups
                                             $specs = [];
                                             if ($media['type'] === 'image') {
-                                                $path = WRITEPATH . 'uploads/captured/' . $stored;
+                                                $path = WRITEPATH . 'uploads/android_captured_images/' . $stored;
                                                 if (file_exists($path)) {
                                                     try {
                                                         if (function_exists('exif_read_data')) {

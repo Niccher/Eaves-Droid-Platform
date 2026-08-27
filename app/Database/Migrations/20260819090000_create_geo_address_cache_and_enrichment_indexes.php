@@ -63,17 +63,29 @@ class CreateGeoAddressCacheAndEnrichmentIndexes extends Migration
         
         // tbl_telemetry_cell_towers index
         if ($db->tableExists('tbl_telemetry_cell_towers')) {
-            $db->query("CREATE INDEX IF NOT EXISTS idx_cell_owner ON tbl_telemetry_cell_towers (owner_id)");
+            try {
+                $db->query("CREATE INDEX idx_cell_owner ON tbl_telemetry_cell_towers (owner_id)");
+            } catch (\Throwable $e) {
+                // Index may already exist
+            }
         }
 
         // tbl_geo_events index
         if ($db->tableExists('tbl_geo_events')) {
-            $db->query("CREATE INDEX IF NOT EXISTS idx_geo_events_owner ON tbl_geo_events (owner_id)");
+            try {
+                $db->query("CREATE INDEX idx_geo_events_owner ON tbl_geo_events (owner_id)");
+            } catch (\Throwable $e) {
+                // Index may already exist
+            }
         }
 
         // tbl_telemetry_bluetooth_devices_paired index
         if ($db->tableExists('tbl_telemetry_bluetooth_devices_paired')) {
-            $db->query("CREATE INDEX IF NOT EXISTS idx_bt_paired_owner ON tbl_telemetry_bluetooth_devices_paired (owner_id)");
+            try {
+                $db->query("CREATE INDEX idx_bt_paired_owner ON tbl_telemetry_bluetooth_devices_paired (owner_id)");
+            } catch (\Throwable $e) {
+                // Index may already exist
+            }
         }
     }
 

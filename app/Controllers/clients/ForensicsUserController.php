@@ -763,16 +763,19 @@ class ForensicsUserController extends BaseClientController
     /** GET /advanced/media/serve/(:any) */
     public function serve_media($filename)
     {
-        $path = WRITEPATH . 'uploads/captured/' . $filename;
+        $path = WRITEPATH . 'uploads/android_captured_images/' . $filename;
         if (!file_exists($path)) {
-            $path = WRITEPATH . 'uploads/audio/' . $filename;
+            $path = WRITEPATH . 'uploads/android_captured_audio/' . $filename;
+        }
+        if (!file_exists($path)) {
+            $path = WRITEPATH . 'uploads/android_captured_files/' . $filename;
         }
 
         $db = \Config\Database::connect();
 
         if (!file_exists($path)) {
-            // Check if it's in text_dump (encrypted file)
-            $path = WRITEPATH . 'uploads/text_dump/' . $filename;
+            // Check if it's in raw_telemetry (encrypted file)
+            $path = WRITEPATH . 'uploads/raw_telemetry/' . $filename;
             if (file_exists($path)) {
                 $fileRecord = $db->table('tbl_uploaded_files')
                     ->where('stored_filename', $filename)
@@ -782,7 +785,7 @@ class ForensicsUserController extends BaseClientController
                 if ($fileRecord) {
                     $cryptModel = new \App\Models\CryptModel();
                     $raw = file_get_contents($path);
-                    $decoded = $cryptModel->decrypt_media($raw);
+                    $decoded = $cryptModel->decrypt_file($raw);
                     if ($decoded !== false) {
                         $mimeType = $fileRecord['mime_type'] ?: 'application/octet-stream';
                         $originalName = $fileRecord['original_filename'];
@@ -863,7 +866,7 @@ class ForensicsUserController extends BaseClientController
                 return $this->failNotFound('File record not found');
             }
 
-            $path = WRITEPATH . 'uploads/text_dump/' . $file['stored_filename'];
+            $path = WRITEPATH . 'uploads/raw_telemetry/' . $file['stored_filename'];
             if (file_exists($path)) {
                 @unlink($path);
             }
@@ -881,9 +884,12 @@ class ForensicsUserController extends BaseClientController
         }
 
         // Delete physical file
-        $path = WRITEPATH . 'uploads/captured/' . $media['stored_filename'];
+        $path = WRITEPATH . 'uploads/android_captured_images/' . $media['stored_filename'];
         if (!file_exists($path)) {
-            $path = WRITEPATH . 'uploads/audio/' . $media['stored_filename'];
+            $path = WRITEPATH . 'uploads/android_captured_audio/' . $media['stored_filename'];
+        }
+        if (!file_exists($path)) {
+            $path = WRITEPATH . 'uploads/android_captured_files/' . $media['stored_filename'];
         }
 
         if (file_exists($path)) {

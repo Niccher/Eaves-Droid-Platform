@@ -1092,7 +1092,7 @@ $routes->group('', [
          *
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
-        $routes->post('simulate', 'BillingController::simulateUpgrade', ['as' => 'billing-simulate']);
+        $routes->post('checkout', 'BillingController::checkout', ['as' => 'billing-checkout']);
 
         /**
          * Returns the user's active subscription details (AJAX).
@@ -1100,6 +1100,11 @@ $routes->group('', [
          * @return \CodeIgniter\HTTP\ResponseInterface
          */
         $routes->get('subscription', 'BillingController::subscription', ['as' => 'billing-subscription']);
+
+        /**
+         * Pesapal callback route (authenticated user redirect)
+         */
+        $routes->get('pesapal/callback', 'PesapalCallbackController::handleCallback', ['as' => 'billing-pesapal-callback']);
     });
 
     // =============================================================
@@ -1113,6 +1118,9 @@ $routes->group('', [
      */
     $routes->post('requests/send_command', 'Requests::send_command', ['as' => 'client-send-command']);
 });
+
+// Pesapal IPN Webhook (server-to-server, no session filter needed)
+$routes->get('billing/pesapal/ipn', '\App\Controllers\clients\PesapalCallbackController::handleIPN');
 
 $routes->get('downloads/export/(:any)', '\App\Controllers\clients\AccountController::downloadExport/$1');
 
