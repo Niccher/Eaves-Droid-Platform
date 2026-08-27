@@ -97,10 +97,10 @@
                     </div>
                 </div>
 
-                <!-- Android ClientController -->
+                <!-- Android Client -->
                 <div class="mb-4">
                     <h5 class="text-success font-weight-bold mb-3">
-                        <i class="fab fa-android mr-2"></i> Android ClientController
+                        <i class="fab fa-android mr-2"></i> Android Client
                     </h5>
                     <div id="accordion-android">
                         <div class="card card-success card-outline shadow-sm border-0 rounded-lg mb-3">

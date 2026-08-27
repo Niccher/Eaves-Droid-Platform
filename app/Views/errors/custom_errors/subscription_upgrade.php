@@ -110,6 +110,7 @@ foreach ($plansToShow as $planKey) {
         'algorithms'      => $tiers,
         'support'         => $ver['support_tier'] ?? 'standard',
         'is_current'      => $planKey === $currentPlan,
+        'features_raw'    => $features,
     ];
 }
 
@@ -263,33 +264,105 @@ $color = 'warning';
                             <?php endif; ?>
                         </div>
 
-                        <!-- Highlights -->
-                        <div class="px-4 py-3 flex-grow-1">
-                            <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                                <span class="badge badge-light border px-3 py-2"><i class="fas fa-mobile-alt text-secondary mr-1"></i><strong><?= $p['max_devices'] ?></strong> device<?= $p['max_devices'] > 1 ? 's' : '' ?></span>
-                                <span class="badge badge-light border px-3 py-2"><i class="fas fa-history text-secondary mr-1"></i><strong><?= $p['history_days'] >= 365 ? 'Full' : $p['history_days'] ?></strong> days history</span>
-                                <span class="badge badge-light border px-3 py-2"><i class="fas fa-headset text-secondary mr-1"></i><?= ucfirst($p['support']) ?> support</span>
-                            </div>
+                        <!-- Condensed List Group Features -->
+                        <?php
+                        $featuresRaw = $p['features_raw'] ?? [];
+                        $hwProfile = $featuresRaw['hardware_profile'] ?? ($key === 'platinum' ? 'all' : ($key === 'gold' ? 'advanced' : 'basic'));
+                        $swProfile = $featuresRaw['software_profile'] ?? ($key === 'platinum' ? 'all' : ($key === 'gold' ? 'advanced' : 'basic'));
 
-                            <?php if (!empty($p['algorithms'])): ?>
-                            <div class="mb-2">
-                                <div class="small text-muted text-uppercase font-weight-bold mb-1"><i class="fas fa-brain mr-1"></i>Included Algorithms</div>
+                        $fcmGroups = $featuresRaw['fcm_groups'] ?? [];
+                        if (empty($fcmGroups)) {
+                            if ($key === 'free') $fcmGroups = ['core'];
+                            elseif ($key === 'gold') $fcmGroups = ['core', 'advanced'];
+                            elseif ($key === 'platinum') $fcmGroups = ['core', 'advanced', 'deep'];
+                        }
+
+                        $algos = $p['algorithms'] ?? [];
+                        if (empty($algos)) {
+                            if ($key === 'free') $algos = ['core'];
+                            elseif ($key === 'gold') $algos = ['core', 'advanced'];
+                            elseif ($key === 'platinum') $algos = ['core', 'advanced', 'deep'];
+                        }
+
+                        $supportLabel = ($p['support'] ?? 'standard') === 'priority' ? 'Priority 24/7' : 'Standard';
+                        $wellbeingDays = (int)($featuresRaw['wellbeing_summary_days'] ?? ($key === 'platinum' ? 365 : ($key === 'gold' ? 7 : 0)));
+                        $wellbeingLabel = $wellbeingDays > 0 ? "{$wellbeingDays} days summary" : 'Not included';
+
+                        $alertsEmail = !empty($featuresRaw['alert_email']) || $key === 'platinum' || $key === 'gold';
+                        $alertsPush = !empty($featuresRaw['alert_push']) || $key === 'platinum';
+                        $alertsLabel = ($alertsEmail && $alertsPush) ? 'Email + Push' : ($alertsEmail ? 'Email Only' : 'None');
+
+                        $standardFeaturesList = [
+                            'risk_score' => 'Device Risk Score',
+                            'geofencing' => 'Location Safety',
+                            'forensic_export' => 'Forensic Export',
+                            'wellbeing' => 'Wellbeing Insights',
+                            'smart_timeline' => 'Smart Timeline',
+                            'correlation' => 'Correlation Engine',
+                            'care_plan' => 'Care Plans'
+                        ];
+                        ?>
+                        <ul class="list-group list-group-flush text-sm" style="background: transparent;">
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light">
+                                <span><i class="fas fa-mobile-alt text-info mr-2"></i>Max Devices</span>
+                                <span class="badge badge-pill badge-info px-3 py-1 font-weight-bold"><?= $p['max_devices'] ?> device<?= $p['max_devices'] > 1 ? 's' : '' ?></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light">
+                                <span><i class="fas fa-history text-warning mr-2"></i>Retention Window</span>
+                                <span class="badge badge-pill badge-warning px-3 py-1 font-weight-bold"><?= $p['history_days'] >= 365 ? 'Full' : $p['history_days'] . ' days' ?></span>
+                            </li>
+                            <li class="list-group-item py-3 px-4 bg-transparent border-light">
+                                <span class="d-block mb-2 font-weight-bold text-muted small text-uppercase"><i class="fas fa-cubes text-indigo mr-1"></i>Device Telemetry Profiles</span>
                                 <div class="d-flex flex-wrap gap-1">
-                                    <?php foreach ($p['algorithms'] as $t): ?>
-                                    <span class="badge badge-<?= $t === 'deep' ? 'dark' : ($t === 'advanced' ? 'warning' : 'primary') ?> px-2 py-1"><?= esc($algoTierLabels[$t] ?? ucfirst($t)) ?></span>
+                                    <span class="badge bg-indigo text-white mr-1 mb-1 px-2 py-1">
+                                        HW: <?= $hwProfile === 'all' ? 'All (Platinum)' : ($hwProfile === 'advanced' ? 'Advanced (Gold)' : 'Basic (Free)') ?>
+                                    </span>
+                                    <span class="badge bg-navy text-white mr-1 mb-1 px-2 py-1">
+                                        SW: <?= $swProfile === 'all' ? 'All (Platinum)' : ($swProfile === 'advanced' ? 'Advanced (Gold)' : 'Basic (Free)') ?>
+                                    </span>
+                                </div>
+                            </li>
+                            <li class="list-group-item py-3 px-4 bg-transparent border-light">
+                                <span class="d-block mb-2 font-weight-bold text-muted small text-uppercase"><i class="fas fa-paper-plane text-success mr-1"></i>Remote Action Commands</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span class="badge <?= in_array('core', $fcmGroups, true) ? 'badge-success' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Core (Free)</span>
+                                    <span class="badge <?= in_array('advanced', $fcmGroups, true) ? 'badge-warning' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Advanced (Gold)</span>
+                                    <span class="badge <?= in_array('deep', $fcmGroups, true) ? 'badge-danger' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Deep (Platinum)</span>
+                                </div>
+                            </li>
+                            <li class="list-group-item py-3 px-4 bg-transparent border-light">
+                                <span class="d-block mb-2 font-weight-bold text-muted small text-uppercase"><i class="fas fa-brain text-purple mr-1"></i>Machine Learning Engine</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span class="badge <?= in_array('core', $algos, true) ? 'badge-success' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Core</span>
+                                    <span class="badge <?= in_array('advanced', $algos, true) ? 'badge-warning' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Advanced</span>
+                                    <span class="badge <?= in_array('deep', $algos, true) ? 'badge-danger' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Deep</span>
+                                </div>
+                            </li>
+                            <li class="list-group-item py-3 px-4 bg-transparent border-light">
+                                <span class="d-block mb-2 font-weight-bold text-muted small text-uppercase"><i class="fas fa-star text-warning mr-1"></i>Included Analytics Features</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <?php foreach ($standardFeaturesList as $fk => $flabel): 
+                                        $enabled = !empty($featuresRaw[$fk]) || ($key === 'platinum') || ($key === 'gold' && in_array($fk, ['risk_score', 'geofencing', 'forensic_export', 'smart_timeline'])) || ($key === 'free' && in_array($fk, ['forensic_export', 'smart_timeline']));
+                                    ?>
+                                    <span class="badge <?= $enabled ? 'badge-success' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1" style="font-size: 0.75rem;">
+                                        <i class="fas fa-<?= $enabled ? 'check-circle' : 'times-circle' ?> mr-1"></i><?= $flabel ?>
+                                    </span>
                                     <?php endforeach; ?>
                                 </div>
-                            </div>
-                            <?php endif; ?>
-
-                            <?php if (!empty($p['features'])): ?>
-                            <ul class="list-unstyled mb-0 plan-features">
-                                <?php foreach ($p['features'] as $f): ?>
-                                <li class="mb-1"><i class="fas fa-check text-success mr-2"></i><?= esc($f) ?></li>
-                                <?php endforeach; ?>
-                            </ul>
-                            <?php endif; ?>
-                        </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light">
+                                <span><i class="fas fa-bell text-danger mr-2"></i>Security Alerts</span>
+                                <span class="badge badge-pill badge-light border px-2 py-1"><?= $alertsLabel ?></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light">
+                                <span><i class="fas fa-heartbeat text-pink mr-2"></i>Wellbeing History</span>
+                                <span class="badge badge-pill badge-light border px-2 py-1"><?= $wellbeingLabel ?></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light border-bottom-0 mb-3">
+                                <span><i class="fas fa-headset text-primary mr-2"></i>Support Response</span>
+                                <span class="badge badge-pill badge-light border px-2 py-1"><?= $supportLabel ?></span>
+                            </li>
+                        </ul>
 
                         <!-- CTA -->
                         <div class="p-4 pt-0">
@@ -313,110 +386,7 @@ $color = 'warning';
             <?php endforeach; ?>
         </div>
 
-        <!-- ══════════ FEATURE COMPARISON TABLE ══════════ -->
-        <div class="card shadow-sm border-0 mt-4 overflow-hidden">
-            <div class="card-header border-0 px-4 py-3" style="background:linear-gradient(90deg,#6f42c1,#9058e6,#e83e8c);">
-                <h5 class="card-title mb-0 font-weight-bold text-white">
-                    <i class="fas fa-table mr-2"></i> Plan Comparison
-                    <span class="small font-weight-light d-block d-md-inline ml-md-2">— what every plan gives you</span>
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover comparison-table mb-0 align-middle">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th class="px-4" style="min-width:250px;">Feature</th>
-                                <?php foreach ($tablePlans as $tpk => $p):
-                                    $th = $planTheme[$tpk]['header'] ?? 'bg-dark';
-                                    $isCur = $p['is_current']; ?>
-                                <th class="text-center text-uppercase px-3">
-                                    <span class="d-inline-block px-3 py-2 rounded <?= $th ?> text-white font-weight-bold">
-                                        <?= esc($p['name']) ?>
-                                        <?php if ($isCur): ?><i class="fas fa-check-circle ml-1" title="Your current plan"></i><?php endif; ?>
-                                    </span>
-                                    <?php if ($isCur): ?><div class="small text-warning font-weight-bold mt-1"><i class="fas fa-star mr-1"></i>Your current plan</div><?php endif; ?>
-                                </th>
-                                <?php endforeach; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $dataRows = [
-                                ['label' => 'Monthly price',  'key' => 'price_m', 'descr' => 'What you pay per month for this plan.'],
-                                ['label' => 'Yearly price',   'key' => 'price_y', 'descr' => 'Pay once a year and save versus monthly billing.'],
-                                ['label' => 'Devices',        'key' => 'devices', 'descr' => 'How many monitored devices are included.'],
-                                ['label' => 'History',        'key' => 'history', 'descr' => 'How far back your monitoring history is retained.'],
-                                ['label' => 'Support',        'key' => 'support', 'descr' => 'The level of support you get when you need help.'],
-                                ['label' => 'Algorithms',     'key' => 'algos',   'descr' => 'The detection engines and models available to you.'],
-                            ];
-                            ?>
-                            <?php foreach ($dataRows as $dr): ?>
-                            <tr>
-                                <td class="px-4">
-                                    <div class="font-weight-bold text-dark"><?= $dr['label'] ?></div>
-                                    <div class="small text-muted"><?= $dr['descr'] ?></div>
-                                </td>
-                                <?php foreach ($tablePlans as $tpk => $p): ?>
-                                <td class="text-center px-3">
-                                    <?php if ($dr['key'] === 'price_m'):
-                                        echo $p['monthly_cents'] > 0
-                                            ? '<span class="font-weight-bold">' . esc($p['currency']) . ' ' . number_format($p['monthly_cents'] / 100, 2) . '</span><div class="small text-success">per month</div>'
-                                            : '<span class="text-success font-weight-bold">Free</span>';
-                                    elseif ($dr['key'] === 'price_y'):
-                                        echo $p['yearly_cents'] > 0
-                                            ? '<span class="font-weight-bold">' . esc($p['currency']) . ' ' . number_format($p['yearly_cents'] / 100, 2) . '</span><div class="small text-success">per year</div>'
-                                            : '<span class="text-success font-weight-bold">Free</span>';
-                                    elseif ($dr['key'] === 'devices'):
-                                        echo '<span class="font-weight-bold">' . $p['max_devices'] . '</span>';
-                                    elseif ($dr['key'] === 'history'):
-                                        echo '<span class="font-weight-bold">' . ($p['history_days'] >= 365 ? 'Full' : $p['history_days'] . ' days') . '</span>';
-                                    elseif ($dr['key'] === 'support'):
-                                        echo '<span class="badge badge-light border px-3 py-1">' . ucfirst($p['support']) . '</span>';
-                                    elseif ($dr['key'] === 'algos'):
-                                        if (empty($p['algorithms'])):
-                                            echo '<span class="text-muted">—</span>';
-                                        else:
-                                            echo '<div class="d-inline-flex flex-column gap-1">';
-                                            foreach ($p['algorithms'] as $t):
-                                                echo '<span class="badge ' . ($t === 'deep' ? 'badge-dark' : ($t === 'advanced' ? 'badge-warning' : 'badge-primary')) . '">' . esc($algoTierLabels[$t] ?? ucfirst($t)) . '</span>';
-                                            endforeach;
-                                            echo '</div>';
-                                        endif;
-                                    endif; ?>
-                                </td>
-                                <?php endforeach; ?>
-                            </tr>
-                            <?php endforeach; ?>
 
-                            <!-- Capabilities -->
-                            <tr class="bg-light">
-                                <td colspan="<?= count($tablePlans) + 1 ?>" class="px-4">
-                                    <span class="small text-muted font-weight-bold text-uppercase"><i class="fas fa-cubes mr-1"></i>Capabilities</span>
-                                </td>
-                            </tr>
-                            <?php foreach ($allFeatures as $fk => $flabel): ?>
-                            <tr>
-                                <td class="px-4">
-                                    <div class="font-weight-bold text-dark"><?= esc($flabel) ?></div>
-                                    <div class="small text-muted"><?= esc($featureDescs[$fk] ?? '') ?></div>
-                                </td>
-                                <?php foreach ($tablePlans as $tpk => $p): ?>
-                                <td class="text-center px-3">
-                                    <?php if (!empty($matrix[$fk][$tpk])): ?>
-                                        <i class="fas fa-check-circle text-success fa-lg"></i>
-                                    <?php else: ?>
-                                        <i class="fas fa-times-circle text-muted fa-lg"></i>
-                                    <?php endif; ?>
-                                </td>
-                                <?php endforeach; ?>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
         <?php endif; ?>
 
@@ -532,6 +502,8 @@ $color = 'warning';
 .comparison-table th, .comparison-table td { padding: .75rem .9rem; }
 .gap-1 { gap: .25rem; }
 .gap-2 { gap: .5rem; }
+.bg-indigo { background-color: #6610f2 !important; }
+.bg-navy { background-color: #001f3f !important; }
 @media (max-width: 768px) {
     .plan-features { column-count: 1; }
 }

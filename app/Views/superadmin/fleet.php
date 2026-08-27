@@ -148,7 +148,7 @@
                 </div>
             </div>
             
-            <!-- AdvancedController Statistics -->
+            <!-- Advanced Statistics -->
             <div class="row mt-4">
                 <!-- Activity Trends -->
                 <div class="col-md-6">

@@ -3,7 +3,7 @@
         <div class="container text-white">
             <div class="row align-items-center">
                 <div class="col-lg-7">
-                    <h1 class="display-4 font-weight-bold mb-4">Download Eaves Droid Android ClientController</h1>
+                    <h1 class="display-4 font-weight-bold mb-4">Download Eaves Droid Android Client</h1>
                     <p class="lead mb-4">The official Android data collection agent for Eaves Droid. Collect, sync, and analyze mobile data with enterprise-grade security and zero effort.</p>
                     <div class="mb-4">
                         <a href="#download" class="btn btn-warning btn-lg px-4 mr-3 shadow">
@@ -57,7 +57,7 @@
     <section class="content py-5" id="features">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="font-weight-light">Why Eaves Droid Android ClientController</h2>
+                <h2 class="font-weight-light">Why Eaves Droid Android Client</h2>
                 <p class="text-muted lead">Built for reliable, unattended data collection on Android devices</p>
                 <hr class="w-25 border-primary">
             </div>
@@ -242,7 +242,7 @@
                         <div class="card bg-primary shadow-sm h-100 text-center d-flex align-items-center justify-content-center p-5" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
                             <div class="card-body text-white">
                                 <i class="fab fa-android fa-5x mb-4"></i>
-                                <h3 class="text-bold mb-2">Eaves Droid ClientController</h3>
+                                <h3 class="text-bold mb-2">Eaves Droid Client</h3>
                                 <p class="mb-4 opacity-75">Version 1.1 &bull; Android 7.0+ (API 25)</p>
                                 <a href="<?= base_url('downloads/eaves_droid_v1.1.apk') ?>" class="btn btn-warning btn-lg btn-block shadow text-bold" <?php if (!is_file(ROOTPATH . 'public/downloads/eaves_droid_v1.1.apk')): ?>data-toggle="tooltip" title="APK will be available after a release build is published"<?php endif; ?>>
                                     <i class="fas fa-download mr-2"></i>DOWNLOAD APK

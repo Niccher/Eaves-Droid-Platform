@@ -101,9 +101,9 @@
                     </div>
                 </div>
 
-                <!-- Android ClientController -->
+                <!-- Android Client -->
                 <h3 class="font-weight-bold text-success mt-5 mb-4">
-                    <i class="fab fa-android mr-2"></i>Android ClientController
+                    <i class="fab fa-android mr-2"></i>Android Client
                 </h3>
                 <hr class="border-success mb-4">
 

@@ -37,7 +37,7 @@
             <div class="card card-outline card-info shadow-sm mb-4">
                 <div class="card-header bg-light">
                     <h3 class="card-title text-info font-weight-bold">
-                        <i class="fas fa-shield-alt mr-2"></i> ClientController Privacy Filter & Data Blocklist
+                        <i class="fas fa-shield-alt mr-2"></i> Client Privacy Filter & Data Blocklist
                     </h3>
                     <div class="card-tools">
                         <button type="button" class="btn btn-tool" data-card-widget="collapse">

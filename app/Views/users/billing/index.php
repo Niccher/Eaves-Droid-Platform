@@ -111,47 +111,112 @@
                             $hwProfile = $featArr['hardware_profile'] ?? 'basic';
                             $swProfile = $featArr['software_profile'] ?? 'basic';
                             ?>
-                            <div class="px-4 py-3 flex-grow-1">
-                                 <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                                     <span class="badge badge-light border px-3 py-2"><i class="fas fa-mobile-alt text-secondary mr-1"></i><strong><?= (int)($p['max_devices'] ?? 1) ?></strong> device<?= (int)($p['max_devices'] ?? 1) > 1 ? 's' : '' ?></span>
-                                     <span class="badge badge-light border px-3 py-2"><i class="fas fa-history text-secondary mr-1"></i><strong><?= (int)($p['history_days'] ?? 10) >= 365 ? 'Full' : $p['history_days'] ?? 10 ?></strong> days history</span>
-                                     <span class="badge badge-light border px-3 py-2"><i class="fas fa-headset text-secondary mr-1"></i><?= ucfirst($p['support_tier'] ?? 'standard') ?> support</span>
-                                     <span class="badge badge-light border px-3 py-2"><i class="fas fa-microchip text-indigo mr-1"></i><strong><?= ucfirst($hwProfile) ?></strong> Hardware</span>
-                                     <span class="badge badge-light border px-3 py-2"><i class="fas fa-laptop-code text-navy mr-1"></i><strong><?= ucfirst($swProfile) ?></strong> Software</span>
-                                 </div>
+                        <!-- Condensed List Group Features -->
+                        <?php
+                        $featuresRaw = $p['features'] ?? [];
+                        if (is_string($featuresRaw)) {
+                            $featuresRaw = json_decode($featuresRaw, true) ?: [];
+                        }
+                        $hwProfile = $featuresRaw['hardware_profile'] ?? ($key === 'platinum' ? 'all' : ($key === 'gold' ? 'advanced' : 'basic'));
+                        $swProfile = $featuresRaw['software_profile'] ?? ($key === 'platinum' ? 'all' : ($key === 'gold' ? 'advanced' : 'basic'));
 
-                                 <?php
-                                 $tiers = $p['ml_algorithms'] ?? [];
-                                 if (is_string($tiers)) {
-                                     $decoded = json_decode($tiers, true);
-                                     $tiers = is_array($decoded) ? $decoded : [];
-                                 }
-                                 if (!empty($tiers)): ?>
-                                 <div class="mb-2">
-                                     <div class="small text-muted text-uppercase font-weight-bold mb-1"><i class="fas fa-brain mr-1"></i>Included Algorithms</div>
-                                     <div class="d-flex flex-wrap gap-1">
-                                         <?php foreach ($tiers as $t): ?>
-                                         <span class="badge <?= $t === 'deep' ? 'badge-dark' : ($t === 'advanced' ? 'badge-warning' : 'badge-primary') ?> px-2 py-1"><?= esc(ucfirst($t)) ?></span>
-                                         <?php endforeach; ?>
-                                     </div>
-                                 </div>
-                                 <?php endif; ?>
+                        $fcmGroups = $featuresRaw['fcm_groups'] ?? [];
+                        if (empty($fcmGroups)) {
+                            if ($key === 'free') $fcmGroups = ['core'];
+                            elseif ($key === 'gold') $fcmGroups = ['core', 'advanced'];
+                            elseif ($key === 'platinum') $fcmGroups = ['core', 'advanced', 'deep'];
+                        }
 
-                                 <?php $features = $p['features'] ?? []; if (!empty($features)): ?>
-                                 <ul class="list-unstyled mb-0 plan-features">
-                                     <?php 
-                                     if (is_string($features)) {
-                                         $features = json_decode($features, true) ?: [];
-                                     }
-                                     foreach ($features as $fk => $enabled):
-                                         if ($fk === 'hardware_profile' || $fk === 'software_profile') continue;
-                                         if ($enabled !== true) continue;
-                                         $label = $feature_labels[$fk] ?? ucwords(str_replace('_', ' ', (string)$fk)); ?>
-                                     <li class="mb-1"><i class="fas fa-check text-success mr-2"></i><?= esc($label) ?></li>
-                                     <?php endforeach; ?>
-                                 </ul>
-                                 <?php endif; ?>
-                            </div>
+                        $algos = $p['ml_algorithms'] ?? [];
+                        if (is_string($algos)) {
+                            $decoded = json_decode($algos, true);
+                            $algos = is_array($decoded) ? $decoded : [];
+                        }
+                        if (empty($algos)) {
+                            if ($key === 'free') $algos = ['core'];
+                            elseif ($key === 'gold') $algos = ['core', 'advanced'];
+                            elseif ($key === 'platinum') $algos = ['core', 'advanced', 'deep'];
+                        }
+
+                        $supportLabel = ($p['support_tier'] ?? 'standard') === 'priority' ? 'Priority 24/7' : 'Standard';
+                        $wellbeingDays = (int)($featuresRaw['wellbeing_summary_days'] ?? ($key === 'platinum' ? 365 : ($key === 'gold' ? 7 : 0)));
+                        $wellbeingLabel = $wellbeingDays > 0 ? "{$wellbeingDays} days summary" : 'Not included';
+
+                        $alertsEmail = !empty($featuresRaw['alert_email']) || $key === 'platinum' || $key === 'gold';
+                        $alertsPush = !empty($featuresRaw['alert_push']) || $key === 'platinum';
+                        $alertsLabel = ($alertsEmail && $alertsPush) ? 'Email + Push' : ($alertsEmail ? 'Email Only' : 'None');
+
+                        $standardFeaturesList = [
+                            'risk_score' => 'Device Risk Score',
+                            'geofencing' => 'Location Safety',
+                            'forensic_export' => 'Forensic Export',
+                            'wellbeing' => 'Wellbeing Insights',
+                            'smart_timeline' => 'Smart Timeline',
+                            'correlation' => 'Correlation Engine',
+                            'care_plan' => 'Care Plans'
+                        ];
+                        ?>
+                        <ul class="list-group list-group-flush text-sm" style="background: transparent;">
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light">
+                                <span><i class="fas fa-mobile-alt text-info mr-2"></i>Max Devices</span>
+                                <span class="badge badge-pill badge-info px-3 py-1 font-weight-bold"><?= (int)($p['max_devices'] ?? 1) ?> device<?= (int)($p['max_devices'] ?? 1) > 1 ? 's' : '' ?></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light">
+                                <span><i class="fas fa-history text-warning mr-2"></i>Retention Window</span>
+                                <span class="badge badge-pill badge-warning px-3 py-1 font-weight-bold"><?= (int)($p['history_days'] ?? 10) >= 365 ? 'Full' : ($p['history_days'] ?? 10) . ' days' ?></span>
+                            </li>
+                            <li class="list-group-item py-3 px-4 bg-transparent border-light">
+                                <span class="d-block mb-2 font-weight-bold text-muted small text-uppercase"><i class="fas fa-cubes text-indigo mr-1"></i>Device Telemetry Profiles</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span class="badge bg-indigo text-white mr-1 mb-1 px-2 py-1">
+                                        HW: <?= $hwProfile === 'all' ? 'All (Platinum)' : ($hwProfile === 'advanced' ? 'Advanced (Gold)' : 'Basic (Free)') ?>
+                                    </span>
+                                    <span class="badge bg-navy text-white mr-1 mb-1 px-2 py-1">
+                                        SW: <?= $swProfile === 'all' ? 'All (Platinum)' : ($swProfile === 'advanced' ? 'Advanced (Gold)' : 'Basic (Free)') ?>
+                                    </span>
+                                </div>
+                            </li>
+                            <li class="list-group-item py-3 px-4 bg-transparent border-light">
+                                <span class="d-block mb-2 font-weight-bold text-muted small text-uppercase"><i class="fas fa-paper-plane text-success mr-1"></i>Remote Action Commands</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span class="badge <?= in_array('core', $fcmGroups, true) ? 'badge-success' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Core (Free)</span>
+                                    <span class="badge <?= in_array('advanced', $fcmGroups, true) ? 'badge-warning' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Advanced (Gold)</span>
+                                    <span class="badge <?= in_array('deep', $fcmGroups, true) ? 'badge-danger' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Deep (Platinum)</span>
+                                </div>
+                            </li>
+                            <li class="list-group-item py-3 px-4 bg-transparent border-light">
+                                <span class="d-block mb-2 font-weight-bold text-muted small text-uppercase"><i class="fas fa-brain text-purple mr-1"></i>Machine Learning Engine</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span class="badge <?= in_array('core', $algos, true) ? 'badge-success' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Core</span>
+                                    <span class="badge <?= in_array('advanced', $algos, true) ? 'badge-warning' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Advanced</span>
+                                    <span class="badge <?= in_array('deep', $algos, true) ? 'badge-danger' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1">Deep</span>
+                                </div>
+                            </li>
+                            <li class="list-group-item py-3 px-4 bg-transparent border-light">
+                                <span class="d-block mb-2 font-weight-bold text-muted small text-uppercase"><i class="fas fa-star text-warning mr-1"></i>Included Analytics Features</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <?php foreach ($standardFeaturesList as $fk => $flabel): 
+                                        $enabled = !empty($featuresRaw[$fk]) || ($key === 'platinum') || ($key === 'gold' && in_array($fk, ['risk_score', 'geofencing', 'forensic_export', 'smart_timeline'])) || ($key === 'free' && in_array($fk, ['forensic_export', 'smart_timeline']));
+                                    ?>
+                                    <span class="badge <?= $enabled ? 'badge-success' : 'badge-light border text-muted' ?> mr-1 mb-1 px-2 py-1" style="font-size: 0.75rem;">
+                                        <i class="fas fa-<?= $enabled ? 'check-circle' : 'times-circle' ?> mr-1"></i><?= $flabel ?>
+                                    </span>
+                                    <?php endforeach; ?>
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light">
+                                <span><i class="fas fa-bell text-danger mr-2"></i>Security Alerts</span>
+                                <span class="badge badge-pill badge-light border px-2 py-1"><?= $alertsLabel ?></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light">
+                                <span><i class="fas fa-heartbeat text-pink mr-2"></i>Wellbeing History</span>
+                                <span class="badge badge-pill badge-light border px-2 py-1"><?= $wellbeingLabel ?></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4 bg-transparent border-light border-bottom-0 mb-3">
+                                <span><i class="fas fa-headset text-primary mr-2"></i>Support Response</span>
+                                <span class="badge badge-pill badge-light border px-2 py-1"><?= $supportLabel ?></span>
+                            </li>
+                        </ul>
 
                             <div class="p-4 pt-0">
                                 <?php if ($isCurrent): ?>

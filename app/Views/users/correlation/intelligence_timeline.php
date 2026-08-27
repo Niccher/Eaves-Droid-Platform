@@ -1,81 +1,64 @@
 <?php
-/** @var array $basic_timeline */
-/** @var array $advanced_timeline */
-/** @var string $adv_filter */
-/** @var int $adv_total */
-/** @var int $adv_page */
-/** @var string $default_tab */
+/** @var array $timeline */
+/** @var array $pivot */
+/** @var string $plan */
+/** @var int $timeline_limit */
 
-$tlColors = [
-    'sms'       => '#3b82f6',
-    'call'      => '#10b981',
-    'activity'  => '#06b6d4',
-    'location'  => '#f59e0b',
-    'app_usage' => '#8b5cf6',
-    'upload'    => '#14b8a6',
-    'file'      => '#64748b',
-    'health'    => '#ec4899',
-    'keyguard'  => '#334155',
-    'other'     => '#6b7280',
+$catStyles = [
+    'calls' => [
+        'bg' => '#e2f0d9',
+        'fg' => '#2e7d32',
+        'label' => 'CALL',
+        'icon' => 'fas fa-phone'
+    ],
+    'sms' => [
+        'bg' => '#e8eef8',
+        'fg' => '#1a73e8',
+        'label' => 'SMS',
+        'icon' => 'fas fa-envelope'
+    ],
+    'apps' => [
+        'bg' => '#f1eef6',
+        'fg' => '#673ab7',
+        'label' => 'APP',
+        'icon' => 'fas fa-mobile-alt'
+    ],
+    'movement' => [
+        'bg' => '#fff2cc',
+        'fg' => '#e65100',
+        'label' => 'MOVEMENT',
+        'icon' => 'fas fa-map-marker-alt'
+    ],
+    'security' => [
+        'bg' => '#fce4d6',
+        'fg' => '#c00000',
+        'label' => 'SECURITY',
+        'icon' => 'fas fa-shield-alt'
+    ],
+    'health' => [
+        'bg' => '#fde9d9',
+        'fg' => '#e91e63',
+        'label' => 'HEALTH',
+        'icon' => 'fas fa-heartbeat'
+    ],
+    'other' => [
+        'bg' => '#f5f5f5',
+        'fg' => '#616161',
+        'label' => 'SYSTEM',
+        'icon' => 'fas fa-info-circle'
+    ]
 ];
-$tlIcons = [
-    'sms'       => 'fas fa-envelope',
-    'call'      => 'fas fa-phone',
-    'activity'  => 'fas fa-running',
-    'location'  => 'fas fa-map-marker-alt',
-    'app_usage' => 'fas fa-mobile-alt',
-    'upload'    => 'fas fa-upload',
-    'file'      => 'fas fa-file-alt',
-    'health'    => 'fas fa-heartbeat',
-    'keyguard'  => 'fas fa-shield-alt',
-    'other'     => 'fas fa-info-circle',
-];
-$tlLabels = [
-    'sms'       => 'SMS',
-    'call'      => 'Call',
-    'activity'  => 'Activity',
-    'location'  => 'Location',
-    'app_usage' => 'App',
-    'upload'    => 'Upload',
-    'file'      => 'File',
-    'health'    => 'Health',
-    'keyguard'  => 'Keyguard',
-    'other'     => 'Event',
-];
 
-function tl_ts(int $raw): int { return $raw > 9_999_999_999 ? (int)($raw / 1000) : $raw; }
-
-$bSms    = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 'sms'));
-$bCalls  = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 'call'));
-$bMissed = count(array_filter($basic_timeline ?? [], fn($e) => $e['type'] === 'call' && ($e['subtype'] ?? '') === 'missed'));
-
-// AdvancedController type counts from current page data
-$aCounts = [];
-$advExclude = ['sms', 'call'];
-if (!empty($advanced_timeline)) {
-    foreach ($advanced_timeline as $ev) {
-        $t = $ev['type'] ?? 'other';
-        if (!in_array($t, $advExclude)) {
-            $aCounts[$t] = ($aCounts[$t] ?? 0) + 1;
-        }
-    }
-    arsort($aCounts);
+function tl_ts(int $raw): int {
+    return $raw > 9_999_999_999 ? (int)($raw / 1000) : $raw;
 }
-$aTotal = $adv_total ?? count($advanced_timeline ?? []);
 ?>
-<style>
-.bg-purple { background: #8b5cf6 !important; }
-.bg-teal   { background: #14b8a6 !important; }
-.bg-indigo { background: #4f46e5 !important; }
-.bg-maroon { background: #b45309 !important; color: #fff; }
-.info-box-sm { min-height: 70px; border-radius: 8px; margin-bottom: 4px; }
-</style>
 
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-4 align-items-center">
-                <div class="col-lg-8 col-md-6">
+                <div class="col-md-12">
                     <div class="d-flex align-items-center">
                         <h1 class="h2 mb-0">
                             <i class="fas fa-stream text-primary mr-2"></i>
@@ -87,14 +70,11 @@ $aTotal = $adv_total ?? count($advanced_timeline ?? []);
                             </span>
                         </div>
                     </div>
-                    <p class="text-muted mt-2 mb-0">Chronological event stream across SMS, Calls, Apps, Locations, Health, and Keyguard state.</p>
+                    <p class="text-muted mt-2 mb-0">Unified chronological event stream across SMS, Calls, Apps, Location safety, Health tracker, and Screen/Keyguard actions.</p>
                     <div class="mt-2">
                         <span class="badge badge-info border p-2 mr-1"><i class="fas fa-history mr-1"></i> Window: <?= esc($history_label ?? '7 days') ?> (<?= esc(ucfirst($plan ?? 'free')) ?>)</span>
-                        <span class="badge badge-light border p-2"><i class="fas fa-th mr-1"></i> Crisis-mode pivot included</span>
+                        <span class="badge badge-light border p-2"><i class="fas fa-filter mr-1"></i> Cap: Max <?= esc($timeline_limit) ?> total events</span>
                     </div>
-                </div>
-                <div class="col-lg-4 col-md-6 text-right">
-                    <!-- reserved for future actions -->
                 </div>
             </div>
         </div>
@@ -102,201 +82,249 @@ $aTotal = $adv_total ?? count($advanced_timeline ?? []);
 
     <section class="content">
         <div class="container-fluid">
-            <div class="card card-secondary card-outline shadow-sm">
-                <div class="card-header">
-                    <ul class="nav nav-pills" id="tl-tabs" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link <?= $default_tab === 'basic' ? 'active' : '' ?>" id="tab-basic" data-toggle="pill" href="#pane-basic" role="tab">
-                                <i class="fas fa-comment-alt mr-1"></i> Basic Timeline
-                                <span class="badge badge-light ml-1"><?= number_format($bSms + $bCalls) ?></span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?= $default_tab === 'advanced' ? 'active' : '' ?>" id="tab-advanced" data-toggle="pill" href="#pane-advanced" role="tab">
-                                <i class="fas fa-layer-group mr-1"></i> AdvancedController Timeline
-                                <span class="badge badge-dark ml-1"><?= number_format($aTotal) ?></span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="tab-pivot" data-toggle="pill" href="#pane-pivot" role="tab">
-                                <i class="fas fa-th mr-1"></i> Daily Pivot
-                                <span class="badge badge-light ml-1"><?= number_format(count($pivot['rows'] ?? [])) ?></span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                <div class="card-body">
-                    <div class="tab-content" id="tl-panes">
-
-                        <!-- ═══════ BASIC: SMS + Calls ═══════ -->
-                        <div class="tab-pane fade <?= $default_tab === 'basic' ? 'show active' : '' ?>" id="pane-basic" role="tabpanel">
-                            <div class="mb-3 d-flex align-items-center flex-wrap" style="gap:6px;">
-                                <small class="text-muted font-weight-bold mr-1"><i class="fas fa-filter mr-1"></i>Filter:</small>
-                                <button class="btn btn-sm bf-btn active" data-f="all" style="border-radius:8px; font-weight:600;">
-                                    <i class="fas fa-list mr-1"></i> All
-                                </button>
-                                <button class="btn btn-sm bf-btn" data-f="sms" style="border-radius:8px; font-weight:600; color:<?= $tlColors['sms'] ?>;">
-                                    <i class="fas fa-envelope mr-1"></i> SMS <span class="badge ml-1" style="background:<?= $tlColors['sms'] ?>; color:#fff;"><?= $bSms ?></span>
-                                </button>
-                                <button class="btn btn-sm bf-btn" data-f="call" style="border-radius:8px; font-weight:600; color:<?= $tlColors['call'] ?>;">
-                                    <i class="fas fa-phone mr-1"></i> Calls <span class="badge ml-1" style="background:<?= $tlColors['call'] ?>; color:#fff;"><?= $bCalls ?></span>
-                                </button>
-                                <button class="btn btn-sm bf-btn" data-f="missed" style="border-radius:8px; font-weight:600; color:#dc2626;">
-                                    <i class="fas fa-phone-slash mr-1"></i> Missed <span class="badge ml-1" style="background:#dc2626; color:#fff;"><?= $bMissed ?></span>
-                                </button>
-                                <div class="input-group input-group-sm ml-auto" style="max-width:260px;">
-                                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-search"></i></span></div>
-                                    <input type="text" id="bsrch" class="form-control" placeholder="Search events...">
+            <div class="row">
+                
+                <!-- Left Column: Unified Timeline Feed -->
+                <div class="col-md-8">
+                    <!-- Main Timeline Card -->
+                    <div class="card card-primary card-outline shadow-sm">
+                        <div class="card-header border-0 pb-0">
+                            <!-- Category filter buttons -->
+                            <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 10px;">
+                                <div class="d-flex flex-wrap align-items-center" style="gap: 6px;" id="filter-buttons">
+                                    <button class="btn btn-sm btn-primary active filter-btn" data-filter="all" style="border-radius: 8px; font-weight: 600;">
+                                        <i class="fas fa-list mr-1"></i> All
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success filter-btn" data-filter="calls" style="border-radius: 8px; font-weight: 600;">
+                                        <i class="fas fa-phone mr-1"></i> Calls
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="sms" style="border-radius: 8px; font-weight: 600;">
+                                        <i class="fas fa-envelope mr-1"></i> SMS
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info style-purple filter-btn" data-filter="apps" style="border-radius: 8px; font-weight: 600; color: #673ab7; border-color: #673ab7;">
+                                        <i class="fas fa-mobile-alt mr-1"></i> Apps
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="movement" style="border-radius: 8px; font-weight: 600; color: #e65100; border-color: #e65100;">
+                                        <i class="fas fa-map-marker-alt mr-1"></i> Movement
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="security" style="border-radius: 8px; font-weight: 600; color: #c00000; border-color: #c00000;">
+                                        <i class="fas fa-shield-alt mr-1"></i> Security
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="health" style="border-radius: 8px; font-weight: 600; color: #e91e63; border-color: #e91e63;">
+                                        <i class="fas fa-heartbeat mr-1"></i> Health
+                                    </button>
+                                </div>
+                                <div class="input-group input-group-sm" style="max-width: 240px;">
+                                    <div class="input-group-prepend"><span class="input-group-text bg-white"><i class="fas fa-search"></i></span></div>
+                                    <input type="text" id="timeline-search" class="form-control" placeholder="Search events...">
                                 </div>
                             </div>
-
-                            <?php if (empty($basic_timeline)): ?>
-                            <div class="text-center py-5"><i class="fas fa-comment-slash fa-3x text-muted mb-3 d-block"></i><h5 class="text-muted">No communication events yet</h5><p class="text-muted">SMS and call records will appear once data is extracted.</p></div>
-                            <?php else: ?>
-                            <div class="timeline" id="basic-tl">
-                                <?php $lastBDate = ''; foreach ($basic_timeline as $ev): $ts = tl_ts((int)($ev['time'] ?? 0)); $date = date('D, j M Y', $ts); $time = date('H:i', $ts); $type = $ev['type'] ?? 'other'; $sub = $ev['subtype'] ?? $type; $icon = $ev['icon'] ?? $tlIcons[$type] ?? 'fas fa-info-circle'; $bgColor = $tlColors[$type] ?? '#6b7280'; $tit = $ev['title'] ?? 'Event'; $bod = $ev['body'] ?? ''; $cont = $ev['meta'] ?? ''; $flt = $sub === 'missed' ? 'missed' : $type; if ($date !== $lastBDate): $lastBDate = $date; ?>
-                                <div class="time-label" data-filters="<?= esc($type . ' ' . $sub) ?>"><span class="bg-dark"><?= esc($date) ?></span></div>
-                                <?php endif; ?>
-                                <div class="tl-ev" data-filters="<?= esc($flt) ?>">
-                                    <i class="<?= esc($icon) ?>" style="background:<?= $bgColor ?>; color:#fff; padding:8px; border-radius:50%; font-size:0.85rem;"></i>
-                                    <div class="timeline-item">
-                                        <span class="time"><i class="fas fa-clock"></i> <?= $time ?> <?php if(!empty($cont)): ?><span class="ml-2 text-muted" style="font-size:0.73rem;"><i class="fas fa-user mr-1"></i><?= esc($cont) ?></span><?php endif; ?></span>
-                                        <h3 class="timeline-header">
-                                            <span class="badge" style="font-size:0.68rem; background:<?= $bgColor ?>; color:#fff;"><?= esc(strtoupper($sub)) ?></span>
-                                            <?= htmlspecialchars($tit) ?>
-                                        </h3>
-                                        <?php if (!empty($bod)): ?>
-                                        <div class="timeline-body text-muted" style="font-size:0.85rem;"><?= htmlspecialchars(mb_strimwidth($bod, 0, 300, '…')) ?></div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
-                                <div><i class="fas fa-clock bg-gray"></i></div>
-                            </div>
-                            <?php endif; ?>
                         </div>
 
-                        <!-- ═══════ ADVANCED TIMELINE ═══════ -->
-                        <div class="tab-pane fade <?= $default_tab === 'advanced' ? 'show active' : '' ?>" id="pane-advanced" role="tabpanel">
-                            <div class="mb-3 d-flex flex-wrap align-items-center" style="gap:6px;">
-                                <small class="text-muted font-weight-bold mr-1"><i class="fas fa-filter mr-1"></i>Type:</small>
-                                <button class="btn btn-sm af-btn active" data-tp="all" style="border-radius:8px; font-weight:600;">
-                                    <i class="fas fa-layer-group mr-1"></i> All <span class="badge badge-light ml-1"><?= number_format($aTotal) ?></span>
-                                </button>
-                                <?php foreach ($aCounts as $tKey => $tCnt): $c = $tlColors[$tKey] ?? '#6b7280'; $icn = $tlIcons[$tKey] ?? 'fas fa-info-circle'; $lbl = $tlLabels[$tKey] ?? 'Event'; $isActive = ($adv_filter === $tKey); ?>
-                                <button class="btn btn-sm af-btn <?= $isActive ? 'active' : '' ?>" data-tp="<?= esc($tKey) ?>" style="font-weight:600; border-radius:8px; color:<?= $c ?>;">
-                                    <i class="<?= esc($icn) ?> mr-1"></i> <?= esc($lbl) ?>
-                                    <span class="badge ml-1" style="background:<?= $c ?>; color:#fff;"><?= $tCnt ?></span>
-                                </button>
-                                <?php endforeach; ?>
-                            </div>
-
-                            <?php if (empty($advanced_timeline)): ?>
-                            <div class="text-center py-5"><i class="fas fa-layer-group fa-3x text-muted mb-3 d-block"></i><h5 class="text-muted">No events found</h5><p class="text-muted">Try a different type filter or check back after more data is imported.</p></div>
+                        <div class="card-body">
+                            <?php if (empty($timeline)): ?>
+                                <div class="text-center py-5">
+                                    <i class="fas fa-stream fa-3x text-muted mb-3 d-block"></i>
+                                    <h5 class="text-muted">No timeline events extracted</h5>
+                                    <p class="text-muted mb-0">Chronological records will appear here once the device uploads logs.</p>
+                                </div>
                             <?php else: ?>
-                            <div class="timeline" id="adv-tl">
-                                <?php $lastADate = ''; foreach ($advanced_timeline as $ev): $tsA = tl_ts((int)($ev['time'] ?? 0)); $dateA = date('D, j M Y', $tsA); $timeA = date('H:i:s', $tsA); $tyA = $ev['type'] ?? 'other'; $suA = $ev['subtitle'] ?? ($ev['subtype'] ?? ''); $cA = $tlColors[$tyA] ?? '#6b7280'; $ioA = $ev['icon'] ?? $tlIcons[$tyA] ?? 'fas fa-info-circle'; $lbA = $ev['subtitle'] ?: ($tlLabels[$tyA] ?? 'Event'); $tiA = $ev['title'] ?? 'Event'; $boA = $ev['body'] ?? '';
-                                    // upload subtype overrides
-                                    if ($tyA === 'upload' && !empty($suA)) {
-                                        $cat = strtolower($suA);
-                                        if (in_array($cat, ['bluetooth','bt']))       { $ioA = 'fab fa-bluetooth'; }
-                                        elseif (in_array($cat, ['files','file']))     { $ioA = 'fas fa-file-archive'; }
-                                        elseif (in_array($cat, ['apps','app']))       { $ioA = 'fas fa-mobile-alt'; }
-                                        elseif ($cat === 'contacts')                 { $ioA = 'fas fa-address-book'; }
-                                        elseif ($cat === 'sms')                      { $ioA = 'fas fa-comments'; }
-                                        elseif (in_array($cat, ['logs','call']))     { $ioA = 'fas fa-phone-square'; }
-                                        elseif ($cat === 'location')                 { $ioA = 'fas fa-map-pin'; }
-                                    }
-                                    if ($dateA !== $lastADate): $lastADate = $dateA; ?>
-                                <div class="time-label"><span class="bg-dark"><?= esc($dateA) ?></span></div>
-                                <?php endif; ?>
-                                <div class="adv-ev" data-tp="<?= esc($tyA) ?>">
-                                    <i class="<?= esc($ioA) ?>" style="background:<?= $cA ?>; color:#fff; padding:8px; border-radius:50%; font-size:0.82rem;"></i>
-                                    <div class="timeline-item">
-                                        <span class="time"><i class="fas fa-clock"></i> <?= $timeA ?>
-                                            <span class="badge ml-2" style="font-size:0.65rem; background:<?= $cA ?>; color:#fff;"><?= esc(strtoupper($lbA)) ?></span>
-                                        </span>
-                                        <h3 class="timeline-header"><?= htmlspecialchars($tiA) ?></h3>
-                                        <?php if (!empty($boA)): ?><div class="timeline-body text-muted" style="font-size:0.85rem; line-height:1.5;"><?= htmlspecialchars(mb_strimwidth($boA, 0, 300, '…')) ?></div><?php endif; ?>
-                                        <?php if ($tyA === 'location' && preg_match('/Lat:\s*([\d.\-]+)\s*Lng:\s*([\d.\-]+)/', $boA, $m)): ?>
-                                        <div class="timeline-footer">
-                                            <a href="https://www.google.com/maps?q=<?= esc(trim($m[1]), 'attr') ?>,<?= esc(trim($m[2]), 'attr') ?>" target="_blank" rel="noopener" class="btn btn-xs btn-primary"><i class="fas fa-map-marked-alt mr-1"></i> Open in Google Maps</a>
+                                <div class="timeline" id="unified-timeline">
+                                    <?php 
+                                    $lastDate = ''; 
+                                    foreach ($timeline as $ev): 
+                                        $ts = tl_ts((int)($ev['time'] ?? 0));
+                                        $date = date('D, j M Y', $ts);
+                                        $time = date('h:i:s A', $ts);
+                                        
+                                        $type = $ev['type'] ?? 'other';
+                                        $sub = strtolower($ev['subtitle'] ?? $ev['subtype'] ?? '');
+                                        
+                                        // Category mapping
+                                        $cat = 'other';
+                                        if ($type === 'call') {
+                                            $cat = 'calls';
+                                        } elseif ($type === 'sms') {
+                                            $cat = 'sms';
+                                        } elseif ($type === 'app_usage' || ($type === 'upload' && $sub === 'app')) {
+                                            $cat = 'apps';
+                                        } elseif ($type === 'activity' || $type === 'location') {
+                                            $cat = 'movement';
+                                        } elseif ($type === 'keyguard') {
+                                            $cat = 'security';
+                                        } elseif ($type === 'health') {
+                                            $cat = 'health';
+                                        }
+                                        
+                                        $style = $catStyles[$cat] ?? $catStyles['other'];
+                                        $icon = $ev['icon'] ?? $style['icon'];
+                                        
+                                        if ($date !== $lastDate): 
+                                            $lastDate = $date; 
+                                    ?>
+                                            <div class="time-label" data-date="<?= esc($date) ?>">
+                                                <span class="bg-dark text-white shadow-sm" style="border-radius: 6px; font-size: 0.8rem;"><?= esc($date) ?></span>
+                                            </div>
+                                    <?php 
+                                        endif; 
+                                    ?>
+                                        <div class="tl-ev" data-category="<?= esc($cat) ?>">
+                                            <!-- Customized contrast-matched circle icon -->
+                                            <i class="<?= esc($icon) ?>" style="background-color: <?= $style['bg'] ?> !important; color: <?= $style['fg'] ?> !important; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; font-size: 0.85rem; position: absolute; left: 17px; top: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></i>
+                                            
+                                            <div class="timeline-item shadow-none border" style="border-radius: 8px; margin-left: 60px; margin-bottom: 20px; background-color: #fcfcfc;">
+                                                <span class="time text-muted"><i class="fas fa-clock mr-1"></i> <?= esc($time) ?></span>
+                                                
+                                                <h3 class="timeline-header" style="border-bottom: 0; padding: 12px 15px 6px 15px; font-size: 0.95rem; font-weight: 600;">
+                                                    <span class="badge mr-2" style="font-size: 0.65rem; background-color: <?= $style['bg'] ?>; color: <?= $style['fg'] ?>; border: 1px solid <?= $style['fg'] ?>30;"><?= esc($style['label']) ?></span>
+                                                    <?= $ev['title'] ?? 'Event' ?>
+                                                </h3>
+                                                
+                                                <?php if (!empty($ev['body'])): ?>
+                                                    <div class="timeline-body text-muted pt-0 pb-3" style="font-size: 0.88rem; line-height: 1.5; padding: 0 15px;">
+                                                        <?= $ev['body'] // output raw containing details and br tags ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($type === 'location' && preg_match('/Lat:\s*([\d.\-]+)\s*Lng:\s*([\d.\-]+)/', $ev['body'] ?? '', $m)): ?>
+                                                    <div class="timeline-footer pt-0 pb-3" style="padding: 0 15px;">
+                                                        <a href="https://www.google.com/maps?q=<?= esc(trim($m[1]), 'attr') ?>,<?= esc(trim($m[2]), 'attr') ?>" target="_blank" rel="noopener" class="btn btn-xs btn-primary border-radius-sm" style="border-radius: 6px;"><i class="fas fa-map-marked-alt mr-1"></i> Open in Google Maps</a>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
-                                        <?php endif; ?>
-                                    </div>
+                                    <?php endforeach; ?>
+                                    <div><i class="fas fa-clock bg-gray text-white" style="box-shadow: 0 1px 3px rgba(0,0,0,0.15); width: 32px; height: 32px; line-height: 32px; position: absolute; left: 17px; border-radius: 50%; text-align: center;"></i></div>
                                 </div>
-                                <?php endforeach; ?>
-                                <div><i class="fas fa-clock bg-gray"></i></div>
-                            </div>
-                            <?php endif; ?>
-
-                            <?php if ($aTotal > 0): ?>
-                            <div class="card-footer clearfix">
-                                <?php
-                                $totalPages = (int)ceil($aTotal / $adv_per_page);
-                                $curP = $adv_page;
-                                $typeQ = $adv_filter === 'all' ? '' : '&type=' . urlencode($adv_filter);
-                                $baseUrl = '/analysis/timeline?p=' . ($curP + 1) . $typeQ;
-                                ?>
-                                <nav>
-                                    <ul class="pagination pagination-sm mb-0">
-                                        <li class="page-item <?= $curP <= 1 ? 'disabled' : '' ?>">
-                                            <a class="page-link" href="/analysis/timeline?p=<?= max(1, $curP - 1) . $typeQ ?>"><i class="fas fa-angle-left"></i></a>
-                                        </li>
-                                        <?php
-                                        $start = max(1, $curP - 2);
-                                        $end = min($totalPages, $start + 4);
-                                        $start = max(1, $end - 4);
-                                        for ($pi = $start; $pi <= $end; $pi++): ?>
-                                        <li class="page-item <?= $pi == $curP ? 'active' : '' ?>">
-                                            <a class="page-link" href="/analysis/timeline?p=<?= $pi . $typeQ ?>"><?= $pi ?></a>
-                                        </li>
-                                        <?php endfor; ?>
-                                        <li class="page-item <?= $curP >= $totalPages ? 'disabled' : '' ?>">
-                                            <a class="page-link" href="/analysis/timeline?p=<?= min($totalPages, $curP + 1) . $typeQ ?>"><i class="fas fa-angle-right"></i></a>
-                                        </li>
-                                    </ul>
-                                </nav>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- ═══════ DAILY PIVOT ═══════ -->
-                        <div class="tab-pane fade" id="pane-pivot" role="tabpanel">
-                            <?php $pivotRows = $pivot['rows'] ?? []; $pivotCats = $pivot['categories'] ?? []; ?>
-                            <?php if (empty($pivotRows)): ?>
-                                <div class="text-center py-5"><i class="fas fa-th fa-3x text-muted mb-3 d-block"></i><h5 class="text-muted">No activity in this window</h5><p class="text-muted">Data will appear here once events are extracted.</p></div>
-                            <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover table-valign-middle mb-0">
-                                    <thead class="thead-dark">
-                                        <tr>
-                                            <th>Date</th>
-                                            <th class="text-center">Total</th>
-                                            <?php foreach ($pivotCats as $cat): ?>
-                                                <th class="text-center"><i class="<?= esc($tlIcons[$cat] ?? 'fas fa-circle') ?> mr-1"></i><?= esc($tlLabels[$cat] ?? ucfirst($cat)) ?></th>
-                                            <?php endforeach; ?>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($pivotRows as $row): ?>
-                                        <tr>
-                                            <td class="font-weight-bold"><?= esc(date('D, j M Y', strtotime($row['date']))) ?></td>
-                                            <td class="text-center"><span class="badge badge-dark"><?= number_format($row['total']) ?></span></td>
-                                            <?php foreach ($pivotCats as $cat): $c = $tlColors[$cat] ?? '#6b7280'; ?>
-                                                <td class="text-center">
-                                                    <span class="badge" style="background:<?= $c ?>; color:#fff;"><?= number_format($row[$cat] ?? 0) ?></span>
-                                                </td>
-                                            <?php endforeach; ?>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
                             <?php endif; ?>
                         </div>
                     </div>
                 </div>
+
+                <!-- Right Column: Sidebar Guide & Telemetry Legend -->
+                <div class="col-md-4">
+                    
+                    <!-- Card 1: Active Subscription Gating -->
+                    <div class="card card-outline card-primary shadow-sm mb-3">
+                        <div class="card-header">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-layer-group text-primary mr-1"></i> Timeline Gating
+                            </h3>
+                        </div>
+                        <div class="card-body py-3 px-3">
+                            <p class="text-sm text-muted mb-2">
+                                Your account is bound to the <strong class="text-primary"><?= esc(ucfirst($plan ?? 'free')) ?></strong> plan tier limits. Here is how your timeline visibility is currently gated:
+                            </p>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between text-xs font-weight-bold mb-1">
+                                    <span>Plan Category Capping</span>
+                                    <span><?= esc(ucfirst($plan ?? 'free')) ?> Tier</span>
+                                </div>
+                                <table class="table table-sm table-bordered text-xs mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Plan Tier</th>
+                                            <th>Cap Per Source</th>
+                                            <th>Max Total Limit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="<?= strtolower($plan ?? '') === 'free' ? 'table-warning font-weight-bold' : '' ?>">
+                                            <td>Free Core</td>
+                                            <td>5 Events</td>
+                                            <td>50 Events</td>
+                                        </tr>
+                                        <tr class="<?= strtolower($plan ?? '') === 'gold' ? 'table-warning font-weight-bold' : '' ?>">
+                                            <td>Gold Advanced</td>
+                                            <td>15 Events</td>
+                                            <td>100 Events</td>
+                                        </tr>
+                                        <tr class="<?= strtolower($plan ?? '') === 'platinum' ? 'table-warning font-weight-bold' : '' ?>">
+                                            <td>Platinum Deep</td>
+                                            <td>25 Events</td>
+                                            <td>150 Events</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <span class="text-xs text-muted font-italic"><i class="fas fa-info-circle mr-1"></i> Exceeded events are automatically truncated from oldest to newest.</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Legend & Explanation -->
+                    <div class="card card-outline card-secondary shadow-sm mb-3">
+                        <div class="card-header">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-info-circle text-secondary mr-1"></i> Category Legend
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush text-xs">
+                                <li class="list-group-item d-flex align-items-start py-2">
+                                    <i class="fas fa-phone mr-3 mt-1 text-success" style="font-size: 1.1rem; width: 18px; text-align: center;"></i>
+                                    <div>
+                                        <strong class="text-dark d-block">Calls</strong>
+                                        <span class="text-muted">Displays incoming, outgoing, and missed call durations synced directly from device call logs.</span>
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex align-items-start py-2">
+                                    <i class="fas fa-envelope mr-3 mt-1 text-primary" style="font-size: 1.1rem; width: 18px; text-align: center;"></i>
+                                    <div>
+                                        <strong class="text-dark d-block">SMS Logs</strong>
+                                        <span class="text-muted">Shows incoming and outgoing SMS transmissions, short-codes, and text snippets.</span>
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex align-items-start py-2">
+                                    <i class="fas fa-mobile-alt mr-3 mt-1 text-indigo" style="font-size: 1.1rem; width: 18px; text-align: center;"></i>
+                                    <div>
+                                        <strong class="text-dark d-block">Apps Usage</strong>
+                                        <span class="text-muted">Audits app opens, session durations, new app installs, and system updates.</span>
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex align-items-start py-2">
+                                    <i class="fas fa-map-marker-alt mr-3 mt-1 text-warning" style="font-size: 1.1rem; width: 18px; text-align: center;"></i>
+                                    <div>
+                                        <strong class="text-dark d-block">Movement</strong>
+                                        <span class="text-muted">Matches location scans with active physical state (e.g. walking, vehicle) when they occur at the exact same sync timestamp.</span>
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex align-items-start py-2">
+                                    <i class="fas fa-shield-alt mr-3 mt-1 text-danger" style="font-size: 1.1rem; width: 18px; text-align: center;"></i>
+                                    <div>
+                                        <strong class="text-dark d-block">Security Logs</strong>
+                                        <span class="text-muted">Tracks screen keyguard state transitions (lock, unlock, verification attempts).</span>
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex align-items-start py-2">
+                                    <i class="fas fa-heartbeat mr-3 mt-1 text-pink" style="font-size: 1.1rem; width: 18px; text-align: center; color: #e91e63;"></i>
+                                    <div>
+                                        <strong class="text-dark d-block">Health Metrics</strong>
+                                        <span class="text-muted">Monitors fitness steps (converted to distance KM/Metres), sleeps, and pulse stats.</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Telemetry Indicators -->
+                    <div class="card card-outline card-info shadow-sm mb-3">
+                        <div class="card-header">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-satellite text-info mr-1"></i> Telemetry Indicator Guide
+                            </h3>
+                        </div>
+                        <div class="card-body text-xs py-3 px-3">
+                            <ul class="pl-3 mb-0 text-muted" style="line-height:1.6;">
+                                <li><strong>Accuracy:</strong> Radius margin of error for coordinates. Low values indicate sharp satellite locks.</li>
+                                <li><strong>Speed:</strong> Speed logged at sync time, converted to KM/h.</li>
+                                <li><strong>Bearing:</strong> Device heading direction relative to true North (0° - 360°).</li>
+                                <li><strong>Altitude:</strong> Logged elevation height measured in Metres above the sea level.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
         </div>
     </section>
@@ -304,72 +332,66 @@ $aTotal = $adv_total ?? count($advanced_timeline ?? []);
 
 <script>
 $(function(){
-    var $bT = $('#basic-tl'), $s = $('#bsrch');
+    var $timeline = $('#unified-timeline');
+    var $search = $('#timeline-search');
 
-    function applyBasic(){
-        var active = $('#pane-basic .bf-btn.active');
-        var f = active.data('f') || 'all';
-        var q = ($s.val() || '').toLowerCase().trim();
-        $bT.find('.tl-ev').each(function(){
-            var $e = $(this);
-            var fs = ($e.data('filters') || '').split(' ');
-            var matchFilter = (f === 'all' || fs.includes(f));
-            var matchSearch = (q === '' || $e.text().toLowerCase().includes(q));
-            $e.toggle(matchFilter && matchSearch);
+    function applyFilter() {
+        var selectedFilter = $('#filter-buttons .filter-btn.active').data('filter') || 'all';
+        var query = ($search.val() || '').toLowerCase().trim();
+
+        $timeline.find('.tl-ev').each(function() {
+            var $el = $(this);
+            var cat = $el.data('category') || 'other';
+            
+            var matchCategory = (selectedFilter === 'all' || cat === selectedFilter);
+            var matchSearch = (query === '' || $el.text().toLowerCase().includes(query));
+            
+            $el.toggle(matchCategory && matchSearch);
         });
-        hideOrphans($bT);
-    }
 
-    function hideOrphans($tl) {
-        $tl.find('.time-label').each(function() {
-            var $x = $(this), n = $x.next(), vis = false;
-            while (n.length && !n.is('.time-label')) {
-                if (n.is(':visible')) { vis = true; break; }
-                n = n.next();
+        // Hide date label tags with no visible events under them
+        $timeline.find('.time-label').each(function() {
+            var $label = $(this);
+            var $next = $label.next();
+            var hasVisibleChildren = false;
+
+            while ($next.length && !$next.is('.time-label')) {
+                if ($next.is(':visible')) {
+                    hasVisibleChildren = true;
+                    break;
+                }
+                $next = $next.next();
             }
-            $x.toggle(vis);
+            $label.toggle(hasVisibleChildren);
         });
     }
 
-    // Basic filter buttons
-    $('#pane-basic .bf-btn').on('click', function() {
-        $('#pane-basic .bf-btn').removeClass('btn-primary btn-outline-primary btn-success btn-outline-success btn-danger btn-outline-danger active');
-        var f = $(this).data('f');
-        if (f === 'all' || f === 'sms') $(this).addClass('btn-primary active');
-        else if (f === 'call') $(this).addClass('btn-success active');
-        else $(this).addClass('btn-danger active');
-        applyBasic();
+    // Filter button triggers
+    $('#filter-buttons .filter-btn').on('click', function() {
+        $('#filter-buttons .filter-btn').removeClass('btn-primary btn-success btn-info btn-warning btn-danger btn-secondary active');
+        
+        var selected = $(this).data('filter');
+        if (selected === 'all') {
+            $(this).addClass('btn-primary active');
+        } else if (selected === 'calls') {
+            $(this).addClass('btn-success active');
+        } else if (selected === 'sms') {
+            $(this).addClass('btn-primary active');
+        } else if (selected === 'apps') {
+            $(this).addClass('btn-info active');
+        } else if (selected === 'movement') {
+            $(this).addClass('btn-warning active');
+        } else if (selected === 'security') {
+            $(this).addClass('btn-danger active');
+        } else {
+            $(this).addClass('btn-secondary active');
+        }
+        
+        applyFilter();
     });
-    $s.on('input', applyBasic);
-    hideOrphans($bT);
 
-    // AdvancedController filter buttons (JS only, no reload)
-    var $aT = $('#adv-tl');
-    function applyAdvanced() {
-        var activeBtn = $('#pane-advanced .af-btn.active');
-        var tp = activeBtn.data('tp') || 'all';
-        $aT.find('.adv-ev').each(function(){
-            var $e = $(this);
-            var t = $e.data('tp') || 'other';
-            var match = (tp === 'all' || t === tp);
-            $e.toggle(match);
-        });
-        hideOrphans($aT);
-    }
-    $('#pane-advanced .af-btn').on('click', function() {
-        $('#pane-advanced .af-btn').removeClass('active');
-        $(this).addClass('active');
-        // update URL without reload
-        var tp = $(this).data('tp');
-        var newUrl = tp === 'all' ? '/analysis/timeline' : '/analysis/timeline?type=' + tp;
-        history.replaceState({}, '', newUrl);
-        applyAdvanced();
-    });
-    // initial filter based on URL ?type=
-    var urlParams = new URLSearchParams(window.location.search);
-    var initType = urlParams.get('type') || 'all';
-    $('#pane-advanced .af-btn[data-tp="' + initType + '"]').addClass('active').siblings('.af-btn').removeClass('active');
-    applyAdvanced();
+    $search.on('input', applyFilter);
+    applyFilter();
 });
 </script>
 

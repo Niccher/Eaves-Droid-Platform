@@ -1,5 +1,22 @@
 <?php
 /** @var array $anomalies */
+
+$catStyles = [
+    'call'          => ['label' => 'Call Anomaly', 'icon' => 'fas fa-phone-slash', 'bg' => '#dc3545', 'fg' => '#ffffff'],
+    'app_usage'     => ['label' => 'App Anomaly', 'icon' => 'fas fa-mobile-alt', 'bg' => '#ffc107', 'fg' => '#1f2d3d'],
+    'location'      => ['label' => 'Location Anomaly', 'icon' => 'fas fa-map-marker-alt', 'bg' => '#fd7e14', 'fg' => '#ffffff'],
+    'communication' => ['label' => 'Comm Anomaly', 'icon' => 'fas fa-comments', 'bg' => '#6f42c1', 'fg' => '#ffffff'],
+    'other'         => ['label' => 'Anomaly', 'icon' => 'fas fa-exclamation-triangle', 'bg' => '#6c757d', 'fg' => '#ffffff'],
+];
+
+// Summary counts computation
+$typeCounts = ['call' => 0, 'app_usage' => 0, 'location' => 0, 'communication' => 0];
+foreach ($anomalies as $a) {
+    $t = $a['type'] ?? 'other';
+    if (isset($typeCounts[$t])) {
+        $typeCounts[$t]++;
+    }
+}
 ?>
 <div class="content-wrapper">
     <section class="content-header">
@@ -41,189 +58,174 @@
                 </div>
             <?php endif; ?>
 
-            <?php if (session()->getFlashdata('info')): ?>
-                <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
-                    <i class="fas fa-info-circle mr-2"></i><?= session()->getFlashdata('info') ?>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-            <?php endif; ?>
-
-            <!-- Summary info-boxes -->
             <div class="row">
-                <?php
-                $typeCounts = ['call' => 0, 'app_usage' => 0, 'location' => 0, 'communication' => 0];
-                foreach ($anomalies as $a) {
-                    if (isset($typeCounts[$a['type']])) $typeCounts[$a['type']]++;
-                }
-                ?>
-                <div class="col-md-3 col-sm-6">
-                    <div class="info-box">
-                        <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-exclamation-triangle"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Total Anomalies</span>
-                            <span class="info-box-number"><?= count($anomalies) ?></span>
+                
+                <!-- Left Column: Chronological Anomaly Feed (col-md-8) -->
+                <div class="col-md-8">
+                    <div class="card card-warning card-outline shadow-sm">
+                        <div class="card-header border-0 pb-0">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-stream mr-2 text-warning"></i> Anomaly Feed
+                            </h3>
+                            <div class="card-tools">
+                                <span class="badge badge-warning p-2" style="border-radius: 8px; font-weight: 600; font-size: 0.75rem;">
+                                    <i class="fas fa-bell mr-1"></i> <?= count($anomalies) ?> Events Flagged
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="info-box">
-                        <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-phone-slash"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Late Night Calls</span>
-                            <span class="info-box-number"><?= $typeCounts['call'] ?></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="info-box">
-                        <span class="info-box-icon bg-purple elevation-1"><i class="fas fa-mobile-alt"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Late Night App Use</span>
-                            <span class="info-box-number"><?= $typeCounts['app_usage'] ?></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="info-box">
-                        <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-map-marker-alt"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Late Night Movement</span>
-                            <span class="info-box-number"><?= $typeCounts['location'] ?></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Callout -->
-            <div class="callout callout-warning">
-                <h5><i class="fas fa-bed mr-2"></i>Sleep Baseline: 11:00 PM – 5:00 AM</h5>
-                <p>All events below occurred outside the expected sleep window. These may indicate unusual or suspicious device activity worth investigating.</p>
-            </div>
+                        <div class="card-body">
+                            <?php if (empty($anomalies)): ?>
+                                <div class="text-center py-5">
+                                    <i class="fas fa-check-circle fa-3x text-success mb-3 d-block"></i>
+                                    <h5 class="text-muted">No anomalies detected</h5>
+                                    <p class="text-muted mb-0">All audited device activities align with the established baseline timeline.</p>
+                                </div>
+                            <?php else: ?>
+                                <div class="timeline p-2" id="anomaly-timeline">
+                                    <?php
+                                    $lastDate = '';
+                                    foreach ($anomalies as $anomaly):
+                                        $rawTs = (int)($anomaly['timestamp'] ?? 0);
+                                        $ts    = $rawTs > 9999999999 ? (int)($rawTs / 1000) : $rawTs;
+                                        $dateStr = date('D, j M Y', $ts);
+                                        $timeStr = date('h:i:s A', $ts);
+                                        $sev   = $anomaly['severity'] ?? 'warning';
+                                        $type  = $anomaly['type']     ?? 'other';
 
-            <!-- Anomaly Timeline -->
-            <div class="card card-warning card-outline">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-stream mr-2"></i>Anomaly Feed</h3>
-                    <div class="card-tools">
-                        <span class="badge badge-warning"><?= count($anomalies) ?> events</span>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <?php if (empty($anomalies)): ?>
-                        <div class="text-center py-5">
-                            <i class="fas fa-check-circle fa-3x text-success mb-3 d-block"></i>
-                            <h4 class="text-muted">No anomalies detected</h4>
-                            <p class="text-muted">All activity appears to fall within the expected routine window.</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="timeline p-3" id="anomaly-timeline">
-                            <?php
-                            $lastDate = '';
-                            foreach ($anomalies as $anomaly):
-                                $rawTs = (int)($anomaly['timestamp'] ?? 0);
-                                $ts    = $rawTs > 9999999999 ? (int)($rawTs / 1000) : $rawTs;
-                                $dateStr = date('d M Y', $ts);
-                                $timeStr = date('H:i', $ts);
-                                $sev   = $anomaly['severity'] ?? 'warning';
-                                $type  = $anomaly['type']     ?? 'other';
+                                        $style = $catStyles[$type] ?? $catStyles['other'];
+                                        $icon = $style['icon'];
 
-                $bgMap = [
-                    'call'          => 'bg-danger',
-                    'app_usage'     => 'bg-warning',
-                    'location'      => 'bg-danger',
-                    'communication' => 'bg-purple',
-                    'medium'        => 'bg-secondary',
-                ];
-                $iconMap = [
-                    'call'          => 'fas fa-phone-slash',
-                    'app_usage'     => 'fas fa-mobile-alt',
-                    'location'      => 'fas fa-map-marker-alt',
-                    'communication' => 'fas fa-comments',
-                ];
-                                $bg   = $bgMap[$type]   ?? 'bg-secondary';
-                                $icon = $iconMap[$type]  ?? 'fas fa-question-circle';
-
-                                if ($dateStr !== $lastDate):
-                                    $lastDate = $dateStr;
-                            ?>
-                                <div class="time-label">
-                                    <span class="bg-dark"><?= esc($dateStr) ?></span>
+                                        if ($dateStr !== $lastDate):
+                                            $lastDate = $dateStr;
+                                    ?>
+                                            <div class="time-label" data-date="<?= esc($dateStr) ?>">
+                                                <span class="bg-dark text-white shadow-sm" style="border-radius: 6px; font-size: 0.8rem;"><?= esc($dateStr) ?></span>
+                                            </div>
+                                    <?php 
+                                        endif; 
+                                    ?>
+                                        <div class="tl-ev" data-category="<?= esc($type) ?>">
+                                            <!-- Contrast-matched circle icon -->
+                                            <i class="<?= esc($icon) ?>" style="background-color: <?= $style['bg'] ?> !important; color: <?= $style['fg'] ?> !important; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; font-size: 0.85rem; position: absolute; left: 17px; top: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></i>
+                                            
+                                            <div class="timeline-item shadow-none border" style="border-radius: 8px; margin-left: 60px; margin-bottom: 20px; background-color: #fcfcfc;">
+                                                <span class="time text-muted"><i class="fas fa-clock mr-1"></i> <?= esc($timeStr) ?></span>
+                                                
+                                                <h3 class="timeline-header" style="border-bottom: 0; padding: 12px 15px 6px 15px; font-size: 0.95rem; font-weight: 600;">
+                                                    <span class="badge mr-2" style="font-size: 0.65rem; background-color: <?= $style['bg'] ?>; color: <?= $style['fg'] ?>; border: 1px solid <?= $style['fg'] ?>30;"><?= esc($style['label']) ?></span>
+                                                    <span class="badge badge-<?= $sev === 'danger' ? 'danger' : ($sev === 'medium' ? 'secondary' : 'warning') ?> mr-2" style="font-size: 0.65rem;">
+                                                        <i class="fas fa-exclamation-circle mr-1"></i><?= ucfirst($sev) ?>
+                                                    </span>
+                                                    <?= esc($anomaly['title']) ?>
+                                                </h3>
+                                                
+                                                <div class="timeline-body text-muted pt-0 pb-3" style="font-size: 0.88rem; line-height: 1.5; padding: 0 15px;">
+                                                    <?= esc($anomaly['description']) ?>
+                                                </div>
+                                                
+                                                <?php if (!empty($anomaly['whitelist_identifier'])): ?>
+                                                    <div class="timeline-footer pt-2 pb-2 bg-light d-flex align-items-center justify-content-between border-top" style="padding: 0 15px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+                                                        <small class="text-muted"><i class="fas fa-fingerprint mr-1"></i>Target: <code><?= esc($anomaly['whitelist_identifier']) ?></code></small>
+                                                        <form action="<?= base_url('behavioral-anomalies/whitelist') ?>" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to whitelist and dismiss this target from anomalies?');">
+                                                            <?= csrf_field() ?>
+                                                            <input type="hidden" name="category" value="<?= esc($anomaly['whitelist_category']) ?>">
+                                                            <input type="hidden" name="identifier" value="<?= esc($anomaly['whitelist_identifier']) ?>">
+                                                            <button type="submit" class="btn btn-xs btn-outline-success rounded shadow-sm" style="border-radius: 6px;">
+                                                                <i class="fas fa-check-circle mr-1"></i>Whitelist Target
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <div><i class="fas fa-clock bg-gray text-white" style="box-shadow: 0 1px 3px rgba(0,0,0,0.15); width: 32px; height: 32px; line-height: 32px; position: absolute; left: 17px; border-radius: 50%; text-align: center;"></i></div>
                                 </div>
                             <?php endif; ?>
-                                <div>
-                                    <i class="<?= $icon ?> <?= $bg ?>"></i>
-                                    <div class="timeline-item">
-                                        <span class="time"><i class="fas fa-clock"></i> <?= $timeStr ?></span>
-                                        <h3 class="timeline-header">
-                                            <span class="badge badge-<?= $sev === 'danger' ? 'danger' : ($sev === 'medium' ? 'secondary' : 'warning') ?> mr-2">
-                                                <i class="fas fa-exclamation-circle mr-1"></i><?= ucfirst($sev) ?>
-                                            </span>
-                                            <?= esc($anomaly['title']) ?>
-                                        </h3>
-                                        <div class="timeline-body text-muted">
-                                            <?= esc($anomaly['description']) ?>
-                                        </div>
-                                        <?php if (!empty($anomaly['whitelist_identifier'])): ?>
-                                            <div class="timeline-footer p-2 bg-light d-flex align-items-center justify-content-between border-top">
-                                                <small class="text-muted"><i class="fas fa-fingerprint mr-1"></i>Target: <code><?= esc($anomaly['whitelist_identifier']) ?></code></small>
-                                                <form action="<?= base_url('behavioral-anomalies/whitelist') ?>" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to whitelist and dismiss this target from anomalies?');">
-                                                    <?= csrf_field() ?>
-                                                    <input type="hidden" name="category" value="<?= esc($anomaly['whitelist_category']) ?>">
-                                                    <input type="hidden" name="identifier" value="<?= esc($anomaly['whitelist_identifier']) ?>">
-                                                    <button type="submit" class="btn btn-xs btn-outline-success rounded shadow-sm">
-                                                        <i class="fas fa-check-circle mr-1"></i>Whitelist Target
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                            <div>
-                                <i class="fas fa-clock bg-gray"></i>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Routine Map Card -->
-            <div class="card card-info card-outline">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-map mr-2"></i>Routine Baseline</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="callout callout-success">
-                                <h5><i class="fas fa-sun mr-2"></i>Active Hours</h5>
-                                <p class="mb-0"><strong>5:00 AM – 11:00 PM</strong><br>
-                                <small class="text-muted">Expected window of normal activity.</small></p>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="callout callout-danger">
-                                <h5><i class="fas fa-moon mr-2"></i>Sleep Hours</h5>
-                                <p class="mb-0"><strong>11:00 PM – 5:00 AM</strong><br>
-                                <small class="text-muted">Activity in this range triggers anomaly flags.</small></p>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="callout callout-warning">
-                                <h5><i class="fas fa-shield-alt mr-2"></i>Risk Indicators</h5>
-                                <ul class="pl-3 mb-0 small text-muted">
-                                    <li>Calls during sleep hours</li>
-                                    <li>App usage after midnight</li>
-                                    <li>Location changes at 3 AM</li>
-                                </ul>
-                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Right Column: Sidebar Guideline & Summary Widgets (col-md-4) -->
+                <div class="col-md-4">
+                    
+                    <!-- Card 1: Sleep Baseline Routine -->
+                    <div class="card card-outline card-warning shadow-sm mb-3">
+                        <div class="card-header">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-bed text-warning mr-1"></i> Sleep Baseline Profile
+                            </h3>
+                        </div>
+                        <div class="card-body py-3 px-3">
+                            <p class="text-sm text-muted mb-3">
+                                Behavioral anomalies are triggered when unusual system activities occur outside the normal active cycle:
+                            </p>
+                            <div class="callout callout-danger py-2 px-3 mb-2" style="border-left-width: 4px;">
+                                <span class="text-xs font-weight-bold text-danger uppercase d-block"><i class="fas fa-moon mr-1"></i> Sleep Baseline</span>
+                                <strong class="text-sm">11:00 PM – 5:00 AM</strong>
+                            </div>
+                            <div class="callout callout-success py-2 px-3 mb-0" style="border-left-width: 4px;">
+                                <span class="text-xs font-weight-bold text-success uppercase d-block"><i class="fas fa-sun mr-1"></i> Active Normal Baseline</span>
+                                <strong class="text-sm">5:00 AM – 11:00 PM</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Anomaly Metrics Summary -->
+                    <div class="card card-outline card-secondary shadow-sm mb-3">
+                        <div class="card-header">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-chart-pie text-secondary mr-1"></i> Anomaly Classification
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush text-xs">
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                    <span><i class="fas fa-exclamation-triangle text-danger mr-2"></i>Total Anomalies</span>
+                                    <span class="badge badge-pill badge-danger font-weight-bold" style="font-size:0.75rem;"><?= count($anomalies) ?></span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                    <span><i class="fas fa-phone-slash text-danger mr-2"></i>Late Night Calls</span>
+                                    <span class="badge badge-pill badge-light border" style="font-size:0.75rem;"><?= $typeCounts['call'] ?></span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                    <span><i class="fas fa-mobile-alt text-warning mr-2"></i>Late Night App Sessions</span>
+                                    <span class="badge badge-pill badge-light border" style="font-size:0.75rem;"><?= $typeCounts['app_usage'] ?></span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                    <span><i class="fas fa-map-marker-alt text-danger mr-2"></i>Late Night Movement</span>
+                                    <span class="badge badge-pill badge-light border" style="font-size:0.75rem;"><?= $typeCounts['location'] ?></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Whitelisting Guidelines -->
+                    <div class="card card-outline card-info shadow-sm mb-3">
+                        <div class="card-header">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-shield-alt text-info mr-1"></i> Whitelisting Rule Guide
+                            </h3>
+                        </div>
+                        <div class="card-body py-3 px-3 text-xs text-muted" style="line-height: 1.6;">
+                            <p class="mb-2">
+                                If a flagged event is routine (e.g. night shifts, regular emergency contacts), you can choose to whitelist the target.
+                            </p>
+                            <ul class="pl-3 mb-0">
+                                <li><strong>Calls:</strong> Whitelist by phone number or contact identifier.</li>
+                                <li><strong>Apps:</strong> Whitelist by bundle package name.</li>
+                                <li>Dismissed targets will no longer trigger flags in the anomaly timeline.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
 
         </div>
     </section>
 </div>
+<?php include __DIR__ . '/../advanced/_adv_style.php'; ?>
+<?php include __DIR__ . '/../advanced/_adv_delete_script.php'; ?>

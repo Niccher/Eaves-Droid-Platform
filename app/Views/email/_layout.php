@@ -49,7 +49,7 @@
                         </svg>
                     </div>
                     <h1 class="header-title" style="margin:0;color:#0f172a;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Eaves Droid</h1>
-                    <p style="margin:8px 0 0;color:#64748b;font-size:13px;font-weight:500;">AdvancedController Mobile Forensic & Data Intelligence</p>
+                    <p style="margin:8px 0 0;color:#64748b;font-size:13px;font-weight:500;">Advanced Mobile Forensic & Data Intelligence</p>
                 </td>
             </tr>
             </thead>
@@ -85,7 +85,7 @@
             <tr>
                 <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 24px;text-align:center;">
                     <p style="margin:0 0 8px;color:#94a3b8;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;">
-                        Eaves Droid — AdvancedController Mobile Forensic & Data Intelligence Platform
+                        Eaves Droid — Advanced Mobile Forensic & Data Intelligence Platform
                     </p>
                     <p class="footer-text" style="margin:0;color:#cbd5e1;font-size:11px;">
                         This email was sent to <strong><?= esc($email ?? 'your registered email') ?></strong>.<br>

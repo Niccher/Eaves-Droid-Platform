@@ -75,7 +75,7 @@ $typeMap = [
             </ul>
           </div>
           <div class="col-md-4 pl-md-3">
-            <b class="d-block mb-1">AdvancedController Calibrations:</b>
+            <b class="d-block mb-1">Advanced Calibrations:</b>
             <ul class="pl-3 mb-0 text-muted">
               <li><b>Mounting Matrix:</b> Evaluates physical alignment coordinates to detect custom sensor frameworks.</li>
             </ul>

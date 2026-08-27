@@ -2,17 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title><?= isset($page_title) ? esc($page_title) : 'Eaves Droid | AdvancedController Mobile Forensic & Data Intelligence Platform' ?></title>
+    <title><?= isset($page_title) ? esc($page_title) : 'Eaves Droid | Advanced Mobile Forensic & Data Intelligence Platform' ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= isset($page_desc) ? esc($page_desc) : 'A powerful, free mobile data intelligence platform designed for deep analysis of Android device data, including call logs, SMS correlation, and file structure visualization.' ?>"/>
     <meta name="keywords" content="<?= isset($page_keys) ? esc($page_keys) : 'mobile forensics, android data analysis, SMS correlation tool, call log analyzer, mobile data intelligence, digital forensics platform' ?>"/>
     <meta name="author" content="Eaves Droid"/>
     <meta name="robots" content="index, follow"/>
+    <meta name="theme-color" content="#007bff">
+    <link rel="canonical" href="<?= current_url() ?>" />
+
+    <!-- OpenGraph Tags -->
     <meta property="og:title" content="<?= isset($page_title) ? esc($page_title) : 'Eaves Droid | Mobile Data Intelligence' ?>"/>
     <meta property="og:description" content="<?= isset($page_desc) ? esc($page_desc) : 'Free mobile data intelligence platform — analyze and visualize your Android device data with ease.' ?>"/>
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="<?= current_url() ?>"/>
     <meta property="og:image" content="<?= base_url('assets/img/logo.png') ?>"/>
+    <meta property="og:site_name" content="Eaves Droid" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= isset($page_title) ? esc($page_title) : 'Eaves Droid | Mobile Data Intelligence' ?>">
+    <meta name="twitter:description" content="<?= isset($page_desc) ? esc($page_desc) : 'Free mobile data intelligence platform — analyze and visualize your Android device data.' ?>">
+    <meta name="twitter:image" content="<?= base_url('assets/img/logo.png') ?>">
 
     <link rel="shortcut icon" href="<?= base_url('assets/img/favicon.png') ?>" type="image/x-icon">
 
