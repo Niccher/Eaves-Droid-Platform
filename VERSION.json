@@ -1,11 +1,11 @@
 {
-  "version": "2.6.0",
-  "build": 20600,
-  "release_name": "Pesapal Payment Gateway, Forensics Path Fixes & Correlation Tier Gating",
+  "version": "2.7.0",
+  "build": 20700,
+  "release_name": "Security Hardening, Plans Definitions UI, Correlation Tier Gating & Label Cleanup",
   "release_date": "2026-08-27",
   "components": {
-    "webapp": "2.6.0",
-    "android": "2.6.0",
+    "webapp": "2.7.0",
+    "android": "2.7.0",
     "ml_engine": "2.5.0"
   }
 }

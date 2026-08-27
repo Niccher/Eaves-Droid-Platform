@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.0] - 2026-08-27 — Security Hardening, Plans Definitions UI, Correlation Tier Gating & Label Cleanup
+
+### Added
+- **Live Feature-Tier Definitions Management** (`PlansController`): New superadmin UI at `GET /superadmin/plans/definitions` reads all feature tiers from `tbl_feature_tiers` and allows live updates via `POST /superadmin/plans/updateDefinitions`. Superadmins can now change which plan tier (free/gold/platinum) gates any feature without a code deploy.
+- **Correlation Tier Gating — Intelligence Timeline**: The unified timeline now resolves the authenticated user's plan and applies a plan-scaled result limit: Free = 50 events, Gold = 100 events, Platinum = 150 events. Replaced the previous dual-tab Basic/Advanced approach.
+- **Correlation Tier Gating — Behavioral Anomalies**: Server-side anomaly type filter applied per plan: Free sees call anomalies only; Gold sees call + communication + app_usage; Platinum sees all types.
+
+### Changed
+- **Dompdf SSRF & LFI Hardening** (`ReportsController`): Both PDF export paths (portrait + landscape) now instantiate `\Dompdf\Options` with `isRemoteEnabled=false` and `isLocalFilesystemEnabled=false` before constructing the Dompdf instance. Eliminates SSRF and LFI attack vectors via PDF rendering.
+- **Session Driver** (`Config/Session.php`): Migrated from `FileHandler` (filesystem sessions) to `DatabaseHandler` (`ci_sessions` table). Ensures session consistency across multi-process and containerised deployments.
+- **`PlansController` Refactor**: Renamed `getFeatureDefinitions()` → `getStandardFeatures()` and stripped all FCM command feature keys (now DB-managed in `tbl_feature_tiers`). Stripe price ID fields hardcoded to `null` (Pesapal is the active payment provider). Push notification field hardcoded to `0`. Added `software_profile` and `fcm_groups` to plan version feature assembly from form inputs.
+- **`SubscriptionModel` Cleanup**: Removed ~20 hardcoded FCM feature flags from `getAdminLimits()` and `getFreeLimits()` (now stored in `tbl_feature_tiers`). Removed `push_notifications` from free limits. Fixed missing newline at end of file.
+- **`PlanGate` Filter** (DB-driven): `before()` now resolves plan via `SubscriptionModel::getPlanLimits()` and queries `required_tier` directly from `tbl_feature_tiers` per slug. Covers 11 analysis suite routes + dynamic `advanced/hardware/*` and `advanced/software/*` slug resolution.
+- **`FinderModel` Facade Decomposition**: Refactored the 3,500+ line monolith into a thin facade with lazy-initialised sub-models: `FinderComms`, `FinderSystem`, `FinderEnvironment`, `FinderUser`. Zero functional change; all callers unaffected.
+- **Controller Label Fixes** (×15 occurrences): Stripped leaked PHP controller class name fragments from all user-facing strings across `HomeController`, `AnomaliesController`, `BaseClientController`, `BillingController`, and `TelemetryExportController` — affecting page titles, nav labels, billing diff labels, export label maps, email footers, and PDF footers.
+- **New Routes**: `GET superadmin/plans/definitions` (alias: `superadmin-plans-definitions`) and `POST superadmin/plans/updateDefinitions` (alias: `superadmin-plans-update-definitions`).
+
+### Removed
+- Obsolete views deleted (replaced by rebuilt versions): `app/Views/users/billing/index.php`, `app/Views/superadmin/plans/edit_version.php`, `app/Views/superadmin/plans/index.php`, `app/Views/landing/prices.php`, `app/Views/users/correlation/behavioral_anomalies.php`, `app/Views/users/correlation/intelligence_timeline.php`.
+
+---
+
 ## [2.6.0] - 2026-08-27 — Pesapal Payment Gateway, Forensics Path Fixes & Correlation Tier Gating
 
 ### Added
