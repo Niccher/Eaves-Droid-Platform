@@ -168,13 +168,85 @@ class SubscriptionModel extends Model
     public function hasFeature(int $userId, string $feature): bool
     {
         $limits = $this->getPlanLimits($userId);
-        $val = $limits['features'][$feature] ?? false;
+
+        // 1. Resolve features from tbl_feature_tiers dynamically
+        $db = \Config\Database::connect();
+        $tierFeature = $db->table('tbl_feature_tiers')->where('slug', $feature)->get()->getRowArray();
+
+        if ($tierFeature) {
+            $requiredTier = strtolower($tierFeature['required_tier']);
+            $category = $tierFeature['category_type'];
+
+            // Decode plan features
+            $featArr = $limits['features'] ?? [];
+            if (is_string($featArr)) {
+                $featArr = json_decode($featArr, true) ?: [];
+            }
+
+            if ($category === 'fcm') {
+                $fcmGroups = $featArr['fcm_groups'] ?? [];
+                if (is_string($fcmGroups)) {
+                    $fcmGroups = json_decode($fcmGroups, true) ?: [];
+                }
+
+                $tierMap = ['free' => 'core', 'gold' => 'advanced', 'platinum' => 'deep'];
+                $requiredGroup = $tierMap[$requiredTier] ?? 'core';
+
+                return in_array($requiredGroup, $fcmGroups, true);
+            }
+
+            if ($category === 'hardware') {
+                $hwProfile = $featArr['hardware_profile'] ?? 'basic';
+                if ($requiredTier === 'free') {
+                    return true;
+                }
+                if ($requiredTier === 'gold') {
+                    return in_array($hwProfile, ['advanced', 'all'], true);
+                }
+                if ($requiredTier === 'platinum') {
+                    return $hwProfile === 'all';
+                }
+            }
+
+            if ($category === 'software') {
+                $swProfile = $featArr['software_profile'] ?? 'basic';
+                if ($requiredTier === 'free') {
+                    return true;
+                }
+                if ($requiredTier === 'gold') {
+                    return in_array($swProfile, ['advanced', 'all'], true);
+                }
+                if ($requiredTier === 'platinum') {
+                    return $swProfile === 'all';
+                }
+            }
+
+            if ($category === 'ml') {
+                $allowedAlgos = $limits['ml_algorithms'] ?? [];
+                if (is_string($allowedAlgos)) {
+                    $allowedAlgos = json_decode($allowedAlgos, true) ?: [];
+                }
+
+                $tierMap = ['free' => 'core', 'gold' => 'advanced', 'platinum' => 'deep'];
+                $requiredGroup = $tierMap[$requiredTier] ?? 'core';
+
+                return in_array($requiredGroup, $allowedAlgos, true);
+            }
+        }
+
+        // 2. Legacy fallback for standard features
+        $featArr = $limits['features'] ?? [];
+        if (is_string($featArr)) {
+            $featArr = json_decode($featArr, true) ?: [];
+        }
+        $val = $featArr[$feature] ?? false;
         if ($val === true) {
             return true;
         }
-        if ($feature === 'wellbeing' && isset($limits['features']['wellbeing_summary_days']) && (int)$limits['features']['wellbeing_summary_days'] > 0) {
+        if ($feature === 'wellbeing' && isset($featArr['wellbeing_summary_days']) && (int)$featArr['wellbeing_summary_days'] > 0) {
             return true;
         }
+
         return false;
     }
 

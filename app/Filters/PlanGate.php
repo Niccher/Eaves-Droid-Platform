@@ -32,6 +32,9 @@ class PlanGate implements FilterInterface
         'wellbeing' => [
             'analysis/wellbeing',
         ],
+        'risk_score' => [
+            'analysis/behavioral-anomalies',
+        ],
     ];
 
     protected array $skipRoutes = [
@@ -54,9 +57,10 @@ class PlanGate implements FilterInterface
      * the matching sidebar item stays highlighted and the section stays open.
      */
     protected array $navMap = [
-        'analysis/wellbeing'           => ['intelligence', 'wellbeing'],
-        'analysis/anomalies'           => ['intelligence', 'anomalies'],
-        'location'                     => ['data', 'location'],
+        'analysis/wellbeing'            => ['intelligence', 'wellbeing'],
+        'analysis/behavioral-anomalies'  => ['intelligence', 'behavioral'],
+        'analysis/anomalies'            => ['intelligence', 'anomalies'],
+        'location'                      => ['data', 'location'],
     ];
 
     public function before(RequestInterface $request, $arguments = null): ?ResponseInterface
