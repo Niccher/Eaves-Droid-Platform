@@ -369,8 +369,11 @@ class CorrelationController extends BaseClientController
 
         // Generate PDF
         require_once ROOTPATH . 'vendor/autoload.php';
-        $dompdf = new \Dompdf\Dompdf();
-        $dompdf->set_option('defaultFont', 'DejaVu Sans');
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', false); // Prevent SSRF
+        $options->set('isLocalFilesystemEnabled', false); // Prevent LFI
+        $options->set('defaultFont', 'DejaVu Sans');
+        $dompdf = new \Dompdf\Dompdf($options);
         $dompdf->loadHtml($html, 'UTF-8');
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
@@ -406,9 +409,6 @@ class CorrelationController extends BaseClientController
     }
 
 
-    /**
-     * Universal Intelligence Timeline.
-     */
     public function intelligenceTimeline()
     {
         $data['pag']       = 'analysis';
@@ -418,7 +418,6 @@ class CorrelationController extends BaseClientController
         $counts = $this->getUserDataCounts();
         $data   = array_merge($data, $counts, $this->getDeviceViewData());
 
-        $perPage = 100;
         $filterType = $this->request->getGet('type') ?? 'all';
 
         // Plan-gated history window (Free=7d, Gold=30d, Platinum=full)
@@ -432,27 +431,18 @@ class CorrelationController extends BaseClientController
         $days = ($requested > 0) ? min($requested, $maxHistory) : $maxHistory;
         $data['timeline_days'] = $days;
 
-        // Default tab: AdvancedController when ?type= is a non-basic event type
-        $advTypes = ['upload', 'app_usage', 'file', 'keyguard', 'health', 'location', 'activity', 'other'];
-        $data['default_tab'] = (in_array($filterType, $advTypes, true)) ? 'advanced' : 'basic';
+        // Determine plan total limit
+        $totalLimit = 50;
+        if ($data['plan'] === 'gold') {
+            $totalLimit = 100;
+        } elseif ($data['plan'] === 'platinum') {
+            $totalLimit = 150;
+        }
+        $data['timeline_limit'] = $totalLimit;
 
-        // Basic: SMS + CallsController only (bounded by plan window)
-        $data['basic_timeline'] = $this->finderModel->get_basic_timeline($this->userId, $perPage, $days);
-
-        // AdvancedController: ALL events (excluding sms/call which belong to Basic tab)
-        // We fetch up to 1000 events; client-side filter pills handle the
-        // filtering without a page reload. URL ?type= only drives initial state.
-        $allAdvanced = $this->finderModel->get_unified_timeline_filtered(
-            $this->userId, 'all', 1000, ['sms', 'call'], $days
-        );
-        $data['advanced_timeline'] = $allAdvanced;
-        $data['adv_total'] = count($allAdvanced);
-        $data['adv_filter'] = $filterType;
-        $data['adv_per_page'] = $perPage;
-        $data['adv_page'] = (int)($this->request->getGet('p') ?? 1);
-
-        // Pivot (crisis-mode daily breakdown)
-        $data['pivot'] = $this->finderModel->get_timeline_pivot($this->userId, $days);
+        // Fetch merged comprehensive timeline
+        $timeline = $this->finderModel->get_unified_timeline($this->userId, $totalLimit, $days, true);
+        $data['timeline'] = $timeline;
 
         return $this->renderAppView('users/correlation/intelligence_timeline', $data);
     }
@@ -713,7 +703,25 @@ class CorrelationController extends BaseClientController
         $data['user_info'] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts(), $this->getDeviceViewData());
 
-        $data['anomalies'] = $this->finderModel->get_behavioral_anomalies($this->userId);
+        $gate = new \App\Services\PlanGate();
+        $limits = $gate->limits($this->userId);
+        $plan = strtolower($limits['plan'] ?? 'free');
+        $data['plan'] = $plan;
+
+        $rawAnomalies = $this->finderModel->get_behavioral_anomalies($this->userId);
+        
+        $filtered = [];
+        foreach ($rawAnomalies as $anomaly) {
+            $type = $anomaly['type'] ?? 'other';
+            if ($plan === 'free' && $type === 'call') {
+                $filtered[] = $anomaly;
+            } elseif ($plan === 'gold' && in_array($type, ['call', 'communication', 'app_usage'], true)) {
+                $filtered[] = $anomaly;
+            } elseif ($plan === 'platinum') {
+                $filtered[] = $anomaly;
+            }
+        }
+        $data['anomalies'] = $filtered;
 
         return $this->renderAppView('users/correlation/behavioral_anomalies', $data);
     }
