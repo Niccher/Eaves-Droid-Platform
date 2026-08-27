@@ -16,7 +16,7 @@ class HomeController extends BaseController
 
     public function landing_download($pg = 'download'){
         $data['pag']        = 'download';
-        $data['page_title'] = 'Download Android ClientController | Eaves Droid';
+        $data['page_title'] = 'Download Android Client | Eaves Droid';
         $data['page_desc']  = 'Download the Eaves Droid Android client app to start securely collecting and syncing your mobile data for deep analytics and visualization.';
         $data['page_keys']  = 'download android app, mobile data collector, eaves droid apk, android client download, data sync app';
         return view('headers_footers/head_landing', $data)
@@ -76,7 +76,7 @@ class HomeController extends BaseController
 
     public function landing_prices($pg = 'prices'){
         $data['pag']        = 'pricing';
-        $data['page_title'] = 'Pricing PlansController | Eaves Droid';
+        $data['page_title'] = 'Pricing Plans | Eaves Droid';
         $data['page_desc']  = 'Compare Eaves Droid pricing plans — Free, Gold, and Platinum. Choose the tier that fits how many devices you monitor and how deep your data analysis needs to go.';
         $data['page_keys']  = 'eaves droid pricing, free plan, gold plan, platinum plan, mobile analytics subscription, device monitoring plans';
 

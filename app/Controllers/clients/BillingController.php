@@ -208,19 +208,18 @@ class BillingController extends BaseClientController
     private function planUpgradeDiff(string $oldPlan, string $newPlan): array
     {
         $featureLabels = [
-            'geofencing'         => 'Geo-Fencing & LocationController Intelligence',
+            'geofencing'         => 'Geo-Fencing & Location Intelligence',
             'risk_score'         => 'Anomaly Detection (Risk Scoring)',
-            'forensic_export'    => 'Forensic Export & ReportsController',
+            'forensic_export'    => 'Forensic Export & Reports',
             'push_notifications' => 'Real-time Push Alerts',
-            'wellbeing'          => 'Digital Wellbeing Analytics',
-            'correlation'        => 'CorrelationController Engine',
-            'care_plan'          => 'Risk Score & Care PlansController',
+            'correlation'        => 'Correlation Engine',
+            'care_plan'          => 'Risk Score & Care Plans',
             'smart_timeline'     => 'Unified Smart Timeline',
         ];
 
         $tierLabels = [
             'core'     => 'Core Algorithms',
-            'advanced' => 'AdvancedController Algorithms',
+            'advanced' => 'Advanced Algorithms',
             'deep'     => 'ML-Engine Detectors',
         ];
 

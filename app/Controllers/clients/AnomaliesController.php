@@ -352,7 +352,7 @@ class AnomaliesController extends BaseClientController
         }
 
         return $this->renderUpgrade(
-            'AdvancedController Anomaly Algorithms',
+            'Advanced Anomaly Algorithms',
             ['platinum'],
             base_url('analysis/anomalies/results')
         );

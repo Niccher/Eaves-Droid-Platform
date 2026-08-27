@@ -154,7 +154,7 @@ class TelemetryExportController extends BaseClientController
                  return redirect()->to('account/home');
             }
 
-            $exportLabel = ['apps'=>'Applications','calls'=>'Call Logs','contacts'=>'Contacts','sms'=>'SMS Messages','files'=>'File Metadata','locations'=>'LocationController History','advanced'=>'AdvancedController Data','all'=>'All Data'];
+            $exportLabel = ['apps'=>'Applications','calls'=>'Call Logs','contacts'=>'Contacts','sms'=>'SMS Messages','files'=>'File Metadata','locations'=>'Location History','advanced'=>'Advanced Data','all'=>'All Data'];
             $label = $exportLabel[$type] ?? ucfirst($type);
             $this->logUserAction('exported_' . $type . '_via_download', 'system', 'low', 1,
                 ['new_values' => json_encode(['export_type' => $label, 'format' => $format])]
@@ -249,7 +249,7 @@ class TelemetryExportController extends BaseClientController
 </table>
 </div>
 </div>
-<div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">Eaves Droid — AdvancedController Mobile Forensic &amp; Data Intelligence Platform</div>
+<div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform</div>
 </div></body></html>'
                 );
             }
@@ -511,8 +511,8 @@ class TelemetryExportController extends BaseClientController
                 'contacts' => 'Contacts',
                 'sms' => 'SMS Messages',
                 'files' => 'File Metadata',
-                'locations' => 'LocationController History',
-                'advanced' => 'AdvancedController Device Data',
+                'locations' => 'Location History',
+                'advanced' => 'Advanced Device Data',
                 'all' => 'Complete Data Archive',
             ];
             $label = $typeLabels[$type] ?? ucfirst($type);
@@ -558,14 +558,14 @@ class TelemetryExportController extends BaseClientController
             <p style="color:#333;font-size:15px;line-height:1.6;">Thank you,<br><strong>Eaves Droid Team</strong></p>
         </div>
         <div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">
-            Eaves Droid — AdvancedController Mobile Forensic &amp; Data Intelligence Platform
+            Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform
         </div>
     </div>
 </body>
 </html>');
 
             if ($email->send()) {
-                $exportLabel = ['apps'=>'Applications','calls'=>'Call Logs','contacts'=>'Contacts','sms'=>'SMS Messages','files'=>'File Metadata','locations'=>'LocationController History','misc_software'=>'Misc Software','misc_hardware'=>'Misc Hardware','advanced'=>'AdvancedController Data','all'=>'All Data'];
+                $exportLabel = ['apps'=>'Applications','calls'=>'Call Logs','contacts'=>'Contacts','sms'=>'SMS Messages','files'=>'File Metadata','locations'=>'Location History','misc_software'=>'Misc Software','misc_hardware'=>'Misc Hardware','advanced'=>'Advanced Data','all'=>'All Data'];
                 $label = $exportLabel[$type] ?? ucfirst($type);
                 $this->logUserAction('exported_' . $type . '_via_email', 'system', 'low', 1,
                     ['new_values' => json_encode(['export_type' => $label, 'format' => $format, 'recipient' => $recipient, 'file_size' => $fileSize])]
@@ -862,8 +862,8 @@ class TelemetryExportController extends BaseClientController
                 'contacts' => 'Contacts',
                 'sms' => 'SMS Messages',
                 'files' => 'File Metadata',
-                'locations' => 'LocationController History & Activities',
-                'advanced' => 'AdvancedController Device Data',
+                'locations' => 'Location History & Activities',
+                'advanced' => 'Advanced Device Data',
                 'all' => 'All Data (Complete Wipe)',
             ];
             $deleteLabel = $typeLabels[$type] ?? ucfirst(str_replace('_', ' ', $type));
@@ -959,7 +959,7 @@ class TelemetryExportController extends BaseClientController
 </table>
 </div>
 </div>
-<div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">Eaves Droid — AdvancedController Mobile Forensic &amp; Data Intelligence Platform</div>
+<div style="background:#f1f1f1;padding:12px;text-align:center;font-size:11px;color:#888;">Eaves Droid — Advanced Mobile Forensic &amp; Data Intelligence Platform</div>
 </div></body></html>';
 
                     $this->sendNotificationEmail(

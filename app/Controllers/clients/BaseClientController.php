@@ -275,7 +275,7 @@ protected function getUserDataCounts(): array
             'location' => ['url' => 'location', 'label' => 'Locations', 'icon' => 'fas fa-map-marker-alt'],
             'activity' => ['url' => 'activities', 'label' => 'Activities', 'icon' => 'fas fa-walking'],
             'sms'      => ['url' => 'sms', 'label' => 'Messages', 'icon' => 'fas fa-sms'],
-            'advanced' => ['url' => 'advanced/device', 'label' => 'AdvancedController Data', 'icon' => 'fas fa-microchip'],
+            'advanced' => ['url' => 'advanced/device', 'label' => 'Advanced Data', 'icon' => 'fas fa-microchip'],
         ];
 
         $html = '<div class="d-flex justify-content-end flex-wrap" style="gap: 5px;">';
