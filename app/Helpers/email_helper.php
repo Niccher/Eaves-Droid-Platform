@@ -31,6 +31,10 @@ if (!function_exists('send_templated_email')) {
         // Generate tracking Log ID
         $emailTrackId = 'ED-' . strtoupper(bin2hex(random_bytes(4)));
 
+        // Strip emoji from subject to prevent spam filter rejections
+        $subject = preg_replace('/[\x{1F000}-\x{1FFFF}\x{2600}-\x{27BF}\x{2B00}-\x{2BFF}\x{FE00}-\x{FEFF}]/u', '', $subject);
+        $subject = trim($subject);
+
         // Build security footer data from current request (if available)
         $request = service('request');
         $authUser = function_exists('auth') && auth()->loggedIn() ? auth()->user() : null;
@@ -112,6 +116,7 @@ if (!function_exists('send_templated_email')) {
             $email->setTo($to);
             $email->setSubject($subject);
             $email->setMessage($body);
+            $email->setHeader('X-Mailer', 'EavesDroid Notification System/1.0');
 
             $sent = $email->send();
             if (!$sent) {

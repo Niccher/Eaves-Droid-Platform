@@ -103,4 +103,55 @@ class HomeController extends BaseController
             . view('error/'. $pg)
             . view('headers_footers/footer_landing');
     }
+
+    /**
+     * GET /api/v1/system/version
+     * Returns the unified platform version manifest parsed from VERSION.json and CHANGELOG.md.
+     */
+    public function systemVersion()
+    {
+        helper('version');
+        $versionData = get_system_version_data();
+
+        // Build a summary description from the latest changelog list
+        $description = $versionData['platform_name'];
+        if (!empty($versionData['version_changelogs'])) {
+            $summaries = [];
+            foreach ($versionData['version_changelogs'] as $log) {
+                $summaries[] = "**" . $log['title'] . "**: " . $log['description'];
+            }
+            $description = implode(" | ", $summaries);
+            if (strlen($description) > 300) {
+                $description = substr($description, 0, 297) . '...';
+            }
+        }
+
+        // Get component mapping
+        $components = [
+            'webapp'    => $versionData['platform_version'],
+            'android'   => $versionData['platform_version'],
+            'ml_engine' => '2.5.0'
+        ];
+        $versionFile = FCPATH . '../VERSION.json';
+        $releaseDate = date('Y-m-d');
+
+        if (file_exists($versionFile)) {
+            $fileData = json_decode(file_get_contents($versionFile), true);
+            if ($fileData) {
+                $releaseDate = $fileData['release_date'] ?? $releaseDate;
+                if (!empty($fileData['components'])) {
+                    $components = $fileData['components'];
+                }
+            }
+        }
+
+        return $this->response->setJSON([
+            'version'      => $versionData['platform_version'],
+            'build'        => $versionData['platform_build'],
+            'release_name' => $versionData['platform_name'],
+            'release_date' => $releaseDate,
+            'description'  => $description,
+            'components'   => $components,
+        ]);
+    }
 }

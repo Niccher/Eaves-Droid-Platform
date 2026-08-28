@@ -181,7 +181,7 @@ class Auth extends ShieldAuth
      *
      * @see https://codeigniter4.github.io/shield/quick_start_guide/using_session_auth/#protecting-pages for set filters.
      */
-    public bool $recordActiveDate = true;
+    public bool $recordActiveDate = false;
 
     /**
      * --------------------------------------------------------------------

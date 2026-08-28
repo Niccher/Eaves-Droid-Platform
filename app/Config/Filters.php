@@ -24,10 +24,11 @@ class Filters extends BaseConfig
         'planGate'      => \App\Filters\PlanGate::class,
         'apiAuth'       => \App\Filters\ApiAuthFilter::class,
         'session'       => \CodeIgniter\Shield\Filters\SessionAuth::class,
+        'activity'      => \App\Filters\UserActivityFilter::class,
     ];
 
     public array $globals = [
-        'before' => ['maintenance', 'role', 'impersonate'],
+        'before' => ['maintenance', 'role', 'impersonate', 'activity'],
         'after'  => ['toolbar'],
     ];
 

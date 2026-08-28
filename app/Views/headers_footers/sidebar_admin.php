@@ -33,6 +33,27 @@
             </ul>
 
             <ul class="navbar-nav ml-auto">
+                <!-- Admin Support Chat Dropdown/Badge -->
+                <?php
+                $db = \Config\Database::connect();
+                $unreadAdminChatsCount = $db->table('support_messages')
+                    ->where('is_read', 0)
+                    ->whereNotIn('sender_id', function (\CodeIgniter\Database\BaseBuilder $b) {
+                        return $b->select('user_id')->from('auth_groups_users')->whereIn('group', ['admin', 'superadmin']);
+                    })
+                    ->countAllResults();
+                ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link" href="<?php echo base_url('admin/support'); ?>" title="Client Support Messages">
+                        <i class="fas fa-headset"></i>
+                        <?php if ($unreadAdminChatsCount > 0): ?>
+                            <span id="admin-chat-badge" class="badge badge-danger navbar-badge"><?php echo $unreadAdminChatsCount; ?></span>
+                        <?php else: ?>
+                            <span id="admin-chat-badge" class="badge badge-danger navbar-badge d-none"></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+
                 <li class="nav-item">
                     <a class="nav-link" data-widget="fullscreen" href="#" role="button" title="Fullscreen">
                         <i class="fas fa-expand-arrows-alt"></i>
@@ -42,19 +63,42 @@
                 <?php
                 $avatar = isset($user_info['profile_image']) ? $user_info['profile_image'] : null;
                 $username = isset($user_info['username']) ? htmlspecialchars(ucwords($user_info['username'])) : 'User';
+
+                // Prepare initials avatar variables
+                $colors = ['#f56954', '#f39c12', '#0073b7', '#00c0ef', '#00a65a', '#3c8dbc', '#39cccc', '#605ca8', '#ff851b'];
+                $colorIndex = abs(crc32($username)) % count($colors);
+                $avatarColor = $colors[$colorIndex];
+                $initials = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $username), 0, 2));
+                if (empty($initials)) {
+                    $initials = 'UD';
+                }
                 ?>
                 <li class="nav-item dropdown user-menu">
                     <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
-                        <img src="<?php echo $avatar ? base_url('uploads/profiles/' . $avatar) : base_url('assets/img/avatar2.png'); ?>"
-                             class="user-image img-circle elevation-2"
-                             alt="User Image"
-                             style="width: 32px; height: 32px; object-fit: cover;">
+                        <?php if ($avatar): ?>
+                            <img src="<?php echo base_url('uploads/profiles/' . $avatar); ?>"
+                                 class="user-image img-circle elevation-2"
+                                 alt="User Image"
+                                 style="width: 32px; height: 32px; object-fit: cover;">
+                        <?php else: ?>
+                            <div class="user-image img-circle elevation-2 d-inline-flex align-items-center justify-content-center text-white font-weight-bold text-uppercase" 
+                                 style="background-color: <?= $avatarColor ?>; width: 32px; height: 32px; font-size: 11px; display: inline-flex !important; vertical-align: middle;">
+                                <?= $initials ?>
+                            </div>
+                        <?php endif; ?>
                         <span class="d-none d-md-inline ml-1"><?php echo $username; ?></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                         <li class="user-header bg-light">
-                            <img src="<?php echo $avatar ? base_url('uploads/profiles/' . $avatar) : base_url('assets/img/avatar2.png'); ?>"
-                                 class="img-circle elevation-2" alt="User Image">
+                            <?php if ($avatar): ?>
+                                <img src="<?php echo base_url('uploads/profiles/' . $avatar); ?>"
+                                     class="img-circle elevation-2" alt="User Image">
+                            <?php else: ?>
+                                <div class="img-circle elevation-2 mx-auto d-flex align-items-center justify-content-center text-white font-weight-bold text-uppercase" 
+                                     style="background-color: <?= $avatarColor ?>; width: 90px; height: 90px; font-size: 28px; display: flex !important; margin-bottom: 10px;">
+                                    <?= $initials ?>
+                                </div>
+                            <?php endif; ?>
                             <p class="mt-2">
                                 <?php echo $username; ?>
                                 <small>Administrator</small>
@@ -113,6 +157,19 @@
                                class="nav-link <?php echo (isset($pag) && $pag === 'admin-users') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-users-cog"></i>
                                 <p>Users</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/support'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-support') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-comments text-info"></i>
+                                <p>
+                                    Support Chat
+                                    <?php if (isset($unreadAdminChatsCount) && $unreadAdminChatsCount > 0): ?>
+                                        <span class="badge badge-danger right"><?php echo $unreadAdminChatsCount; ?></span>
+                                    <?php endif; ?>
+                                </p>
                             </a>
                         </li>
 
@@ -206,3 +263,28 @@
                 </nav>
             </div>
         </aside>
+
+<script>
+(function() {
+    var adminBadge = document.getElementById('admin-chat-badge');
+    function updateAdminBadge(count) {
+        if (!adminBadge) return;
+        if (count > 0) {
+            adminBadge.textContent = count;
+            adminBadge.classList.remove('d-none');
+        } else {
+            adminBadge.textContent = '';
+            adminBadge.classList.add('d-none');
+        }
+    }
+    // Only run on non-admin-chat pages (chat page has its own poller)
+    if (!document.getElementById('chatMessages')) {
+        setInterval(function() {
+            fetch('<?= base_url('api/v1/admin/support/unread-count') ?>', { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) { updateAdminBadge(data.unread_count || 0); })
+                .catch(function() {});
+        }, 5000);
+    }
+})();
+</script>

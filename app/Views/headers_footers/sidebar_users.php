@@ -98,6 +98,29 @@
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
 
+                <!-- Support Chat Dropdown/Badge -->
+                <?php
+                $db = \Config\Database::connect();
+                $unreadSupportCount = 0;
+                if (auth()->loggedIn()) {
+                    $unreadSupportCount = $db->table('support_messages')
+                        ->where('client_id', auth()->id())
+                        ->where('sender_id !=', auth()->id())
+                        ->where('is_read', 0)
+                        ->countAllResults();
+                }
+                ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link" href="<?php echo base_url('support/chat'); ?>" title="Support Chat">
+                        <i class="fas fa-comments"></i>
+                        <?php if ($unreadSupportCount > 0): ?>
+                            <span id="support-chat-badge" class="badge badge-danger navbar-badge"><?php echo $unreadSupportCount; ?></span>
+                        <?php else: ?>
+                            <span id="support-chat-badge" class="badge badge-danger navbar-badge d-none"></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+
                 <!-- Fullscreen -->
                 <li class="nav-item">
                     <a class="nav-link" data-widget="fullscreen" href="#" role="button" title="Fullscreen">
@@ -132,13 +155,29 @@
                 $plan_class = ($subscription_plan === 'free') ? 'badge-secondary' : (($subscription_plan === 'gold') ? 'badge-warning' : 'badge-danger');
                 $plan_icon = ($subscription_plan === 'gold') ? 'fa-crown' : (($subscription_plan === 'platinum') ? 'fa-gem' : 'fa-star');
                 $plan_label = ucfirst($subscription_plan);
+
+                // Prepare initials avatar variables
+                $colors = ['#f56954', '#f39c12', '#0073b7', '#00c0ef', '#00a65a', '#3c8dbc', '#39cccc', '#605ca8', '#ff851b'];
+                $colorIndex = abs(crc32($username)) % count($colors);
+                $avatarColor = $colors[$colorIndex];
+                $initials = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $username), 0, 2));
+                if (empty($initials)) {
+                    $initials = 'UD';
+                }
                 ?>
                 <li class="nav-item dropdown user-menu">
                     <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
-                        <img src="<?php echo $avatar ? base_url('uploads/profiles/' . $avatar) : base_url('assets/img/avatar2.png'); ?>"
-                             class="user-image img-circle elevation-2"
-                             alt="User Image"
-                             style="width: 32px; height: 32px; object-fit: cover;">
+                        <?php if ($avatar): ?>
+                            <img src="<?php echo base_url('uploads/profiles/' . $avatar); ?>"
+                                 class="user-image img-circle elevation-2"
+                                 alt="User Image"
+                                 style="width: 32px; height: 32px; object-fit: cover;">
+                        <?php else: ?>
+                            <div class="user-image img-circle elevation-2 d-inline-flex align-items-center justify-content-center text-white font-weight-bold text-uppercase" 
+                                 style="background-color: <?= $avatarColor ?>; width: 32px; height: 32px; font-size: 11px; display: inline-flex !important; vertical-align: middle;">
+                                <?= $initials ?>
+                            </div>
+                        <?php endif; ?>
                         <span class="d-none d-md-inline ml-1">
                                 <?php echo $username; ?>
                                 <span class="badge badge-sm badge-<?php echo $plan_class; ?> ml-1">
@@ -148,9 +187,16 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                         <li class="user-header bg-light">
-                            <img src="<?php echo $avatar ? base_url('uploads/profiles/' . $avatar) : base_url('assets/img/avatar2.png'); ?>"
-                                 class="img-circle elevation-2"
-                                 alt="User Image">
+                            <?php if ($avatar): ?>
+                                <img src="<?php echo base_url('uploads/profiles/' . $avatar); ?>"
+                                     class="img-circle elevation-2"
+                                     alt="User Image">
+                            <?php else: ?>
+                                <div class="img-circle elevation-2 mx-auto d-flex align-items-center justify-content-center text-white font-weight-bold text-uppercase" 
+                                     style="background-color: <?= $avatarColor ?>; width: 90px; height: 90px; font-size: 28px; display: flex !important; margin-bottom: 10px;">
+                                    <?= $initials ?>
+                                </div>
+                            <?php endif; ?>
                             <p class="mt-2">
                                 <?php echo $username; ?>
                                 <br>
@@ -442,9 +488,30 @@
 
                         <li class="nav-item">
                             <a href="<?php echo base_url('billing'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag == 'billing') ? 'active' : ''; ?>">
+                               class="nav-link <?php echo (isset($pag) && $pag == 'billing' && (!isset($sub_pag) || $sub_pag !== 'payments')) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-credit-card text-info"></i>
                                 <p>Billing / Upgrade</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('account/payments'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'billing' && isset($sub_pag) && $sub_pag == 'payments') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-file-invoice-dollar text-success"></i>
+                                <p>Payment History</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('support/chat'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag == 'support_chat') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-comments text-primary"></i>
+                                <p>
+                                    Support Chat
+                                    <?php if (isset($unreadSupportCount) && $unreadSupportCount > 0): ?>
+                                        <span class="badge badge-danger right"><?php echo $unreadSupportCount; ?></span>
+                                    <?php endif; ?>
+                                </p>
                             </a>
                         </li>
 
@@ -475,3 +542,34 @@
             </div>
             <!-- /.sidebar -->
         </aside>
+
+<?php if (auth()->loggedIn()): ?>
+<script>
+(function() {
+    // Global navbar badge poller — runs on every page every 5 seconds
+    // On the chat page itself, the chat poller handles badge updates via its own poll response
+    if (document.querySelector('.nav-link[href*="support/chat"]')) {
+        var supportBadge = document.getElementById('support-chat-badge');
+        function updateSupportBadge(count) {
+            if (!supportBadge) return;
+            if (count > 0) {
+                supportBadge.textContent = count;
+                supportBadge.classList.remove('d-none');
+            } else {
+                supportBadge.textContent = '';
+                supportBadge.classList.add('d-none');
+            }
+        }
+        // Only run the poller if we're NOT on the chat page (chat page has its own poller)
+        if (!document.getElementById('chatMessages')) {
+            setInterval(function() {
+                fetch('<?= base_url('api/v1/support/unread-count') ?>', { credentials: 'same-origin' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) { updateSupportBadge(data.unread_count || 0); })
+                    .catch(function() {});
+            }, 5000);
+        }
+    }
+})();
+</script>
+<?php endif; ?>

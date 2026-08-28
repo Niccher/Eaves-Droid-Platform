@@ -12,7 +12,7 @@ class UserModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType = 'array';
     protected $useSoftDeletes = false;
-    protected $allowedFields = ['email', 'username', 'active'];
+    protected $allowedFields = ['email', 'username', 'active', 'last_active_at'];
     protected $validationRules = [];
     protected $validationMessages = [];
     protected $skipValidation = false;
@@ -540,5 +540,94 @@ class UserModel extends Model
             log_message('error', 'get_used_tokens error: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Get the online/offline status label of admin support.
+     *
+     * @return array
+     */
+    public function getAdminsOnlineStatus(): array
+    {
+        $db = \Config\Database::connect();
+        $fiveMinutesAgo = date('Y-m-d H:i:s', strtotime('-5 minutes'));
+
+        // Query if any admin/superadmin is online
+        $onlineAdmin = $db->table('users u')
+            ->join('auth_groups_users agu', 'agu.user_id = u.id')
+            ->join('user_profiles up', 'up.user_id = u.id', 'left')
+            ->whereIn('agu.group', ['admin', 'superadmin'])
+            ->where('up.last_seen_at >=', $fiveMinutesAgo)
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if ($onlineAdmin) {
+            return [
+                'is_online' => true,
+                'status_label' => 'Online',
+                'last_active' => null
+            ];
+        }
+
+        // If none are online, get the most recent activity time of any admin
+        $lastSeenAdmin = $db->table('users u')
+            ->select('up.last_seen_at')
+            ->join('auth_groups_users agu', 'agu.user_id = u.id')
+            ->join('user_profiles up', 'up.user_id = u.id', 'left')
+            ->whereIn('agu.group', ['admin', 'superadmin'])
+            ->where('up.last_seen_at IS NOT NULL')
+            ->orderBy('up.last_seen_at', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if ($lastSeenAdmin && $lastSeenAdmin['last_seen_at']) {
+            return [
+                'is_online' => false,
+                'status_label' => 'Offline',
+                'last_active' => $lastSeenAdmin['last_seen_at']
+            ];
+        }
+
+        return [
+            'is_online' => false,
+            'status_label' => 'Offline',
+            'last_active' => null
+        ];
+    }
+
+    /**
+     * Get the online/offline status of a specific user.
+     *
+     * @param int $userId
+     * @return array
+     */
+    public function getUserOnlineStatus(int $userId): array
+    {
+        $db = \Config\Database::connect();
+        $fiveMinutesAgo = date('Y-m-d H:i:s', strtotime('-5 minutes'));
+
+        $userProfile = $db->table('user_profiles')
+            ->where('user_id', $userId)
+            ->get()
+            ->getRowArray();
+
+        if (!$userProfile) {
+            return [
+                'is_online' => false,
+                'status_label' => 'Offline',
+                'last_active' => null
+            ];
+        }
+
+        $lastActive = $userProfile['last_seen_at'] ?? null;
+        $isOnline = $lastActive && (strtotime($lastActive) >= strtotime($fiveMinutesAgo));
+
+        return [
+            'is_online' => $isOnline,
+            'status_label' => $isOnline ? 'Online' : 'Offline',
+            'last_active' => $lastActive
+        ];
     }
 }

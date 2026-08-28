@@ -38,6 +38,7 @@ $routes->get('faqs_terms', 'HomeController::landing_faqs', ['as' => 'faqs']);
 $routes->get('how_to', 'HomeController::landing_how_to', ['as' => 'how-to']);
 $routes->get('privacy-policy', 'HomeController::landing_privacy', ['as' => 'privacy-policy']);
 $routes->get('pricing', 'HomeController::landing_prices', ['as' => 'pricing']);
+$routes->get('api/v1/system/version', 'HomeController::systemVersion', ['as' => 'system-version']);
 
 // Contact Form (GET for view, POST for submission)
 $routes->get('contactus', 'ContactController::index', ['as' => 'contact']);
@@ -1108,6 +1109,30 @@ $routes->group('', [
     });
 
     // =============================================================
+    // 5.7C PAYMENT HISTORY
+    // =============================================================
+    $routes->get('account/payments', 'PaymentHistoryController::index', ['as' => 'payment-history']);
+
+    // =============================================================
+    // 5.7D SUPPORT CHAT (Direct client-admin messaging UI)
+    // =============================================================
+    $routes->get('support/chat', 'SupportChatController::index', ['as' => 'support-chat']);
+    $routes->get('support/attachment/(:any)', 'SupportChatController::attachment/$1', ['as' => 'support-attachment']);
+
+    // =============================================================
+    // 5.7E SUPPORT CHAT RESTFUL API
+    // =============================================================
+    $routes->group('api/v1/support/chat', static function ($routes) {
+        $routes->post('send', 'SupportChatController::sendMessage', ['as' => 'support-chat-send']);
+        $routes->get('poll', 'SupportChatController::poll', ['as' => 'support-chat-poll']);
+    });
+    $routes->get('api/v1/support/unread-count', 'clients\\SupportChatController::unreadCount', [
+        'as'        => 'support-unread-count',
+        'namespace' => 'App\\Controllers',
+        'filter'    => ['maintenance', 'session'],
+    ]);
+
+    // =============================================================
     // 5.8 OTHER CLIENT ROUTES
     // =============================================================
 
@@ -1839,6 +1864,25 @@ $routes->group('admin', [
          */
         $routes->get('expired', 'TokensController::expired', ['as' => 'admin-tokens-expired']);
     });
+
+    // -------------------------------------------------------------
+    // 7.6 SUPPORT CHAT MANAGEMENT UI
+    // -------------------------------------------------------------
+    $routes->get('support', 'SupportChatController::index', ['as' => 'admin-support']);
+    $routes->get('support/thread/(:num)', 'SupportChatController::thread/$1', ['as' => 'admin-support-thread']);
+    $routes->get('support/attachment/(:any)', 'SupportChatController::attachment/$1', ['as' => 'admin-support-attachment']);
+});
+
+// =============================================================
+// 7.6B SUPPORT CHAT RESTFUL API
+// -------------------------------------------------------------
+$routes->group('api/v1/admin/support', [
+    'namespace' => 'App\Controllers\admin',
+    'filter'    => ['maintenance', 'session']
+], static function ($routes) {
+    $routes->post('reply', 'SupportChatController::reply', ['as' => 'admin-support-reply']);
+    $routes->get('poll/(:num)', 'SupportChatController::poll/$1', ['as' => 'admin-support-poll']);
+    $routes->get('unread-count', 'SupportChatController::unreadCount', ['as' => 'admin-support-unread-count']);
 });
 
 // =================================================================

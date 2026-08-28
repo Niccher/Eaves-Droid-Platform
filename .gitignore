@@ -61,6 +61,8 @@ writable/session/*
 
 writable/uploads/*
 !writable/uploads/index.html
+writable/uploads/chat_attachments/*
+!writable/uploads/chat_attachments/.gitkeep
 
 writable/debugbar/*
 !writable/debugbar/index.html
