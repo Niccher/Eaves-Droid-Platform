@@ -1,11 +1,11 @@
 {
-  "version": "2.7.0",
-  "build": 20700,
-  "release_name": "Security Hardening, Plans Definitions UI, Correlation Tier Gating & Label Cleanup",
-  "release_date": "2026-08-27",
-  "components": {
-    "webapp": "2.7.0",
-    "android": "2.7.0",
-    "ml_engine": "2.5.0"
-  }
+    "version": "2.7.1",
+    "build": 20701,
+    "release_name": "Secure Support Chat, Private File Gateway, UUID Obfuscation & PDF Sharing",
+    "release_date": "2026-08-28",
+    "components": {
+        "webapp": "2.7.1",
+        "android": "2.7.0",
+        "ml_engine": "2.5.0"
+    }
 }

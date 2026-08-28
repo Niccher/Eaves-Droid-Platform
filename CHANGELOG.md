@@ -7,88 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.1] - 2026-08-28 — Secure Support Chat, Private File Gateway, UUID Obfuscation & PDF Sharing
+
+### Added
+- **Secure Support Chat & Polling** (`webapp`): Migrated client and admin chat views from SSE to 5-second AJAX polling with live badges.
+- **PDF Uploads & Sniffing Validation** (`webapp`): Allowed PDF document sharing with dynamic icon layout and binary MIME header validation to prevent shell executions.
+- **Payment History Dashboard** (`webapp`): Rebuilt the payments list to show total paid, transaction status badges, method icons, and copyable references.
+
+### Security
+- **Private Attachments & Access Control** (`webapp`): Stored user file uploads outside the public web root with credentials/ownership checks on access.
+- **UUID Request Obfuscation** (`webapp`): Replaced sequential message IDs with unique UUID identifiers to eliminate data exposure risk.
+
+---
+
 ## [2.7.0] - 2026-08-27 — Security Hardening, Plans Definitions UI, Correlation Tier Gating & Label Cleanup
 
 ### Added
-- **Live Feature-Tier Definitions Management** (`PlansController`): New superadmin UI at `GET /superadmin/plans/definitions` reads all feature tiers from `tbl_feature_tiers` and allows live updates via `POST /superadmin/plans/updateDefinitions`. Superadmins can now change which plan tier (free/gold/platinum) gates any feature without a code deploy.
-- **Correlation Tier Gating — Intelligence Timeline**: The unified timeline now resolves the authenticated user's plan and applies a plan-scaled result limit: Free = 50 events, Gold = 100 events, Platinum = 150 events. Replaced the previous dual-tab Basic/Advanced approach.
-- **Correlation Tier Gating — Behavioral Anomalies**: Server-side anomaly type filter applied per plan: Free sees call anomalies only; Gold sees call + communication + app_usage; Platinum sees all types.
+- **Live Feature-Tier Definitions Management**: New superadmin UI at `GET /superadmin/plans/definitions` reads all feature tiers from `tbl_feature_tiers` and allows live updates via `POST /superadmin/plans/updateDefinitions`. Superadmins can now change which plan tier (free/gold/platinum) gates any feature without a code deploy.
+- **Correlation Tier Gating — Intelligence Timeline** (`webapp`): The unified timeline now resolves the authenticated user's plan and applies a plan-scaled result limit: Free = 50 events, Gold = 100 events, Platinum = 150 events. Replaced the previous dual-tab Basic/Advanced approach.
+- **Correlation Tier Gating — Behavioral Anomalies** (`webapp`): Server-side anomaly type filter applied per plan: Free sees call anomalies only; Gold sees call + communication + app_usage; Platinum sees all types.
 
 ### Changed
-- **Dompdf SSRF & LFI Hardening** (`ReportsController`): Both PDF export paths (portrait + landscape) now instantiate `\Dompdf\Options` with `isRemoteEnabled=false` and `isLocalFilesystemEnabled=false` before constructing the Dompdf instance. Eliminates SSRF and LFI attack vectors via PDF rendering.
-- **Session Driver** (`Config/Session.php`): Migrated from `FileHandler` (filesystem sessions) to `DatabaseHandler` (`ci_sessions` table). Ensures session consistency across multi-process and containerised deployments.
-- **`PlansController` Refactor**: Renamed `getFeatureDefinitions()` → `getStandardFeatures()` and stripped all FCM command feature keys (now DB-managed in `tbl_feature_tiers`). Stripe price ID fields hardcoded to `null` (Pesapal is the active payment provider). Push notification field hardcoded to `0`. Added `software_profile` and `fcm_groups` to plan version feature assembly from form inputs.
-- **`SubscriptionModel` Cleanup**: Removed ~20 hardcoded FCM feature flags from `getAdminLimits()` and `getFreeLimits()` (now stored in `tbl_feature_tiers`). Removed `push_notifications` from free limits. Fixed missing newline at end of file.
-- **`PlanGate` Filter** (DB-driven): `before()` now resolves plan via `SubscriptionModel::getPlanLimits()` and queries `required_tier` directly from `tbl_feature_tiers` per slug. Covers 11 analysis suite routes + dynamic `advanced/hardware/*` and `advanced/software/*` slug resolution.
-- **`FinderModel` Facade Decomposition**: Refactored the 3,500+ line monolith into a thin facade with lazy-initialised sub-models: `FinderComms`, `FinderSystem`, `FinderEnvironment`, `FinderUser`. Zero functional change; all callers unaffected.
-- **Controller Label Fixes** (×15 occurrences): Stripped leaked PHP controller class name fragments from all user-facing strings across `HomeController`, `AnomaliesController`, `BaseClientController`, `BillingController`, and `TelemetryExportController` — affecting page titles, nav labels, billing diff labels, export label maps, email footers, and PDF footers.
-- **New Routes**: `GET superadmin/plans/definitions` (alias: `superadmin-plans-definitions`) and `POST superadmin/plans/updateDefinitions` (alias: `superadmin-plans-update-definitions`).
-
-### Removed
-- Obsolete views deleted (replaced by rebuilt versions): `app/Views/users/billing/index.php`, `app/Views/superadmin/plans/edit_version.php`, `app/Views/superadmin/plans/index.php`, `app/Views/landing/prices.php`, `app/Views/users/correlation/behavioral_anomalies.php`, `app/Views/users/correlation/intelligence_timeline.php`.
+- **Dompdf SSRF & LFI Hardening**: Both PDF export paths (portrait + landscape) now instantiate `\Dompdf\Options` with `isRemoteEnabled=false` and `isLocalFilesystemEnabled=false` before constructing the Dompdf instance. Eliminates SSRF and LFI attack vectors via PDF rendering.
+- **Session Driver**: Migrated from `FileHandler` (filesystem sessions) to `DatabaseHandler` (`ci_sessions` table). Ensures session consistency across multi-process and containerised deployments.
+- **`PlansController` Refactor** (`webapp`): Renamed `getFeatureDefinitions()` → `getStandardFeatures()` and stripped all FCM command feature keys (now DB-managed in `tbl_feature_tiers`). Stripe price ID fields hardcoded to `null` (Pesapal is the active payment provider). Push notification field hardcoded to `0`. Added `software_profile` and `fcm_groups` to plan version feature assembly from form inputs.
+- **`SubscriptionModel` Cleanup** (`webapp`): Removed ~20 hardcoded FCM feature flags from `getAdminLimits()` and `getFreeLimits()` (now stored in `tbl_feature_tiers`). Removed `push_notifications` from free limits. Fixed missing newline at end of file.
+- **`PlanGate` Filter**: `before()` now resolves plan via `SubscriptionModel::getPlanLimits()` and queries `required_tier` directly from `tbl_feature_tiers` per slug. Covers 11 analysis suite routes + dynamic `advanced/hardware/*` and `advanced/software/*` slug resolution.
+- **`FinderModel` Facade Decomposition** (`webapp`): Refactored the 3,500+ line monolith into a thin facade with lazy-initialised sub-models: `FinderComms`, `FinderSystem`, `FinderEnvironment`, `FinderUser`. Zero functional change; all callers unaffected.
+- **Controller Label Fixes**: Stripped leaked PHP controller class name fragments from all user-facing strings across `HomeController`, `AnomaliesController`, `BaseClientController`, `BillingController`, and `TelemetryExportController` — affecting page titles, nav labels, billing diff labels, export label maps, email footers, and PDF footers.
+- **New Routes** (`webapp`): `GET superadmin/plans/definitions` (alias: `superadmin-plans-definitions`) and `POST superadmin/plans/updateDefinitions` (alias: `superadmin-plans-update-definitions`).
 
 ---
 
-## [2.6.0] - 2026-08-27 — Pesapal Payment Gateway, Forensics Path Fixes & Correlation Tier Gating
+## [2.5.1] - 2026-08-28 — Private File Gateway, UUID Obfuscation & PDF Uploads
 
 ### Added
-- **Pesapal Payment Gateway Integration**: Replaced the placeholder `simulateUpgrade()` billing flow with a live Pesapal checkout pipeline in `BillingController.php`. The `checkout()` method now resolves the account holder's email from `auth_identities`, registers an IPN URL with Pesapal, submits a payment order (merchant reference, amount in KES, plan description), and returns a hosted `redirect_url` to the frontend. Subscription activation is deferred to post-payment IPN/callback confirmation.
-- **PesapalCallbackController.php** (new): Handles both user redirect (`GET /billing/pesapal/callback`) and server-to-server IPN webhook (`GET /billing/pesapal/ipn`). Maps Pesapal status codes (1 = Success, 0 = Pending, 2/3 = Failed/Refunded) to subscription activation, flash messages, and appropriate HTTP responses.
-- **Pesapal Billing Routes**: Added `POST billing/checkout` (alias: `billing-checkout`), `GET billing/pesapal/callback` (authenticated, alias: `billing-pesapal-callback`), and `GET billing/pesapal/ipn` (global, no session filter — server webhook endpoint).
+- **Secure Support Chat Gateway & Polling** (`webapp`): Migrated real-time communications to a highly efficient 5-second AJAX polling infrastructure, complete with a live navbar unread badge indicator.
+- **PDF Uploads & Sniffing Validation** (`webapp`): Allowed PDF document sharing with dynamic icon layout and binary MIME header validation to prevent shell executions.
 
-### Changed
-- **Forensics Media Serve & Delete Paths**: Updated upload directory references in `ForensicsUserController::serve_media()` and the media delete handler to match the restructured upload directory layout:
-  - `uploads/captured/` → `uploads/android_captured_images/`
-  - `uploads/audio/` → `uploads/android_captured_audio/`
-  - Added 3rd fallback: `uploads/android_captured_files/`
-  - `uploads/text_dump/` → `uploads/raw_telemetry/`
-  - `CryptModel::decrypt_media()` → `CryptModel::decrypt_file()`
-- **Correlation Subscription Tier Injection**: `CorrelationController::advanced()` now resolves the authenticated user's subscription tier via `SubscriptionModel::getPlanTier()` and passes `$userTier` to the advanced analysis view for frontend feature-gating overlays.
-- **Billing Route Renamed**: `POST billing/simulate` → `POST billing/checkout`.
-
-### Fixed
-- **Forensics 404 on Media Preview/Delete**: Resolved broken media preview and deletion for all captured files, audio recordings, and encrypted telemetry blobs caused by stale upload directory path references.
+### Security
+- **Private Attachments & Access Control** (`webapp`): Stored user file uploads outside the public web root with credentials/ownership checks on access.
+- **UUID Request Obfuscation** (`webapp`): Replaced sequential message IDs with unique UUID identifiers to eliminate data exposure risk.
 
 ---
 
-## [2.5.0] - 2026-08-20 — Analysis Suites Feature-Gating & Clean File Management
-
-### Added
-- **Feature-Gating Strategy Across 11 Analysis Suites**: Enforced 3-tier access control matrix mapping **Free** (`storage`, `apps`, `lifestyle`), **Gold** (`social`, `privacy`, `subscriptions`, `sentiment`), and **Platinum** (`finance`, `location`, `hotspots`, `report`) via `PlanGate.php` filter.
-- **Feature Tiers Migration & Seeder**: Created migration `20260820000500_configure_analysis_page_tiers.php` and seeder `AnalysisTiersSeeder.php` registering 11 analysis routes in `tbl_feature_tiers`.
-- **Sentiment Profiler & Polarity Score Display**: Upgraded Sentiment Analysis view (`sentiment_analysis.php`) with contact names in bold, italicized muted phone numbers, polarity progress bars, numerical sentiment scores (e.g., `+0.75`, `88%`), Swahili/Sheng lexicons, and brand/bank shortcode filtering.
-- **Subscriptions Intelligence & Renewal Forecasting**: Added regex-based billing extraction for utilities (`KPLC`, `Zuku`, `DStv`, `GOtv`, `Showmax`, `Netflix`) with renewal date projections and formatted merchant icons.
-- **System Version v2.5.0 Migration**: Created migration `20260820005000_update_system_version_to_v2_5_0.php` updating `system_versions` and `db_versions` database tables.
-
-### Changed
-- **File Manager Exclusions & Censorship**: Overhauled `applyExclusionFilters()` in `FilesController.php` to exclude folder entries (`is_directory = 0`), 0-byte empty files (`size_bytes > 0`), hidden/thumbnail paths (`/.thumbnails/`, `/.cache/`, `/.trashed-*`, `/.nomedia/`, `/Android/data/`, `/Android/obb/`, `/LOST.DIR/`), and temp/junk extensions (`.tmp`, `.log`, `.bak`, `.swp`, `Thumbs.db`).
-- **Sidebar Menu Restructuring**: Moved `Billing / Upgrade` out of the collapsible Account Accordion to a top-level item directly above `FAQs` under `SUBSCRIPTIONS & HELP` in `sidebar_users.php`.
-- **Billing & Plan Comparison View**: Cleaned up feature labels on `/billing` to reflect active tier capabilities and simulated checkout workflows.
-
-### Removed
-- **Obsolete Correlation Engine & Care Plan Modules**: Completely deleted `/analysis/care-plan` and `/analysis/correlation-engine` routes, controller methods, view templates, and sidebar links per user request.
+## [2.5.0] - 2026-08-26 — Analysis Suites Feature-Gating & Clean File Management
 
 ---
-
-## [2.4.0] - 2026-08-19 — Enterprise Telemetry & Real-Time Forensic Suite
-
-### Added
-- **Real-Time Forensic Exporting**: Synchronous ZIP generation for complete telemetry exports with on-the-fly download links (`ForensicExportController.php`).
-- **SMTP HTML Email Notifications**: Automated delivery of export notifications containing secure download links (`sendExportReadyEmail()`).
-- **Impersonation Redirection & Top Warning Banner**: Impersonating a user now redirects directly to their target dashboard (`/home`) with a persistent top navigation exit banner.
-- **Interactive Version Capabilities Modal**: Added 3-column aligned footer with clickable `v2.4.0` badge displaying release capabilities.
-- **Centralized Platform Version Management**: Added `VERSION.json` version descriptor across all 3 repository workspaces.
-
-### Changed
-- **Admin Subscription Bypass**: Granted full unlimited plan access for `admin` and `superadmin` accounts across all feature gates and analytics views.
-- **Staff Filtering in Analytics**: Excluded administrative staff accounts from billing tables, subscriber metrics, and forensic target selectors.
-- **Composite Telemetry Packaging**: Streamlined hardware and software telemetry into composite payloads (`misc_hardware` and `misc_software`).
-- **Data-at-Rest Encryption Blueprint**: Designed AES-256-GCM field-level encryption for sensitive telemetry fields with blind indexing.
-- **Unified Repository Versioning**: Updated WebApp, Android app (`versionName "2.4.0"`, `versionCode 20400`), and Python ML backend (`2.4.0`) to unified `2.4.0` versioning.
-
-### Removed
-- **Obsolete Extractor Cleanup**: Deleted legacy extractors (`BrowserHistoryComposite`, `BrowserHistoryExtractor`, `EmailExtractor`, `PowerRailExtractor`, `ProcessExtractor`, `RunningProcessesDetailedExtractor`, `ThermalExtractor`) across Android client and WebApp views.
-
-### Fixed
-- **PDF Location Trail Compilation Exception**: Resolved `Undefined array key "extracted_at"` exception during PDF export compilation.
-- **Dynamic Date Column Inspection**: Resolved `Unknown column 'created_at'` error by inspecting dynamic table timestamp columns (`uploaded_at`, `created_at`, `updated_at`).
