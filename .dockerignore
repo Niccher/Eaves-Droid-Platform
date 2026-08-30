@@ -1,0 +1,54 @@
+# Version control
+.git
+.gitignore
+.dockerignore
+
+# Python bytecode
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Environment / secrets (never bake into image layers)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Large model files / cache (mount as volumes in production)
+models_cache/
+*.pkl
+*.joblib
+*.model
+*.onnx
+*.h5
+*.pt
+*.pth
+*.bin
+
+# Logs (mount as volume)
+logs/
+*.log
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Docs
+*.md
+LICENSE
+
+# IDE
+.idea/
+.vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
+._*
