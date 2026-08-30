@@ -255,6 +255,15 @@ class AnomaliesModel extends Model
                         'strengths'   => 'Identifies isolated or synthetic contacts and unusual relationship structures.',
                         'weaknesses'  => 'Graph heuristic — does not train a neural network; result quality depends on contact-list density.',
                     ],
+                    [
+                        'id'          => 'communication_spikes',
+                        'name'        => 'Communication Spikes Detector',
+                        'default'     => false,
+                        'compat'      => 'python',
+                        'description' => 'Flags contacts with statistically abnormal spikes in communication frequency (Z > 3.0σ) compared to their historical average.',
+                        'strengths'   => 'Discovers bursty or abnormal messaging and calling behaviors characteristic of active fraud, harassment, or command-and-control operations.',
+                        'weaknesses'  => 'Requires historical SMS and call log records to establish baseline metrics.',
+                    ],
                 ],
             ],
 
@@ -360,6 +369,24 @@ class AnomaliesModel extends Model
                         'strengths'   => 'Detects over-privileged or suspiciously-named apps without a curated signature list.',
                         'weaknesses'  => 'PCA is a linear model — captures feature deviance, not true deep semantics.',
                     ],
+                    [
+                        'id'          => 'notification_hijack',
+                        'name'        => 'Notification Interception Guard',
+                        'default'     => false,
+                        'compat'      => 'python',
+                        'description' => 'Flags 3rd-party apps running in the foreground during sensitive OTP/banking notification arrivals.',
+                        'strengths'   => 'Identifies potential credential theft or OTP interception by active background services.',
+                        'weaknesses'  => 'Rule-based timing correlation; requires process history telemetry.',
+                    ],
+                    [
+                        'id'          => 'accessibility_abuse',
+                        'name'        => 'Accessibility Abuse Detector',
+                        'default'     => false,
+                        'compat'      => 'python',
+                        'description' => 'Audits active accessibility services for unverified 3rd-party apps with high-risk UI scraping or overlay capabilities.',
+                        'strengths'   => 'Identifies active screen-reader keyloggers and input simulation tools.',
+                        'weaknesses'  => 'Requires accessibility service permission logs.',
+                    ],
                 ],
             ],
 
@@ -430,6 +457,15 @@ class AnomaliesModel extends Model
                         'strengths'   => 'Captures non-linear usage rhythms without a heavy deep-learning stack.',
                         'weaknesses'  => 'MLP regression on timestamps — simpler than a recurrent sequence model.',
                     ],
+                    [
+                        'id'          => 'sleep_disturbance',
+                        'name'        => 'Sleep Disturbance & Stealth Tracker',
+                        'default'     => false,
+                        'compat'      => 'python',
+                        'description' => 'Identifies suspicious device usage or stealth background app activity during nighttime hours (11 PM - 5:30 AM).',
+                        'strengths'   => 'Identifies active screen indicators and background services operating when the user is expected to be asleep.',
+                        'weaknesses'  => 'Prone to false alerts for users with erratic sleep patterns.',
+                    ],
                 ],
             ],
 
@@ -464,6 +500,24 @@ class AnomaliesModel extends Model
                         'description' => 'Models normal operational bounds of CPU, RAM, battery temperature, and active radios to find abnormal system states.',
                         'strengths'   => 'Discovers background malware, crypto-miners, or active covert processes.',
                         'weaknesses'  => 'Easily influenced by heavy usage (gaming, charging).',
+                    ],
+                    [
+                        'id'          => 'background_exfiltration',
+                        'name'        => 'Background Data Exfiltration Profiler',
+                        'default'     => false,
+                        'compat'      => 'python',
+                        'description' => 'Flags apps executing statistically abnormal background network uploads (Z > 2.0σ) while screen is off.',
+                        'strengths'   => 'Identifies silent data harvesting and background telemetry leaks.',
+                        'weaknesses'  => 'Does not differentiate between system updates and malicious uploads.',
+                    ],
+                    [
+                        'id'          => 'battery_drain',
+                        'name'        => 'Battery Drain Outlier Model',
+                        'default'     => false,
+                        'compat'      => 'python',
+                        'description' => 'Flags periods of abnormal battery depletion while screen is off and device is not charging, indicating hidden spyware/miners.',
+                        'strengths'   => 'Discovers background malware, stealth trackers, or background mining loops.',
+                        'weaknesses'  => 'Affected by degraded battery capacity or battery aging.',
                     ],
                 ],
             ],
@@ -1798,7 +1852,43 @@ class AnomaliesModel extends Model
         }
     }
 
+    /**
+     * Fetches all anomaly findings from the user's latest completed ml_job
+     * for a specific algorithm ID. Returns an empty array if none.
+     */
+    public function getLatestJobResultsByAlgorithm(int $userId, string $algId): array
+    {
+        if ($userId <= 0 || empty($algId)) {
+            return [];
+        }
+
+        try {
+            $job = $this->db->table('ml_jobs')
+                ->where('user_id', $userId)
+                ->where('status', 'completed')
+                ->orderBy('created_at', 'DESC')
+                ->limit(1)
+                ->get()->getRowArray();
+
+            if (!$job) {
+                return [];
+            }
+
+            $rows = $this->db->table('ml_results')
+                ->where('job_id', $job['id'])
+                ->where('user_id', $userId)
+                ->where('algorithm_id', $algId)
+                ->get()->getResultArray();
+
+            return $rows ?: [];
+        } catch (\Throwable $e) {
+            log_message('error', 'getLatestJobResultsByAlgorithm failed: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     // =========================================================================
+
     // Admin configuration helpers
     // =========================================================================
 

@@ -206,6 +206,36 @@
             </div>
             <?php endif; ?>
 
+            <?php if(!empty($sleep_anomalies)): ?>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card card-warning card-outline">
+                        <div class="card-header border-0">
+                            <h3 class="card-title text-warning font-weight-bold">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Nighttime Sleep Disturbance &amp; Stealth App Activity
+                            </h3>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead><tr><th>Time</th><th>Threat Finding</th><th>Active Background Apps</th><th>Risk Score</th></tr></thead>
+                                <tbody>
+                                <?php foreach ($sleep_anomalies as $sa): ?>
+                                <?php $details = json_decode($sa['details'], true) ?: []; ?>
+                                <tr>
+                                    <td><?= esc($sa['event_timestamp']) ?></td>
+                                    <td><?= esc($sa['anomaly']) ?></td>
+                                    <td><code><?= esc(implode(', ', (array)($details['active_apps'] ?? []))) ?></code></td>
+                                    <td><span class="badge badge-danger"><?= esc($sa['score'] * 100) ?>%</span></td>
+                                </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <?php if(!empty($screen_time)): ?>
             <div class="row">
                 <div class="col-md-12">
@@ -278,6 +308,36 @@
                             <div class="chart-container">
                                 <canvas id="batteryChart"></canvas>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if(!empty($battery_anomalies)): ?>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card card-danger card-outline">
+                        <div class="card-header border-0">
+                            <h3 class="card-title text-danger font-weight-bold">
+                                <i class="fas fa-battery-quarter mr-1"></i> Stealth Battery Drain Alerts (Screen Off Depletion)
+                            </h3>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead><tr><th>Time Detected</th><th>Anomaly Description</th><th>Depletion Rate</th><th>Risk Score</th></tr></thead>
+                                <tbody>
+                                <?php foreach ($battery_anomalies as $ba): ?>
+                                <?php $details = json_decode($ba['details'], true) ?: []; ?>
+                                <tr>
+                                    <td><?= esc($ba['event_timestamp']) ?></td>
+                                    <td><?= esc($ba['anomaly']) ?></td>
+                                    <td><span class="text-danger font-weight-bold"><?= esc($details['drain_rate_percent_per_hour'] ?? '—') ?>% / hr</span></td>
+                                    <td><span class="badge badge-danger"><?= esc($ba['score'] * 100) ?>%</span></td>
+                                </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

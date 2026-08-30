@@ -154,17 +154,42 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                <?php
-                                                    foreach ($sms_good_sms as $sms_item) {
-                                                        echo '
-                                                            <tr>
-                                                                <td>'.$sms_item['sms_number'].'</td>
-                                                                <td>'.$sms_item['sms_time'].'</td>
-                                                                <td>'.base64_decode($sms_item['sms_body']).'</td>
-                                                            </tr>
-                                                        ';
-                                                    }
-                                                ?>
+                                                 <?php
+                                                     foreach ($sms_good_sms as $sms_item) {
+                                                         $body = base64_decode($sms_item['sms_body']);
+                                                         $bodyClean = strtolower($body);
+                                                         
+                                                         $sender = preg_replace('/[^0-9]/', '', $sms_item['sms_number'] ?? '');
+                                                         $senderNorm = strlen($sender) >= 9 ? substr($sender, -9) : $sender;
+                                                         
+                                                         $phishingBadge = '';
+                                                         if (isset($phishing_map) && isset($phishing_map[$senderNorm])) {
+                                                             foreach ($phishing_map[$senderNorm] as $pred) {
+                                                                 $preview = trim($pred['preview'], '.… ');
+                                                                 if (str_contains($bodyClean, substr($preview, 0, 45))) {
+                                                                     $score = $pred['score'];
+                                                                     $pct = round($score * 100);
+                                                                     if ($score >= 0.85) {
+                                                                         $phishingBadge = '<br><span class="badge badge-danger" title="High Phishing Confidence"><i class="fas fa-shield-virus mr-1"></i>Risk: ' . $pct . '% ⚠</span>';
+                                                                     } elseif ($score >= 0.50) {
+                                                                         $phishingBadge = '<br><span class="badge badge-warning" title="Medium Phishing Confidence"><i class="fas fa-exclamation-triangle mr-1"></i>Risk: ' . $pct . '%</span>';
+                                                                     } else {
+                                                                         $phishingBadge = '<br><span class="badge badge-success" title="Verified Safe"><i class="fas fa-check mr-1"></i>Safe: ' . $pct . '%</span>';
+                                                                     }
+                                                                     break;
+                                                                 }
+                                                             }
+                                                         }
+
+                                                         echo '
+                                                             <tr>
+                                                                 <td>' . esc($sms_item['sms_number']) . $phishingBadge . '</td>
+                                                                 <td>' . esc($sms_item['sms_time']) . '</td>
+                                                                 <td>' . esc($body) . '</td>
+                                                             </tr>
+                                                         ';
+                                                     }
+                                                 ?>
                                             </table>
                                         </div>
                                     </div>

@@ -333,10 +333,64 @@ class AnomaliesController extends BaseClientController
             $data['scope']       = $job['scope'] ?? 'full';
         }
 
+        // Fetch categories matching the user's plan
+        $adminSettings = $this->anomalyModel->getAdminAnomalySettings();
+        $categories = $this->anomalyModel->getAlgorithmCategories();
+        if ($adminSettings['allowed_algorithms'] !== null) {
+            $categories = $this->anomalyModel->filterAllowedAlgorithms(
+                $categories,
+                $adminSettings['allowed_algorithms']
+            );
+        }
+        $categories = $this->filterByPlan($categories);
+
+        // Fetch current scan schedules
+        $db = \Config\Database::connect();
+        $schedules = $db->table('tbl_scan_schedules')
+            ->where('user_id', $this->userId)
+            ->get()->getResultArray();
+        
+        $scheduleMap = [];
+        foreach ($schedules as $s) {
+            $scheduleMap[$s['algorithm_id']] = $s['frequency_hours'];
+        }
+        
+        $data['schedule_map']    = $scheduleMap;
+        $data['categories_list'] = $categories; // pass all filtered categories to build the scheduling checklist
         $data['severity_map']    = $this->anomalyModel->getSeverityMap();
         $data['analysis_counts'] = $this->anomalyModel->getAnalysisCounts($this->userId);
 
         return $this->renderWizardView('analysis/results', $data);
+    }
+
+    /**
+     * Saves or updates a scan schedule configuration for the user.
+     */
+    public function saveSchedule()
+    {
+        $userId = $this->userId;
+        $algId = $this->request->getPost('algorithm_id');
+        $freq = (int)$this->request->getPost('frequency_hours');
+
+        if (empty($algId)) {
+            session()->setFlashdata('error', 'Algorithm ID is required.');
+            return redirect()->to(base_url('analysis/anomalies/results'));
+        }
+
+        // Enforce 4-hour rate limit/frequency minimum
+        if ($freq < 4) {
+            $freq = 4;
+        }
+
+        $db = \Config\Database::connect();
+        $db->query("
+            INSERT INTO tbl_scan_schedules (user_id, algorithm_id, frequency_hours, next_run_at)
+            VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))
+            ON DUPLICATE KEY UPDATE frequency_hours = VALUES(frequency_hours), next_run_at = DATE_ADD(NOW(), INTERVAL VALUES(frequency_hours) HOUR)
+        ", [$userId, $algId, $freq, $freq]);
+
+        session()->setFlashdata('success', 'Scan schedule updated successfully!');
+        return redirect()->to(base_url('analysis/anomalies/results'));
     }
 
     /**

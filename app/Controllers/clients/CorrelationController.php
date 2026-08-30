@@ -38,10 +38,113 @@ class CorrelationController extends BaseClientController
         
         $data = array_merge($data, $counts, $indexData);
 
+        // Fetch anomaly findings from latest job for composite index
+        $anomModel = new AnomaliesModel();
+        $latestJobAlerts = $anomModel->getAnomalyAlerts([
+            'sms', 'contacts', 'call_logs', 'locations', 'apps', 'files', 'activity', 'device_info'
+        ], $this->userId, 100);
+        
+        $highCount = 0;
+        $medCount = 0;
+        $lowCount = 0;
+        foreach ($latestJobAlerts as $a) {
+            $sev = strtolower($a['severity'] ?? 'low');
+            if ($sev === 'high') {
+                $highCount++;
+            } elseif ($sev === 'medium') {
+                $medCount++;
+            } else {
+                $lowCount++;
+            }
+        }
+        
+        // Calculate composite score
+        $compositeScore = 0;
+        $compositeScore += $highCount * 25;
+        $compositeScore += $medCount * 10;
+        $compositeScore += $lowCount * 3;
+        
+        // Add rule-based counts
+        $maliciousSmsCount = (int)($data['maliciousSMS'] ?? 0);
+        $spamCallCount = (int)($data['spamCalls'] ?? 0);
+        $compositeScore += $maliciousSmsCount * 5;
+        $compositeScore += $spamCallCount * 2;
+        
+        $threatIndex = min(100, $compositeScore);
+        
+        // Set labels
+        if ($threatIndex >= 70) {
+            $threatStatus = 'Critical Threat';
+            $threatBadgeColor = 'danger';
+            $threatColorBorder = '#dc3545';
+        } elseif ($threatIndex >= 30) {
+            $threatStatus = 'Warning';
+            $threatBadgeColor = 'warning';
+            $threatColorBorder = '#ffc107';
+        } else {
+            $threatStatus = 'Secured';
+            $threatBadgeColor = 'success';
+            $threatColorBorder = '#28a745';
+        }
+        
+        $data['threat_index'] = $threatIndex;
+        $data['threat_status'] = $threatStatus;
+        $data['threat_badge_color'] = $threatBadgeColor;
+        $data['threat_color_border'] = $threatColorBorder;
+        $data['active_scanners_count'] = 11; // apps reputation, apps permission, apps autoencoder, notification hijack, accessibility abuse, sms bert, call isolation, file entropy, device oneclass, activity lstm, communication spikes
+        $data['high_threat_count'] = $highCount;
+
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
             . view('users/correlation/' . $pg, $data)
             . view('headers_footers/footer_users');
+    }
+
+    /**
+     * Rate-limited force manual execution of all registered ML models
+     */
+    public function forceScan()
+    {
+        $userId = $this->userId;
+        $db = \Config\Database::connect();
+
+        // 4-hour rate limit check
+        $lastJob = $db->table('ml_jobs')
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'DESC')
+            ->limit(1)
+            ->get()->getRowArray();
+
+        if ($lastJob) {
+            $lastTime = strtotime($lastJob['created_at']);
+            $diffHours = (time() - $lastTime) / 3600;
+            if ($diffHours < 4) {
+                $remainingMin = round((4 - $diffHours) * 60);
+                session()->setFlashdata('error', "Please wait {$remainingMin} minute(s) before running another manual scan (rate limit: once per 4 hours).");
+                return redirect()->to('/analysis');
+            }
+        }
+
+        try {
+            $anomModel = new AnomaliesModel();
+            
+            // Build selected algorithms structure
+            $selectedAlgs = [];
+            foreach ($anomModel->getAlgorithmCategories() as $catKey => $catInfo) {
+                foreach ($catInfo['algorithms'] as $alg) {
+                    $selectedAlgs[$catKey][] = $alg['id'];
+                }
+            }
+            
+            // Trigger Python/PHP detectors
+            $anomModel->runPythonDetection($selectedAlgs, $userId, 'full');
+            
+            session()->setFlashdata('success', 'Manual telemetry scanning triggered successfully! Check the Anomaly Scanner for results shortly.');
+        } catch (\Throwable $e) {
+            session()->setFlashdata('error', 'Failed to trigger scan: ' . $e->getMessage());
+        }
+
+        return redirect()->to('/analysis');
     }
 
     public function smsFinance($id = null)
@@ -55,10 +158,29 @@ class CorrelationController extends BaseClientController
 
         $data = array_merge($data, $counts, $financeData);
 
+        // Fetch Python SMS phishing scores
+        $anomModel = new AnomaliesModel();
+        $pySmsResults = $anomModel->getLatestJobResultsByAlgorithm($this->userId, 'sms_bert');
+        $phishingMap = [];
+        foreach ($pySmsResults as $row) {
+            $details = json_decode($row['details'] ?? '{}', true) ?? [];
+            $sender = preg_replace('/[^0-9]/', '', $details['sender'] ?? '');
+            $senderNorm = strlen($sender) >= 9 ? substr($sender, -9) : $sender;
+            if ($senderNorm) {
+                $phishingMap[$senderNorm][] = [
+                    'preview'  => strtolower($details['body_preview'] ?? ''),
+                    'score'    => (float)($row['score'] ?? 0),
+                    'severity' => $row['severity'] ?? 'Medium',
+                ];
+            }
+        }
+        $data['phishing_map'] = $phishingMap;
+
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
             . view('users/correlation/sms_finance', $data)
             . view('headers_footers/tail_analyze_sms', $data);
+
     }
 
     public function setSmsDatapoints($owner)
@@ -78,10 +200,29 @@ class CorrelationController extends BaseClientController
 
         $data = array_merge($data, $counts, $sourceData);
 
+        // Fetch Python SMS phishing scores
+        $anomModel = new AnomaliesModel();
+        $pySmsResults = $anomModel->getLatestJobResultsByAlgorithm($this->userId, 'sms_bert');
+        $phishingMap = [];
+        foreach ($pySmsResults as $row) {
+            $details = json_decode($row['details'] ?? '{}', true) ?? [];
+            $sender = preg_replace('/[^0-9]/', '', $details['sender'] ?? '');
+            $senderNorm = strlen($sender) >= 9 ? substr($sender, -9) : $sender;
+            if ($senderNorm) {
+                $phishingMap[$senderNorm][] = [
+                    'preview'  => strtolower($details['body_preview'] ?? ''),
+                    'score'    => (float)($row['score'] ?? 0),
+                    'severity' => $row['severity'] ?? 'Medium',
+                ];
+            }
+        }
+        $data['phishing_map'] = $phishingMap;
+
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
             . view('users/correlation/sms_finance_single_view', $data)
             . view('headers_footers/tail_analyze_sms', $data);
+
     }
 
     public function smsAnalysis()
@@ -173,6 +314,62 @@ class CorrelationController extends BaseClientController
 
         $data['sms_analysis'] = $this->finderModel->get_categorized_sms_counts($this->userId);
         $data['call_analysis'] = $this->finderModel->get_categorized_call_counts($this->userId);
+
+        // Fetch anomaly findings from latest job for composite index
+        $anomModel = new AnomaliesModel();
+        $latestJobAlerts = $anomModel->getAnomalyAlerts([
+            'sms', 'contacts', 'call_logs', 'locations', 'apps', 'files', 'activity', 'device_info'
+        ], $this->userId, 100);
+        
+        $highCount = 0;
+        $medCount = 0;
+        $lowCount = 0;
+        foreach ($latestJobAlerts as $a) {
+            $sev = strtolower($a['severity'] ?? 'low');
+            if ($sev === 'high') {
+                $highCount++;
+            } elseif ($sev === 'medium') {
+                $medCount++;
+            } else {
+                $lowCount++;
+            }
+        }
+        
+        // Calculate composite score
+        $compositeScore = 0;
+        $compositeScore += $highCount * 25;
+        $compositeScore += $medCount * 10;
+        $compositeScore += $lowCount * 3;
+        
+        // Add rule-based counts
+        $maliciousSmsCount = (int)($data['sms_analysis']['malicious'] ?? 0);
+        $spamCallCount = (int)($data['call_analysis']['spam'] ?? 0);
+        $compositeScore += $maliciousSmsCount * 5;
+        $compositeScore += $spamCallCount * 2;
+        
+        $threatIndex = min(100, $compositeScore);
+        
+        // Set labels
+        if ($threatIndex >= 70) {
+            $threatStatus = 'Critical Threat';
+            $threatBadgeColor = 'danger';
+            $threatColorBorder = '#dc3545';
+        } elseif ($threatIndex >= 30) {
+            $threatStatus = 'Warning';
+            $threatBadgeColor = 'warning';
+            $threatColorBorder = '#ffc107';
+        } else {
+            $threatStatus = 'Secured';
+            $threatBadgeColor = 'success';
+            $threatColorBorder = '#28a745';
+        }
+        
+        $data['threat_index'] = $threatIndex;
+        $data['threat_status'] = $threatStatus;
+        $data['threat_badge_color'] = $threatBadgeColor;
+        $data['threat_color_border'] = $threatColorBorder;
+        $data['active_scanners_count'] = 11;
+        $data['high_threat_count'] = $highCount;
 
         return $this->renderAppView('users/correlation/advanced_analysis', $data);
     }
@@ -305,6 +502,29 @@ class CorrelationController extends BaseClientController
         $data['relationship_age'] = $this->finderModel->get_first_last_contact_timestamps($this->userId);
         $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['contacts']);
 
+        // Python Graph Outliers
+        $anomModel = new AnomaliesModel();
+        $pyGraphResults = $anomModel->getLatestJobResultsByAlgorithm($this->userId, 'contacts_graph');
+        $graphOrphans = [];
+        $graphOutliers = [];
+        foreach ($pyGraphResults as $row) {
+            $details = json_decode($row['details'] ?? '{}', true) ?? [];
+            $contactInfo = [
+                'name'     => $details['contact'] ?? $row['anomaly'] ?? 'Unknown',
+                'phone'    => $details['phone'] ?? '',
+                'score'    => (float)($row['score'] ?? 0),
+                'severity' => $row['severity'] ?? 'Medium',
+            ];
+            if (($details['reason'] ?? '') === 'zero_interaction') {
+                $graphOrphans[] = $contactInfo;
+            } else {
+                $graphOutliers[] = $contactInfo;
+            }
+        }
+        $data['graph_orphans'] = $graphOrphans;
+        $data['graph_outliers'] = $graphOutliers;
+
+
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
             . view('users/correlation/social_analysis', $data)
@@ -389,7 +609,16 @@ class CorrelationController extends BaseClientController
      */
     public function lifestyleAnalysis()
     {
-        $data['pag'] = 'analysis';
+        $uri = service('request')->getUri()->getPath();
+        if (str_contains($uri, 'advanced/software')) {
+            $data['active_tab'] = 'digital_wellbeing';
+            $data['back_url']   = base_url('advanced/software');
+            $data['back_label'] = 'Back to Software';
+        } else {
+            $data['pag']        = 'analysis';
+            $data['back_url']   = base_url('analysis');
+            $data['back_label'] = 'Back to Analysis';
+        }
         $data["user_info"] = $this->finderModel->basic_user();
         
         // Stats
@@ -481,7 +710,7 @@ class CorrelationController extends BaseClientController
         $data['accessibility_abuses'] = $privacyData['accessibility_abuses'];
         $data['silent_captures'] = $privacyData['silent_captures'];
 
-        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['apps', 'device_info']);
+        $data['anomaly_alerts'] = $this->getAnomalyAlertsForPage(['apps', 'device_info', 'activity']);
 
         return view('headers_footers/head_users')
             . view('headers_footers/sidebar_users', $data)
@@ -513,7 +742,16 @@ class CorrelationController extends BaseClientController
      */
     public function appPortfolio()
     {
-        $data['pag'] = 'analysis';
+        $uri = service('request')->getUri()->getPath();
+        if (str_contains($uri, 'advanced/software')) {
+            $data['active_tab'] = 'app_usage';
+            $data['back_url']   = base_url('advanced/software');
+            $data['back_label'] = 'Back to Software';
+        } else {
+            $data['pag']        = 'analysis';
+            $data['back_url']   = base_url('analysis');
+            $data['back_label'] = 'Back to Analysis';
+        }
         $data["user_info"] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts());
 
@@ -537,7 +775,16 @@ class CorrelationController extends BaseClientController
      */
     public function storageIntelligence()
     {
-        $data['pag'] = 'analysis';
+        $uri = service('request')->getUri()->getPath();
+        if (str_contains($uri, 'advanced/hardware')) {
+            $data['active_tab'] = 'storage';
+            $data['back_url']   = base_url('advanced/hardware');
+            $data['back_label'] = 'Back to Hardware';
+        } else {
+            $data['pag']        = 'analysis';
+            $data['back_url']   = base_url('analysis');
+            $data['back_label'] = 'Back to Analysis';
+        }
         $data["user_info"] = $this->finderModel->basic_user();
         $data = array_merge($data, $this->getUserDataCounts());
 
@@ -690,6 +937,11 @@ class CorrelationController extends BaseClientController
         $data['activity_battery'] = $this->finderModel->get_activity_battery_trends($this->userId, $depthDays);
         $data['is_platinum'] = ($data['plan'] === 'platinum');
 
+        // Fetch Python sleep and battery anomalies
+        $anomModel = new AnomaliesModel();
+        $data['sleep_anomalies'] = $anomModel->getLatestJobResultsByAlgorithm($this->userId, 'sleep_disturbance');
+        $data['battery_anomalies'] = $anomModel->getLatestJobResultsByAlgorithm($this->userId, 'battery_drain');
+
         return $this->renderAppView('users/correlation/digital_wellbeing', $data);
     }
 
@@ -723,7 +975,66 @@ class CorrelationController extends BaseClientController
         }
         $data['anomalies'] = $filtered;
 
+        // Fetch active blocklist/whitelists
+        $db = \Config\Database::connect();
+        $data['active_whitelists'] = $db->table('tbl_user_blocklists')
+            ->where('owner_id', $this->userId)
+            ->get()->getResultArray();
+
+        // Fetch whitelist audit logs
+        $data['whitelist_logs'] = $db->table('tbl_whitelist_logs')
+            ->where('user_id', $this->userId)
+            ->orderBy('created_at', 'DESC')
+            ->limit(20)
+            ->get()->getResultArray();
+
+        // Fetch Python communication spikes findings
+        $anomModel = new AnomaliesModel();
+        $data['comm_spikes'] = $anomModel->getLatestJobResultsByAlgorithm($this->userId, 'communication_spikes');
+
         return $this->renderAppView('users/correlation/behavioral_anomalies', $data);
+    }
+
+    /**
+     * Reverses/deletes a whitelisted item and logs the removal.
+     */
+    public function removeWhitelist()
+    {
+        $userId = $this->userId;
+        $id = (int)$this->request->getPost('id');
+
+        if ($id <= 0) {
+            session()->setFlashdata('error', 'Invalid whitelist record ID.');
+            return redirect()->to('/analysis/behavioral-anomalies');
+        }
+
+        $db = \Config\Database::connect();
+        $item = $db->table('tbl_user_blocklists')
+            ->where('id', $id)
+            ->where('owner_id', $userId)
+            ->get()->getRowArray();
+
+        if (!$item) {
+            session()->setFlashdata('error', 'Whitelist item not found.');
+            return redirect()->to('/analysis/behavioral-anomalies');
+        }
+
+        // Delete item
+        $db->table('tbl_user_blocklists')
+            ->where('id', $id)
+            ->delete();
+
+        // Log audit trail
+        $db->table('tbl_whitelist_logs')->insert([
+            'user_id'         => $userId,
+            'category'        => $item['category'],
+            'identifier'      => $item['identifier'],
+            'reason'          => 'Whitelist reversed by user',
+            'action_taken_by' => 'User (removed)'
+        ]);
+
+        session()->setFlashdata('success', 'Whitelist target "' . esc($item['identifier']) . '" has been removed and restored to analysis.');
+        return redirect()->to('/analysis/behavioral-anomalies');
     }
 
     /**
@@ -764,6 +1075,16 @@ class CorrelationController extends BaseClientController
         $modBlocklist = new \App\Models\BlocklistModel();
         if ($modBlocklist->addBlock($userId, $category, $identifier, $description)) {
             session()->setFlashdata('success', 'Anomaly target "' . esc($identifier) . '" has been whitelisted.');
+            
+            // Insert into whitelist logs
+            $db->table('tbl_whitelist_logs')->insert([
+                'user_id'         => $userId,
+                'category'        => $category,
+                'identifier'      => $identifier,
+                'reason'          => 'Whitelisted from anomalies timeline',
+                'action_taken_by' => 'User'
+            ]);
+
             $logModel = new \App\Models\LogUserActionModel();
             $logModel->logAction([
                 'user_id' => $userId,

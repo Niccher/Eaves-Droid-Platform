@@ -64,10 +64,83 @@ class MLAnalyzerModel
         return self::vectorize($texts, $maxFeatures);
     }
 
+    private static function calculateWcss(array $clusters): float
+    {
+        $wcss = 0.0;
+        foreach ($clusters as $points) {
+            if (empty($points)) continue;
+            $dim = count(reset($points));
+            $centroid = array_fill(0, $dim, 0.0);
+            $count = count($points);
+            foreach ($points as $point) {
+                foreach ($point as $d => $val) {
+                    $centroid[$d] += (float)$val;
+                }
+            }
+            foreach ($centroid as $d => $val) {
+                $centroid[$d] = $val / $count;
+            }
+            
+            foreach ($points as $point) {
+                $distSq = 0.0;
+                foreach ($point as $d => $val) {
+                    $distSq += ($val - $centroid[$d]) ** 2;
+                }
+                $wcss += $distSq;
+            }
+        }
+        return $wcss;
+    }
+
+    public static function optimalKmeans(array $vectors): array
+    {
+        $count = count($vectors);
+        if ($count < 3) {
+            $kmeans = new KMeans(min(2, $count));
+            return $kmeans->cluster($vectors);
+        }
+
+        $maxK = min(8, $count - 1);
+        $wcssValues = [];
+        $clusterings = [];
+
+        for ($k = 2; $k <= $maxK; $k++) {
+            $kmeans = new KMeans($k);
+            try {
+                $cls = $kmeans->cluster($vectors);
+                $clusterings[$k] = $cls;
+                $wcssValues[$k] = self::calculateWcss($cls);
+            } catch (\Throwable $e) {
+                break;
+            }
+        }
+
+        if (empty($wcssValues)) {
+            $kmeans = new KMeans(3);
+            return $kmeans->cluster($vectors);
+        }
+
+        $optimalK = 3;
+        $prevWcss = null;
+        foreach ($wcssValues as $k => $wcss) {
+            if ($prevWcss !== null) {
+                $reduction = ($prevWcss - $wcss) / $prevWcss;
+                if ($reduction < 0.15) {
+                    $optimalK = $k - 1;
+                    break;
+                }
+            }
+            $prevWcss = $wcss;
+            $optimalK = $k;
+        }
+
+        return $clusterings[$optimalK] ?? (new KMeans(min(3, $count)))->cluster($vectors);
+    }
+
     public static function kmeans(array $vectors, ?int $k = null): array
     {
         if ($k === null) {
-            $k = (int) self::getMlConfig('ml_phpml_kmeans_k', '3');
+            return self::optimalKmeans($vectors);
         }
         $kmeans = new KMeans($k);
         return $kmeans->cluster($vectors);
@@ -85,11 +158,47 @@ class MLAnalyzerModel
         return $dbscan->cluster($vectors);
     }
 
+
     public static function trainNaiveBayes(array $samples, array $labels): NaiveBayes
     {
         $classifier = new NaiveBayes();
         $classifier->train($samples, $labels);
         return $classifier;
+    }
+
+    public static function getCachedClassifier(array $texts, array $labels, ?int $maxFeatures = null): array
+    {
+        $hash = md5(implode('|', $texts) . '|' . implode('|', $labels) . '|' . $maxFeatures);
+        $cacheFile = WRITEPATH . 'cache/nb_model_' . $hash . '.serialized';
+
+        if (file_exists($cacheFile)) {
+            try {
+                $data = unserialize(file_get_contents($cacheFile));
+                if (isset($data['classifier']) && isset($data['vectors'])) {
+                    return $data;
+                }
+            } catch (\Throwable $e) {
+                // retrain on failure
+            }
+        }
+
+        list($vectors, $vectorizer, $transformer) = self::vectorize($texts, $maxFeatures);
+        $classifier = self::trainNaiveBayes($vectors, $labels);
+
+        $data = [
+            'classifier' => $classifier,
+            'vectorizer' => $vectorizer,
+            'transformer' => $transformer,
+            'vectors' => $vectors,
+        ];
+
+        // Clean up old cached files
+        foreach (glob(WRITEPATH . 'cache/nb_model_*.serialized') as $oldFile) {
+            @unlink($oldFile);
+        }
+
+        @file_put_contents($cacheFile, serialize($data));
+        return $data;
     }
 
     public static function labelClustersByKeywords(array $clusters, array $texts, array $posClues, array $negClues): array

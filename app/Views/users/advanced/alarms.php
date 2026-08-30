@@ -1,25 +1,6 @@
-<?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
-
+<?php /** @var int|null $latest_ts @var array $latest_jobs @var array $latest_alarms @var array $deleted_jobs @var array $deleted_alarms @var int $total @var string $nav_urls */ ?>
 <?php
-helper('coalesce');
-$rows = coalesce_snapshots(
-    $rows,
-    'device_id',
-    [],
-    ['scheduled_jobs_json', 'alarm_clocks_json']
-);
-
-$latest = !empty($rows) ? $rows[0] : null;
-$latestJobs = [];
-$latestAlarms = [];
-if ($latest) {
-    $latestJobs = is_string($latest['scheduled_jobs_json'] ?? null)
-        ? (json_decode($latest['scheduled_jobs_json'], true) ?: [])
-        : ($latest['scheduled_jobs_json'] ?? []);
-    $latestAlarms = is_string($latest['alarm_clocks_json'] ?? null)
-        ? (json_decode($latest['alarm_clocks_json'], true) ?: [])
-        : ($latest['alarm_clocks_json'] ?? []);
-}
+$latest = $latest_ts ? ['extracted_at' => $latest_ts] : null;
 ?>
 
 <div class="content-wrapper">
@@ -47,6 +28,50 @@ if ($latest) {
     <section class="content">
         <div class="container-fluid">
 
+            <?php if (!empty($deleted_jobs) || !empty($deleted_alarms)): ?>
+                <!-- Cancelled Alarms Warning Card -->
+                <div class="card card-warning card-outline shadow-sm mb-4">
+                    <div class="card-header border-0 pb-0">
+                        <h3 class="card-title text-warning font-weight-bold">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> Recently Cancelled Alarms / Jobs Detected
+                        </h3>
+                    </div>
+                    <div class="card-body py-2 px-3">
+                        <p class="text-muted small mb-2">The following background services or scheduled alarms were present in the previous scan but are missing in the latest snapshot. This could indicate process killing, task manipulation, or application tampering:</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0" style="font-size: .82rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Identifier / Service</th>
+                                        <th>Package Name</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($deleted_jobs as $job): ?>
+                                        <tr>
+                                            <td><span class="badge badge-primary">Job</span></td>
+                                            <td><code>Job ID: <?= esc($job['job_id']) ?></code> (<?= esc(substr($job['service'], strrpos($job['service'], '.') + 1)) ?>)</td>
+                                            <td><?= esc($job['package']) ?></td>
+                                            <td><span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i>Missing</span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <?php foreach ($deleted_alarms as $alarm): ?>
+                                        <tr>
+                                            <td><span class="badge badge-success">Alarm</span></td>
+                                            <td><?= esc($alarm['trigger_time_formatted'] ?: date('Y-m-d H:i:s', $alarm['trigger_time_millis'] / 1000)) ?></td>
+                                            <td><?= esc($alarm['package']) ?></td>
+                                            <td><span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i>Deleted</span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <?php if ($latest): ?>
                 <div class="row">
                     <!-- Column 1: Scheduled Jobs -->
@@ -57,11 +82,11 @@ if ($latest) {
                                     <i class="fas fa-tasks mr-2"></i>Scheduled Jobs
                                 </h3>
                                 <div class="card-tools ml-auto">
-                                    <span class="badge badge-primary"><?= count($latestJobs) ?> active</span>
+                                    <span class="badge badge-primary"><?= count($latest_jobs) ?> active</span>
                                 </div>
                             </div>
                             <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
-                                <?php if (empty($latestJobs)): ?>
+                                <?php if (empty($latest_jobs)): ?>
                                     <p class="text-muted text-center py-4 mb-0">No active scheduled jobs found.</p>
                                 <?php else: ?>
                                     <table class="table table-sm table-striped table-hover mb-0">
@@ -74,7 +99,7 @@ if ($latest) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($latestJobs as $job): ?>
+                                            <?php foreach ($latest_jobs as $job): ?>
                                                 <tr>
                                                     <td><code><?= htmlspecialchars($job['job_id']) ?></code></td>
                                                     <td>
@@ -125,11 +150,11 @@ if ($latest) {
                                     <i class="fas fa-clock mr-2"></i>Alarm Clocks
                                 </h3>
                                 <div class="card-tools ml-auto">
-                                    <span class="badge badge-success"><?= count($latestAlarms) ?> set</span>
+                                    <span class="badge badge-success"><?= count($latest_alarms) ?> set</span>
                                 </div>
                             </div>
                             <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
-                                <?php if (empty($latestAlarms)): ?>
+                                <?php if (empty($latest_alarms)): ?>
                                     <p class="text-muted text-center py-4 mb-0">No active alarm clocks found.</p>
                                 <?php else: ?>
                                     <table class="table table-sm table-striped table-hover mb-0">
@@ -140,7 +165,7 @@ if ($latest) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($latestAlarms as $alarm): ?>
+                                            <?php foreach ($latest_alarms as $alarm): ?>
                                                 <tr>
                                                     <td>
                                                         <span class="badge badge-light border p-2 font-weight-bold">
@@ -164,65 +189,18 @@ if ($latest) {
                 </div>
             <?php endif; ?>
 
-            <!-- Extraction History Table -->
+            <!-- Telemetry Context Card -->
             <div class="card card-secondary card-outline shadow-sm">
                 <div class="card-header">
                     <h3 class="card-title font-weight-bold">
-                        <i class="fas fa-history mr-2"></i>Extraction History
+                        <i class="fas fa-info-circle mr-2"></i>Telemetry Context
                     </h3>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-striped mb-0">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>Extracted</th>
-                                    <th>Device ID</th>
-                                    <th>Jobs Found</th>
-                                    <th>Alarms Found</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($rows)): ?>
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5">
-                                            <div class="empty-state">
-                                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                                <h4>No Alarm/Job data</h4>
-                                                <p class="text-muted">Data will appear here once extracted from the Android app.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php else: foreach ($rows as $r): ?>
-                                    <?php 
-                                        $rawJobs = $r['scheduled_jobs_json'] ?? '[]';
-                                        $rawAlarms = $r['alarm_clocks_json'] ?? '[]';
-                                        $jobArr = is_string($rawJobs) ? (json_decode($rawJobs, true) ?: []) : (is_array($rawJobs) ? $rawJobs : []);
-                                        $alarmArr = is_string($rawAlarms) ? (json_decode($rawAlarms, true) ?: []) : (is_array($rawAlarms) ? $rawAlarms : []);
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <span class="badge badge-light border p-2">
-                                                <i class="fas fa-clock mr-1 text-muted"></i>
-                                                <?= !empty($r['extracted_at']) ? date('M d, Y H:i', $r['extracted_at'] / 1000) : 'N/A' ?>
-                                            </span>
-                                        </td>
-                                        <td><code><?= htmlspecialchars($r['device_id'] ?? 'N/A') ?></code></td>
-                                        <td><span class="badge badge-primary"><?= count($jobArr) ?> Jobs</span></td>
-                                        <td><span class="badge badge-success"><?= count($alarmArr) ?> Alarms</span></td>
-                                    </tr>
-                                <?php endforeach; endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="card-body py-3">
+                    <p class="text-secondary mb-0" style="font-size: 14px;">
+                        This dashboard monitors active jobs and alarms scheduled by applications on the device. Background jobs represent services managed by the OS Scheduler (e.g. syncs, telemetry uploads, backup tasks), while alarm clocks represent absolute trigger triggers set by the user or apps.
+                    </p>
                 </div>
-                <?php if (isset($pager) && $total > 25): ?>
-                    <div class="card-footer clearfix">
-                        <div class="float-right">
-                            <?= $pager->links('default', 'bootstrap5_full') ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
             </div>
 
         </div>

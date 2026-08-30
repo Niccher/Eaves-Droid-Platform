@@ -1,28 +1,15 @@
-<?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php /** @var array $latest @var array $changes_history @var int $total @var string $nav_urls */ ?>
 
 <?php
-helper('coalesce');
-$rows = coalesce_snapshots(
-    $rows,
-    'device_id',
-    ['default_browser_json', 'default_dialer_json', 'default_sms_json', 'default_launcher_json', 'default_email_json', 'default_maps_json', 'default_music_json', 'default_gallery_json']
-);
-
-// Process all rows to extract app names and package names from JSON
-foreach ($rows as &$row) {
-    $fields = ['default_browser_json', 'default_dialer_json', 'default_sms_json', 
-               'default_launcher_json', 'default_email_json', 'default_maps_json',
-               'default_music_json', 'default_gallery_json'];
+if ($latest) {
+    $fields = ['browser', 'dialer', 'sms', 'launcher', 'email', 'maps', 'music', 'gallery'];
     foreach ($fields as $field) {
-        $raw = $row[$field] ?? '{}';
-        $decoded = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
-        $key = str_replace('_json', '', $field);
-        $row[$key . '_name'] = $decoded['app_name'] ?? $decoded['package_name'] ?? '—';
-        $row[$key . '_package'] = $decoded['package_name'] ?? '';
-        $row[$key . '_is_system'] = $decoded['is_system'] ?? false;
+        $raw = $latest[$field] ?? [];
+        $latest['default_' . $field . '_name'] = $raw['app_name'] ?? $raw['package_name'] ?? '—';
+        $latest['default_' . $field . '_package'] = $raw['package_name'] ?? '';
+        $latest['default_' . $field . '_is_system'] = $raw['is_system'] ?? false;
     }
 }
-$latest = !empty($rows) ? $rows[0] : null;
 ?>
 
 <div class="content-wrapper">
@@ -50,6 +37,46 @@ $latest = !empty($rows) ? $rows[0] : null;
     <section class="content">
         <div class="container-fluid">
             
+            <?php if (!empty($changes_history)): ?>
+                <!-- Recent Changes Warning Card -->
+                <div class="card card-warning card-outline shadow-sm mb-4">
+                    <div class="card-header border-0 pb-0">
+                        <h3 class="card-title text-warning font-weight-bold">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> Recent Default App Changes Detected
+                        </h3>
+                    </div>
+                    <div class="card-body py-2 px-3">
+                        <p class="text-muted small mb-2">The default intent handlers on the device have been modified from their historical baselines. Review if these modifications were unauthorized:</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0" style="font-size: .82rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Date Changed</th>
+                                        <th>Default Type</th>
+                                        <th>Previous App</th>
+                                        <th>New App</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    // Show only the 3 most recent changes in the warning box
+                                    $recentChanges = array_slice($changes_history, 0, 3);
+                                    foreach ($recentChanges as $c): 
+                                    ?>
+                                        <tr>
+                                            <td><?= date('M d, Y H:i:s', $c['extracted_at'] / 1000) ?></td>
+                                            <td><span class="badge badge-light border"><?= esc(ucfirst($c['handler'])) ?></span></td>
+                                            <td><span class="text-muted"><del><?= esc($c['old_app']) ?></del></span></td>
+                                            <td><span class="text-danger font-weight-bold"><i class="fas fa-arrow-right mr-1"></i><?= esc($c['new_app']) ?></span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <?php if ($latest): ?>
                 <!-- Latest Default Apps Grid -->
                 <div class="card card-primary card-outline shadow-sm mb-4">
@@ -250,69 +277,49 @@ $latest = !empty($rows) ? $rows[0] : null;
                 </div>
             <?php endif; ?>
 
-            <!-- Extraction History Table Card -->
+            <!-- Configuration Change History Card -->
             <div class="card card-secondary card-outline shadow-sm">
                 <div class="card-header">
                     <h3 class="card-title font-weight-bold">
-                        <i class="fas fa-history mr-2"></i>Extraction History
+                        <i class="fas fa-history mr-2"></i>Default App Configuration Changes
                     </h3>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover table-striped mb-0">
+                        <table class="table table-hover table-striped mb-0" style="font-size: .85rem;">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>Extracted</th>
-                                    <th>Browser</th>
-                                    <th>Dialer</th>
-                                    <th>SMS</th>
-                                    <th>Launcher</th>
-                                    <th>Email</th>
-                                    <th>Maps</th>
-                                    <th>Music</th>
-                                    <th>Gallery</th>
+                                    <th>Change Timestamp</th>
+                                    <th>Default Type</th>
+                                    <th>Previous Application</th>
+                                    <th>New Application</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (empty($rows)): ?>
+                                <?php if (empty($changes_history)): ?>
                                     <tr>
-                                        <td colspan="9" class="text-center py-5">
-                                            <div class="empty-state">
-                                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                                <h4>No Default App data</h4>
-                                                <p class="text-muted">Data will appear here once extracted from the Android app.</p>
-                                            </div>
+                                        <td colspan="4" class="text-center py-5 text-muted">
+                                            <i class="fas fa-check-circle fa-2x text-success mb-2 d-block"></i>
+                                            No configuration changes detected across all historical snapshots.
                                         </td>
                                     </tr>
-                                <?php else: foreach ($rows as $r): ?>
+                                <?php else: foreach ($changes_history as $c): ?>
                                     <tr>
                                         <td>
                                             <span class="badge badge-light border p-2">
                                                 <i class="fas fa-clock mr-1 text-muted"></i>
-                                                <?= !empty($r['extracted_at']) ? date('M d, Y H:i', $r['extracted_at'] / 1000) : 'N/A' ?>
+                                                <?= date('M d, Y H:i:s', $c['extracted_at'] / 1000) ?>
                                             </span>
                                         </td>
-                                        <td><strong><?= htmlspecialchars($r['default_browser_name'] ?? '—') ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['default_dialer_name'] ?? '—') ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['default_sms_name'] ?? '—') ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['default_launcher_name'] ?? '—') ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['default_email_name'] ?? '—') ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['default_maps_name'] ?? '—') ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['default_music_name'] ?? '—') ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['default_gallery_name'] ?? '—') ?></strong></td>
+                                        <td><strong><?= esc(ucfirst($c['handler'])) ?></strong></td>
+                                        <td><span class="text-muted"><del><?= esc($c['old_app']) ?></del></span></td>
+                                        <td><span class="text-success font-weight-bold"><i class="fas fa-arrow-right mr-1"></i><?= esc($c['new_app']) ?></span></td>
                                     </tr>
                                 <?php endforeach; endif; ?>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <?php if (isset($pager) && $total > 25): ?>
-                    <div class="card-footer clearfix">
-                        <div class="float-right">
-                            <?= $pager->links('default', 'bootstrap5_full') ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
             </div>
 
         </div>

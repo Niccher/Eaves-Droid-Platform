@@ -352,6 +352,9 @@ function formatEmbeddedDates(string $text): string {
                         <!-- Right: re-scan buttons -->
                         <?php if (!$is_scanning): ?>
                         <div class="rescan-btn-group" style="flex-shrink:0;">
+                            <button class="btn btn-outline-info btn-sm mr-2" data-toggle="modal" data-target="#schedulerModal" style="border-radius:8px;font-size:.82rem;">
+                                <i class="fas fa-calendar-alt mr-1"></i> Schedules
+                            </button>
                             <button class="btn btn-outline-secondary btn-sm" id="rescan-toggle-btn"
                                     onclick="toggleRescanMenu(event)" style="border-radius:8px;font-size:.82rem;">
                                 <i class="fas fa-redo-alt mr-1"></i> Re-scan <i class="fas fa-caret-down ml-1"></i>
@@ -404,7 +407,7 @@ function formatEmbeddedDates(string $text): string {
                         <div class="col-md">
                             <div class="health-sub text-muted" style="font-size: .85rem;">
                                 <strong>Scan completed:</strong> <?= date('M jS D Y h:i:s A', strtotime($job['completed_at'] ?? 'now')) ?><br>
-                                <strong>Setup:</strong> <?= count(json_decode($job['algorithms'] ?? '[]', true)) ?> algorithms active &nbsp;·&nbsp; <?= $scopeLabel($scope) ?>
+                                <strong>Setup:</strong> <?= count((array)json_decode($job['algorithms'] ?? '[]', true)) ?> algorithms active &nbsp;·&nbsp; <?= $scopeLabel($scope) ?>
                                 <?php if (!empty($job['timing_ms'])): ?>
                                 &nbsp;·&nbsp; Processed in <?= fmtElapsed((int)$job['timing_ms']) ?>
                                 <?php endif; ?>
@@ -795,7 +798,7 @@ function formatEmbeddedDates(string $text): string {
                         $hjCount   = (int)($hj['results_count'] ?? 0);
                         $hjDate    = $hj['completed_at'] ?? $hj['created_at'] ?? null;
                         $hjId      = (int)$hj['id'];
-                        $hjAlgs    = count(json_decode($hj['algorithms'] ?? '[]', true));
+                        $hjAlgs    = count((array)json_decode($hj['algorithms'] ?? '[]', true));
                         $dotBg     = match($hjStatus) {
                             'completed' => '#28a745', 'failed' => '#dc3545',
                             'running','pending' => '#667eea', default => '#adb5bd'
@@ -849,6 +852,73 @@ function formatEmbeddedDates(string $text): string {
 
         </div><!-- .container-fluid -->
     </section><!-- .content -->
+<!-- Scheduler Modal -->
+<div class="modal fade" id="schedulerModal" tabindex="-1" role="dialog" aria-labelledby="schedulerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold" id="schedulerModalLabel"><i class="fas fa-calendar-alt text-info mr-2"></i> Manage Scan Frequencies</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="max-height: 450px; overflow-y: auto;">
+                <p class="text-muted small">Configure the execution frequency of individual ML telemetry detectors. High-severity or intensive scans can be rate-limited (minimum 4 hours) to prevent battery/CPU depletion.</p>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-valign-middle" style="font-size: .85rem;">
+                        <thead>
+                            <tr>
+                                <th>Category / Detector</th>
+                                <th>Description</th>
+                                <th>Schedule / Interval</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach (($categories_list ?? []) as $catKey => $catInfo): ?>
+                                <?php foreach ($catInfo['algorithms'] as $alg): ?>
+                                    <?php 
+                                    $currFreq = $schedule_map[$alg['id']] ?? 24; 
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <span class="font-weight-bold"><?= esc($alg['name']) ?></span>
+                                            <br>
+                                            <small class="text-muted"><?= esc($catInfo['label']) ?> (<code><?= esc($alg['id']) ?></code>)</small>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted"><?= esc($alg['description']) ?></small>
+                                        </td>
+                                        <form action="<?= base_url('analysis/anomalies/save-schedule') ?>" method="post">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="algorithm_id" value="<?= esc($alg['id']) ?>">
+                                            <td>
+                                                <select name="frequency_hours" class="form-control form-control-sm" style="width: 130px; display: inline-block;">
+                                                    <option value="4" <?= $currFreq == 4 ? 'selected' : '' ?>>Every 4 hours</option>
+                                                    <option value="8" <?= $currFreq == 8 ? 'selected' : '' ?>>Every 8 hours</option>
+                                                    <option value="12" <?= $currFreq == 12 ? 'selected' : '' ?>>Every 12 hours</option>
+                                                    <option value="24" <?= $currFreq == 24 ? 'selected' : '' ?>>Every 24 hours (Daily)</option>
+                                                    <option value="48" <?= $currFreq == 48 ? 'selected' : '' ?>>Every 48 hours</option>
+                                                    <option value="168" <?= $currFreq == 168 ? 'selected' : '' ?>>Weekly</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <button type="submit" class="btn btn-sm btn-primary font-weight-bold">
+                                                    Save
+                                                </button>
+                                            </td>
+                                        </form>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+            </div>
+</div>
 </div><!-- .content-wrapper -->
 
 <!-- ════════════════════════════════════════════════════════════════════════════

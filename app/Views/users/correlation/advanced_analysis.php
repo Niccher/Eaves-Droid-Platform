@@ -198,6 +198,61 @@ $analysisFeatures = [
         </section>
 
         <!-- Main content -->
+        
+        <!-- Device Threat Index Gauge & Analyzer Control -->
+        <section class="content mb-4 animate__animated animate__fadeIn">
+            <div class="container-fluid">
+                <div class="card bg-dark shadow-sm border-0" style="border-radius: 8px; background: linear-gradient(135deg, #1e2225 0%, #121416 100%);">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-3 text-center border-right" style="border-color: rgba(255, 255, 255, 0.1) !important;">
+                                <h6 class="text-muted text-uppercase font-weight-bold mb-3" style="letter-spacing: 0.5px; font-size: 11px;">Device Threat Index</h6>
+                                <div class="d-inline-block position-relative">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 110px; height: 110px; border: 8px solid <?= $threat_color_border ?>; background-color: #1a1d20; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+                                        <h2 class="font-weight-bold mb-0 text-white" style="font-size: 1.8rem;"><?= $threat_index ?>%</h2>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <span class="badge badge-<?= $threat_badge_color ?> px-3 py-2 text-uppercase font-weight-bold shadow-sm" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                        <?= $threat_status ?>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 pl-md-4 mb-3 mb-md-0">
+                                <h5 class="text-white font-weight-bold mb-2"><i class="fas fa-shield-alt mr-2 text-<?= $threat_badge_color ?>"></i> Security Status Overview</h5>
+                                <p class="text-light opacity-75 small mb-3" style="line-height: 1.6; font-size: 11.5px;">
+                                    The Device Threat Index aggregates anomalies from both the PHP heuristic scanner and the Python ML correlation engine (including network, apps, contacts graph, and device telemetry).
+                                </p>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <span class="text-muted small d-block">Active Telemetry Scanners</span>
+                                        <h4 class="font-weight-bold text-info mb-0" style="font-size: 1.3rem;"><?= $active_scanners_count ?> <small class="text-muted font-weight-normal" style="font-size: 10px;">Scanners</small></h4>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-muted small d-block">High Severity Alerts</span>
+                                        <h4 class="font-weight-bold text-danger mb-0" style="font-size: 1.3rem;"><?= $high_threat_count ?> <small class="text-muted font-weight-normal" style="font-size: 10px;">Warnings</small></h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center border-left" style="border-color: rgba(255, 255, 255, 0.1) !important;">
+                                <h6 class="text-muted text-uppercase font-weight-bold mb-3" style="letter-spacing: 0.5px; font-size: 11px;">On-Demand ML Scanner</h6>
+                                <form action="<?= base_url('analysis/force-scan') ?>" method="post" id="forceScanForm">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-block btn-<?= $threat_badge_color ?> font-weight-bold text-white shadow-sm py-2" id="btnRunScan" style="border-radius: 6px; font-size: 12.5px;">
+                                        <i class="fas fa-sync-alt mr-1"></i> RUN FULL SCAN
+                                    </button>
+                                </form>
+                                <small class="text-muted d-block mt-2" style="font-size: 9.5px;">
+                                    <i class="fas fa-info-circle mr-1"></i> Scans rate-limited to once per 4 hours.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main content -->
         <section class="content mb-4">
             <?php if (isset($ml_insight_finance) && !empty($ml_insight_finance['insights'])): ?>
             <?php $_eng = (new \App\Models\AnomaliesModel())->getDefaultEngine(); $_engLabel = match($_eng){'python'=>'Python Engine','both'=>'Hybrid Engine',default=>'PHP Engine'}; ?>

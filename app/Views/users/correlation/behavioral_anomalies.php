@@ -9,6 +9,25 @@ $catStyles = [
     'other'         => ['label' => 'Anomaly', 'icon' => 'fas fa-exclamation-triangle', 'bg' => '#6c757d', 'fg' => '#ffffff'],
 ];
 
+// Merge communication spikes from Python
+foreach (($comm_spikes ?? []) as $cs) {
+    $details = json_decode($cs['details'], true) ?: [];
+    $anomalies[] = [
+        'timestamp' => strtotime($cs['event_timestamp']) * 1000, // convert to ms
+        'severity' => strtolower($cs['severity']) === 'high' ? 'danger' : 'warning',
+        'type' => 'communication',
+        'title' => $cs['algorithm'],
+        'description' => $cs['anomaly'],
+        'whitelist_category' => 'sms',
+        'whitelist_identifier' => $details['contact'] ?? '',
+    ];
+}
+
+// Re-sort anomalies by timestamp DESC
+usort($anomalies, function($a, $b) {
+    return ($b['timestamp'] ?? 0) <=> ($a['timestamp'] ?? 0);
+});
+
 // Summary counts computation
 $typeCounts = ['call' => 0, 'app_usage' => 0, 'location' => 0, 'communication' => 0];
 foreach ($anomalies as $a) {
@@ -169,6 +188,72 @@ foreach ($anomalies as $a) {
                                 <span class="text-xs font-weight-bold text-success uppercase d-block"><i class="fas fa-sun mr-1"></i> Active Normal Baseline</span>
                                 <strong class="text-sm">5:00 AM – 11:00 PM</strong>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Whitelists -->
+                    <div class="card card-outline card-success shadow-sm mb-3">
+                        <div class="card-header border-0">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-check-double text-success mr-1"></i> Active Whitelist
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <?php if (empty($active_whitelists)): ?>
+                                <div class="text-center py-3 text-muted text-xs">
+                                    No active whitelisted targets.
+                                </div>
+                            <?php else: ?>
+                                <ul class="list-group list-group-flush text-xs">
+                                    <?php foreach ($active_whitelists as $wl): ?>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                            <div style="max-width: 80%; overflow-x: auto;">
+                                                <span class="badge badge-light border mr-1"><?= esc(ucfirst($wl['category'])) ?></span>
+                                                <code><?= esc($wl['identifier']) ?></code>
+                                            </div>
+                                            <form action="<?= base_url('analysis/behavioral-anomalies/remove-whitelist') ?>" method="POST" class="m-0" onsubmit="return confirm('Remove this target from whitelist? It will be re-analyzed.');">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="id" value="<?= $wl['id'] ?>">
+                                                <button type="submit" class="btn btn-xs btn-outline-danger" title="Remove from Whitelist" style="border-radius: 6px;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Whitelist Audit Trail -->
+                    <div class="card card-outline card-info shadow-sm mb-3">
+                        <div class="card-header border-0">
+                            <h3 class="card-title font-weight-bold text-dark">
+                                <i class="fas fa-history text-info mr-1"></i> Whitelist Audit Logs
+                            </h3>
+                        </div>
+                        <div class="card-body p-0" style="max-height: 250px; overflow-y: auto;">
+                            <?php if (empty($whitelist_logs)): ?>
+                                <div class="text-center py-3 text-muted text-xs">
+                                    No audit log entries.
+                                </div>
+                            <?php else: ?>
+                                <ul class="list-group list-group-flush text-xs">
+                                    <?php foreach ($whitelist_logs as $log): ?>
+                                        <li class="list-group-item py-2 px-3">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <strong><?= esc($log['action_taken_by']) ?></strong>
+                                                <span class="text-muted" style="font-size: .65rem;"><?= date('M j, H:i', strtotime($log['created_at'])) ?></span>
+                                            </div>
+                                            <div class="text-muted" style="line-height: 1.3;">
+                                                Target: <code><?= esc($log['identifier']) ?></code> (<?= esc($log['category']) ?>)
+                                                <br>
+                                                Reason: <span class="font-italic"><?= esc($log['reason'] ?? 'None provided') ?></span>
+                                            </div>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
                         </div>
                     </div>
 

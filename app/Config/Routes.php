@@ -452,6 +452,8 @@ $routes->group('', [
             // Landing page
             $routes->get('/', 'AdvancedController::hardware', ['as' => 'adv-hardware']);
 
+            $routes->get('storage_analysis', 'CorrelationController::storageIntelligence', ['as' => 'adv-storage-analysis']);
+
             $routes->get('device', 'AdvancedController::device_context', ['as' => 'adv-device']);
             $routes->get('network', 'AdvancedController::network_info', ['as' => 'adv-network']);
             $routes->get('bluetooth', 'AdvancedController::bluetooth', ['as' => 'adv-bluetooth']);
@@ -522,6 +524,9 @@ $routes->group('', [
         $routes->group('software', static function ($routes) {
             // Landing page
             $routes->get('/', 'AdvancedController::software', ['as' => 'adv-software']);
+
+            $routes->get('apps_analysis', 'CorrelationController::appPortfolio', ['as' => 'adv-apps-analysis']);
+            $routes->get('lifestyle_analysis', 'CorrelationController::lifestyleAnalysis', ['as' => 'adv-lifestyle-analysis']);
 
             $routes->get('accounts', 'AdvancedController::accounts', ['as' => 'adv-accounts']);
             $routes->get('calendar', 'AdvancedController::calendar', ['as' => 'adv-calendar']);
@@ -725,6 +730,7 @@ $routes->group('', [
          * @return string
          */
         $routes->get('/', 'CorrelationController::advanced', ['as' => 'analysis-dashboard']);
+        $routes->post('force-scan', 'CorrelationController::forceScan', ['as' => 'analysis-force-scan']);
         $routes->get('(:num)', 'CorrelationController::index/$1');
         $routes->get('refresh-ml', 'CorrelationController::refreshMl', ['as' => 'analysis-refresh-ml']);
 
@@ -775,6 +781,7 @@ $routes->group('', [
          */
         $routes->get('behavioral-anomalies', 'CorrelationController::behavioralAnomalies', ['as' => 'analysis-anomalies']);
         $routes->post('behavioral-anomalies/whitelist', 'CorrelationController::whitelistAnomaly', ['as' => 'analysis-anomalies-whitelist']);
+        $routes->post('behavioral-anomalies/remove-whitelist', 'CorrelationController::removeWhitelist', ['as' => 'analysis-anomalies-remove-whitelist']);
 
         /**
          * Universal Timeline.
@@ -799,6 +806,7 @@ $routes->group('', [
         $routes->get('/',          'AnomaliesController::index',      ['as' => 'anomalies-info']);
         $routes->get('algorithms', 'AnomaliesController::algorithms', ['as' => 'anomalies-algorithms']);
         $routes->match(['get', 'post'], 'results', 'AnomaliesController::results', ['as' => 'anomalies-results']);
+        $routes->post('save-schedule', 'AnomaliesController::saveSchedule', ['as' => 'anomalies-save-schedule']);
         $routes->match(['get', 'post'], 'run', 'AnomaliesController::run', ['as' => 'anomalies-run']);
         $routes->get('progress/(:num)', 'AnomaliesController::progress/$1', ['as' => 'anomalies-progress']);
         $routes->get('status/(:num)',   'AnomaliesController::status/$1',   ['as' => 'anomalies-status']);

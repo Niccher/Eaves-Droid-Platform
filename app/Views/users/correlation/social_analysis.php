@@ -116,8 +116,79 @@
                     </div>
                 </div>
 
+                <?php if (!empty($graph_orphans) || !empty($graph_outliers)): ?>
                 <div class="row">
                     <div class="col-md-12">
+                        <div class="card card-outline card-danger shadow-sm mb-4">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-user-times text-danger mr-2"></i> Contact Graph Security Alerts (Python Outliers)</h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-danger p-2"><?= count($graph_orphans) + count($graph_outliers) ?> anomaly/anomalies detected</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <?php if (!empty($graph_orphans)): ?>
+                                    <div class="col-md-6 border-right">
+                                        <h6 class="text-danger font-weight-bold"><i class="fas fa-user-slash mr-2"></i> Orphaned Contacts (<?= count($graph_orphans) ?>)</h6>
+                                        <p class="text-xs text-muted">These contacts exist in the address book but have zero calls or SMS interaction history. Possible dormant, legacy, or synthetic records.</p>
+                                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                            <table class="table table-sm table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Phone Number</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($graph_orphans as $c): ?>
+                                                    <tr>
+                                                        <td><b><?= esc($c['name']) ?></b></td>
+                                                        <td><code class="text-muted"><?= esc($c['phone']) ?></code></td>
+                                                    </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($graph_outliers)): ?>
+                                    <div class="col-md-6">
+                                        <h6 class="text-warning font-weight-bold"><i class="fas fa-project-diagram mr-2"></i> Social Community Outliers (<?= count($graph_outliers) ?>)</h6>
+                                        <p class="text-xs text-muted">Contacts who communicate frequently but do not belong to any detected social community (family, work, friends).</p>
+                                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                            <table class="table table-sm table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Phone</th>
+                                                        <th>Interaction Weight</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($graph_outliers as $c): ?>
+                                                    <tr>
+                                                        <td><b><?= esc($c['name']) ?></b></td>
+                                                        <td><code class="text-muted"><?= esc($c['phone']) ?></code></td>
+                                                        <td><span class="badge badge-warning"><?= number_format($c['score'], 2) ?></span></td>
+                                                    </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <div class="row">
+                    <div class="col-md-12">
+
                         <div class="card card-outline card-warning">
                             <div class="card-header">
                                 <h3 class="card-title"><i class="fas fa-project-diagram text-warning mr-2"></i> Top Connections Graph</h3>

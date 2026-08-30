@@ -10,7 +10,7 @@
                     <p class="text-muted mb-0 small">Circadian rhythm sleep profiling, physical movement overlay, and daily travel mode breakdown.</p>
                 </div>
                 <div class="col-sm-6 text-right">
-                    <a class="btn btn-outline-secondary btn-sm shadow-sm" href="<?= base_url('analysis') ?>"><i class="fas fa-arrow-left mr-1"></i> Back to Analysis</a>
+                    <a class="btn btn-outline-secondary btn-sm shadow-sm" href="<?= $back_url ?? base_url('analysis') ?>"><i class="fas fa-arrow-left mr-1"></i> <?= esc($back_label ?? 'Back to Analysis') ?></a>
                 </div>
             </div>
         </div>

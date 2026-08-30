@@ -767,16 +767,12 @@ class FinderComms extends Model
 
         try {
             $mlTexts = array_map(fn($i) => $rawBodies[$i]['body'], $mlIndices);
-            [$vectors, $vectorizer] = MLAnalyzerModel::vectorize($mlTexts, 200);
+            $mlLabels = array_map(fn($i) => $autoLabels[$i], $mlIndices);
 
-            $trainSamples = [];
-            $trainLabels = [];
-            foreach ($mlIndices as $pos => $origIdx) {
-                $trainSamples[] = $vectors[$pos];
-                $trainLabels[] = $autoLabels[$origIdx];
-            }
+            $cachedBundle = MLAnalyzerModel::getCachedClassifier($mlTexts, $mlLabels, 200);
+            $vectors = $cachedBundle['vectors'];
+            $classifier = $cachedBundle['classifier'];
 
-            $classifier = MLAnalyzerModel::trainNaiveBayes($trainSamples, $trainLabels);
             $predictions = $classifier->predict($vectors);
 
             foreach ($mlIndices as $pos => $origIdx) {
@@ -1644,8 +1640,8 @@ class FinderComms extends Model
         [$vectors, $vectorizer] = MLAnalyzerModel::vectorizeSms($sms, 300);
         $vocab = $vectorizer->getVocabulary();
 
-        $k = $totalMessages < 10 ? 2 : 3;
-        $clusters = MLAnalyzerModel::kmeans($vectors, $k);
+        $clusters = MLAnalyzerModel::kmeans($vectors); // Automatically determines optimal K via Elbow Method
+        $k = count($clusters);
 
         $clusterLabels = MLAnalyzerModel::labelClustersByKeywords($clusters, $sms, $posWords, $negWords);
         if (count(array_unique($clusterLabels)) < 2) {

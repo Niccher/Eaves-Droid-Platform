@@ -1,29 +1,13 @@
-<?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php /** @var array $latest @var array $changes_history @var int $total @var string $nav_urls */ ?>
 <?php
-helper('coalesce');
-$rows = coalesce_snapshots(
-    $rows,
-    'device_id',
-    ['locale_region'],
-    ['system_fonts']
-);
-
-// Process all rows to parse locale region and font details
-foreach ($rows as &$row) {
-    $locale = $row['locale_region'] ?? [];
-    $fonts = $row['system_fonts'] ?? [];
-    $row['font_count'] = is_array($fonts) ? count($fonts) : 0;
-    $row['font_scale'] = $locale['font_scale'] ?? '—';
-    $row['timezone'] = $locale['timezone'] ?? '—';
-    $row['display_name'] = $locale['display_name'] ?? '—';
-    $row['text_layout_direction'] = $locale['text_layout_direction'] ?? '—';
-    $row['language'] = $locale['language'] ?? '—';
-    $row['country'] = $locale['country'] ?? '—';
-}
-unset($row);
-$latest = !empty($rows) ? $rows[0] : null;
 $latestLocale = $latest['locale_region'] ?? [];
 $latestFonts = $latest['system_fonts'] ?? [];
+$latest['display_name'] = $latestLocale['display_name'] ?? '—';
+$latest['language'] = $latestLocale['language'] ?? '—';
+$latest['country'] = $latestLocale['country'] ?? '—';
+$latest['timezone'] = $latestLocale['timezone'] ?? '—';
+$latest['font_scale'] = $latestLocale['font_scale'] ?? '—';
+$latest['text_layout_direction'] = $latestLocale['text_layout_direction'] ?? '—';
 ?>
 
 <style>
@@ -141,65 +125,51 @@ $latestFonts = $latest['system_fonts'] ?? [];
                 </div>
             <?php endif; ?>
 
-            <!-- Extraction History Table -->
+            <!-- Locale Change History Card -->
             <div class="card card-secondary card-outline shadow-sm">
                 <div class="card-header">
                     <h3 class="card-title font-weight-bold">
-                        <i class="fas fa-history mr-2"></i>Extraction History
+                        <i class="fas fa-history mr-2"></i>Locale &amp; Region Changes
                     </h3>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover table-striped mb-0">
+                        <table class="table table-hover table-striped mb-0" style="font-size: .85rem;">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>Extracted</th>
-                                    <th>Device ID</th>
-                                    <th>Language</th>
-                                    <th>Country</th>
-                                    <th>Timezone</th>
-                                    <th>Font Scale</th>
-                                    <th>Fonts Cataloged</th>
+                                    <th>Change Timestamp</th>
+                                    <th>Setting Modified</th>
+                                    <th>Previous Value</th>
+                                    <th>New Value</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (empty($rows)): ?>
+                                <?php if (empty($changes_history)): ?>
                                     <tr>
-                                        <td colspan="7" class="text-center py-5">
-                                            <div class="empty-state">
-                                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                                <h4>No System Locale Data</h4>
-                                                <p class="text-muted">Data will appear here once extracted from the Android app.</p>
-                                            </div>
+                                        <td colspan="4" class="text-center py-5 text-muted">
+                                            <i class="fas fa-check-circle fa-2x text-success mb-2 d-block"></i>
+                                            No locale or region changes detected across all historical snapshots.
                                         </td>
                                     </tr>
-                                <?php else: foreach ($rows as $r): ?>
-                                    <tr>
-                                        <td>
-                                            <span class="badge badge-light border p-2">
-                                                <i class="fas fa-clock mr-1 text-muted"></i>
-                                                <?= !empty($r['extracted_at']) ? date('M d, Y H:i', $r['extracted_at'] / 1000) : 'N/A' ?>
-                                            </span>
-                                        </td>
-                                        <td><code><?= htmlspecialchars($r['device_id'] ?? 'N/A') ?></code></td>
-                                        <td><strong><?= htmlspecialchars($r['language'] ?? '—') ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['country'] ?? '—') ?></strong></td>
-                                        <td><code><?= htmlspecialchars($r['timezone'] ?? '—') ?></code></td>
-                                        <td><span class="badge badge-info"><?= htmlspecialchars($r['font_scale'] ?? '—') ?>x</span></td>
-                                        <td><span class="badge badge-success"><?= (int)$r['font_count'] ?> fonts</span></td>
-                                    </tr>
+                                <?php else: foreach ($changes_history as $c): ?>
+                                    <?php foreach ($c['diffs'] as $d): ?>
+                                        <tr>
+                                            <td>
+                                                <span class="badge badge-light border p-2">
+                                                    <i class="fas fa-clock mr-1 text-muted"></i>
+                                                    <?= date('M d, Y H:i:s', $c['extracted_at'] / 1000) ?>
+                                                </span>
+                                            </td>
+                                            <td><strong><?= esc($d['field']) ?></strong></td>
+                                            <td><span class="text-muted"><del><?= esc($d['old']) ?></del></span></td>
+                                            <td><span class="text-success font-weight-bold"><i class="fas fa-arrow-right mr-1"></i><?= esc($d['new']) ?></span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
                                 <?php endforeach; endif; ?>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <?php if (isset($pager) && $total > 25): ?>
-                    <div class="card-footer clearfix">
-                        <div class="float-right">
-                            <?= $pager->links('default', 'bootstrap5_full') ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
             </div>
 
         </div>

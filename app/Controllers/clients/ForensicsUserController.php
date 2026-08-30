@@ -976,11 +976,67 @@ class ForensicsUserController extends BaseClientController
     /** GET /advanced/software/default_apps */
     public function default_apps()
     {
+        $db = \Config\Database::connect();
+        $userId = $this->userId;
+
+        // Query all default app handler rows chronologically
+        $allHandlers = $db->table('tbl_system_default_apps_device')
+            ->where('owner_id', $userId)
+            ->orderBy('extracted_at', 'ASC')
+            ->get()->getResultArray();
+
+        // Group by extracted_at
+        $snapshots = [];
+        foreach ($allHandlers as $h) {
+            $ts = $h['extracted_at'];
+            $snapshots[$ts][$h['handler_type']] = [
+                'package_name' => $h['package_name'] ?? '',
+                'app_name' => $h['app_name'] ?? $h['package_name'] ?? '—',
+                'is_system' => $h['is_system'] ?? 0,
+            ];
+        }
+
+        // Compute changes history
+        $changesHistory = [];
+        $prevSnapshot = null;
+        foreach ($snapshots as $ts => $handlers) {
+            if ($prevSnapshot !== null) {
+                foreach ($handlers as $type => $h) {
+                    $prevPack = $prevSnapshot[$type]['package_name'] ?? null;
+                    if ($prevPack !== null && $prevPack !== $h['package_name']) {
+                        $changesHistory[] = [
+                            'extracted_at' => $ts,
+                            'handler' => $type,
+                            'old_app' => $prevSnapshot[$type]['app_name'] ?? $prevPack,
+                            'new_app' => $h['app_name'] ?? $h['package_name'],
+                        ];
+                    }
+                }
+            }
+            $prevSnapshot = $handlers;
+        }
+
+        // Sort changes DESC (most recent first)
+        usort($changesHistory, function($a, $b) {
+            return $b['extracted_at'] <=> $a['extracted_at'];
+        });
+
+        // The latest snapshot details
+        $latestSnapshot = null;
+        $latestTs = null;
+        if (!empty($snapshots)) {
+            $keys = array_keys($snapshots);
+            $latestTs = end($keys);
+            $latestSnapshot = $snapshots[$latestTs];
+        }
+
         $data = array_merge($this->commonData('default_apps', 'Default Apps'), [
-            'rows' => $this->finderModel->get_default_apps($this->userId),
-            'total' => $this->finderModel->get_count_DefaultApps($this->userId),
-            'pager' => $this->finderModel->getPager(),
+            'latest' => $latestSnapshot,
+            'latest_ts' => $latestTs,
+            'changes_history' => $changesHistory,
+            'total' => count($snapshots),
         ]);
+
         return $this->renderAppView('users/advanced/default_apps', $data);
     }
 
@@ -999,11 +1055,82 @@ class ForensicsUserController extends BaseClientController
     /** GET /advanced/software/alarms */
     public function alarms()
     {
+        $db = \Config\Database::connect();
+        $userId = $this->userId;
+
+        // Query all alarms chronologically
+        $allAlarms = $db->table('tbl_system_alarms')
+            ->where('owner_id', $userId)
+            ->orderBy('extracted_at', 'ASC')
+            ->get()->getResultArray();
+
+        // Group by extracted_at
+        $snapshots = [];
+        foreach ($allAlarms as $a) {
+            $ts = $a['extracted_at'];
+            if ($a['alarm_type'] === 'job') {
+                $snapshots[$ts]['jobs'][$a['job_id'] . '_' . $a['package_name']] = [
+                    'job_id' => $a['job_id'] ?? 0,
+                    'service' => $a['service_class'] ?? '',
+                    'package' => $a['package_name'] ?? '',
+                    'is_periodic' => $a['is_periodic'] ?? 0,
+                    'interval_millis' => $a['interval_millis'] ?? null,
+                    'requires_charging' => $a['requires_charging'] ?? 0,
+                    'requires_idle' => $a['requires_idle'] ?? 0,
+                ];
+            } else {
+                $snapshots[$ts]['alarms'][$a['trigger_time'] . '_' . $a['package_name']] = [
+                    'trigger_time' => $a['trigger_time'] ?? 0,
+                    'trigger_time_formatted' => $a['trigger_time_formatted'] ?? '',
+                    'package' => $a['package_name'] ?? '',
+                ];
+            }
+        }
+
+        // Get latest snapshot keys
+        $latestTs = null;
+        $latestJobs = [];
+        $latestAlarms = [];
+        $deletedJobs = [];
+        $deletedAlarms = [];
+
+        if (!empty($snapshots)) {
+            $keys = array_keys($snapshots);
+            $latestTs = end($keys);
+            $latestJobs = $snapshots[$latestTs]['jobs'] ?? [];
+            $latestAlarms = $snapshots[$latestTs]['alarms'] ?? [];
+
+            // Detect deleted alarms by looking at previous snapshots
+            if (count($keys) > 1) {
+                $prevTs = $keys[count($keys) - 2];
+                $prevJobs = $snapshots[$prevTs]['jobs'] ?? [];
+                $prevAlarms = $snapshots[$prevTs]['alarms'] ?? [];
+
+                // Jobs in prev but not in latest
+                foreach ($prevJobs as $key => $j) {
+                    if (!isset($latestJobs[$key])) {
+                        $deletedJobs[] = $j;
+                    }
+                }
+
+                // Alarms in prev but not in latest
+                foreach ($prevAlarms as $key => $a) {
+                    if (!isset($latestAlarms[$key])) {
+                        $deletedAlarms[] = $a;
+                    }
+                }
+            }
+        }
+
         $data = array_merge($this->commonData('alarms', 'Alarms & Jobs'), [
-            'rows' => $this->finderModel->get_alarms($this->userId),
-            'total' => $this->finderModel->get_count_Alarms($this->userId),
-            'pager' => $this->finderModel->getPager(),
+            'latest_ts' => $latestTs,
+            'latest_jobs' => array_values($latestJobs),
+            'latest_alarms' => array_values($latestAlarms),
+            'deleted_jobs' => $deletedJobs,
+            'deleted_alarms' => $deletedAlarms,
+            'total' => count($snapshots),
         ]);
+
         return $this->renderAppView('users/advanced/alarms', $data);
     }
 
@@ -1088,11 +1215,67 @@ class ForensicsUserController extends BaseClientController
     // ── System Locale ──
     public function system_locale()
     {
+        $db = \Config\Database::connect();
+        $userId = $this->userId;
+
+        // Query all locale snapshots chronologically
+        $allLocales = $db->table('tbl_system_locale')
+            ->where('owner_id', $userId)
+            ->orderBy('extracted_at', 'ASC')
+            ->get()->getResultArray();
+
+        $changesHistory = [];
+        $prevLocale = null;
+
+        foreach ($allLocales as $r) {
+            $reg = json_decode($r['locale_region_json'] ?? '{}', true) ?: [];
+            if ($prevLocale !== null) {
+                $prevReg = json_decode($prevLocale['locale_region_json'] ?? '{}', true) ?: [];
+                
+                // Compare fields
+                $diffs = [];
+                foreach (['language', 'country', 'display_name', 'timezone'] as $field) {
+                    $oldVal = $prevReg[$field] ?? '';
+                    $newVal = $reg[$field] ?? '';
+                    if ($oldVal !== $newVal) {
+                        $diffs[] = [
+                            'field' => ucfirst($field),
+                            'old' => $oldVal ?: '—',
+                            'new' => $newVal ?: '—'
+                        ];
+                    }
+                }
+
+                if (!empty($diffs)) {
+                    $changesHistory[] = [
+                        'extracted_at' => $r['extracted_at'],
+                        'diffs' => $diffs
+                    ];
+                }
+            }
+            $prevLocale = $r;
+        }
+
+        // Sort changes DESC (most recent first)
+        usort($changesHistory, function($a, $b) {
+            return $b['extracted_at'] <=> $a['extracted_at'];
+        });
+
+        // The latest locale details
+        $latestLocale = null;
+        if (!empty($allLocales)) {
+            $latestLocale = end($allLocales);
+            $latestLocale['locale_region'] = json_decode($latestLocale['locale_region_json'] ?? '{}', true) ?: [];
+            $latestLocale['system_fonts'] = json_decode($latestLocale['system_fonts_json'] ?? '[]', true) ?: [];
+            $latestLocale['ts_display'] = $latestLocale['extracted_at'] ? date('Y-m-d H:i:s', (int)$latestLocale['extracted_at']) : '';
+        }
+
         $data = array_merge($this->commonData('system_locale', 'System Locale'), [
-            'rows' => $this->finderModel->get_system_locale($this->userId),
-            'total' => $this->finderModel->get_count_SystemLocale($this->userId),
-            'pager' => $this->finderModel->getPager(),
+            'latest' => $latestLocale,
+            'changes_history' => $changesHistory,
+            'total' => count($allLocales),
         ]);
+
         return $this->renderAppView('users/advanced/system_locale', $data);
     }
 
