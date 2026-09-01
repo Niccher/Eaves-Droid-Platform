@@ -233,7 +233,6 @@ class PlanVersionsSeeder extends Seeder
                 $row = array_merge([
                     'plan_id'    => $plan['id'],
                     'version'    => 1,
-                    'is_current' => 1,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ], $versionData[$slug]);
