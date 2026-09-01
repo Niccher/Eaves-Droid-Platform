@@ -41,6 +41,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-di
     && rm /usr/bin/composer
 
 # ── Application code ──────────────────────────────────────────────────────────
+COPY . /var/www/html
+
 RUN mkdir -p /var/www/html/writable/cache \
              /var/www/html/writable/debugbar \
              /var/www/html/writable/exports \
