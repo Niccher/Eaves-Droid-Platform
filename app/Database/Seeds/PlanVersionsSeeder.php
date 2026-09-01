@@ -13,8 +13,8 @@ class PlanVersionsSeeder extends Seeder
         $versionData = [
             'free' => [
                 'name'                   => 'Free Plan v1',
-                'price_monthly'          => 0,
-                'price_yearly'           => 0,
+                'price_monthly_cents'    => 0,
+                'price_yearly_cents'     => 0,
                 'currency'               => 'USD',
                 'max_devices'            => 1,
                 'features'               => json_encode([
@@ -70,8 +70,8 @@ class PlanVersionsSeeder extends Seeder
             ],
             'gold' => [
                 'name'                   => 'Gold Plan v1',
-                'price_monthly'          => 19.99,
-                'price_yearly'           => 199.99,
+                'price_monthly_cents'    => 499,
+                'price_yearly_cents'     => 4990,
                 'currency'               => 'USD',
                 'max_devices'            => 5,
                 'features'               => json_encode([
@@ -141,8 +141,8 @@ class PlanVersionsSeeder extends Seeder
             ],
             'platinum' => [
                 'name'                   => 'Platinum Plan v1',
-                'price_monthly'          => 49.99,
-                'price_yearly'           => 499.99,
+                'price_monthly_cents'    => 899,
+                'price_yearly_cents'     => 8990,
                 'currency'               => 'USD',
                 'max_devices'            => 25,
                 'features'               => json_encode([
@@ -225,24 +225,28 @@ class PlanVersionsSeeder extends Seeder
             $slug = $plan['slug'];
             if (!isset($versionData[$slug])) continue;
 
+            $row = array_merge([
+                'plan_id'    => $plan['id'],
+                'version'    => 1,
+                'created_at' => $now,
+            ], $versionData[$slug]);
+
+            // Filter row payload so only columns existing in the database schema are inserted
+            if (!empty($allowedFields)) {
+                $row = array_intersect_key($row, array_flip($allowedFields));
+            }
+
             $existingVersion = $this->db->table('plan_versions')
                 ->where('plan_id', $plan['id'])
                 ->where('version', 1)
                 ->get()->getRowArray();
 
             if (!$existingVersion) {
-                $row = array_merge([
-                    'plan_id'    => $plan['id'],
-                    'version'    => 1,
-                    'created_at' => $now,
-                ], $versionData[$slug]);
-
-                // Filter row payload so only columns existing in the database schema are inserted
-                if (!empty($allowedFields)) {
-                    $row = array_intersect_key($row, array_flip($allowedFields));
-                }
-
                 $this->db->table('plan_versions')->insert($row);
+            } else {
+                $this->db->table('plan_versions')
+                    ->where('id', $existingVersion['id'])
+                    ->update($row);
             }
         }
     }
