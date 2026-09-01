@@ -271,43 +271,38 @@
             </div>
         </div>
 
-        <ul class="nav nav-pills nav-fill mb-3" id="pay-tabs" role="tablist">
-            <li class="nav-item"><a class="nav-link active" data-toggle="pill" href="#pay-mpesa" data-method="mpesa"><i class="fas fa-mobile-alt mr-1"></i>Safaricom M-Pesa</a></li>
-            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#pay-airtel" data-method="airtel"><i class="fas fa-mobile-alt mr-1"></i>Airtel Money</a></li>
-            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#pay-card" data-method="card"><i class="far fa-credit-card mr-1"></i>Debit/Credit Card</a></li>
-        </ul>
-
-        <div class="tab-content" id="pay-tabs-content">
-            <!-- M-Pesa -->
-            <div class="tab-pane fade show active" id="pay-mpesa" role="tabpanel">
-                <div class="text-center py-4">
-                    <i class="fas fa-mobile-alt fa-3x text-success mb-3"></i>
-                    <p class="text-dark font-weight-bold">Pay via Safaricom M-Pesa</p>
-                    <p class="text-muted small">You will be redirected to complete your payment. Enter your phone number on Pesapal's secure checkout page to receive an instant **STK Push PIN Prompt** on your phone, or use the provided Paybill/Till number instructions.</p>
+        <!-- Unified Pesapal Payment Card -->
+        <div class="card border shadow-none rounded mb-3">
+            <div class="card-body text-center py-4">
+                <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 mb-3">
+                    <span class="badge badge-success px-3 py-2 fs-6 m-1"><i class="fas fa-mobile-alt mr-1"></i> Safaricom M-Pesa (STK Push)</span>
+                    <span class="badge badge-danger px-3 py-2 fs-6 m-1"><i class="fas fa-mobile-alt mr-1"></i> Airtel Money</span>
+                    <span class="badge badge-info px-3 py-2 fs-6 m-1"><i class="far fa-credit-card mr-1"></i> Visa / Mastercard</span>
                 </div>
-            </div>
+                <h5 class="text-dark font-weight-bold mb-2">Secure Checkout via Pesapal</h5>
+                <p class="text-muted small mb-3">
+                    You will be redirected to Pesapal's official PCI-DSS certified gateway to complete your payment.
+                </p>
 
-            <!-- Airtel Money -->
-            <div class="tab-pane fade" id="pay-airtel" role="tabpanel">
-                <div class="text-center py-4">
-                    <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
-                    <p class="text-dark font-weight-bold">Pay via Airtel Money</p>
-                    <p class="text-muted small">You will be redirected to Pesapal's secure page where you can enter your mobile number and approve the wallet transaction transfer instantly.</p>
-                </div>
-            </div>
-
-            <!-- Card -->
-            <div class="tab-pane fade" id="pay-card" role="tabpanel">
-                <div class="text-center py-4">
-                    <i class="far fa-credit-card fa-3x text-info mb-3"></i>
-                    <p class="text-dark font-weight-bold">Debit & Credit Cards (Visa / Mastercard)</p>
-                    <p class="text-muted small">Securely process payments using Visa, Mastercard, or American Express issued by your bank (KCB, Equity, NCBA, Co-operative Bank, or any international bank). You will be redirected to enter your card details securely.</p>
+                <div class="row text-left small text-muted bg-light p-3 rounded mx-1">
+                    <div class="col-12 col-md-4 mb-2 mb-md-0">
+                        <strong class="text-dark d-block mb-1"><i class="fas fa-bolt text-warning mr-1"></i> M-Pesa STK Push</strong>
+                        Enter your phone number on Pesapal's page to receive an instant <strong>STK PIN prompt</strong> on your mobile screen.
+                    </div>
+                    <div class="col-12 col-md-4 mb-2 mb-md-0">
+                        <strong class="text-dark d-block mb-1"><i class="fas fa-university text-primary mr-1"></i> Bank Cards</strong>
+                        Supports Visa & Mastercard issued by KCB, Equity, NCBA, Co-op, or any international bank.
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <strong class="text-dark d-block mb-1"><i class="fas fa-check-circle text-success mr-1"></i> Instant Activation</strong>
+                        Your subscription activates automatically as soon as payment authorization is confirmed.
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="alert alert-info text-center small mt-3 mb-0">
-            <i class="fas fa-shield-alt text-success mr-1"></i> Payments are fully secured and processed by <strong>Pesapal (PCI-DSS Certified Gateway)</strong>. Eaves Droid does not store or process your financial card info or PINs.
+        <div class="alert alert-info text-center small mb-0">
+            <i class="fas fa-shield-alt text-success mr-1"></i> Payments are 256-bit SSL encrypted and processed by <strong>Pesapal (PCI-DSS Certified)</strong>. Eaves Droid does not store financial card numbers or PINs.
         </div>
 
       </div>

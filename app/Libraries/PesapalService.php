@@ -13,12 +13,17 @@ class PesapalService
 
     public function __construct()
     {
-        // Load settings from env
-        $this->consumerKey = env('pesapal.consumerKey') ?? '';
-        $this->consumerSecret = env('pesapal.consumerSecret') ?? '';
-        $env = env('pesapal.environment') ?? 'sandbox';
+        // Load settings from system env or CodeIgniter env helper
+        $this->consumerKey = getenv('PESAPAL_CONSUMER_KEY')
+            ?: (getenv('PESAPAL_KEY') ?: (env('pesapal.consumerKey') ?? ''));
 
-        if (strtolower($env) === 'production') {
+        $this->consumerSecret = getenv('PESAPAL_CONSUMER_SECRET')
+            ?: (getenv('PESAPAL_SECRET') ?: (env('pesapal.consumerSecret') ?? ''));
+
+        $env = getenv('PESAPAL_ENVIRONMENT')
+            ?: (env('pesapal.environment') ?? 'sandbox');
+
+        if (strtolower((string) $env) === 'production') {
             $this->baseUrl = 'https://pay.pesapal.com/v3';
         } else {
             $this->baseUrl = 'https://cybqa.pesapal.com/pesapalv3';

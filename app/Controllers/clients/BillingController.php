@@ -161,12 +161,12 @@ class BillingController extends BaseClientController
         // ── Initialize Pesapal ──
         $pesapal = new \App\Libraries\PesapalService();
         
-        // Register IPN URL
+        // Register IPN URL (or fallback to pre-registered IPN_ID from environment)
         $ipnUrl = base_url('billing/pesapal/ipn');
-        $ipnId = $pesapal->registerIPN($ipnUrl);
+        $ipnId = getenv('PESAPAL_IPN_ID') ?: $pesapal->registerIPN($ipnUrl);
 
         if (!$ipnId) {
-            return $this->fail('Could not establish connection with payment provider (IPN registration failed).', 500);
+            return $this->fail('Pesapal payment gateway credentials are not configured yet. Please add PESAPAL_CONSUMER_KEY & PESAPAL_CONSUMER_SECRET in Railway variables.', 422);
         }
 
         // Generate merchant reference: user_{userId}_{plan}_{billing}_{timestamp}
