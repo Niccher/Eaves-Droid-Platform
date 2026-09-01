@@ -44,5 +44,6 @@ LISTEN_PORT="${PORT:-80}"
 echo "Configuring Apache to listen on port ${LISTEN_PORT}..."
 sed -i "s/Listen 80/Listen ${LISTEN_PORT}/g" /etc/apache2/ports.conf 2>/dev/null || true
 sed -i "s/<VirtualHost \*:80>/<VirtualHost \*:${LISTEN_PORT}>/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
+grep -q "ServerName localhost" /etc/apache2/apache2.conf || echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 exec apache2-foreground
