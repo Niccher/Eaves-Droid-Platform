@@ -22,9 +22,10 @@ if [ -n "$MYSQLHOST" ] || [ -n "$DB_HOST_CUSTOM" ]; then
     done
 
     if php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USER}', '${DB_PASS}');" 2>/dev/null; then
-        echo "MySQL is ready! Running database migrations..."
+        echo "MySQL is ready! Running database migrations & seeders..."
         cd /var/www/html
         php spark migrate --all 2>&1 || echo "WARNING: Migration encountered an issue. Check logs."
+        php spark db:seed DatabaseSeeder 2>&1 || echo "WARNING: Seeding encountered an issue. Check logs."
     fi
 else
     echo "NOTICE: No external database host provided (MYSQLHOST is empty). Skipping DB migrations."
