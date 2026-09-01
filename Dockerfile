@@ -5,20 +5,17 @@
 # ══════════════════════════════════════════════════════════════════════════════
 FROM python:3.12-slim AS builder
 
-RUN --mount=type=cache,id=ml-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=ml-apt-lib,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc \
         g++ \
-        libgomp1
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY requirements.txt .
 
 # Install into a prefix directory so we can COPY just the packages to runtime.
-# BuildKit pip cache means the download only happens once across all builds.
-RUN --mount=type=cache,id=ml-pip-cache,target=/root/.cache/pip \
-    pip install --prefix=/install --no-warn-script-location -r requirements.txt
+RUN pip install --prefix=/install --no-warn-script-location -r requirements.txt
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage 2 — runtime: slim final image, no compilers in the layer
@@ -26,10 +23,9 @@ RUN --mount=type=cache,id=ml-pip-cache,target=/root/.cache/pip \
 FROM python:3.12-slim AS runtime
 
 # Only the runtime shared lib is needed (no gcc/g++)
-RUN --mount=type=cache,id=ml-runtime-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=ml-runtime-apt-lib,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-        libgomp1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
