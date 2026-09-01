@@ -29,9 +29,9 @@ php spark migrate --all 2>&1 || echo "WARNING: Migration encountered an issue. C
 
 echo "Migrations complete. Starting Apache..."
 
-if [ -n "$PORT" ]; then
-    echo "Configuring Apache to listen on port ${PORT}..."
-    sed -i "s/80/${PORT}/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
-fi
+LISTEN_PORT="${PORT:-80}"
+echo "Configuring Apache to listen on port ${LISTEN_PORT}..."
+sed -i "s/Listen 80/Listen ${LISTEN_PORT}/g" /etc/apache2/ports.conf 2>/dev/null || true
+sed -i "s/<VirtualHost \*:80>/<VirtualHost \*:${LISTEN_PORT}>/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
 
 exec apache2-foreground
