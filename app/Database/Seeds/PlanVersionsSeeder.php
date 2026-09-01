@@ -234,7 +234,6 @@ class PlanVersionsSeeder extends Seeder
                     'plan_id'    => $plan['id'],
                     'version'    => 1,
                     'created_at' => $now,
-                    'updated_at' => $now,
                 ], $versionData[$slug]);
 
                 $this->db->table('plan_versions')->insert($row);
