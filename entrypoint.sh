@@ -7,9 +7,7 @@ DB_PORT="${MYSQLPORT:-${DB_PORT:-3306}}"
 DB_USER="${MYSQLUSER:-${DB_USER:-root}}"
 DB_PASS="${MYSQLPASSWORD:-${MYSQL_ROOT_PASSWORD:-${DB_PASS:-root_password}}}"
 
-if [ -z "$MYSQLHOST" ] && [ -z "$DB_HOST_CUSTOM" ]; then
-    echo "NOTICE: No external database host provided (MYSQLHOST is empty). Skipping DB wait loop."
-else
+if [ -n "$MYSQLHOST" ] || [ -n "$DB_HOST_CUSTOM" ]; then
     echo "Waiting for MySQL to accept connections at ${DB_HOST}:${DB_PORT}..."
     max_retries=10
     count=0
@@ -22,12 +20,15 @@ else
         echo "MySQL not ready yet... retrying ($count/$max_retries)"
         sleep 2
     done
-fi
 
-# Run migrations (safe to run multiple times — only applies pending migrations)
-echo "Running database migrations..."
-cd /var/www/html
-php spark migrate --all 2>&1 || echo "WARNING: Migration encountered an issue. Check logs."
+    if php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USER}', '${DB_PASS}');" 2>/dev/null; then
+        echo "MySQL is ready! Running database migrations..."
+        cd /var/www/html
+        php spark migrate --all 2>&1 || echo "WARNING: Migration encountered an issue. Check logs."
+    fi
+else
+    echo "NOTICE: No external database host provided (MYSQLHOST is empty). Skipping DB migrations."
+fi
 
 echo "Migrations complete. Starting Apache..."
 
