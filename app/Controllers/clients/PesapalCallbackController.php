@@ -82,14 +82,16 @@ class PesapalCallbackController extends BaseController
         ));
 
         if (!$orderTrackingId) {
-            $this->notifyAdminsOfIPNAccess([
+            $ipnInfo = [
                 'ip'               => $ipAddress,
                 'method'           => $method,
                 'orderTrackingId'  => 'MISSING',
                 'reference'        => $reference ?? 'N/A',
                 'notificationType' => $notificationType ?? 'N/A',
                 'status'           => 'REJECTED (Missing OrderTrackingId)',
-            ]);
+            ];
+            $this->logIPNToDatabase($ipnInfo);
+            $this->notifyAdminsOfIPNAccess($ipnInfo);
 
             return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Missing OrderTrackingId']);
         }
@@ -107,15 +109,16 @@ class PesapalCallbackController extends BaseController
                 $this->processPaymentFailure($statusData);
             }
 
-            // Notify Admin & Superadmin of verified IPN webhook hit
-            $this->notifyAdminsOfIPNAccess([
+            $ipnInfo = [
                 'ip'               => $ipAddress,
                 'method'           => $method,
                 'orderTrackingId'  => $orderTrackingId,
                 'reference'        => $reference ?? 'N/A',
                 'notificationType' => $notificationType ?? 'N/A',
                 'status'           => $statusText,
-            ]);
+            ];
+            $this->logIPNToDatabase($ipnInfo);
+            $this->notifyAdminsOfIPNAccess($ipnInfo);
 
             // Pesapal expects a specific JSON response format to acknowledge receipt
             return $this->response->setJSON([
@@ -125,16 +128,50 @@ class PesapalCallbackController extends BaseController
             ]);
         }
 
-        $this->notifyAdminsOfIPNAccess([
+        $ipnInfo = [
             'ip'               => $ipAddress,
             'method'           => $method,
             'orderTrackingId'  => $orderTrackingId,
             'reference'        => $reference ?? 'N/A',
             'notificationType' => $notificationType ?? 'N/A',
             'status'           => 'REJECTED (Pesapal Verification Failed)',
-        ]);
+        ];
+        $this->logIPNToDatabase($ipnInfo);
+        $this->notifyAdminsOfIPNAccess($ipnInfo);
 
         return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid transaction details']);
+    }
+
+    /**
+     * Log IPN access attempt to database table tbl_ipn_logs.
+     */
+    private function logIPNToDatabase(array $data): void
+    {
+        try {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('tbl_ipn_logs')) {
+                $headers = [];
+                foreach ($this->request->getHeaders() as $name => $val) {
+                    $headers[$name] = is_object($val) && method_exists($val, 'getValue') ? $val->getValue() : (string)$val;
+                }
+
+                $db->table('tbl_ipn_logs')->insert([
+                    'ip_address'         => $data['ip'],
+                    'http_method'        => $data['method'],
+                    'order_tracking_id'  => $data['orderTrackingId'] !== 'MISSING' ? $data['orderTrackingId'] : null,
+                    'merchant_reference' => $data['reference'] !== 'N/A' ? $data['reference'] : null,
+                    'notification_type'  => $data['notificationType'] !== 'N/A' ? $data['notificationType'] : null,
+                    'pesapal_status'     => $data['status'],
+                    'raw_payload'        => json_encode([
+                        'get'     => $this->request->getGet(),
+                        'post'    => $this->request->getPost(),
+                        'headers' => $headers,
+                    ]),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'logIPNToDatabase failed: ' . $e->getMessage());
+        }
     }
 
     /**
