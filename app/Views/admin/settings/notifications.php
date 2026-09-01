@@ -111,24 +111,39 @@ function testEmail() {
         cancelButtonText: 'Cancel',
         showLoaderOnConfirm: true,
         preConfirm: (email) => {
+            if (!email) {
+                Swal.showValidationMessage('Please enter a recipient email address');
+                return false;
+            }
             return $.ajax({
                 url: '<?= base_url('admin/settings/notifications/test-email') ?>',
                 method: 'POST',
                 data: {
                     email: email,
-                    smtp_host: $('input[name=\"smtp_host\"]').val(),
-                    smtp_port: $('input[name=\"smtp_port\"]').val(),
-                    smtp_user: $('input[name=\"smtp_user\"]').val(),
-                    smtp_pass: $('input[name=\"smtp_pass\"]').val(),
-                    smtp_from_email: $('input[name=\"smtp_from_email\"]').val(),
-                    smtp_from_name: $('input[name=\"smtp_from_name\"]').val()
+                    smtp_host: $('input[name="smtp_host"]').val(),
+                    smtp_port: $('input[name="smtp_port"]').val(),
+                    smtp_user: $('input[name="smtp_user"]').val(),
+                    smtp_pass: $('input[name="smtp_pass"]').val(),
+                    smtp_from_email: $('input[name="smtp_from_email"]').val(),
+                    smtp_from_name: $('input[name="smtp_from_name"]').val()
                 },
                 dataType: 'json'
             }).then(r => {
-                if (!r.success) throw new Error(r.message);
+                if (!r.success) {
+                    Swal.showValidationMessage(r.message || 'Test email failed');
+                    return false;
+                }
                 return r;
             }).catch(err => {
-                Swal.showValidationMessage(err.responseJSON?.message || err.message || 'Request failed');
+                var msg = (err && err.responseJSON && err.responseJSON.message) 
+                    ? err.responseJSON.message 
+                    : ((err && err.message) ? err.message : 'Request failed');
+                if (Swal.getPopup()) {
+                    Swal.showValidationMessage(msg);
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                }
+                return false;
             });
         }
     }).then(r => {
