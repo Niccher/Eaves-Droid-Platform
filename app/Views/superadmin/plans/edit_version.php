@@ -311,7 +311,10 @@
                                 <?php
                                     $fcmDefaults = $featureDefaults['fcm_groups'] ?? [];
                                     if (is_string($fcmDefaults)) {
-                                        $fcmDefaults = json_decode($fcmDefaults, true) ?: [];
+                                        $fcmDefaults = json_decode($fcmDefaults, true);
+                                    }
+                                    if (!is_array($fcmDefaults)) {
+                                        $fcmDefaults = [];
                                     }
                                 ?>
                                 <div class="form-check mb-2">
@@ -324,7 +327,7 @@
                                 </div>
                                 <div class="form-check mb-2">
                                     <input type="checkbox" name="fcm_group_advanced" id="fcm_group_advanced" class="form-check-input" value="1"
-                                           <?= in_array('advanced', $fcmDefaults) ? 'checked' : '' ?>>
+                                           <?= in_array('advanced', $fcmDefaults, true) ? 'checked' : '' ?>>
                                     <label class="form-check-label font-weight-bold text-warning" for="fcm_group_advanced">
                                         Advanced Commands (Gold)
                                     </label>
@@ -333,7 +336,7 @@
                                 </div>
                                 <div class="form-check mb-2">
                                     <input type="checkbox" name="fcm_group_deep" id="fcm_group_deep" class="form-check-input" value="1"
-                                           <?= in_array('deep', $fcmDefaults) ? 'checked' : '' ?>>
+                                           <?= in_array('deep', $fcmDefaults, true) ? 'checked' : '' ?>>
                                     <label class="form-check-label font-weight-bold text-danger" for="fcm_group_deep">
                                         Deep Commands (Platinum)
                                     </label>
@@ -349,13 +352,18 @@
                                 <h3 class="card-title text-purple"><i class="fas fa-brain text-purple mr-2"></i>ML Algorithms</h3>
                             </div>
                             <div class="card-body p-3">
-                                <?php $algoDefaults = $current ? json_decode($current['ml_algorithms'], true) : []; ?>
+                                <?php
+                                    $algoDefaults = $current ? json_decode($current['ml_algorithms'] ?? '[]', true) : [];
+                                    if (!is_array($algoDefaults)) {
+                                        $algoDefaults = [];
+                                    }
+                                ?>
                                 <?php foreach ($algorithmsList as $algo): ?>
                                     <div class="form-check mb-2">
                                         <input type="checkbox" name="algo_<?= $algo['key'] ?>"
                                                id="algo_<?= $algo['key'] ?>" class="form-check-input"
                                                value="1"
-                                               <?= ($algo['key'] === 'core' || in_array($algo['key'], $algoDefaults)) ? 'checked' : '' ?>
+                                               <?= ($algo['key'] === 'core' || in_array($algo['key'], $algoDefaults, true)) ? 'checked' : '' ?>
                                                <?= ($algo['key'] === 'core') ? 'disabled' : '' ?>>
                                         <label class="form-check-label font-weight-bold" for="algo_<?= $algo['key'] ?>">
                                             <?php if ($algo['key'] === 'core'): ?>

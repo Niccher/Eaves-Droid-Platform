@@ -129,18 +129,21 @@
                                           <li class="list-group-item">
                                               <span class="d-block mb-2 font-weight-bold"><i class="fas fa-brain text-purple mr-2"></i>ML Algorithms</span>
                                               <div>
-                                                  <?php
-                                                      $algos = json_decode($version['ml_algorithms'], true) ?: [];
-                                                  ?>
-                                                  <span class="badge <?= in_array('core', $algos, true) ? 'badge-success' : 'badge-secondary' ?> mr-1 mb-1">
-                                                      <i class="fas fa-shield-alt mr-1"></i>Core (Free)
-                                                  </span>
-                                                  <span class="badge <?= in_array('advanced', $algos, true) ? 'badge-warning' : 'badge-secondary' ?> mr-1 mb-1">
-                                                      <i class="fas fa-project-diagram mr-1"></i>Advanced (Gold)
-                                                  </span>
-                                                  <span class="badge <?= in_array('deep', $algos, true) ? 'badge-danger' : 'badge-secondary' ?> mr-1 mb-1">
-                                                      <i class="fas fa-brain mr-1"></i>Deep (Platinum)
-                                                  </span>
+                                                   <?php
+                                                       $algos = json_decode($version['ml_algorithms'] ?? '[]', true);
+                                                       if (!is_array($algos)) {
+                                                           $algos = [];
+                                                       }
+                                                   ?>
+                                                   <span class="badge <?= in_array('core', $algos, true) ? 'badge-success' : 'badge-secondary' ?> mr-1 mb-1">
+                                                       <i class="fas fa-shield-alt mr-1"></i>Core (Free)
+                                                   </span>
+                                                   <span class="badge <?= in_array('advanced', $algos, true) ? 'badge-warning' : 'badge-secondary' ?> mr-1 mb-1">
+                                                       <i class="fas fa-project-diagram mr-1"></i>Advanced (Gold)
+                                                   </span>
+                                                   <span class="badge <?= in_array('deep', $algos, true) ? 'badge-danger' : 'badge-secondary' ?> mr-1 mb-1">
+                                                       <i class="fas fa-brain mr-1"></i>Deep (Platinum)
+                                                   </span>
                                               </div>
                                           </li>
                                           <li class="list-group-item d-flex justify-content-between align-items-center">
