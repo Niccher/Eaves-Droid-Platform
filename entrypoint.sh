@@ -74,4 +74,12 @@ EOF
 
 grep -q "ServerName localhost" /etc/apache2/apache2.conf || echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
+echo "Starting background cron runner daemon..."
+(
+    while true; do
+        sleep 60
+        php /var/www/html/spark cron:run >> /var/log/cron_runner.log 2>&1 || true
+    done
+) &
+
 exec apache2-foreground
