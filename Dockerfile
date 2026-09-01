@@ -16,8 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache modules and ensure single MPM prefork module
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
-    && a2enmod mpm_prefork rewrite headers
+RUN a2dismod -f mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod rewrite headers
 
 # PHP upload and memory limits
 RUN { \
