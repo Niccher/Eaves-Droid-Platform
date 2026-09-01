@@ -10,20 +10,38 @@ class PesapalService
     private string $consumerSecret;
     private string $baseUrl;
     private $client;
+    public string $lastError = '';
 
     public function __construct()
     {
-        // Load settings from system env or CodeIgniter env helper
-        $this->consumerKey = getenv('PESAPAL_CONSUMER_KEY')
-            ?: (getenv('PESAPAL_KEY') ?: (env('pesapal.consumerKey') ?? ''));
+        // Resolve keys across all environment sources ($_ENV, $_SERVER, getenv, env helper)
+        $this->consumerKey = trim((string) (
+            $_ENV['PESAPAL_CONSUMER_KEY']
+            ?? $_SERVER['PESAPAL_CONSUMER_KEY']
+            ?? getenv('PESAPAL_CONSUMER_KEY')
+            ?? getenv('PESAPAL_KEY')
+            ?? env('pesapal.consumerKey')
+            ?? ''
+        ));
 
-        $this->consumerSecret = getenv('PESAPAL_CONSUMER_SECRET')
-            ?: (getenv('PESAPAL_SECRET') ?: (env('pesapal.consumerSecret') ?? ''));
+        $this->consumerSecret = trim((string) (
+            $_ENV['PESAPAL_CONSUMER_SECRET']
+            ?? $_SERVER['PESAPAL_CONSUMER_SECRET']
+            ?? getenv('PESAPAL_CONSUMER_SECRET')
+            ?? getenv('PESAPAL_SECRET')
+            ?? env('pesapal.consumerSecret')
+            ?? ''
+        ));
 
-        $env = getenv('PESAPAL_ENVIRONMENT')
-            ?: (env('pesapal.environment') ?? 'sandbox');
+        $env = trim((string) (
+            $_ENV['PESAPAL_ENVIRONMENT']
+            ?? $_SERVER['PESAPAL_ENVIRONMENT']
+            ?? getenv('PESAPAL_ENVIRONMENT')
+            ?? env('pesapal.environment')
+            ?? 'sandbox'
+        ));
 
-        if (strtolower((string) $env) === 'production') {
+        if (strtolower($env) === 'production') {
             $this->baseUrl = 'https://pay.pesapal.com/v3';
         } else {
             $this->baseUrl = 'https://cybqa.pesapal.com/pesapalv3';
@@ -37,15 +55,16 @@ class PesapalService
      */
     public function getAccessToken(): ?string
     {
+        if (empty($this->consumerKey) || empty($this->consumerSecret)) {
+            $this->lastError = 'Pesapal Consumer Key or Consumer Secret environment variable is missing or empty in Railway variables.';
+            log_message('error', 'PesapalService: ' . $this->lastError);
+            return null;
+        }
+
         $cacheKey = 'pesapal_access_token_' . md5($this->consumerKey);
         $cachedToken = cache($cacheKey);
         if ($cachedToken) {
             return $cachedToken;
-        }
-
-        if (empty($this->consumerKey) || empty($this->consumerSecret)) {
-            log_message('error', 'PesapalService: Consumer Key or Secret is missing in env config.');
-            return null;
         }
 
         try {
@@ -71,7 +90,9 @@ class PesapalService
                 return $body['token'];
             }
 
-            log_message('error', 'PesapalService Auth failed. Code: ' . $statusCode . ' Body: ' . json_encode($body));
+            $errMsg = $body['message'] ?? $body['error']['message'] ?? json_encode($body);
+            $this->lastError = "Pesapal Authentication Failed (HTTP {$statusCode}): {$errMsg}";
+            log_message('error', 'PesapalService: ' . $this->lastError);
             return null;
         } catch (\Exception $e) {
             log_message('error', 'PesapalService Exception during Auth: ' . $e->getMessage());
@@ -120,7 +141,9 @@ class PesapalService
                 return $body['ipn_id'];
             }
 
-            log_message('error', 'PesapalService RegisterIPN failed. Code: ' . $statusCode . ' Body: ' . json_encode($body));
+            $errMsg = $body['message'] ?? $body['error']['message'] ?? json_encode($body);
+            $this->lastError = "Pesapal IPN Registration Failed (HTTP {$statusCode}): {$errMsg}";
+            log_message('error', 'PesapalService: ' . $this->lastError);
             return null;
         } catch (\Exception $e) {
             log_message('error', 'PesapalService Exception during RegisterIPN: ' . $e->getMessage());
