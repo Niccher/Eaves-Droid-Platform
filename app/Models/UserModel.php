@@ -501,24 +501,30 @@ class UserModel extends Model
                 array_column($uploadChecksums, 'device_checksum')
             ));
 
-            // Step 2: Fetch device profiles using checksums OR direct owner_id
-            $builder = $this->db->table('tbl_device_profiles');
+            // Step 2: Fetch latest device profiles using MAX(counter) per device_id to comply with sql_mode=only_full_group_by
+            $subQuery = $this->db->table('tbl_device_profiles')
+                ->select('MAX(counter) as max_counter');
 
             if (!empty($allChecksums)) {
-                $builder->whereIn('device_id', $allChecksums);
-                $builder->orWhere('owner_id', $user_id);
+                $subQuery->whereIn('device_id', $allChecksums)
+                         ->orWhere('owner_id', $user_id);
             } else {
-                $builder->where('owner_id', $user_id);
+                $subQuery->where('owner_id', $user_id);
             }
 
-            $devices = $builder
-                ->select('tbl_device_profiles.*, tbl_device_profiles.created_at')
-                ->groupBy('tbl_device_profiles.device_id')
+            $subQuery->groupBy('device_id');
+            $maxCounterRows = $subQuery->get()->getResultArray();
+            $maxCounters = array_filter(array_column($maxCounterRows, 'max_counter'));
+
+            if (empty($maxCounters)) {
+                return [];
+            }
+
+            return $this->db->table('tbl_device_profiles')
+                ->whereIn('counter', $maxCounters)
                 ->orderBy('extraction_timestamp', 'DESC')
                 ->get()
                 ->getResultArray();
-
-            return $devices;
 
         } catch (\Exception $e) {
             log_message('error', 'get_user_devices_from_profile error: ' . $e->getMessage());
