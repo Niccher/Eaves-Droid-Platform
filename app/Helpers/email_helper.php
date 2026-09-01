@@ -111,6 +111,7 @@ if (!function_exists('send_templated_email')) {
         try {
             $email = \Config\Services::email();
             $email->initialize([
+                'userAgent'  => 'Eaves Droid Forensic Intelligence/1.0',
                 'protocol'   => 'smtp',
                 'SMTPHost'   => $smtp['smtp_host'],
                 'SMTPPort'   => (int) ($smtp['smtp_port'] ?? 587),
@@ -124,22 +125,28 @@ if (!function_exists('send_templated_email')) {
 
             $sender = get_notification_sender();
             $fromEmail = !empty($smtp['smtp_from_email']) ? $smtp['smtp_from_email'] : ($sender['email'] ?? 'noreply@eavesdroid.local');
-            $fromName = !empty($smtp['smtp_from_name']) ? $smtp['smtp_from_name'] : ($sender['name'] ?? 'Eaves Droid');
+            $fromName = !empty($smtp['smtp_from_name']) ? $smtp['smtp_from_name'] : ($sender['name'] ?? 'Eaves Droid Security');
 
             $email->setFrom($fromEmail, $fromName);
             $email->setTo($to);
             $email->setSubject($subject);
             $email->setMessage($body);
-            $email->setHeader('X-Mailer', 'EavesDroid Notification System/1.0');
+            $email->setHeader('X-Mailer', 'Eaves Droid Forensic Intelligence/1.0');
+            $email->setHeader('User-Agent', 'Eaves Droid Forensic Intelligence/1.0');
+            $email->setHeader('X-Sender', $fromEmail);
 
-            $sent = $email->send();
+            $sent = $email->send(false);
             if (!$sent) {
-                $dbg = $email->printDebugger(['headers', 'subject', 'body']);
-                $errorMessage = "SMTP Send Failed. " . strip_tags((string)$dbg);
+                $dbg = $email->printDebugger(['headers']);
+                $errorMessage = "SMTP Send Failed. Please check SMTP host, credentials, or TLS setting.";
+                if (preg_match('/(535|534|550|503|451|421|Connection refused)[^\r\n]*/i', (string)$dbg, $m)) {
+                    $errorMessage .= " (" . trim($m[0]) . ")";
+                }
                 $GLOBALS['last_email_error'] = $errorMessage;
                 log_message('error', "send_templated_email: Failed to send to $to. Debug: " . $errorMessage);
             } else {
                 $status = 'sent';
+                $GLOBALS['last_email_error'] = null;
                 log_message('info', "send_templated_email: Sent to $to (template: $template) [Log ID: $emailTrackId]");
             }
         } catch (\Throwable $e) {

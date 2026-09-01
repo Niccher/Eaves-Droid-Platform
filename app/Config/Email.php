@@ -6,14 +6,14 @@ use CodeIgniter\Config\BaseConfig;
 
 class Email extends BaseConfig
 {
-    public string $fromEmail  = 'prjs4@chegecache.co.ke';
-    public string $fromName   = 'Prjs4 Team';
+    public string $fromEmail  = 'noreply@eavesdroid.local';
+    public string $fromName   = 'Eaves Droid Security';
     public string $recipients = '';
 
     /**
      * The "user agent"
      */
-    public string $userAgent = 'Chege OS';
+    public string $userAgent = 'Eaves Droid Forensic Intelligence/1.0';
 
     /**
      * The mail sending protocol: mail, sendmail, smtp
