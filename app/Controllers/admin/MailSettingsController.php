@@ -71,28 +71,40 @@ class MailSettingsController extends BaseAdminController
         }
 
         if (empty($smtpHost)) {
-            return $this->respond(["success" => false, "message" => "No SMTP host configured. Configure SMTP settings first."]);
+            return $this->respond(["success" => false, "message" => "No SMTP host provided. Please enter your SMTP Host (e.g. smtp.gmail.com)."]);
         }
 
-        // Use email helper with DB SMTP config
+        $customSmtpConfig = [
+            'smtp_host'       => $smtpHost,
+            'smtp_port'       => (int) $smtpPort,
+            'smtp_user'       => $smtpUser,
+            'smtp_pass'       => $smtpPass,
+            'smtp_from_email' => $smtpFromEmail,
+            'smtp_from_name'  => $smtpFromName,
+        ];
+
+        // Use email helper with POSTed (or DB fallback) SMTP config
         helper("email");
         $sent = send_templated_email(
             $recipient,
             "Eaves Droid - SMTP Configuration Test",
             "email/admin/smtp_test",
             [
-                "smtpHost" => $smtpHost,
-                "smtpPort" => $smtpPort,
-                "smtpUser" => $smtpUser,
+                "smtpHost"      => $smtpHost,
+                "smtpPort"      => $smtpPort,
+                "smtpUser"      => $smtpUser,
                 "smtpFromEmail" => $smtpFromEmail,
-                "smtpFromName" => $smtpFromName,
-            ]
+                "smtpFromName"  => $smtpFromName,
+            ],
+            'email/_layout',
+            $customSmtpConfig
         );
 
         if ($sent) {
             return $this->respond(["success" => true, "message" => "Test email sent successfully to " . $recipient]);
         } else {
-            return $this->respond(["success" => false, "message" => "Failed to send test email. Check logs."]);
+            $lastErr = $GLOBALS['last_email_error'] ?? 'SMTP connection failed. Please check your SMTP host, port, and password.';
+            return $this->respond(["success" => false, "message" => "Failed to send test email: " . $lastErr]);
         }
     }
 

@@ -15,16 +15,25 @@ if (!function_exists('send_templated_email')) {
         string $subject,
         string $template,
         array $data = [],
-        ?string $layout = 'email/_layout'
+        ?string $layout = 'email/_layout',
+        array $customSmtpConfig = []
     ): bool {
-        // Load DB SMTP config
+        $GLOBALS['last_email_error'] = null;
+
+        // Load DB SMTP config or custom SMTP array
         $db = \Config\Database::connect();
         $smtp = [];
-        foreach ($db->table('settings')->where('class', 'notification')->get()->getResultArray() as $r) {
-            $smtp[$r['key']] = $r['value'];
+        if (!empty($customSmtpConfig) && !empty($customSmtpConfig['smtp_host'])) {
+            $smtp = $customSmtpConfig;
+        } else {
+            foreach ($db->table('settings')->where('class', 'notification')->get()->getResultArray() as $r) {
+                $smtp[$r['key']] = $r['value'];
+            }
         }
+
         if (empty($smtp['smtp_host'])) {
-            log_message('error', 'send_templated_email: No SMTP host configured in settings (class=notification)');
+            $GLOBALS['last_email_error'] = 'No SMTP host provided. Configure your SMTP Host (e.g. smtp.gmail.com) first.';
+            log_message('error', 'send_templated_email: ' . $GLOBALS['last_email_error']);
             return false;
         }
 
@@ -57,7 +66,8 @@ if (!function_exists('send_templated_email')) {
         try {
             $content = view($template, $mergedData);
         } catch (\Throwable $e) {
-            log_message('error', "send_templated_email: Failed to render template '$template': " . $e->getMessage());
+            $GLOBALS['last_email_error'] = "Failed to render template '$template': " . $e->getMessage();
+            log_message('error', "send_templated_email: " . $GLOBALS['last_email_error']);
             
             // Log rendering failure
             $db->table('tbl_email_logs')->insert([
@@ -68,7 +78,7 @@ if (!function_exists('send_templated_email')) {
                 'body'          => '',
                 'sent_at'       => date('Y-m-d H:i:s'),
                 'status'        => 'failed',
-                'error_message' => "Render template failed: " . $e->getMessage()
+                'error_message' => $GLOBALS['last_email_error']
             ]);
             return false;
         }
@@ -78,7 +88,8 @@ if (!function_exists('send_templated_email')) {
         try {
             $body = view($layout, $layoutData);
         } catch (\Throwable $e) {
-            log_message('error', "send_templated_email: Failed to render layout '$layout': " . $e->getMessage());
+            $GLOBALS['last_email_error'] = "Failed to render layout '$layout': " . $e->getMessage();
+            log_message('error', "send_templated_email: " . $GLOBALS['last_email_error']);
             
             // Log layout rendering failure
             $db->table('tbl_email_logs')->insert([
@@ -89,7 +100,7 @@ if (!function_exists('send_templated_email')) {
                 'body'          => $content,
                 'sent_at'       => date('Y-m-d H:i:s'),
                 'status'        => 'failed',
-                'error_message' => "Render layout failed: " . $e->getMessage()
+                'error_message' => $GLOBALS['last_email_error']
             ]);
             return false;
         }
@@ -102,7 +113,7 @@ if (!function_exists('send_templated_email')) {
             $email->initialize([
                 'protocol'   => 'smtp',
                 'SMTPHost'   => $smtp['smtp_host'],
-                'SMTPPort'   => $smtp['smtp_port'] ?? 587,
+                'SMTPPort'   => (int) ($smtp['smtp_port'] ?? 587),
                 'SMTPUser'   => $smtp['smtp_user'] ?? '',
                 'SMTPPass'   => $smtp['smtp_pass'] ?? '',
                 'SMTPCrypto' => 'tls',
@@ -112,7 +123,10 @@ if (!function_exists('send_templated_email')) {
             ]);
 
             $sender = get_notification_sender();
-            $email->setFrom($sender['email'], $sender['name']);
+            $fromEmail = !empty($smtp['smtp_from_email']) ? $smtp['smtp_from_email'] : ($sender['email'] ?? 'noreply@eavesdroid.local');
+            $fromName = !empty($smtp['smtp_from_name']) ? $smtp['smtp_from_name'] : ($sender['name'] ?? 'Eaves Droid');
+
+            $email->setFrom($fromEmail, $fromName);
             $email->setTo($to);
             $email->setSubject($subject);
             $email->setMessage($body);
@@ -120,14 +134,17 @@ if (!function_exists('send_templated_email')) {
 
             $sent = $email->send();
             if (!$sent) {
-                $errorMessage = "SMTP Send failed. Debug: " . json_encode($email->printDebugger(['headers']));
-                log_message('error', "send_templated_email: Failed to send to $to (template: $template). Debug: " . $errorMessage);
+                $dbg = $email->printDebugger(['headers', 'subject', 'body']);
+                $errorMessage = "SMTP Send Failed. " . strip_tags((string)$dbg);
+                $GLOBALS['last_email_error'] = $errorMessage;
+                log_message('error', "send_templated_email: Failed to send to $to. Debug: " . $errorMessage);
             } else {
                 $status = 'sent';
                 log_message('info', "send_templated_email: Sent to $to (template: $template) [Log ID: $emailTrackId]");
             }
         } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
+            $GLOBALS['last_email_error'] = $errorMessage;
             log_message('error', "send_templated_email: Exception sending to $to: " . $errorMessage);
             $sent = false;
         }
