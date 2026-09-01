@@ -60,21 +60,46 @@ class PesapalCallbackController extends BaseController
      * GET /billing/pesapal/ipn
      * Handles background IPN call from Pesapal (GET request).
      */
+    /**
+     * GET / POST /billing/pesapal/ipn
+     * Handles background IPN call from Pesapal server.
+     */
     public function handleIPN()
     {
-        $orderTrackingId = $this->request->getGet('OrderTrackingId');
-        $reference = $this->request->getGet('OrderMerchantReference');
-        $notificationType = $this->request->getGet('OrderNotificationType');
+        $ipAddress = $this->request->getIPAddress();
+        $method = $this->request->getMethod();
+        $orderTrackingId = $this->request->getVar('OrderTrackingId');
+        $reference = $this->request->getVar('OrderMerchantReference');
+        $notificationType = $this->request->getVar('OrderNotificationType');
+
+        log_message('notice', sprintf(
+            'Pesapal IPN Access: IP=%s | Method=%s | TrackingID=%s | Ref=%s | Type=%s',
+            $ipAddress,
+            $method,
+            $orderTrackingId ?? 'NONE',
+            $reference ?? 'NONE',
+            $notificationType ?? 'NONE'
+        ));
 
         if (!$orderTrackingId) {
+            $this->notifyAdminsOfIPNAccess([
+                'ip'               => $ipAddress,
+                'method'           => $method,
+                'orderTrackingId'  => 'MISSING',
+                'reference'        => $reference ?? 'N/A',
+                'notificationType' => $notificationType ?? 'N/A',
+                'status'           => 'REJECTED (Missing OrderTrackingId)',
+            ]);
+
             return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Missing OrderTrackingId']);
         }
 
-        // Fetch transaction status from Pesapal
+        // Fetch official transaction status directly from Pesapal server
         $statusData = $this->pesapal->getTransactionStatus($orderTrackingId);
 
         if ($statusData && isset($statusData['status_code'])) {
             $statusCode = (int)$statusData['status_code'];
+            $statusText = ($statusCode === 1) ? 'SUCCESS (COMPLETED)' : (($statusCode === 0) ? 'PENDING' : 'FAILED');
 
             if ($statusCode === 1) {
                 $this->processPaymentSuccess($statusData);
@@ -82,7 +107,17 @@ class PesapalCallbackController extends BaseController
                 $this->processPaymentFailure($statusData);
             }
 
-            // Pesapal expects a specific JSON response format to acknowledge the IPN receipt
+            // Notify Admin & Superadmin of verified IPN webhook hit
+            $this->notifyAdminsOfIPNAccess([
+                'ip'               => $ipAddress,
+                'method'           => $method,
+                'orderTrackingId'  => $orderTrackingId,
+                'reference'        => $reference ?? 'N/A',
+                'notificationType' => $notificationType ?? 'N/A',
+                'status'           => $statusText,
+            ]);
+
+            // Pesapal expects a specific JSON response format to acknowledge receipt
             return $this->response->setJSON([
                 'orderNotificationType' => $notificationType,
                 'orderTrackingId'       => $orderTrackingId,
@@ -90,7 +125,46 @@ class PesapalCallbackController extends BaseController
             ]);
         }
 
+        $this->notifyAdminsOfIPNAccess([
+            'ip'               => $ipAddress,
+            'method'           => $method,
+            'orderTrackingId'  => $orderTrackingId,
+            'reference'        => $reference ?? 'N/A',
+            'notificationType' => $notificationType ?? 'N/A',
+            'status'           => 'REJECTED (Pesapal Verification Failed)',
+        ]);
+
         return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid transaction details']);
+    }
+
+    /**
+     * Send instant email alert to Superadmin and Admin users upon IPN webhook access.
+     */
+    private function notifyAdminsOfIPNAccess(array $ipnInfo): void
+    {
+        try {
+            helper('email');
+            
+            $data = [
+                'ip'               => $ipnInfo['ip'],
+                'method'           => $ipnInfo['method'],
+                'orderTrackingId'  => $ipnInfo['orderTrackingId'],
+                'reference'        => $ipnInfo['reference'],
+                'notificationType' => $ipnInfo['notificationType'],
+                'status'           => $ipnInfo['status'],
+                'time'             => date('F j, Y, g:i a T'),
+            ];
+
+            if (function_exists('send_superadmin_notification')) {
+                send_superadmin_notification("[IPN Alert] Pesapal Payment Event: {$ipnInfo['status']}", 'email/admin/ipn_alert', $data);
+            }
+
+            if (function_exists('send_admin_notification')) {
+                send_admin_notification("[IPN Alert] Pesapal Payment Event: {$ipnInfo['status']}", 'email/admin/ipn_alert', $data);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'notifyAdminsOfIPNAccess Exception: ' . $e->getMessage());
+        }
     }
 
     private function processPaymentSuccess(array $statusData): void
