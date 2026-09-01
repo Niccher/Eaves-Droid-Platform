@@ -219,6 +219,7 @@ class PlanVersionsSeeder extends Seeder
             ],
         ];
 
+        $allowedFields = $this->db->getFieldNames('plan_versions');
         $plans = $this->db->table('plans')->get()->getResultArray();
         foreach ($plans as $plan) {
             $slug = $plan['slug'];
@@ -235,6 +236,11 @@ class PlanVersionsSeeder extends Seeder
                     'version'    => 1,
                     'created_at' => $now,
                 ], $versionData[$slug]);
+
+                // Filter row payload so only columns existing in the database schema are inserted
+                if (!empty($allowedFields)) {
+                    $row = array_intersect_key($row, array_flip($allowedFields));
+                }
 
                 $this->db->table('plan_versions')->insert($row);
             }
