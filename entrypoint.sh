@@ -32,6 +32,14 @@ fi
 
 echo "Migrations complete. Starting Apache..."
 
+# Ensure strictly one MPM module (mpm_prefork) is loaded at runtime
+rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+      /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf
+if [ ! -f /etc/apache2/mods-enabled/mpm_prefork.load ]; then
+    ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load
+    ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf 2>/dev/null || true
+fi
+
 LISTEN_PORT="${PORT:-80}"
 echo "Configuring Apache to listen on port ${LISTEN_PORT}..."
 sed -i "s/Listen 80/Listen ${LISTEN_PORT}/g" /etc/apache2/ports.conf 2>/dev/null || true
