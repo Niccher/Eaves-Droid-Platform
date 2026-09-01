@@ -5,6 +5,22 @@ All notable changes across the Eaves Droid platform (`WebApp`, `Android Client`,
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-09-01 — Pesapal v3 PCI Gateway, Background Cron Engine, Lifecycle Emails & Live Location Tracking
+
+### Added
+- **Pesapal v3 PCI-DSS Payment Gateway** (`webapp`): Integrated Pesapal v3 authentication, order request, and IPN webhook listener (`/billing/pesapal/ipn`). Includes database audit logging (`tbl_ipn_logs`) and automated administrator HTML email alerts.
+- **Background Cron Loop Runner Daemon** (`webapp`): Enabled a background loop process in `entrypoint.sh` executing `php spark cron:run` every 60 seconds inside Docker/Railway containers to run data retention, ML job cleanup, and subscription period checks.
+- **Dedicated Live Location Tracking Migration** (`webapp`): Created database migration `20260901235000_create_tbl_live_location_tracking_table.php` for `tbl_live_location_tracking`, recording high-frequency GPS fixes + Activity recognition data.
+- **Subscription Lifecycle Notifications** (`webapp`): Added email templates for plan upgrades (`subscription_upgraded.php`) and scheduled downgrades (`subscription_downgraded.php`) detailing grace period expiration and active device retention rules.
+- **FCM Remote Commands Expansion** (`android`): Added `cmd_start_tracking` (triggers `LiveLocationWorker`) and `cmd_reactivate` (restores background sync workers) in `MyFirebaseMessagingService.java`.
+
+### Fixed
+- **Currency Display Format** (`webapp`): Corrected price rendering in payments ledger to display formatted currency values (e.g. `KES 499.00` or `$4.99`).
+- **PlanGate Route Protection Expansion** (`webapp`): Expanded `$featureRoutes` in `PlanGate.php` to enforce HTTP filter-level protection across all 50+ hardware & software tier pages.
+- **SweetAlert Validation & Custom Email Headers** (`webapp`): Fixed `TypeError` on `Swal.showValidationMessage()` and set custom `User-Agent`, `X-Mailer`, and `X-Sender` headers to `Eaves Droid Forensic Intelligence/1.0`.
+
+---
+
 ## [2.8.0] - 2026-09-01 — 1-Table Migrations & Seeders Architecture, System Locale Merge, Railway Deployment & Sidebar Count Sync
 
 ### Added

@@ -129,7 +129,7 @@ The `ImpersonateFilter` allows superadmins to temporarily assume another user's 
 
 Three subscription tiers control feature access at the service and route level.
 
-| Feature | Free ($0) | Gold ($4.99/mo) | Platinum ($9.99/mo) |
+| Feature | Free ($0) | Gold ($4.99/mo) | Platinum ($8.99/mo) |
 |---------|:---------:|:---------------:|:-------------------:|
 | **Max Devices** | 1 | 3 | 10 |
 | **Data History** | 10 days | 60 days | 180 days |
@@ -145,16 +145,22 @@ Three subscription tiers control feature access at the service and route level.
 | **Correlation Engine** | — | — | ✅ |
 | **Care Plans** | — | — | ✅ |
 | **Support Tier** | Standard | Standard | Priority 24/7 |
-| **Yearly Price** | $0 | $49.90 | $99.90 |
+| **Yearly Price** | $0 | $49.90 | $89.90 |
 
 > **Note:** Admin & Superadmin accounts are unaffected by subscription plans.
 
 **Enforcement layers:**
 
-1. **Route‑level** — The `PlanGate` filter blocks access to gated routes (e.g., `/location`, `/analysis/correlation-engine`) and renders an upgrade page with plan comparison and simulated checkout.
+1. **Route‑level** — The `PlanGate` filter blocks access to gated routes (covering 50+ hardware & software data routes e.g., `/data/cell-towers`, `/data/hardware-network`, `/data/nfc`, `/data/storage`) and renders an upgrade page with plan comparison and unified Pesapal checkout.
 2. **Service‑level** — `PlanGate::hasFeature()` is called before executing geofencing, risk scoring, correlation, and care plan logic.
 3. **Algorithm‑level** — `PlanGate::filterAlgorithms()` restricts ML algorithms by tier: `core` (free), `core+advanced` (gold), `core+advanced+deep` (platinum).
 4. **Device‑level** — `PlanGate::canAddDevice()` enforces device limits per plan.
+
+### Payment Gateway & Subscription Lifecycle
+
+- **Pesapal v3 PCI-DSS Gateway**: Supports **Safaricom M-Pesa (STK Push)**, **Airtel Money**, and **Credit/Debit Cards**. Instant Payment Notifications (IPN) at `/billing/pesapal/ipn` verify transactions directly with Pesapal server-to-server, logging every hit in `tbl_ipn_logs` and dispatching HTML email alerts to administrators.
+- **Subscription Upgrades**: Activated **immediately** upon successful payment verification (`status_code = 1`), sending a detailed confirmation email (`subscription_upgraded.php`).
+- **Subscription Downgrades**: Retains **100% full access** until `current_period_end` expires (grace period). At expiration, the background cron engine transitions the plan to the target tier and prompts the user to select active devices if count exceeds lower plan limits.
 
 ### Plan Versioning
 

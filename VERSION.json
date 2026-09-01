@@ -1,11 +1,11 @@
 {
-    "version": "2.8.0",
-    "build": 20800,
-    "release_name": "1-Table Migrations & Seeders Architecture, System Locale Merge, Railway Deployment & Sidebar Count Sync",
+    "version": "2.9.0",
+    "build": 20900,
+    "release_name": "Pesapal v3 PCI Gateway, Background Cron Engine, Lifecycle Emails & Live Location Tracking",
     "release_date": "2026-09-01",
     "components": {
-        "webapp": "2.8.0",
-        "android": "2.7.0",
+        "webapp": "2.9.0",
+        "android": "2.8.0",
         "ml_engine": "2.5.0"
     }
 }
