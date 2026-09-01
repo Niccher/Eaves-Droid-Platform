@@ -1,11 +1,11 @@
 {
-  "version": "2.5.0",
-  "build": 20500,
-  "release_name": "Analysis Suites Feature-Gating & Clean File Management",
-  "release_date": "2026-08-20",
+  "version": "2.8.0",
+  "build": 20800,
+  "release_name": "Railway Deployment Setup, Flexible Dynamic CORS & Multi-Worker Concurrency",
+  "release_date": "2026-09-01",
   "components": {
-    "webapp": "2.5.0",
-    "android": "2.5.0",
-    "ml_engine": "2.5.0"
+    "webapp": "2.8.0",
+    "android": "2.7.0",
+    "ml_engine": "2.8.0"
   }
 }

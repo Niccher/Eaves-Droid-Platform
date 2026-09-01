@@ -35,10 +35,12 @@ app = FastAPI(
     redoc_url=None if is_prod else "/redoc",
 )
 
-# Apply restrictive CORS using dynamic config allowed_origin
+# Apply flexible CORS using dynamic config allowed_origin (comma-separated or wildcard)
+origins = [o.strip() for o in settings.allowed_origin.split(",")] if settings.allowed_origin != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.allowed_origin],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
