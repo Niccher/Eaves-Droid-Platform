@@ -2,9 +2,7 @@
 FROM php:8.3-apache
 
 # ── System dependencies ────────────────────────────────────────────────────────
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
         libzip-dev \
         libpng-dev \
@@ -14,7 +12,8 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         zip \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) intl mysqli pdo_mysql zip gd xml dom
+    && docker-php-ext-install -j$(nproc) intl mysqli pdo_mysql zip gd xml dom \
+    && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache modules
 RUN a2enmod rewrite headers
@@ -38,8 +37,7 @@ WORKDIR /var/www/html
 # ── Composer dependency layer ─────────────────────────────────────────────────
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
-RUN --mount=type=cache,id=composer-cache,target=/root/.composer/cache \
-    composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-reqs \
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-reqs \
     && rm /usr/bin/composer
 
 # ── Application code ──────────────────────────────────────────────────────────
