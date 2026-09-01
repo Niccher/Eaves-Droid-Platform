@@ -84,14 +84,27 @@ class PesapalService
             $statusCode = $response->getStatusCode();
             $body = json_decode($response->getBody(), true);
 
-            if ($statusCode === 200 && isset($body['token'])) {
+            if ($statusCode === 200 && isset($body['token']) && !empty($body['token'])) {
                 // Cache the token slightly less than its actual duration to prevent race conditions
                 cache()->save($cacheKey, $body['token'], 270); // 4.5 minutes
                 return $body['token'];
             }
 
-            $errMsg = $body['message'] ?? $body['error']['message'] ?? json_encode($body);
-            $this->lastError = "Pesapal Authentication Failed (HTTP {$statusCode}): {$errMsg}";
+            $errMsg = '';
+            if (is_array($body)) {
+                if (isset($body['error']['message'])) {
+                    $errMsg = $body['error']['message'] . (isset($body['error']['code']) ? " ({$body['error']['code']})" : '');
+                } elseif (isset($body['message'])) {
+                    $errMsg = $body['message'];
+                } else {
+                    $errMsg = json_encode($body);
+                }
+            } else {
+                $errMsg = (string) $response->getBody();
+            }
+
+            $envName = (str_contains($this->baseUrl, 'cybqa')) ? 'Sandbox' : 'Production';
+            $this->lastError = "Pesapal Auth Failed (HTTP {$statusCode}): {$errMsg}. Verify that your Railway Consumer Key & Secret match Pesapal {$envName} environment.";
             log_message('error', 'PesapalService: ' . $this->lastError);
             return null;
         } catch (\Exception $e) {

@@ -561,7 +561,7 @@ document.querySelectorAll('#lbl-monthly, #lbl-yearly').forEach(function (lbl) {
 
 function currentMethod() {
     var active = document.querySelector('#pay-tabs .nav-link.active');
-    return active ? active.getAttribute('data-method') : 'card';
+    return active ? active.getAttribute('data-method') : 'pesapal';
 }
 
 document.getElementById('btn-pay').addEventListener('click', function () {
