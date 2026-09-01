@@ -482,7 +482,7 @@ class FinderComms extends Model
     {
         try {
             $builder = $this->db->table('tbl_extracted_sms')
-                ->select('address as sms_number, thread_id as sms_thread_id, count(*) AS Totals')
+                ->select('address as sms_number, MAX(thread_id) as sms_thread_id, count(*) AS Totals')
                 ->where('owner_id', $user_id);
 
             $blocked = $this->getBlockedIdentifiers($user_id, 'sms');
@@ -614,7 +614,7 @@ class FinderComms extends Model
     }
 
     /**
-     * Gets active calls stats with new schema mapping.
+     * Gets active call logs from database.
      *
      * @param int $user_id
      * @param int $perPage
@@ -624,7 +624,7 @@ class FinderComms extends Model
     {
         try {
             $builder = $this->db->table('tbl_extracted_call_logs')
-                ->select('phone_number as Caller, contact_name as Saved, count(*) AS Totals')
+                ->select('phone_number as Caller, MAX(contact_name) as Saved, count(*) AS Totals')
                 ->where('owner_id', $user_id);
 
             $blocked = $this->getBlockedIdentifiers($user_id, 'call');
@@ -1346,7 +1346,7 @@ class FinderComms extends Model
 
         // 2. Get Call counts
         $call_data = $this->db->table('tbl_extracted_call_logs')
-            ->select('phone_number, contact_name, COUNT(*) as count')
+            ->select('phone_number, MAX(contact_name) as contact_name, COUNT(*) as count')
             ->where('owner_id', $userId)
             ->groupBy('phone_number')
             ->get()
