@@ -45,6 +45,27 @@ class Database extends Config
         'numberNative' => false,
     ];
 
+    public function __construct()
+    {
+        parent::__construct();
+
+        if ($host = getenv('MYSQLHOST') ?: getenv('DB_HOST')) {
+            $this->default['hostname'] = $host;
+        }
+        if ($user = getenv('MYSQLUSER') ?: getenv('DB_USER')) {
+            $this->default['username'] = $user;
+        }
+        if ($pass = getenv('MYSQLPASSWORD') ?: getenv('DB_PASS')) {
+            $this->default['password'] = $pass;
+        }
+        if ($db = getenv('MYSQLDATABASE') ?: getenv('DB_NAME')) {
+            $this->default['database'] = $db;
+        }
+        if ($port = getenv('MYSQLPORT') ?: getenv('DB_PORT')) {
+            $this->default['port'] = (int) $port;
+        }
+    }
+
     /**
      * This database connection is used when
      * running PHPUnit database tests.
