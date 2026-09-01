@@ -11,7 +11,7 @@ class SuperAdminSeeder extends Seeder
     public function run()
     {
         $email = env('SUPERADMIN_EMAIL', 'superadmin@eavesdroid.com');
-        $password = env('SUPERADMIN_PASSWORD', 'SuperAdmin@2024!');
+        $password = env('SUPERADMIN_PASSWORD', 'SuperAdminSecurePass@2026!');
         $username = env('SUPERADMIN_USERNAME', 'superadmin');
 
         $userModel = model(UserModel::class);
@@ -35,12 +35,10 @@ class SuperAdminSeeder extends Seeder
             $user = $userModel->findByCredentials(['email' => $email]);
             echo "Created superadmin: {$email}\n";
         } else {
-            echo "User {$email} already exists, skipping creation.\n";
-        }
-
-        if (! $user->active) {
-            $userModel->update($user->id, ['active' => 1]);
-            echo "Activated superadmin: {$email}\n";
+            $user->password = $password;
+            $user->active = 1;
+            $userModel->save($user);
+            echo "Updated superadmin password and active status for: {$email}\n";
         }
 
         setUserGroup((int) $user->id, 'superadmin');

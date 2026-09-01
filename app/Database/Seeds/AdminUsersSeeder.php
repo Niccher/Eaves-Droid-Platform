@@ -11,7 +11,7 @@ class AdminUsersSeeder extends Seeder
     public function run()
     {
         $email = env('ADMIN_EMAIL', 'admin@eavesdroid.com');
-        $password = env('ADMIN_PASSWORD', 'Admin@2024!');
+        $password = env('ADMIN_PASSWORD', 'AdminSecurePass@2026!');
         $username = env('ADMIN_USERNAME', 'admin');
 
         $userModel = model(UserModel::class);
@@ -35,12 +35,10 @@ class AdminUsersSeeder extends Seeder
             $user = $userModel->findByCredentials(['email' => $email]);
             echo "Created admin: {$email}\n";
         } else {
-            echo "User {$email} already exists, skipping creation.\n";
-        }
-
-        if (! $user->active) {
-            $userModel->update($user->id, ['active' => 1]);
-            echo "Activated admin: {$email}\n";
+            $user->password = $password;
+            $user->active = 1;
+            $userModel->save($user);
+            echo "Updated admin password and active status for: {$email}\n";
         }
 
         setUserGroup((int) $user->id, 'admin');
