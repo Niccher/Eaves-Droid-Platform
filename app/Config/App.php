@@ -179,6 +179,14 @@ class App extends BaseConfig
     public function __construct()
     {
         parent::__construct();
-        $this->baseURL = env('app.baseURL', $this->baseURL);
+
+        // Dynamically resolve Base URL from Railway or system environment variables
+        $envBaseUrl = env('app.baseURL') ?: getenv('RAILWAY_PUBLIC_DOMAIN') ?: getenv('RAILWAY_STATIC_URL');
+        if (!empty($envBaseUrl)) {
+            if (!str_starts_with($envBaseUrl, 'http://') && !str_starts_with($envBaseUrl, 'https://')) {
+                $envBaseUrl = 'https://' . $envBaseUrl;
+            }
+            $this->baseURL = rtrim($envBaseUrl, '/') . '/';
+        }
     }
 }
