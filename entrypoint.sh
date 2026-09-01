@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-# Extract DB credentials from environment or defaults
-DB_HOST="${database.default.hostname:-${DB_HOST:-mysql}}"
-DB_PORT="${database.default.port:-${DB_PORT:-3306}}"
-DB_USER="${database.default.username:-${DB_USER:-root}}"
-DB_PASS="${database.default.password:-${DB_PASS:-root_password}}"
+# Extract DB credentials from environment or defaults (Railway maps MYSQLHOST, MYSQLPORT, etc.)
+DB_HOST="${MYSQLHOST:-${DB_HOST:-mysql}}"
+DB_PORT="${MYSQLPORT:-${DB_PORT:-3306}}"
+DB_USER="${MYSQLUSER:-${DB_USER:-root}}"
+DB_PASS="${MYSQLPASSWORD:-${MYSQL_ROOT_PASSWORD:-${DB_PASS:-root_password}}}"
 
 echo "Waiting for MySQL to accept connections at ${DB_HOST}:${DB_PORT}..."
 max_retries=30
