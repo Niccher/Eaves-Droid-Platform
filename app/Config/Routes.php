@@ -545,17 +545,16 @@ $routes->group('', [
             $routes->get('app_security', 'AdvancedController::app_security', ['as' => 'adv-app-security']);
             $routes->get('network_security', 'AdvancedController::network_security', ['as' => 'adv-network-security']);
             $routes->get('telephony_network', 'AdvancedController::telephony_network', ['as' => 'adv-telephony-network']);
-            $routes->get('system_locale', 'AdvancedController::system_locale', ['as' => 'adv-system-locale']);
             $routes->get('app_permissions', 'AdvancedController::app_permissions', ['as' => 'adv-app-permissions']);
             $routes->get('clipboard', 'AdvancedController::clipboard', ['as' => 'adv-clipboard']);
             $routes->get('content_providers', 'AdvancedController::content_providers', ['as' => 'adv-content-providers']);
             $routes->get('crash_logs', 'AdvancedController::crash_logs', ['as' => 'adv-crash-logs']);
             $routes->get('digital_wellbeing', 'AdvancedController::digital_wellbeing', ['as' => 'adv-digital-wellbeing']);
-            $routes->get('doze_standby', 'AdvancedController::doze_standby', ['as' => 'adv-doze-standby']);
             $routes->get('health_data', 'AdvancedController::health_data', ['as' => 'adv-health-data']);
             $routes->get('keyguard', 'AdvancedController::keyguard', ['as' => 'adv-keyguard']);
             $routes->get('screenshots', 'AdvancedController::screenshots', ['as' => 'adv-screenshots']);
-            $routes->get('screen_state', 'AdvancedController::screen_state', ['as' => 'adv-screen-state']);
+            $routes->get('screenshots/serve/(:any)', 'AdvancedController::serve_screenshot/$1', ['as' => 'adv-screenshot-serve']);
+            $routes->post('screenshots/capture', 'AdvancedController::trigger_screenshot_capture', ['as' => 'adv-screenshot-capture']);
             $routes->get('vpn_config', 'AdvancedController::vpn_config', ['as' => 'adv-vpn-config']);
 
             $routes->post('datatable/app-usage', '\App\Controllers\api\v1\DatatableAPI::getAppUsageDetails', ['as' => 'adv-datatable-app-usage']);
@@ -578,17 +577,14 @@ $routes->group('', [
             $routes->post('app_security/delete/(:num)', 'AdvancedController::delete_app_security/$1');
             $routes->post('network_security/delete/(:num)', 'AdvancedController::delete_network_security/$1');
             $routes->post('telephony_network/delete/(:num)', 'AdvancedController::delete_telephony_network/$1');
-            $routes->post('system_locale/delete/(:num)', 'AdvancedController::delete_system_locale/$1');
             $routes->post('app_permissions/delete/(:num)', 'AdvancedController::delete_app_permissions/$1');
             $routes->post('clipboard/delete/(:num)', 'AdvancedController::delete_clipboard/$1');
             $routes->post('content_providers/delete/(:num)', 'AdvancedController::delete_content_providers/$1');
             $routes->post('crash_logs/delete/(:num)', 'AdvancedController::delete_crash_logs/$1');
             $routes->post('digital_wellbeing/delete/(:num)', 'AdvancedController::delete_digital_wellbeing/$1');
-            $routes->post('doze_standby/delete/(:num)', 'AdvancedController::delete_doze_standby/$1');
             $routes->post('health_data/delete/(:num)', 'AdvancedController::delete_health_data/$1');
             $routes->post('keyguard/delete/(:num)', 'AdvancedController::delete_keyguard/$1');
             $routes->post('screenshots/delete/(:num)', 'AdvancedController::delete_screenshots/$1');
-            $routes->post('screen_state/delete/(:num)', 'AdvancedController::delete_screen_state/$1');
             $routes->post('vpn_config/delete/(:num)', 'AdvancedController::delete_vpn_config/$1');
         });
     });

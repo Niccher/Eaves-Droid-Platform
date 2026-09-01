@@ -209,7 +209,14 @@ class FinderEnvironment extends Model
 
     public function get_count_DataUsage(int $user_id): int
     {
-        return $this->getCount('tbl_data_usage', $user_id);
+        try {
+            $row = $this->fq('tbl_data_usage', $user_id)
+                ->select('COUNT(DISTINCT extracted_at) as cnt')
+                ->get()->getRowArray();
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Exception $e) {
+            return 0;
+        }
     }
 
     public function get_count_SavedWifi(int $user_id): int
@@ -652,12 +659,27 @@ class FinderEnvironment extends Model
                 ->limit($perPage, $offset)
                 ->get()->getResultArray();
 
+            if (empty($timestamps)) {
+                return [];
+            }
+
+            $tsList = array_column($timestamps, 'extracted_at');
+            $allRecords = $this->fq('tbl_data_usage', $user_id)
+                ->whereIn('extracted_at', $tsList)
+                ->get()->getResultArray();
+
+            $groupedRecords = [];
+            foreach ($allRecords as $rec) {
+                $groupedRecords[$rec['extracted_at']][] = $rec;
+            }
+
             $results = [];
             foreach ($timestamps as $ts) {
                 $extractedAt = $ts['extracted_at'];
-                $records = $this->fq('tbl_data_usage', $user_id)
-                    ->where('extracted_at', $extractedAt)
-                    ->get()->getResultArray();
+                $records = $groupedRecords[$extractedAt] ?? [];
+                if (empty($records)) {
+                    continue;
+                }
 
                 $usageRecords = [];
                 $totals = null;

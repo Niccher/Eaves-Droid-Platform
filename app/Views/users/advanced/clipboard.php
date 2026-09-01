@@ -23,9 +23,19 @@
             </div>
 
             <!-- Callout -->
-            <div class="callout callout-danger shadow-sm p-3 mb-4" style="border-left:5px solid #dc3545; background:#fff5f5;">
-                <h5 class="font-weight-bold text-danger"><i class="fas fa-user-shield mr-2"></i>Data Theft Risk Auditing</h5>
-                <p class="text-secondary mb-0" style="font-size:14px;">Clipboard data is frequently harvested by background processes. Inspecting copy patterns reveals if passwords, banking OTPs, or private API keys are leaking.</p>
+            <div class="callout callout-danger shadow-sm p-3 mb-4" style="border-left:5px solid #dc3545; background:#fff5f5; border-radius:4px;">
+                <h5 class="font-weight-bold text-danger"><i class="fas fa-user-shield mr-2"></i>Persistent Clipboard Caching &amp; Data Leak Auditing</h5>
+                <p class="text-secondary mb-2" style="font-size:14px;">The Android background service operates a persistent <code>OnPrimaryClipChangedListener</code> and Accessibility text selection logger that captures copied text strings, OTP codes, and URLs to a local SQLite buffer, syncing them automatically so clipboard history remains complete and non-empty.</p>
+                <div class="row" style="font-size:12px;">
+                    <div class="col-md-6 border-right">
+                        <b class="d-block mb-1">Real-Time Event Caching:</b>
+                        <span class="text-muted">Every copy/cut event is cached locally on device storage immediately upon user action.</span>
+                    </div>
+                    <div class="col-md-6 pl-md-3">
+                        <b class="d-block mb-1">Sensitive Data Auditing:</b>
+                        <span class="text-muted">Flags banking OTPs, credentials, and sensitive clips harvested across applications.</span>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

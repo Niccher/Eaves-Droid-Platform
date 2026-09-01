@@ -2521,7 +2521,14 @@ class FinderSystem extends Model
 
     public function get_count_ContentProviders(int $user_id): int
     {
-        return $this->cq('tbl_content_providers', $user_id);
+        try {
+            $row = $this->fq('tbl_content_providers', $user_id)
+                ->select('COUNT(DISTINCT authority) as cnt')
+                ->get()->getRowArray();
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Exception $e) {
+            return 0;
+        }
     }
 
     public function get_screen_state(int $user_id, int $perPage = 25): array
@@ -2614,9 +2621,17 @@ class FinderSystem extends Model
             $total = $this->get_count_ContentProviders($user_id);
             $page = service('request')->getGet('page') ?? 1;
             $offset = ($page - 1) * $perPage;
+
+            $subQuery = $this->db->table('tbl_content_providers')
+                ->select('MAX(id) as max_id')
+                ->where('owner_id', $user_id)
+                ->groupBy('authority');
+
             $results = $this->fq('tbl_content_providers', $user_id)
+                ->whereIn('id', $subQuery)
                 ->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
+
             $this->pager = \Config\Services::pager();
             $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
             return $results;

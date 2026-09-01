@@ -1065,8 +1065,8 @@ class ClientProfileController extends BaseClientController
             // Load helper
             helper('logs');
 
-            // Merge device view data for sidebar
-            $data = array_merge($data, $this->getDeviceViewData());
+            // Merge device view data, version data, and sidebar counts
+            $data = array_merge($data, $this->getDeviceViewData(), $this->getSystemVersionData(), $this->getUserDataCounts());
 
             // Set the view path
             $viewPath = 'users/account/' . $page;

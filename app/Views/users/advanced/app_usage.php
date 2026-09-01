@@ -230,9 +230,23 @@ if (!empty($detail_mode)) {
         <div class="container-fluid">
 
             <!-- Informative Callout Alert -->
-            <div class="callout callout-info shadow-sm mb-4">
-                <h5><i class="fas fa-info-circle text-info mr-2"></i>About App Usage</h5>
-                <p class="mb-0">Audits daily active foreground screen time metrics per package. Helps identify high-engagement apps, usage patterns, and standby buckets assigned by OS power managers.</p>
+            <div class="callout callout-info shadow-sm p-3 mb-4" style="border-left:5px solid #17a2b8;background:#fdfdfd;border-radius:4px;">
+                <h5 class="font-weight-bold text-info"><i class="fas fa-chart-line mr-2"></i>App Foreground Screen Time &amp; Telemetry Diagnostics</h5>
+                <p class="text-secondary mb-2" style="font-size:14px;">Audits application active foreground screen time metrics per package. Helps identify high-engagement apps, usage patterns, and OS power management state shifts.</p>
+                <div class="row" style="font-size:12px;">
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">Cumulative Screen Time:</b>
+                        <span class="text-muted">Reported by Android <code>UsageStatsManager</code> as total active foreground time accumulated since last device boot or OS stats reset.</span>
+                    </div>
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">Interval Usage Delta:</b>
+                        <span class="text-muted">Measures actual foreground screen duration spent during the window between successive telemetry extractions.</span>
+                    </div>
+                    <div class="col-md-4">
+                        <b class="d-block mb-1">Background / Standby Estimate:</b>
+                        <span class="text-muted">Calculates elapsed time where the application was idle or running in background without active user interaction.</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Interactive App Usage List -->

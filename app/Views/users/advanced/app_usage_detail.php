@@ -67,6 +67,26 @@ $lastUsed = $summary['last_used_display'] ?? '—';
                 </div>
             </div>
 
+            <!-- Callout Card explaining calculations -->
+            <div class="callout callout-info shadow-sm p-3 mb-4" style="border-left:5px solid #17a2b8;background:#fdfdfd;border-radius:4px;">
+                <h5 class="font-weight-bold text-info"><i class="fas fa-calculator mr-2"></i>Usage Calculations &amp; Snapshot Metrics</h5>
+                <p class="text-secondary mb-2" style="font-size:14px;">Detailed breakdown of screen time counters and calculated background idle durations between extraction snapshots.</p>
+                <div class="row" style="font-size:12px;">
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">Screen Time (Cumulative):</b>
+                        <span class="text-muted">Direct reading of OS <code>foreground_time_ms</code> accumulated since device boot/reset. Represents total active display time.</span>
+                    </div>
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">Last Used Timestamp:</b>
+                        <span class="text-muted">Exact system clock time when the application was last active in the foreground prior to extraction.</span>
+                    </div>
+                    <div class="col-md-4">
+                        <b class="d-block mb-1">Background Time:</b>
+                        <span class="text-muted">Calculated as total wall-clock time elapsed between snapshot extractions minus active foreground screen time delta.</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-12">
                     <div class="card card-secondary shadow-sm">

@@ -38,17 +38,27 @@
                 // Sum metrics from current page
                 $totalSteps = 0;
                 $totalCalories = 0;
+                $totalDistanceMeters = 0;
                 $hrReadings = [];
                 foreach ($rows as $r) {
-                    if ($r['step_count']) $totalSteps += (int)$r['step_count'];
-                    if ($r['calories_kcal']) $totalCalories += (int)$r['calories_kcal'];
-                    if ($r['heart_rate_bpm']) $hrReadings[] = (int)$r['heart_rate_bpm'];
+                    $steps = (int) ($r['step_count'] ?? 0);
+                    if ($steps > 0) $totalSteps += $steps;
+                    if (!empty($r['calories_kcal'])) $totalCalories += (int)$r['calories_kcal'];
+                    if (!empty($r['heart_rate_bpm'])) $hrReadings[] = (int)$r['heart_rate_bpm'];
+                    
+                    // Distance calculation (use distance_meters or estimate from steps 1 step ≈ 0.762m)
+                    if (!empty($r['distance_meters'])) {
+                        $totalDistanceMeters += (float)$r['distance_meters'];
+                    } elseif ($steps > 0) {
+                        $totalDistanceMeters += ($steps * 0.762);
+                    }
                 }
                 $avgHr = count($hrReadings) > 0 ? round(array_sum($hrReadings) / count($hrReadings)) : 0;
+                $totalKm = round($totalDistanceMeters / 1000, 2);
                 ?>
                 
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="health-metric-card d-flex align-items-center justify-content-between">
                             <div>
                                 <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Accrued Steps</small>
@@ -58,7 +68,17 @@
                             <i class="fas fa-walking fa-2x text-primary opacity-50"></i>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <div class="health-metric-card d-flex align-items-center justify-content-between">
+                            <div>
+                                <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Traversed Distance</small>
+                                <span class="health-kpi"><?= number_format($totalDistanceMeters) ?> <span style="font-size:14px; font-weight:600;">m</span></span>
+                                <small class="text-muted d-block mt-1">Approx. <b><?= $totalKm ?> km</b> walked</small>
+                            </div>
+                            <i class="fas fa-route fa-2x text-success opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <div class="health-metric-card d-flex align-items-center justify-content-between">
                             <div>
                                 <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Vitals Indicator</small>
@@ -68,7 +88,7 @@
                             <i class="fas fa-heartbeat fa-2x text-danger opacity-50"></i>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="health-metric-card d-flex align-items-center justify-content-between">
                             <div>
                                 <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Energy Burned</small>
@@ -92,10 +112,14 @@
                             $bg = 'bg-info text-white';
                             $desc = 'General wellness update';
                             
-                            if (str_contains($type, 'step') || $r['step_count'] > 0) {
+                            $rowSteps = (int) ($r['step_count'] ?? 0);
+                            $rowMeters = !empty($r['distance_meters']) ? (float)$r['distance_meters'] : ($rowSteps > 0 ? round($rowSteps * 0.762, 1) : 0);
+                            $rowKm = $rowMeters > 0 ? round($rowMeters / 1000, 2) : 0;
+
+                            if (str_contains($type, 'step') || $rowSteps > 0) {
                                 $icon = 'fa-walking';
                                 $bg = 'bg-primary text-white';
-                                $desc = 'Logged ' . number_format($r['step_count'] ?: $r['value']) . ' steps over interval.';
+                                $desc = 'Logged ' . number_format($rowSteps ?: $r['value']) . ' steps (' . number_format($rowMeters) . ' m / ' . $rowKm . ' km).';
                             } elseif (str_contains($type, 'heart') || $r['heart_rate_bpm'] > 0) {
                                 $icon = 'fa-heartbeat';
                                 $bg = 'bg-danger text-white';
@@ -107,7 +131,7 @@
                             } elseif ($r['workout_type']) {
                                 $icon = 'fa-dumbbell';
                                 $bg = 'bg-success text-white';
-                                $desc = 'Workout: ' . $r['workout_type'] . ' (' . ($r['calories_kcal'] ?: '—') . ' Kcal burned).';
+                                $desc = 'Workout: ' . $r['workout_type'] . ' (' . ($r['calories_kcal'] ?: '—') . ' Kcal burned, ' . $rowKm . ' km).';
                             }
                             
                             $dateStr = $r['end_time'] ? format_timestamp_display((int)$r['end_time']) : ($r['extracted_at'] ? format_timestamp_display((int)$r['extracted_at']) : '—');
@@ -121,6 +145,9 @@
                                     <div>
                                         <strong class="text-dark d-block"><?= esc($r['data_type'] ?: 'Activity Record') ?></strong>
                                         <span class="text-secondary small d-block"><?= esc($desc) ?></span>
+                                        <?php if (!empty($r['correlated_lat']) && !empty($r['correlated_lng'])): ?>
+                                            <span class="badge badge-light border text-info mt-1"><i class="fas fa-map-marker-alt text-danger mr-1"></i>GPS Location: <?= esc(round($r['correlated_lat'], 4)) ?>, <?= esc(round($r['correlated_lng'], 4)) ?> (<?= esc($r['correlated_event_type'] ?? 'zone') ?>)</span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                                 <div class="text-right d-flex align-items-center mt-2 mt-sm-0">

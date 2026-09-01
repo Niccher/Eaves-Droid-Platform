@@ -223,6 +223,41 @@ $rows = coalesce_snapshots(
                 </div>
 
             <?php endif; ?>
+
+            <!-- System Locale & Timezone Section -->
+            <?php if (!empty($locale)): 
+                $reg = $locale['locale_region'] ?? [];
+            ?>
+                <div class="card card-outline card-primary shadow-sm mt-4">
+                    <div class="card-header py-2">
+                        <h5 class="card-title font-weight-bold mb-0"><i class="fas fa-language text-primary mr-2"></i>System Locale &amp; Active Timezone</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 border-right">
+                                <small class="text-muted d-block uppercase font-weight-bold" style="font-size:10px;">Primary Language</small>
+                                <span class="font-weight-bold h5 text-dark"><?= esc($reg['language'] ?? '—') ?></span>
+                                <small class="text-muted d-block mt-1">Country: <b><?= esc($reg['country'] ?? '—') ?></b></small>
+                            </div>
+                            <div class="col-md-3 border-right">
+                                <small class="text-muted d-block uppercase font-weight-bold" style="font-size:10px;">Display Locale</small>
+                                <span class="font-weight-bold h5 text-dark"><?= esc($reg['display_name'] ?? '—') ?></span>
+                                <small class="text-muted d-block mt-1">Tag: <code><?= esc($reg['language_tag'] ?? 'en-US') ?></code></small>
+                            </div>
+                            <div class="col-md-3 border-right">
+                                <small class="text-muted d-block uppercase font-weight-bold" style="font-size:10px;">System Timezone</small>
+                                <span class="font-weight-bold h5 text-primary"><?= esc($reg['timezone'] ?? '—') ?></span>
+                                <small class="text-muted d-block mt-1">Offset: <?= esc($reg['timezone_offset'] ?? '—') ?></small>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted d-block uppercase font-weight-bold" style="font-size:10px;">Last Snapshot</small>
+                                <span class="font-weight-bold text-secondary"><?= esc($locale['ts_display'] ?? '—') ?></span>
+                                <small class="text-muted d-block mt-1">Total Snapshots: <b><?= count($all_locales ?? []) ?></b></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </section>
 </div>

@@ -13,7 +13,7 @@ class AnalysisTiersSeeder extends Seeder
         $analysisFeatures = [
             // 🟢 Free Tier Analysis Pages
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'storage_analysis',
                 'label'         => 'Storage Forensics',
                 'description'   => 'Storage capacity, content aging, and disk distribution forensics',
@@ -23,7 +23,7 @@ class AnalysisTiersSeeder extends Seeder
                 'required_tier' => 'free',
             ],
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'apps_analysis',
                 'label'         => 'App Portfolio',
                 'description'   => 'Installed applications inventory and exfiltration risks',
@@ -33,7 +33,7 @@ class AnalysisTiersSeeder extends Seeder
                 'required_tier' => 'free',
             ],
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'lifestyle_analysis',
                 'label'         => 'Lifestyle Profiling',
                 'description'   => 'App usage screentime and daily activity breakdowns',
@@ -45,7 +45,7 @@ class AnalysisTiersSeeder extends Seeder
 
             // 🥇 Gold Tier Analysis Pages
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'social_analysis',
                 'label'         => 'Social Graph',
                 'description'   => 'Top call/SMS contacts and interpersonal communication frequency',
@@ -55,7 +55,7 @@ class AnalysisTiersSeeder extends Seeder
                 'required_tier' => 'gold',
             ],
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'privacy_analysis',
                 'label'         => 'Privacy Audit',
                 'description'   => 'Sideloaded APKs, unvetted permissions, and threat detection',
@@ -65,7 +65,7 @@ class AnalysisTiersSeeder extends Seeder
                 'required_tier' => 'gold',
             ],
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'subscriptions_analysis',
                 'label'         => 'Subscription Tracker',
                 'description'   => 'Recurring monthly bill forecasting and subscription due dates',
@@ -75,7 +75,7 @@ class AnalysisTiersSeeder extends Seeder
                 'required_tier' => 'gold',
             ],
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'sentiment_analysis',
                 'label'         => 'Sentiment Profiler',
                 'description'   => 'NLP conversation tone tracking and relationship health scoring',
@@ -87,7 +87,7 @@ class AnalysisTiersSeeder extends Seeder
 
             // 💎 Platinum Tier Analysis Pages
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'finance_analysis',
                 'label'         => 'Financial Forensics',
                 'description'   => 'Mobile wallet outflows, M-PESA & bank settlement analysis',
@@ -97,7 +97,7 @@ class AnalysisTiersSeeder extends Seeder
                 'required_tier' => 'platinum',
             ],
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'location_analysis',
                 'label'         => 'Geospatial Location',
                 'description'   => 'Real-time GPS telemetry and historical location tracking',
@@ -107,7 +107,7 @@ class AnalysisTiersSeeder extends Seeder
                 'required_tier' => 'platinum',
             ],
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'hotspots_analysis',
                 'label'         => 'Movement Hotspots',
                 'description'   => 'Geospatial clustering and frequent visitation hotspots',
@@ -117,7 +117,7 @@ class AnalysisTiersSeeder extends Seeder
                 'required_tier' => 'platinum',
             ],
             [
-                'category_type' => 'software',
+                'category_type' => 'analysis',
                 'slug'          => 'report_export',
                 'label'         => 'Forensic PDF Export',
                 'description'   => 'Comprehensive executive forensic intelligence PDF report export',

@@ -32,7 +32,7 @@ class Kint extends BaseConfig
      */
     public $plugins;
 
-    public int $maxDepth           = 6;
+    public int $maxDepth           = 3;
     public bool $displayCalledFrom = true;
     public bool $expanded          = false;
 

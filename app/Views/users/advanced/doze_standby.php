@@ -35,9 +35,23 @@ $rows = coalesce_snapshots(
             </div>
 
             <!-- Callout -->
-            <div class="callout callout-info shadow-sm p-3 mb-4" style="border-left:5px solid #17a2b8;background:#fdfdfd;">
-                <h5 class="font-weight-bold text-info"><i class="fas fa-battery-half mr-2"></i>Power Management Auditing</h5>
-                <p class="text-secondary mb-0" style="font-size:14px;">Auditing app standby buckets reveals if malicious packages bypass Android's background limits or force persistent CPU locks.</p>
+            <div class="callout callout-info shadow-sm p-3 mb-4" style="border-left:5px solid #17a2b8;background:#fdfdfd;border-radius:4px;">
+                <h5 class="font-weight-bold text-info"><i class="fas fa-battery-half mr-2"></i>Android Doze &amp; App Standby Power Forensics</h5>
+                <p class="text-secondary mb-2" style="font-size:14px;">Audits OS idle power optimizations (Deep/Light Doze) and App Standby Buckets assigned by Android PowerManager to throttle background activity.</p>
+                <div class="row" style="font-size:12px;">
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">Doze Mode States:</b>
+                        <span class="text-muted"><b>Deep Doze:</b> Suspends CPU locks, network access, and background jobs during prolonged idle.<br><b>Light Doze:</b> Periodically allows maintenance windows.</span>
+                    </div>
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">App Standby Buckets:</b>
+                        <span class="text-muted"><b>Active:</b> Currently in use.<br><b>Working Set / Frequent:</b> Regular use.<br><b>Rare / Restricted:</b> Strict job, alarm, and network throttling.</span>
+                    </div>
+                    <div class="col-md-4">
+                        <b class="d-block mb-1">Security Audit Vector:</b>
+                        <span class="text-muted">Detects malicious apps or background services attempting to bypass battery optimization limits or hold continuous wake-locks.</span>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

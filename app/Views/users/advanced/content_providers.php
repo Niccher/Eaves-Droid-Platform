@@ -41,7 +41,7 @@ function parseProviderList($val): array {
         <div class="col-lg-7">
           <div class="d-flex align-items-center flex-wrap">
             <h1 class="h2 mb-0 mr-3"><i class="fas fa-database text-info mr-2"></i>Content Providers</h1>
-            <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i>Active: <b><?= count($rows) ?></b></span>
+            <span class="badge badge-secondary border p-2 text-white"><i class="fas fa-database mr-1"></i>Unique Providers: <b><?= $total ?? count($rows) ?></b></span>
           </div>
           <p class="text-muted mt-1 mb-0">Registered database authorities, inter-process communication permissions, and exported provider flags</p>
         </div>
@@ -50,14 +50,15 @@ function parseProviderList($val): array {
       
       <!-- Callout -->
       <div class="callout callout-info shadow-sm p-3 mb-4" style="border-left:5px solid #17a2b8;background:#fdfdfd;border-radius:4px;">
-        <h5 class="font-weight-bold text-info"><i class="fas fa-shield-alt mr-2"></i>Content Provider Access Security</h5>
+        <h5 class="font-weight-bold text-info"><i class="fas fa-shield-alt mr-2"></i>Content Provider Access Security &amp; Unique Authorities</h5>
         <p class="text-secondary mb-2" style="font-size:14px;">Content Providers share databases between packages. Exported providers with weak read/write permissions are critical vulnerability points frequently targeted by sandbox escapes and data harvester malware.</p>
         <div class="row" style="font-size:12px;">
           <div class="col-md-6 border-right">
-            <b class="d-block mb-1">Exposure Scope:</b>
+            <b class="d-block mb-1">Exposure Scope &amp; Deduplication:</b>
             <ul class="pl-3 mb-0 text-muted">
-              <li><b>Exported Providers:</b> Flags databases accessible to other applications.</li>
-              <li><b>Authority Name:</b> The URI namespace used to request access (e.g. `content://contacts`).</li>
+              <li><b>Unique Authorities:</b> Automatically deduplicates provider URIs to present unique database endpoints.</li>
+              <li><b>Exported Providers:</b> Flags databases accessible to other applications on the system.</li>
+              <li><b>Authority Name:</b> The URI namespace used to request access (e.g. <code>content://contacts</code>).</li>
             </ul>
           </div>
           <div class="col-md-6 pl-md-3">

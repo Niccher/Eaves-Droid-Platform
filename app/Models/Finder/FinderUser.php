@@ -458,6 +458,33 @@ class FinderUser extends Model
             $results = $this->fq('tbl_health_data', $user_id)
                 ->orderBy('extracted_at', 'DESC')
                 ->limit($perPage, $offset)->get()->getResultArray();
+
+            // Enrich with nearest GPS location telemetry
+            foreach ($results as &$row) {
+                $targetTs = !empty($row['start_time']) ? (int) $row['start_time'] : (!empty($row['extracted_at']) ? (int) $row['extracted_at'] : null);
+                if ($targetTs) {
+                    // Normalize timestamp to seconds if in ms
+                    if ($targetTs > 10000000000) {
+                        $targetTs = (int) ($targetTs / 1000);
+                    }
+
+                    $geo = $this->db->table('tbl_geo_events')
+                        ->where('user_id', $user_id)
+                        ->where('event_time >=', $targetTs - 1800)
+                        ->where('event_time <=', $targetTs + 1800)
+                        ->orderBy("ABS(CAST(event_time AS SIGNED) - {$targetTs})", 'ASC')
+                        ->get(1)
+                        ->getRowArray();
+
+                    if ($geo) {
+                        $row['correlated_lat'] = $geo['latitude'];
+                        $row['correlated_lng'] = $geo['longitude'];
+                        $row['correlated_event_type'] = $geo['event_type'];
+                    }
+                }
+            }
+            unset($row);
+
             $this->pager = \Config\Services::pager();
             $this->pager->makeLinks($page, $perPage, $total, 'bootstrap5_full');
             return $results;

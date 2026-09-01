@@ -124,22 +124,22 @@ uasort($uniqueNetworks, function($a, $b) {
         <div class="container-fluid">
 
             <!-- Educational Callout Box -->
-            <div class="callout callout-info callout-wifi shadow-sm p-3 mb-4">
-                <h5 class="font-weight-bold text-info"><i class="fas fa-info-circle mr-2"></i> WiFi Memory Audit</h5>
+            <div class="callout callout-info shadow-sm p-3 mb-4" style="border-left:5px solid #17a2b8;background:#fdfdfd;border-radius:4px;">
+                <h5 class="font-weight-bold text-info"><i class="fas fa-wifi mr-2"></i>Remembered Wi-Fi Network &amp; Security Audit</h5>
                 <p class="text-secondary mb-2" style="font-size: 14px;">
-                    This view displays all WiFi access profiles saved in the device's connection memory. Monitored devices automatically attempt connection to these profiles when within range. Unsecured or open profiles present significant threats.
+                    Audits Wi-Fi access profiles stored in device memory. Monitored devices automatically attempt connection to these SSIDs when within radio range.
                 </p>
                 <div class="row mt-2" style="font-size: 12px;">
                     <div class="col-md-6 border-right">
                         <span class="font-weight-bold text-dark d-block mb-1">Security Vulnerabilities:</span>
                         <ul class="pl-3 mb-0 text-muted">
-                            <li><b class="text-danger">Open / WEP networks:</b> Do not require passwords or use weak, legacy encryption. Hackers can spoof these SSIDs to execute <b>Evil-Twin attacks</b> and intercept all device network traffic.</li>
+                            <li><b class="text-danger">Open / WEP networks:</b> Lack WPA2/WPA3 authentication. Attackers can broadcast matching SSIDs to execute <b>Evil-Twin MITM attacks</b> and intercept unencrypted network traffic.</li>
                         </ul>
                     </div>
                     <div class="col-md-6 pl-md-3 mt-2 mt-md-0">
-                        <span class="font-weight-bold text-dark d-block mb-1">Location Analysis:</span>
+                        <span class="font-weight-bold text-dark d-block mb-1">Location Analysis &amp; BSSIDs:</span>
                         <ul class="pl-3 mb-0 text-muted">
-                            <li>The collection of SSIDs (e.g. "Work-WiFi", "Hotel-Guest") reveals a geographical trace of the locations the device owner regularly frequents.</li>
+                            <li>Saved SSIDs (e.g., home, office, hotel networks) combined with physical BSSID hardware MAC addresses establish historical location footprinting.</li>
                         </ul>
                     </div>
                 </div>

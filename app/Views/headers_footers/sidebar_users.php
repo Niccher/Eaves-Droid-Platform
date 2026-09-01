@@ -361,7 +361,7 @@
                         <!-- Software Button -->
                         <li class="nav-item">
                             <a href="<?php echo base_url('advanced/software'); ?>"
-                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'remote_media', 'accessibility', 'input_methods', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale', 'software_landing', 'app_permissions', 'clipboard', 'content_providers', 'crash_logs', 'digital_wellbeing', 'doze_standby', 'email', 'health_data', 'keyguard', 'screenshots', 'screen_state', 'vpn_config'])) ? 'active' : ''; ?>">
+                               class="nav-link <?php echo (isset($active_tab) && in_array($active_tab, ['accounts', 'calendar', 'app_usage', 'notifications', 'security_audit', 'remote_media', 'accessibility', 'input_methods', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'app_security', 'network_security', 'telephony_network', 'system_locale', 'software_landing', 'app_permissions', 'clipboard', 'content_providers', 'crash_logs', 'digital_wellbeing', 'email', 'health_data', 'keyguard', 'screenshots', 'vpn_config'])) ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-laptop-code"></i>
                                 <p>Software</p>
                             </a>

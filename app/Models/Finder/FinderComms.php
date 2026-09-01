@@ -1942,6 +1942,12 @@ class FinderComms extends Model
     private function applyNotificationGroupFilter($builder, string $group_key): void
     {
         $builder->where($this->notificationGroupKeySql() . ' = ' . $this->db->escape($group_key), null, false);
+        $this->applyNonSilentNotificationFilter($builder);
+    }
+
+    private function applyNonSilentNotificationFilter($builder): void
+    {
+        $builder->where("((title IS NOT NULL AND TRIM(title) != '') OR (text IS NOT NULL AND TRIM(text) != ''))");
     }
 
     private function notificationScreenCountSelect(): string
@@ -1958,6 +1964,7 @@ class FinderComms extends Model
         try {
             $groupSql = $this->notificationGroupKeySql();
             $builder = $this->fq('tbl_extracted_notifications', $user_id);
+            $this->applyNonSilentNotificationFilter($builder);
             $row = $builder
                 ->select("COUNT(DISTINCT {$groupSql}) AS cnt", false)
                 ->get()
@@ -1985,8 +1992,11 @@ class FinderComms extends Model
             $offset = ($page - 1) * $perPage;
             $groupSql = $this->notificationGroupKeySql();
 
-            $results = $this->db->table('tbl_extracted_notifications')
-                ->where('owner_id', $user_id)
+            $builder = $this->db->table('tbl_extracted_notifications')
+                ->where('owner_id', $user_id);
+            $this->applyNonSilentNotificationFilter($builder);
+
+            $results = $builder
                 ->select("{$groupSql} AS group_key", false)
                 ->select('MAX(app_name) AS app_name', false)
                 ->select('MAX(package_name) AS package_name', false)

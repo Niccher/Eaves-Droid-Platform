@@ -140,56 +140,7 @@ function getFeatureCount($slug, $counts) {
                         </div>
                     </div>
                 <?php endforeach; ?>
-
-                <!-- Upcoming & Restricted Tools Card -->
-                <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3" data-toggle="modal" data-target="#upcomingSoftwareToolsModal">
-                    <div class="btn-remote-cmd p-3 shadow-sm h-100 d-flex flex-column align-items-center justify-content-center" style="cursor: pointer;">
-                        <div class="cmd-icon-wrapper mb-2 text-secondary">
-                            <i class="fas fa-tools"></i>
-                        </div>
-                        <span class="font-weight-bold text-dark mb-1" style="font-size: 13px;">Upcoming / Restricted</span>
-                        <small class="text-muted mb-2 d-none d-sm-block" style="font-size: 10.5px; line-height:1.2;">Features requiring root access or under development</small>
-                        <span class="badge badge-pill badge-secondary" style="font-size: 9.5px;">3 items</span>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
-</div>
-
-<!-- Modal -->
-<div class="modal fade" id="upcomingSoftwareToolsModal" tabindex="-1" role="dialog" aria-labelledby="upcomingSoftwareToolsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title font-weight-bold" id="upcomingSoftwareToolsModalLabel">
-                    <i class="fas fa-tools text-secondary mr-2"></i>Upcoming & Restricted Software Tools
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted">Due to modern Android security sandboxing, these software diagnostic interfaces are restricted and require a <strong>rooted device</strong> to read or collect telemetry.</p>
-                <hr>
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item px-0">
-                        <h6 class="font-weight-bold mb-1"><i class="fas fa-cogs mr-2 text-success"></i>Detailed Running Processes</h6>
-                        <p class="text-muted small mb-0">Audits security parameters, environment variables, capabilities, parent processes, and signals.</p>
-                    </div>
-                    <div class="list-group-item px-0">
-                        <h6 class="font-weight-bold mb-1"><i class="fas fa-globe mr-2 text-primary"></i>Browser History</h6>
-                        <p class="text-muted small mb-0">Extracts browser history, bookmarks, and search entries from sandboxed databases (Chrome, Firefox, etc.).</p>
-                    </div>
-                    <div class="list-group-item px-0">
-                        <h6 class="font-weight-bold mb-1"><i class="fas fa-envelope mr-2 text-info"></i>Email Accounts</h6>
-                        <p class="text-muted small mb-0">Extracts user-configured email profiles, sync frequencies, and client application metadata.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
 </div>

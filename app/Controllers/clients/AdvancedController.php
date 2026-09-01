@@ -668,19 +668,7 @@ class AdvancedController extends BaseClientController
         return $c->delete_crash_logs($id);
     }
 
-    public function doze_standby()
-    {
-        $c = new ForensicsSystemController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->doze_standby();
-    }
 
-    public function delete_doze_standby($id)
-    {
-        $c = new ForensicsSystemController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_doze_standby($id);
-    }
 
     public function hardware_dashboard()
     {
@@ -1145,19 +1133,7 @@ class AdvancedController extends BaseClientController
         return $c->delete_app_security($id);
     }
 
-    public function system_locale()
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->system_locale();
-    }
 
-    public function delete_system_locale($id)
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_system_locale($id);
-    }
 
     public function app_permissions()
     {
@@ -1254,26 +1230,21 @@ class AdvancedController extends BaseClientController
         return $c->screenshots();
     }
 
-    public function delete_screenshots($id)
+    public function serve_screenshot($filename)
     {
         $c = new ForensicsUserController();
         $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_screenshots($id);
+        return $c->serve_screenshot($filename);
     }
 
-    public function screen_state()
+    public function trigger_screenshot_capture()
     {
         $c = new ForensicsUserController();
         $c->initController($this->request, $this->response, $this->logger);
-        return $c->screen_state();
+        return $c->trigger_screenshot_capture();
     }
 
-    public function delete_screen_state($id)
-    {
-        $c = new ForensicsUserController();
-        $c->initController($this->request, $this->response, $this->logger);
-        return $c->delete_screen_state($id);
-    }
+
 
     public function media_hardware()
     {

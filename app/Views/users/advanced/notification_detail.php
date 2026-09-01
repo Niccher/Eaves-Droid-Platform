@@ -66,6 +66,26 @@ $pkgName = $summary['package_name'] ?? $group_key;
                 </div>
             </div>
 
+            <!-- Callout Card explaining Notification Actions & Data -->
+            <div class="callout callout-info shadow-sm p-3 mb-4" style="border-left:5px solid #17a2b8;background:#fdfdfd;border-radius:4px;">
+                <h5 class="font-weight-bold text-info"><i class="fas fa-bell mr-2"></i>Status Bar Notification Telemetry</h5>
+                <p class="text-secondary mb-2" style="font-size:14px;">Captures system status bar alerts, heads-up notifications, and background service events intercepted via Android NotificationListenerService.</p>
+                <div class="row" style="font-size:12px;">
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">POSTED Action:</b>
+                        <span class="text-muted">Active notification dispatched or updated on the device status bar / notification shade by the package.</span>
+                    </div>
+                    <div class="col-md-4 border-right">
+                        <b class="d-block mb-1">REMOVED / DISMISSED:</b>
+                        <span class="text-muted">Notification cleared, swiped away by the target user, or automatically dismissed by the application.</span>
+                    </div>
+                    <div class="col-md-4">
+                        <b class="d-block mb-1">Silent Background Records:</b>
+                        <span class="text-muted">Background services (e.g. Google Quick Search, system sync) frequently post ongoing status banners or telemetry without title/content payloads.</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-12">
                     <div class="card card-secondary shadow-sm">
@@ -93,14 +113,20 @@ $pkgName = $summary['package_name'] ?? $group_key;
                                             $actCol = $act === 'POSTED' ? 'success' : 'secondary';
                                             $isScreen = !empty($r['is_screen_notification']);
                                             $rowClass = $isScreen ? 'table-warning' : '';
+                                            $titleTxt = trim((string)($r['title'] ?? ''));
+                                            $bodyTxt  = trim((string)($r['text'] ?? ''));
                                         ?>
                                         <tr class="<?= $rowClass ?>">
                                             <td>
                                                 <small class="d-block font-weight-bold"><?= esc($r['ts_rel'] ?? '—') ?></small>
                                                 <small class="text-muted"><?= esc($r['ts_abs'] ?? '—') ?></small>
                                             </td>
-                                            <td class="font-weight-bold"><?= htmlspecialchars($r['title'] ?? '—') ?></td>
-                                            <td><small class="text-muted"><?= htmlspecialchars(mb_strimwidth($r['text'] ?? '—', 0, 120, '…')) ?></small></td>
+                                            <td class="font-weight-bold">
+                                                <?= $titleTxt !== '' ? htmlspecialchars($titleTxt) : '<em class="text-muted font-weight-normal">(Silent Notification)</em>' ?>
+                                            </td>
+                                            <td>
+                                                <small><?= $bodyTxt !== '' ? htmlspecialchars(mb_strimwidth($bodyTxt, 0, 120, '…')) : '<em class="text-muted">(No Content)</em>' ?></small>
+                                            </td>
                                             <td><span class="badge badge-<?= $actCol ?>"><?= $act ?></span></td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-outline-danger delete-notification"

@@ -482,27 +482,6 @@ class ForensicsSystemController extends BaseClientController
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
     }
 
-    /** GET /advanced/software/doze_standby */
-    public function doze_standby()
-    {
-        $data = array_merge($this->commonData('doze_standby', 'Doze & Standby'), [
-            'rows' => $this->finderModel->get_doze_standby($this->userId),
-            'total' => $this->finderModel->get_count_DozeStandby($this->userId),
-            'pager' => $this->finderModel->getPager(),
-        ]);
-        return $this->renderAppView('users/advanced/doze_standby', $data);
-    }
-
-    public function delete_doze_standby($id)
-    {
-        if (!$this->request->isAJAX() && $this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method.']);
-        }
-        if ($this->finderModel->delete_doze_standby_row((int) $id, $this->userId)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Row deleted successfully.']);
-        }
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete row.']);
-    }
 
     /** GET /advanced/hardware/dashboard */
     public function hardware_dashboard()

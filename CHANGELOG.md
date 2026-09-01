@@ -5,6 +5,20 @@ All notable changes across the Eaves Droid platform (`WebApp`, `Android Client`,
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-09-01 — 1-Table Migrations & Seeders Architecture, System Locale Merge, Railway Deployment & Sidebar Count Sync
+
+### Added
+- **1-Table-Per-File Database Architecture** (`webapp`): Restructured database migrations and seeders so each file creates or seeds exactly one table. Added master `DatabaseSeeder.php` orchestrator.
+- **Railway Cloud Deployment Configuration** (`webapp`, `ml_engine`): Added `railway.toml` and dynamic `entrypoint.sh` for Railway environment variable mapping, dynamic `$PORT` binding, and zero-downtime deployment.
+- **System Locale & Input Methods Consolidation** (`webapp`): Merged `system_locale` feature tier into `input_methods` (`Input Methods & System Locale`) with a dedicated System Locale & Active Timezone panel.
+- **Persistent Clipboard Logging Callout** (`webapp`): Updated `clipboard.php` to document background clip caching and text selection logging.
+
+### Fixed
+- **Sidebar Data Menu Zero Count Bug** (`webapp`): Updated `renderView()` across `ClientProfileController`, `UserSessionController`, and `TelemetryExportController` to merge `getUserDataCounts()`, restoring live badge counts on account pages.
+- **`app_security.php` Memory Limit Exception** (`webapp`): Resolved `Undefined array key "orig_idx"` error and populated `orig_idx` in snapshot history mapping to prevent Kint debug toolbar memory exhaustion (512 MB).
+- **Hardware Grid UI Layout** (`webapp`): Fixed missing column grid closing `div` tag in `hardware.php` that caused card grid nesting.
+- **Silent Notification Filtering** (`webapp`): Added title and text validation in `FinderComms.php` to exclude silent/empty notifications.
+
 ---
 
 ## [2.7.1] - 2026-08-28 — Secure Support Chat, Private File Gateway, UUID Obfuscation & PDF Sharing

@@ -79,9 +79,9 @@ if ($latest) {
 // Compute snapshot history deltas
 $historyList = [];
 $prevRow = null;
-$reversedRows = array_reverse($rows);
+$totalRows = count($rows);
 
-foreach ($reversedRows as $r) {
+foreach ($rows as $origIdx => $r) {
     $aCount = count(is_string($r["device_admin_apps_json"] ?? null) ? (json_decode($r["device_admin_apps_json"], true) ?: []) : []);
     
     $pMap = is_string($r["app_permissions_map_json"] ?? null) ? (json_decode($r["app_permissions_map_json"], true) ?: []) : [];
@@ -95,6 +95,7 @@ foreach ($reversedRows as $r) {
 
     $item = [
         "id" => $r["id"],
+        "orig_idx" => $origIdx,
         "extracted_at" => $r["extracted_at"],
         "a_count" => $aCount,
         "p_count" => $pCount,
@@ -107,8 +108,6 @@ foreach ($reversedRows as $r) {
     $historyList[] = $item;
     $prevRow = $item;
 }
-
-$historyList = array_reverse($historyList);
 
 // High risk admin apps count
 $highRiskAdmins = array_filter($adminApps, fn($a) => !$a["is_system"]);
@@ -555,12 +554,14 @@ $highRiskAdmins = array_filter($adminApps, fn($a) => !$a["is_system"]);
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($historyList as $h): ?>
-                  <tr id="row_<?= esc($h["id"]) ?>" class="<?= $h["orig_idx"] === $selectedIdx ? "table-primary font-weight-bold" : "" ?>">
+                <?php foreach ($historyList as $h): 
+                  $isSel = isset($h["orig_idx"]) && $h["orig_idx"] === $selectedIdx;
+                ?>
+                  <tr id="row_<?= esc($h["id"]) ?>" class="<?= $isSel ? "table-primary font-weight-bold" : "" ?>">
                     <td>
                       <i class="far fa-clock text-muted mr-1"></i>
                       <?= esc(date("Y-m-d H:i:s", $h["extracted_at"] / 1000)) ?>
-                      <?php if ($h["orig_idx"] === $selectedIdx): ?>
+                      <?php if ($isSel): ?>
                         <span class="badge badge-primary ml-1">ACTIVE VIEW</span>
                       <?php endif; ?>
                     </td>
@@ -589,7 +590,7 @@ $highRiskAdmins = array_filter($adminApps, fn($a) => !$a["is_system"]);
                       <?php endif; ?>
                     </td>
                     <td class="text-right">
-                      <a href="?snapshot=<?= $h["orig_idx"] ?>" class="btn btn-xs btn-outline-primary mr-1">
+                      <a href="?snapshot=<?= esc($h["orig_idx"] ?? 0) ?>" class="btn btn-xs btn-outline-primary mr-1">
                         <i class="fas fa-eye mr-1"></i>Inspect
                       </a>
                       <button class="btn btn-xs btn-danger btn-delete-row"
