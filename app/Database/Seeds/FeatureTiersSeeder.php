@@ -473,6 +473,26 @@ class FeatureTiersSeeder extends Seeder
                 'bg_class'      => 'bg-secondary',
                 'required_tier' => 'platinum',
             ],
+            [
+                'category_type' => 'analysis',
+                'slug'          => 'anomalies_analysis',
+                'label'         => 'Behavioral Anomalies',
+                'description'   => 'AI-powered device anomaly detection and scan results',
+                'icon'          => 'fas fa-brain',
+                'color_class'   => 'card-warning',
+                'bg_class'      => 'bg-warning',
+                'required_tier' => 'gold',
+            ],
+            [
+                'category_type' => 'analysis',
+                'slug'          => 'wellbeing_analysis',
+                'label'         => 'Digital Wellbeing',
+                'description'   => 'Screen time, app habit analysis, and focus stats',
+                'icon'          => 'fas fa-heartbeat',
+                'color_class'   => 'card-warning',
+                'bg_class'      => 'bg-warning',
+                'required_tier' => 'gold',
+            ],
         ];
 
         foreach ($features as $f) {

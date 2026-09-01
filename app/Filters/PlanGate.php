@@ -96,17 +96,21 @@ class PlanGate implements FilterInterface
 
         // 1. Check Analysis Suite Feature Gates (Free, Gold, Platinum)
         $analysisSlugMap = [
-            'analysis/storage'       => 'storage_analysis',
-            'analysis/apps'          => 'apps_analysis',
-            'analysis/lifestyle'     => 'lifestyle_analysis',
-            'analysis/social'        => 'social_analysis',
-            'analysis/privacy'       => 'privacy_analysis',
-            'analysis/subscriptions' => 'subscriptions_analysis',
-            'analysis/sentiment'     => 'sentiment_analysis',
-            'analysis/finance'       => 'finance_analysis',
-            'analysis/location'      => 'location_analysis',
-            'analysis/hotspots'      => 'hotspots_analysis',
-            'analysis/report'        => 'report_export',
+            'analysis/storage'              => 'storage_analysis',
+            'analysis/apps'                 => 'apps_analysis',
+            'analysis/lifestyle'            => 'lifestyle_analysis',
+            'analysis/social'               => 'social_analysis',
+            'analysis/privacy'              => 'privacy_analysis',
+            'analysis/subscriptions'        => 'subscriptions_analysis',
+            'analysis/sentiment'            => 'sentiment_analysis',
+            'analysis/finance'              => 'finance_analysis',
+            'analysis/location'             => 'location_analysis',
+            'analysis/hotspots'             => 'hotspots_analysis',
+            'analysis/report'               => 'report_export',
+            'analysis/behavioral-anomalies' => 'anomalies_analysis',
+            'analysis/anomalies/results'    => 'anomalies_analysis',
+            'analysis/anomalies'           => 'anomalies_analysis',
+            'analysis/wellbeing'           => 'wellbeing_analysis',
         ];
 
         $analysisSlug = $analysisSlugMap[$route] ?? null;
