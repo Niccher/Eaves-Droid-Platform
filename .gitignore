@@ -48,35 +48,51 @@ $RECYCLE.BIN/
 Vagrantfile
 
 #-------------------------
-# Temporary Files
+# Temporary Files & Runtime Data
 #-------------------------
 writable/cache/*
+!writable/cache/.gitkeep
 !writable/cache/index.html
 
 writable/logs/*
+!writable/logs/.gitkeep
 !writable/logs/index.html
 
 writable/session/*
+!writable/session/.gitkeep
 !writable/session/index.html
 
 writable/uploads/*
+!writable/uploads/.gitkeep
 !writable/uploads/index.html
+writable/uploads/android_captured_audio/*
+!writable/uploads/android_captured_audio/.gitkeep
+writable/uploads/android_captured_files/*
+!writable/uploads/android_captured_files/.gitkeep
+writable/uploads/android_captured_images/*
+!writable/uploads/android_captured_images/.gitkeep
+writable/uploads/android_captured_screenshots/*
+!writable/uploads/android_captured_screenshots/.gitkeep
 writable/uploads/chat_attachments/*
 !writable/uploads/chat_attachments/.gitkeep
 
 writable/debugbar/*
+!writable/debugbar/.gitkeep
 !writable/debugbar/index.html
 
 writable/backups/*
 !writable/backups/.gitkeep
 
 writable/exports/*
+!writable/exports/.gitkeep
 !writable/exports/index.html
 
 writable/reports/*
+!writable/reports/.gitkeep
 !writable/reports/index.html
 
 writable/temp/*
+!writable/temp/.gitkeep
 !writable/temp/index.html
 
 writable/credentials/*

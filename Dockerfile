@@ -43,9 +43,16 @@ RUN --mount=type=cache,id=composer-cache,target=/root/.composer/cache \
     && rm /usr/bin/composer
 
 # ── Application code ──────────────────────────────────────────────────────────
-COPY . /var/www/html
-
-RUN mkdir -p /var/www/html/writable \
+RUN mkdir -p /var/www/html/writable/cache \
+             /var/www/html/writable/debugbar \
+             /var/www/html/writable/exports \
+             /var/www/html/writable/logs \
+             /var/www/html/writable/session \
+             /var/www/html/writable/uploads/android_captured_audio \
+             /var/www/html/writable/uploads/android_captured_files \
+             /var/www/html/writable/uploads/android_captured_images \
+             /var/www/html/writable/uploads/android_captured_screenshots \
+             /var/www/html/writable/uploads/chat_attachments \
     && chown -R www-data:www-data /var/www/html/writable \
     && chmod -R 775 /var/www/html/writable
 
