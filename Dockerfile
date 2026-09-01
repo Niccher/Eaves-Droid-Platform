@@ -15,8 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-install -j$(nproc) intl mysqli pdo_mysql zip gd xml dom \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache modules
-RUN a2enmod rewrite headers
+# Enable Apache modules and ensure single MPM prefork module
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod mpm_prefork rewrite headers
 
 # PHP upload and memory limits
 RUN { \
