@@ -2894,9 +2894,13 @@ private function decryptIfEncrypted(string $content): ?string
         }
 
         $cryptModel = new CryptModel();
-        $raw = file_get_contents(WRITEPATH . 'uploads/text_dump/' . $file_name);
+        $filePath = WRITEPATH . 'uploads/raw_telemetry/' . $file_name;
+        if (!file_exists($filePath)) {
+            $filePath = WRITEPATH . 'uploads/text_dump/' . $file_name;
+        }
+        $raw = @file_get_contents($filePath);
         if ($raw === false) {
-            log_message('error', '[payloadToArray] Cannot read file: ' . $file_name);
+            log_message('error', '[payloadToArray] Cannot read file: ' . $filePath);
             return null;
         }
 

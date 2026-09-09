@@ -145,6 +145,16 @@ class SettingsController extends BaseAdminController
         return $this->delegate(MailSettingsController::class, 'testEmail');
     }
 
+    public function uploadFirebaseCredentials()
+    {
+        return $this->delegate(MailSettingsController::class, 'uploadFirebaseCredentials');
+    }
+
+    public function testFirebaseCredentials()
+    {
+        return $this->delegate(MailSettingsController::class, 'testFirebaseCredentials');
+    }
+
     public function api_settings()
     {
         return $this->delegate(SecuritySettingsController::class, 'api_settings');

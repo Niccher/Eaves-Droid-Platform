@@ -170,7 +170,7 @@
                                     </button>
                                     <?php else: ?>
                                     <?php $reqTier = getRequiredTierForFeat($cmd['feat']); ?>
-                                    <div class="btn-remote-cmd p-3 shadow-sm h-100 d-flex flex-column align-items-center justify-content-center locked">
+                                    <div class="btn-remote-cmd-locked p-3 shadow-sm h-100 d-flex flex-column align-items-center justify-content-center locked">
                                         <div class="lock-overlay">
                                             <span class="badge <?php echo $reqTier === 'platinum' ? 'badge-danger' : 'badge-warning'; ?> shadow-sm mb-2 px-2 py-1" style="font-size: 10px;">
                                                 <i class="fas fa-lock mr-1"></i> Unlock <?php echo ucfirst($reqTier); ?>
@@ -632,6 +632,9 @@ $(function() {
     $('.btn-remote-cmd').on('click', function() {
         const $btn = $(this);
         const cmd  = $btn.data('cmd');
+        if (!cmd || $btn.hasClass('locked') || $btn.hasClass('btn-remote-cmd-locked')) {
+            return;
+        }
         const $iconEl = $btn.find('.cmd-icon-wrapper i');
         const origIconClass = $iconEl.attr('class');
 

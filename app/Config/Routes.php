@@ -1643,6 +1643,8 @@ $routes->group('admin', [
          */
         $routes->get('notifications', 'SettingsController::notification_settings', ['as' => 'admin-settings-notifications']);
         $routes->post('notifications/test-email', 'SettingsController::testEmail', ['as' => 'admin-settings-test-email']);
+        $routes->post('notifications/upload-firebase', 'SettingsController::uploadFirebaseCredentials', ['as' => 'admin-settings-upload-firebase']);
+        $routes->post('notifications/test-firebase', 'SettingsController::testFirebaseCredentials', ['as' => 'admin-settings-test-firebase']);
 
         /**
          * Displays maintenance page.

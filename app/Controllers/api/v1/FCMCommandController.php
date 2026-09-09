@@ -13,6 +13,66 @@ class FCMCommandController extends BaseController
     private $credentialsPath = WRITEPATH . 'firebase_credentials.json';
     private $projectId = 'project-2026-35b76';
 
+    public function getCredentialsJson(): ?array
+    {
+        // 1. Check disk file first
+        if (file_exists($this->credentialsPath)) {
+            $content = @file_get_contents($this->credentialsPath);
+            if (!empty($content)) {
+                $json = json_decode($content, true);
+                if (!empty($json['client_email']) && !empty($json['private_key'])) {
+                    if (!empty($json['project_id'])) {
+                        $this->projectId = $json['project_id'];
+                    }
+                    return $json;
+                }
+            }
+        }
+
+        // 2. Check Database settings table
+        try {
+            $db = \Config\Database::connect();
+            $row = $db->table('settings')
+                ->where('class', 'notification')
+                ->where('key', 'firebase_credentials_json')
+                ->get()
+                ->getRowArray();
+
+            if (!empty($row['value'])) {
+                $json = json_decode($row['value'], true);
+                if (!empty($json['client_email']) && !empty($json['private_key'])) {
+                    if (!empty($json['project_id'])) {
+                        $this->projectId = $json['project_id'];
+                    }
+                    // Auto-sync / persist to file for faster subsequent access
+                    @file_put_contents($this->credentialsPath, $row['value']);
+                    return $json;
+                }
+            }
+        } catch (\Throwable $t) {
+            log_message('error', 'FCM credentials DB load error: ' . $t->getMessage());
+        }
+
+        // 3. Check Environment Variables (e.g. on Railway / Docker)
+        $envJson = getenv('FIREBASE_CREDENTIALS_JSON') ?: getenv('FIREBASE_CREDENTIALS') ?: (function_exists('env') ? env('FIREBASE_CREDENTIALS_JSON') : null);
+        if (!empty($envJson)) {
+            $decoded = base64_decode($envJson, true);
+            if ($decoded && str_contains($decoded, 'private_key')) {
+                $envJson = $decoded;
+            }
+            $json = json_decode($envJson, true);
+            if (!empty($json['client_email']) && !empty($json['private_key'])) {
+                if (!empty($json['project_id'])) {
+                    $this->projectId = $json['project_id'];
+                }
+                @file_put_contents($this->credentialsPath, $envJson);
+                return $json;
+            }
+        }
+
+        return null;
+    }
+
     public function trigger($token = null, $category = 'all')
     {
         return $this->send($token, 'cmd_sync_now', $category);
@@ -103,13 +163,14 @@ class FCMCommandController extends BaseController
             }
         }
 
-        if (!file_exists($this->credentialsPath)) {
-            return $this->fail('Firebase credentials file missing.', 500);
+        $credentials = $this->getCredentialsJson();
+        if (!$credentials) {
+            return $this->fail('Firebase credentials file missing. Please configure your Firebase Service Account JSON in Admin Settings -> Notifications, or set FIREBASE_CREDENTIALS_JSON in Railway environment variables.', 500);
         }
 
         $accessToken = $this->getAccessToken();
         if (!$accessToken) {
-            return $this->fail('Failed to generate OAuth2 token.', 500);
+            return $this->fail('Failed to generate OAuth2 token from Firebase credentials.', 500);
         }
 
         $logId = $this->logCommandDispatch($token, $command, $payload, [], true);
@@ -318,11 +379,12 @@ class FCMCommandController extends BaseController
         }
     }
 
-    private function getAccessToken()
+    public function getAccessToken()
     {
-        $json = json_decode(file_get_contents($this->credentialsPath), true);
-        $now = time();
+        $json = $this->getCredentialsJson();
+        if (!$json) return null;
 
+        $now = time();
         $header = base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
         $payload = base64_encode(json_encode([
             'iss' => $json['client_email'],
@@ -333,7 +395,10 @@ class FCMCommandController extends BaseController
         ]));
 
         $signature = '';
-        openssl_sign("$header.$payload", $signature, $json['private_key'], 'SHA256');
+        if (!openssl_sign("$header.$payload", $signature, $json['private_key'], 'SHA256')) {
+            log_message('error', 'Failed to sign JWT for FCM OAuth2 token.');
+            return null;
+        }
         $jwt = "$header.$payload." . base64_encode($signature);
 
         $ch = curl_init();

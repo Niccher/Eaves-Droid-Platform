@@ -33,7 +33,13 @@ class FirebaseLib
             return false;
         }
 
-        $projectId = $this->config->projectId;
+        $credentials = $this->getCredentialsJson();
+        if (!$credentials) {
+            log_message('error', 'FCM: Failed to load Firebase Service Account credentials');
+            return false;
+        }
+
+        $projectId = $credentials['project_id'] ?? ($this->config->projectId ?? '');
         $url = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
 
         $payload = [
@@ -89,7 +95,63 @@ class FirebaseLib
     }
 
     /**
-     * Get OAuth 2.0 Access Token using Service AccountController Credentials
+     * Resolve Service Account Credentials from files, DB settings, or environment variables
+     */
+    public function getCredentialsJson(): ?array
+    {
+        // 1. Filesystem paths
+        $paths = [
+            WRITEPATH . 'firebase_credentials.json',
+            $this->config->serviceAccountPath ?? '',
+            FCPATH . 'firebase_service_account.json',
+            WRITEPATH . 'credentials/firebase_service_account.json'
+        ];
+        foreach ($paths as $path) {
+            if (!empty($path) && file_exists($path)) {
+                $content = @file_get_contents($path);
+                if (!empty($content)) {
+                    $json = json_decode($content, true);
+                    if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+                        return $json;
+                    }
+                }
+            }
+        }
+
+        // 2. Database settings
+        try {
+            $db = \Config\Database::connect();
+            $row = $db->table('settings')
+                ->where('class', 'notification')
+                ->where('key', 'firebase_credentials_json')
+                ->get()
+                ->getRow();
+            if ($row && !empty($row->value)) {
+                $json = json_decode($row->value, true);
+                if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+                    @file_put_contents(WRITEPATH . 'firebase_credentials.json', $row->value);
+                    return $json;
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', 'Failed to fetch Firebase credentials from DB: ' . $e->getMessage());
+        }
+
+        // 3. Environment variables
+        $envJson = env('FIREBASE_CREDENTIALS_JSON') ?: env('FIREBASE_CREDENTIALS');
+        if (!empty($envJson)) {
+            $json = json_decode($envJson, true);
+            if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+                @file_put_contents(WRITEPATH . 'firebase_credentials.json', $envJson);
+                return $json;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get OAuth 2.0 Access Token using Service Account Credentials
      */
     private function getAccessToken()
     {
@@ -97,30 +159,9 @@ class FirebaseLib
             return $this->accessToken;
         }
 
-        // Potential paths to check
-        $paths = [
-            $this->config->serviceAccountPath, // Configured path
-            FCPATH . 'firebase_service_account.json', // Root folder
-            WRITEPATH . 'credentials/firebase_service_account.json' // Writable folder
-        ];
-        
-        $credentialPath = false;
-        foreach ($paths as $path) {
-            if (file_exists($path)) {
-                $credentialPath = $path;
-                break;
-            }
-        }
-
-        if (!$credentialPath) {
-            log_message('error', 'Firebase Service AccountController file not found. Checked: ' . implode(', ', $paths));
-            return false;
-        }
-
-        $credentials = json_decode(file_get_contents($credentialPath), true);
-        
+        $credentials = $this->getCredentialsJson();
         if (!$credentials || !isset($credentials['client_email']) || !isset($credentials['private_key'])) {
-            log_message('error', 'Invalid Firebase Service AccountController credentials');
+            log_message('error', 'Invalid or missing Firebase Service Account credentials');
             return false;
         }
 
