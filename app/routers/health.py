@@ -50,12 +50,13 @@ def _check_database() -> tuple[str, float, int, int]:
         from app.utils.db import get_engine
         from sqlalchemy import text
         t0 = time.perf_counter()
-        with get_engine().connect() as conn:
+        engine = get_engine()
+        with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
             db_latency = round((time.perf_counter() - t0) * 1000, 2)
             res = conn.execute(text("SHOW TABLES"))
-            existing = {str(row[0]) for row in res.fetchall()}
-            verified = sum(1 for tbl in core_tables if tbl in existing)
+            existing = {str(row[0]).lower() for row in res.fetchall()}
+            verified = sum(1 for tbl in core_tables if tbl.lower() in existing)
             return "connected", db_latency, verified, len(core_tables)
     except Exception as e:
         return "error", 0.0, 0, len(core_tables)
@@ -92,7 +93,11 @@ async def health():
         proc = psutil.Process()
         used_mb = round(proc.memory_info().rss / (1024 * 1024), 1)
         total_mb = round(psutil.virtual_memory().total / (1024 * 1024), 1)
-        cpu_pct = round(psutil.cpu_percent(interval=None), 1)
+        
+        # Calculate process-specific CPU percentage normalized by core count
+        cpu_count = psutil.cpu_count() or 1
+        proc_cpu = proc.cpu_percent(interval=None) / cpu_count
+        cpu_pct = round(min(100.0, max(0.0, proc_cpu)), 1)
     except Exception:
         pass
 

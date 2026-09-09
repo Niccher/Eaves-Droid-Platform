@@ -9,6 +9,8 @@ per job is small and the GIL releases during I/O wait).
 
 import json
 import numpy as np
+import os
+import urllib.parse
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from app.config import settings
@@ -35,19 +37,37 @@ def json_safe(obj):
 
 def get_engine() -> Engine:
     """
-    Returns a shared SQLAlchemy Engine connected to db_eaves_droid.
-
-    Connection is lazy — the first call creates the engine; subsequent
-    calls return the cached instance.  Uses pymysql as the driver.
+    Returns a shared SQLAlchemy Engine connected to the MySQL database.
+    Supports Railway (MYSQL_URL, MYSQLHOST, etc.) and Docker environment variables.
     """
     global _engine
     if _engine is None:
-        dsn = (
-            f"mysql+pymysql://{settings.db_user}:{settings.db_password}"
-            f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
-            "?charset=utf8mb4"
+        db_url = os.getenv("MYSQL_URL") or os.getenv("DATABASE_URL") or os.getenv("DB_URL")
+        if db_url:
+            if db_url.startswith("mysql://"):
+                db_url = db_url.replace("mysql://", "mysql+pymysql://", 1)
+            elif not db_url.startswith("mysql+pymysql://"):
+                db_url = f"mysql+pymysql://{db_url.split('://', 1)[-1]}"
+            dsn = db_url
+        else:
+            host = os.getenv("MYSQLHOST") or os.getenv("MYSQL_HOST") or os.getenv("DB_HOST") or settings.db_host
+            port = int(os.getenv("MYSQLPORT") or os.getenv("MYSQL_PORT") or os.getenv("DB_PORT") or settings.db_port)
+            user = os.getenv("MYSQLUSER") or os.getenv("MYSQL_USER") or os.getenv("DB_USER") or settings.db_user
+            password = os.getenv("MYSQLPASSWORD") or os.getenv("MYSQL_PASSWORD") or os.getenv("DB_PASSWORD") or settings.db_password
+            database = os.getenv("MYSQLDATABASE") or os.getenv("MYSQL_DATABASE") or os.getenv("DB_NAME") or settings.db_name
+
+            escaped_user = urllib.parse.quote_plus(user)
+            escaped_pass = urllib.parse.quote_plus(password)
+            dsn = f"mysql+pymysql://{escaped_user}:{escaped_pass}@{host}:{port}/{database}?charset=utf8mb4"
+
+        _engine = create_engine(
+            dsn,
+            pool_pre_ping=True,
+            pool_recycle=300,
+            pool_size=5,
+            max_overflow=5,
+            connect_args={"connect_timeout": 5}
         )
-        _engine = create_engine(dsn, pool_pre_ping=True, pool_size=5)
     return _engine
 
 
