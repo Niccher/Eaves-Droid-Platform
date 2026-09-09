@@ -372,12 +372,14 @@
 </div>
 
 <!-- MODAL: LATENCY WATERFALL BENCHMARK -->
-<div class="modal fade" id="modalBenchmark" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalBenchmark" tabindex="-1" role="dialog" aria-labelledby="modalBenchmarkTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg">
             <div class="modal-header bg-dark text-white py-2">
-                <h5 class="modal-title"><i class="fas fa-tachometer-alt mr-2 text-primary"></i> Tri-Tier Latency Waterfall Benchmark</h5>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                <h5 class="modal-title" id="modalBenchmarkTitle"><i class="fas fa-tachometer-alt mr-2 text-primary"></i> Tri-Tier Latency Waterfall Benchmark</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body p-3" id="benchmarkBody">
                 <div class="text-center py-4">
@@ -396,12 +398,14 @@
 </div>
 
 <!-- MODAL: FORENSIC TABLES BREAKDOWN -->
-<div class="modal fade" id="modalTableInspector" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalTableInspector" tabindex="-1" role="dialog" aria-labelledby="modalTableInspectorTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg">
             <div class="modal-header bg-dark text-white py-2">
-                <h5 class="modal-title"><i class="fas fa-database mr-2 text-info"></i> Core Forensic Tables Footprint</h5>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                <h5 class="modal-title" id="modalTableInspectorTitle"><i class="fas fa-database mr-2 text-info"></i> Core Forensic Tables Footprint</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body p-0">
                 <table class="table table-sm table-striped table-bordered mb-0">
@@ -613,12 +617,13 @@
         setText('webMemoryPeak', web.memory_peak_mb + ' MB');
         setText('webMemoryLimit', web.memory_limit_mb + ' MB');
 
-        setText('webCpuText', '1m: ' + web.load_1m + ' | 5m: ' + web.load_5m);
+        const coreTxt = web.cpu_cores ? ' (' + web.cpu_cores + ' core' + (web.cpu_cores > 1 ? 's' : '') + ')' : '';
+        setText('webCpuText', 'Load: ' + web.load_1m + ', ' + web.load_5m + ', ' + web.load_15m);
         setBar('webCpuBar', web.cpu_percent, web.cpu_percent > 80 ? 'bg-danger' : 'bg-warning');
         setText('webLoad1m', web.load_1m);
         setText('webLoad5m', web.load_5m);
         setText('webLoad15m', web.load_15m);
-        setText('webCpuPercent', web.cpu_percent + '%');
+        setText('webCpuPercent', web.cpu_percent + '%' + coreTxt);
 
         setText('webDiskText', web.disk_used_gb + ' GB / ' + web.disk_total_gb + ' GB (' + web.disk_percent + '%)');
         setBar('webDiskBar', web.disk_percent, web.disk_percent > 85 ? 'bg-danger' : 'bg-info');
@@ -720,6 +725,13 @@
         });
         tbody.innerHTML = html;
     }
+
+    // Modal focus management to prevent aria-hidden warnings
+    $('#modalBenchmark, #modalTableInspector').on('hide.bs.modal', function() {
+        if (document.activeElement && this.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+    });
 
     window.openTableInspectorModal = function() {
         $('#modalTableInspector').modal('show');

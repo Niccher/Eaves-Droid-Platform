@@ -103,10 +103,6 @@
                 </div>
             </div>
 
-            <form action="<?= base_url('admin/settings/update') ?>" method="post">
-                <?= csrf_field() ?>
-                <input type="hidden" name="section" value="ml">
-
                 <div class="card card-outline card-primary shadow-sm">
                     <div class="card-header p-2 bg-light border-bottom">
                         <ul class="nav nav-pills" id="ml-tabs" role="tablist">
@@ -154,58 +150,68 @@
                         <div class="tab-content">
 
                             <!-- ======================== GENERAL ======================== -->
-                            <div class="tab-pane fade show active" id="pane-general" role="tabpanel">
-                                <div class="form-group row">
-                                    <label class="col-sm-2 col-form-label font-weight-bold">Enable ML Features</label>
-                                    <div class="col-sm-10">
-                                        <div class="custom-control custom-switch">
-                                            <input type="hidden" name="ml_enabled" value="0">
-                                            <input type="checkbox" name="ml_enabled" class="custom-control-input" id="ml_enabled" value="1" <?= ($settings['ml_enabled'] ?? '0') === '1' ? 'checked' : '' ?>>
-                                            <label class="custom-control-label" for="ml_enabled">Enable machine learning analysis</label>
-                                        </div>
-                                        <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                            <i class="fas fa-lightbulb text-info mr-1"></i>
-                                            Master switch for all ML-powered features. When disabled, no algorithms execute and the anomaly detection pipeline is bypassed entirely.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row">
-                                    <label class="col-sm-2 col-form-label font-weight-bold">Anomaly Detection</label>
-                                    <div class="col-sm-10">
-                                        <div class="custom-control custom-switch">
-                                            <input type="hidden" name="ml_anomaly_enabled" value="0">
-                                            <input type="checkbox" name="ml_anomaly_enabled" class="custom-control-input" id="ml_anomaly_enabled" value="1" <?= ($settings['ml_anomaly_enabled'] ?? '0') === '1' ? 'checked' : '' ?>>
-                                            <label class="custom-control-label" for="ml_anomaly_enabled">Enable anomaly detection on uploaded data</label>
-                                        </div>
-                                        <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                            <i class="fas fa-lightbulb text-info mr-1"></i>
-                                            Automatically runs anomaly detection against new device uploads. Requires ML Features enabled. Triggers analysis on SMS, calls, locations, contacts, and app data per upload event.
+                            <div class="tab-pane fade <?= (empty($active_tab) || $active_tab === 'overview' || $active_tab === 'general') ? 'show active' : '' ?>" id="pane-general" role="tabpanel">
+                                <form action="<?= base_url('admin/settings/update') ?>" method="post">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="section" value="ml">
+                                    <div class="form-group row">
+                                        <label class="col-sm-2 col-form-label font-weight-bold">Enable ML Features</label>
+                                        <div class="col-sm-10">
+                                            <div class="custom-control custom-switch">
+                                                <input type="hidden" name="ml_enabled" value="0">
+                                                <input type="checkbox" name="ml_enabled" class="custom-control-input" id="ml_enabled" value="1" <?= ($settings['ml_enabled'] ?? '0') === '1' ? 'checked' : '' ?>>
+                                                <label class="custom-control-label" for="ml_enabled">Enable machine learning analysis</label>
+                                            </div>
+                                            <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
+                                                <i class="fas fa-lightbulb text-info mr-1"></i>
+                                                Master switch for all ML-powered features. When disabled, no algorithms execute and the anomaly detection pipeline is bypassed entirely.
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="form-group row mb-0">
-                                    <label class="col-sm-2 col-form-label font-weight-bold">Analysis Schedule</label>
-                                    <div class="col-sm-10">
-                                        <select name="ml_schedule_interval" class="form-control">
-                                            <option value="hourly" <?= ($settings['ml_schedule_interval'] ?? 'daily') === 'hourly' ? 'selected' : '' ?>>Hourly</option>
-                                            <option value="daily" <?= ($settings['ml_schedule_interval'] ?? 'daily') === 'daily' ? 'selected' : '' ?>>Daily</option>
-                                            <option value="weekly" <?= ($settings['ml_schedule_interval'] ?? 'daily') === 'weekly' ? 'selected' : '' ?>>Weekly</option>
-                                        </select>
-                                        <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                            <i class="fas fa-lightbulb text-info mr-1"></i>
-                                            How often to re-run batch analysis. <strong>Hourly</strong> &mdash; near real-time, higher server load. <strong>Daily</strong> &mdash; balanced for most deployments. <strong>Weekly</strong> &mdash; minimal overhead, suitable for low-traffic environments.
+                                    <div class="form-group row">
+                                        <label class="col-sm-2 col-form-label font-weight-bold">Anomaly Detection</label>
+                                        <div class="col-sm-10">
+                                            <div class="custom-control custom-switch">
+                                                <input type="hidden" name="ml_anomaly_enabled" value="0">
+                                                <input type="checkbox" name="ml_anomaly_enabled" class="custom-control-input" id="ml_anomaly_enabled" value="1" <?= ($settings['ml_anomaly_enabled'] ?? '0') === '1' ? 'checked' : '' ?>>
+                                                <label class="custom-control-label" for="ml_anomaly_enabled">Enable anomaly detection on uploaded data</label>
+                                            </div>
+                                            <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
+                                                <i class="fas fa-lightbulb text-info mr-1"></i>
+                                                Automatically runs anomaly detection against new device uploads. Requires ML Features enabled. Triggers analysis on SMS, calls, locations, contacts, and app data per upload event.
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                    <div class="form-group row mb-0">
+                                        <label class="col-sm-2 col-form-label font-weight-bold">Analysis Schedule</label>
+                                        <div class="col-sm-10">
+                                            <select name="ml_schedule_interval" class="form-control">
+                                                <option value="hourly" <?= ($settings['ml_schedule_interval'] ?? 'daily') === 'hourly' ? 'selected' : '' ?>>Hourly</option>
+                                                <option value="daily" <?= ($settings['ml_schedule_interval'] ?? 'daily') === 'daily' ? 'selected' : '' ?>>Daily</option>
+                                                <option value="weekly" <?= ($settings['ml_schedule_interval'] ?? 'daily') === 'weekly' ? 'selected' : '' ?>>Weekly</option>
+                                            </select>
+                                            <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
+                                                <i class="fas fa-lightbulb text-info mr-1"></i>
+                                                How often to re-run batch analysis. <strong>Hourly</strong> &mdash; near real-time, higher server load. <strong>Daily</strong> &mdash; balanced for most deployments. <strong>Weekly</strong> &mdash; minimal overhead, suitable for low-traffic environments.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="border-top pt-3 mt-3 text-right">
+                                        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save General ML Settings</button>
+                                    </div>
+                                </form>
                             </div>
 
                             <!-- ======================== PHP-ML ======================== -->
-                            <div class="tab-pane fade" id="pane-phpml" role="tabpanel">
+                            <div class="tab-pane fade <?= ($active_tab === 'phpml') ? 'show active' : '' ?>" id="pane-phpml" role="tabpanel">
+                                <form action="<?= base_url('admin/settings/update') ?>" method="post">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="section" value="ml">
 
-                                <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
-                                    <i class="fas fa-database text-info mr-1"></i>
-                                    Algorithm parameters below are stored in the database (<code>settings</code> table, <code>class='ml'</code>) and read at runtime by the PHP-ML engine. Defaults apply when no custom value has been saved.
-                                </div>
+                                    <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
+                                        <i class="fas fa-database text-info mr-1"></i>
+                                        Algorithm parameters below are stored in the database (<code>settings</code> table, <code>class='ml'</code>) and read at runtime by the PHP-ML engine. Defaults apply when no custom value has been saved.
+                                    </div>
 
                                 <!-- K-Means -->
                                 <div class="card card-outline card-info shadow-sm mb-3">
@@ -294,12 +300,19 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                    <div class="border-top pt-3 mt-3 text-right">
+                                        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save PHP-ML Settings</button>
+                                    </div>
+                                </form>
                             </div>
 
                             <!-- ======================== PYTHON ======================== -->
-                            <div class="tab-pane fade" id="pane-python" role="tabpanel">
-                                <div class="callout callout-warning bg-light py-2 px-3 mb-3 small">
+                            <div class="tab-pane fade <?= ($active_tab === 'python') ? 'show active' : '' ?>" id="pane-python" role="tabpanel">
+                                <form action="<?= base_url('admin/settings/update') ?>" method="post">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="section" value="ml">
+
+                                    <div class="callout callout-warning bg-light py-2 px-3 mb-3 small">
                                     <i class="fas fa-exclamation-triangle text-warning mr-1"></i>
                                     <strong>Requires a running Python backend service.</strong> Deploy via Docker (FastAPI + scikit-learn). The Python backend provides the 7 detector models — Isolation Forest, One-Class SVM, PCA anomaly scanner, contact-graph outlier, activity MLP, phishing keyword heuristic, and suspicious-file scanner — that extend beyond PHP-ML. All detectors are CPU-only sklearn/networkx models; no GPU or deep-learning framework required.
                                 </div>
@@ -571,11 +584,14 @@
                                             <br><small>Projects data onto principal components and measures reconstruction error. Fast, interpretable. Params: <code>n_components</code>, <code>threshold_&sigma;</code>.</small>
                                         </div>
                                     </div>
-                                </div>
+                                    <div class="border-top pt-3 mt-3 text-right">
+                                        <button type="submit" class="btn btn-warning font-weight-bold"><i class="fas fa-save mr-1"></i> Save Python ML Settings</button>
+                                    </div>
+                                </form>
                             </div>
 
                             <!-- ======================== REQUIREMENTS ======================== -->
-                            <div class="tab-pane fade" id="pane-requirements" role="tabpanel">
+                            <div class="tab-pane fade <?= ($active_tab === 'requirements') ? 'show active' : '' ?>" id="pane-requirements" role="tabpanel">
                                 <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
                                     <i class="fas fa-info-circle text-info mr-1"></i>
                                     System requirements vary significantly based on dataset size. Below are recommended specifications for the PHP server and Python Docker backend at different data volumes. These assume processing SMS + Calls + Contacts + Locations + Apps + FilesController + Device Activity simultaneously.
@@ -783,6 +799,11 @@ networks:
                                                     The backend listens on port <code>9070</code> internally (mapped to <code>9071</code> externally) and exposes <code>/api/health</code>, <code>/api/models</code>, and <code>/api/analyze</code>. All detectors are CPU-only sklearn/networkx models — no GPU, TensorFlow, or PyTorch required. Point the webapp at <code>http://ml-eaves-droid:9070</code> (internal) or <code>http://&lt;host&gt;:9071</code>.
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- ======================== DETECTION ENGINES TAB ======================== -->
                             <div class="tab-pane fade <?= ($active_tab === 'engines') ? 'show active' : '' ?>" id="pane-engines" role="tabpanel">
                                 <form method="post" action="<?= base_url('admin/anomalies') ?>" id="anomalyEngineForm">
@@ -1012,11 +1033,7 @@ networks:
 
                         </div>
                     </div>
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save ML Settings</button>
-                    </div>
                 </div>
-            </form>
         </div>
     </section>
 </div>

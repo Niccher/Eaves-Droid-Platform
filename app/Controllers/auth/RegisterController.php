@@ -58,7 +58,9 @@ class RegisterController extends Controller
         $postData = $this->request->getPost();
 
         // Prepare user data for Shield
-        $user = new User($this->request->getPost($allowedPostFields));
+        $userRegistrationData = $this->request->getPost($allowedPostFields);
+        $userRegistrationData['active'] = 1;
+        $user = new User($userRegistrationData);
 
         try {
             // Start database transaction

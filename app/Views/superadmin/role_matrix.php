@@ -84,8 +84,10 @@
                             <?php
                                 $groups = $user_groups[$u['id']] ?? ['user'];
                                 $currentRole = $groups[0] ?? 'user';
-                                $isActive = $u['active'] ?? 1;
-                                $isSelf = $u['id'] === $user_info['id'];
+                                $isSuspended = ($u['status'] ?? '') === 'suspended' || ($u['status'] ?? '') === 'banned';
+                                $isDeleted = !empty($u['deleted_at']);
+                                $isActive = !$isSuspended && !$isDeleted;
+                                $isSelf = (int)$u['id'] === (int)$user_info['id'];
                             ?>
                             <tr>
                                 <td><?= $u['id'] ?></td>
@@ -97,29 +99,39 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <?php if ($u['deleted_at']): ?>
+                                    <?php if ($isDeleted): ?>
                                     <span class="badge badge-danger">Deleted</span>
-                                    <?php elseif (!$isActive): ?>
-                                    <span class="badge badge-secondary">Suspended</span>
+                                    <?php elseif ($isSuspended): ?>
+                                    <span class="badge badge-warning">Suspended</span>
                                     <?php else: ?>
                                     <span class="badge badge-success">Active</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <form method="post" action="<?= base_url('superadmin/users/role/' . $u['id']) ?>" class="form-inline action-form" data-confirm-title="Change Role" data-confirm-text="Change role of <?= htmlspecialchars($u['username']) ?>? This is logged as a critical action.">
-                                        <?= csrf_field() ?>
-                                        <select name="group" class="form-control form-control-sm mr-2" <?= $isSelf ? 'disabled' : '' ?>>
-                                            <?php $roles = ['superadmin', 'admin', 'developer', 'beta', 'user']; ?>
-                                            <?php foreach ($roles as $role): ?>
-                                            <option value="<?= $role ?>" <?= $currentRole === $role ? 'selected' : '' ?>><?= ucfirst($role) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <?php if ($isSelf): ?>
-                                        <button type="button" class="btn btn-sm btn-secondary" disabled title="You cannot change your own role">Locked</button>
-                                        <?php else: ?>
-                                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-exchange-alt"></i></button>
+                                    <div class="d-flex align-items-center">
+                                        <form method="post" action="<?= base_url('superadmin/users/role/' . $u['id']) ?>" class="form-inline action-form mr-2" data-confirm-title="Change Role" data-confirm-text="Change role of <?= htmlspecialchars($u['username']) ?>? This is logged as a critical action.">
+                                            <?= csrf_field() ?>
+                                            <select name="group" class="form-control form-control-sm mr-1" <?= $isSelf ? 'disabled' : '' ?>>
+                                                <?php $roles = ['superadmin', 'admin', 'developer', 'beta', 'user']; ?>
+                                                <?php foreach ($roles as $role): ?>
+                                                <option value="<?= $role ?>" <?= $currentRole === $role ? 'selected' : '' ?>><?= ucfirst($role) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <?php if ($isSelf): ?>
+                                            <button type="button" class="btn btn-sm btn-secondary" disabled title="You cannot change your own role">Locked</button>
+                                            <?php else: ?>
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Save Role"><i class="fas fa-exchange-alt"></i></button>
+                                            <?php endif; ?>
+                                        </form>
+                                        <?php if (!$isSelf && !$isDeleted): ?>
+                                        <form method="post" action="<?= base_url('superadmin/impersonate/act-as/' . $u['id']) ?>" class="d-inline action-form" data-confirm-title="Impersonate User" data-confirm-text="Are you sure you want to impersonate <?= htmlspecialchars($u['username']) ?>?">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="btn btn-sm btn-dark" title="Impersonate <?= htmlspecialchars($u['username']) ?>">
+                                                <i class="fas fa-user-secret mr-1"></i> Impersonate
+                                            </button>
+                                        </form>
                                         <?php endif; ?>
-                                    </form>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

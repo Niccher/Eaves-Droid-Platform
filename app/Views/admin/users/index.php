@@ -125,14 +125,17 @@
                             <?php
                                 $groups = $user_groups[$u['id']] ?? ['user'];
                                 $role = implode(', ', $groups);
-                                $isActive = (int)($u['active'] ?? 0) === 1;
+                                $isSuspended = ($u['status'] ?? '') === 'suspended' || ($u['status'] ?? '') === 'banned';
+                                $isDeleted = !empty($u['deleted_at']);
+                                $isActive = !$isSuspended && !$isDeleted;
                                 $canManageRoles = auth()->user()->can('users.manage-roles');
                                 $targetPrivileged = array_intersect($groups, ['superadmin', 'admin', 'developer']) !== [];
+                                $isSelf = (int)$u['id'] === (int)$user_info['id'];
                             ?>
                             <tr>
                                 <td><?= $u['id'] ?></td>
                                 <td>
-                                    <strong class="text-uppercase font-weight-bold d-block text-dark"><?= htmlspecialchars($u['username']) ?></strong>
+                                    <strong class="text-uppercase font-weight-bold d-block text-dark"><?= htmlspecialchars($u['username']) ?><?= $isSelf ? ' <span class="badge badge-dark">You</span>' : '' ?></strong>
                                     <small class="text-muted font-italic"><?= htmlspecialchars($u['email'] ?? '-') ?></small>
                                 </td>
                                 <td>
@@ -143,9 +146,9 @@
                                     <?php endforeach; ?>
                                 </td>
                                 <td>
-                                    <?php if (!empty($u['deleted_at'])): ?>
+                                    <?php if ($isDeleted): ?>
                                     <span class="badge badge-danger">Deleted</span>
-                                    <?php elseif (!$isActive): ?>
+                                    <?php elseif ($isSuspended): ?>
                                     <span class="badge badge-warning">Suspended</span>
                                     <?php else: ?>
                                     <span class="badge badge-success">Active</span>
@@ -157,18 +160,24 @@
                                     <div class="btn-group btn-group-sm">
                                         <a href="<?= base_url('admin/users/edit/' . $u['id']) ?>" class="btn btn-info" title="Edit"><i class="fas fa-edit"></i></a>
                                         <a href="<?= base_url('admin/users/data/' . $u['id']) ?>" class="btn btn-primary" title="View Data"><i class="fas fa-database"></i></a>
-                                        <?php if ($isActive && ($canManageRoles || !$targetPrivileged)): ?>
+                                        <?php if ($isSuperAdmin && !$isSelf && !$isDeleted): ?>
+                                        <form method="post" action="<?= base_url('superadmin/impersonate/act-as/' . $u['id']) ?>" class="d-inline action-form" data-confirm-title="Impersonate User" data-confirm-text="Are you sure you want to impersonate <?= htmlspecialchars($u['username']) ?>?">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="btn btn-dark btn-sm" title="Impersonate User"><i class="fas fa-user-secret"></i></button>
+                                        </form>
+                                        <?php endif; ?>
+                                        <?php if ($isActive && !$isSelf && ($canManageRoles || !$targetPrivileged)): ?>
                                         <form method="post" action="<?= base_url('admin/users/suspend/' . $u['id']) ?>" class="d-inline action-form" data-confirm-title="Suspend User" data-confirm-text="Are you sure you want to suspend this user? They will not be able to log in.">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="btn btn-warning btn-sm" title="Suspend"><i class="fas fa-pause"></i></button>
                                         </form>
-                                        <?php elseif (!$isActive && ($canManageRoles || !$targetPrivileged)): ?>
+                                        <?php elseif ($isSuspended && !$isSelf && ($canManageRoles || !$targetPrivileged)): ?>
                                         <form method="post" action="<?= base_url('admin/users/activate/' . $u['id']) ?>" class="d-inline action-form" data-confirm-title="Activate User" data-confirm-text="Are you sure you want to activate this user?">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="btn btn-success btn-sm" title="Activate"><i class="fas fa-play"></i></button>
                                         </form>
                                         <?php endif; ?>
-                                        <?php if ($u['id'] !== $user_info['id'] && ($canManageRoles || !$targetPrivileged)): ?>
+                                        <?php if (!$isSelf && ($canManageRoles || !$targetPrivileged)): ?>
                                         <form method="post" action="<?= base_url('admin/users/delete/' . $u['id']) ?>" class="d-inline action-form" data-confirm-title="Delete User" data-confirm-text="Are you sure you want to permanently delete this user? This action cannot be undone.">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="btn btn-danger btn-sm" title="Delete"><i class="fas fa-trash"></i></button>
