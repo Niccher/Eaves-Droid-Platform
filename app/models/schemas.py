@@ -67,9 +67,13 @@ class HealthResponse(BaseModel):
     cuda_available: bool
     cuda_device: str = ""
     memory_mb: dict[str, float]
+    cpu_percent: float = 0.0
     cache_entries: int = 0
     modules: list[ModuleCheck] = []
     database: str = ""
+    database_latency_ms: float = 0.0
+    database_tables_verified: int = 0
+    database_total_tables: int = 0
     uptime_seconds: float = 0
 
 

@@ -29,16 +29,36 @@ def _check_module(module_path: str, name: str) -> ModuleCheck:
         return ModuleCheck(name=name, status="error", message="import_failed")
 
 
-def _check_database() -> str:
-    """Quick connectivity check against the shared MySQL (no db strings or query errors leaked)."""
+def _check_database() -> tuple[str, float, int, int]:
+    """
+    Comprehensive connectivity & table verification check against the shared MySQL database.
+    Returns (status, latency_ms, verified_tables_count, total_expected_tables).
+    """
+    core_tables = [
+        "tbl_extracted_sms",
+        "tbl_extracted_contacts",
+        "tbl_extracted_call_logs",
+        "tbl_extracted_locations",
+        "tbl_extracted_installed_apps",
+        "tbl_extracted_device_files",
+        "tbl_system_app_usage",
+        "tbl_device_profiles",
+        "ml_jobs",
+        "ml_results",
+    ]
     try:
         from app.utils.db import get_engine
         from sqlalchemy import text
+        t0 = time.perf_counter()
         with get_engine().connect() as conn:
             conn.execute(text("SELECT 1"))
-        return "connected"
-    except Exception:
-        return "error"
+            db_latency = round((time.perf_counter() - t0) * 1000, 2)
+            res = conn.execute(text("SHOW TABLES"))
+            existing = {str(row[0]) for row in res.fetchall()}
+            verified = sum(1 for tbl in core_tables if tbl in existing)
+            return "connected", db_latency, verified, len(core_tables)
+    except Exception as e:
+        return "error", 0.0, 0, len(core_tables)
 
 
 _DETECTOR_MODULES = [
@@ -63,15 +83,34 @@ async def health():
     except ImportError:
         pass
 
+    # Real process memory & CPU utilization via psutil
+    used_mb = 0.0
+    total_mb = 0.0
+    cpu_pct = 0.0
+    try:
+        import psutil
+        proc = psutil.Process()
+        used_mb = round(proc.memory_info().rss / (1024 * 1024), 1)
+        total_mb = round(psutil.virtual_memory().total / (1024 * 1024), 1)
+        cpu_pct = round(psutil.cpu_percent(interval=None), 1)
+    except Exception:
+        pass
+
+    db_status, db_latency, db_verified, db_total = _check_database()
+
     return HealthResponse(
         status="ok",
-        version="1.0.0",
+        version="2.5.0",
         models_loaded=sorted(DETECTOR_MAP.keys()),
         cuda_available=cuda_avail,
         cuda_device="hidden" if cuda_avail else "",
-        memory_mb={"used": 0.0, "total": 0.0}, # Redacted to prevent footprint mapping
+        memory_mb={"used": used_mb, "total": total_mb},
+        cpu_percent=cpu_pct,
         cache_entries=cs["total_entries"],
         modules=[_check_module(p, n) for p, n in _DETECTOR_MODULES],
-        database=_check_database(),
-        uptime_seconds=time.time() - _start_time,
+        database=db_status,
+        database_latency_ms=db_latency,
+        database_tables_verified=db_verified,
+        database_total_tables=db_total,
+        uptime_seconds=round(time.time() - _start_time, 1),
     )
