@@ -135,6 +135,11 @@ class SettingsController extends BaseAdminController
         return $this->delegate(MailSettingsController::class, 'notification_settings');
     }
 
+    public function fcm_settings()
+    {
+        return $this->delegate(MailSettingsController::class, 'fcm_settings');
+    }
+
     public function email_triggers()
     {
         return $this->delegate(MailSettingsController::class, 'email_triggers');

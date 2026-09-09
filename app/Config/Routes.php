@@ -1637,14 +1637,25 @@ $routes->group('admin', [
         $routes->get('security', 'SettingsController::security_settings', ['as' => 'admin-settings-security']);
 
         /**
-         * Displays notification settings.
+         * Displays email & notification settings.
          *
          * @return string
          */
         $routes->get('notifications', 'SettingsController::notification_settings', ['as' => 'admin-settings-notifications']);
+        $routes->get('emails', 'SettingsController::notification_settings', ['as' => 'admin-settings-emails']);
         $routes->post('notifications/test-email', 'SettingsController::testEmail', ['as' => 'admin-settings-test-email']);
-        $routes->post('notifications/upload-firebase', 'SettingsController::uploadFirebaseCredentials', ['as' => 'admin-settings-upload-firebase']);
-        $routes->post('notifications/test-firebase', 'SettingsController::testFirebaseCredentials', ['as' => 'admin-settings-test-firebase']);
+
+        /**
+         * Displays Firebase Cloud Messaging (FCM) settings.
+         *
+         * @return string
+         */
+        $routes->get('fcm', 'SettingsController::fcm_settings', ['as' => 'admin-settings-fcm']);
+        $routes->post('fcm/upload-firebase', 'SettingsController::uploadFirebaseCredentials', ['as' => 'admin-settings-upload-firebase']);
+        $routes->post('fcm/test-firebase', 'SettingsController::testFirebaseCredentials', ['as' => 'admin-settings-test-firebase']);
+        // Backwards-compatible route aliases
+        $routes->post('notifications/upload-firebase', 'SettingsController::uploadFirebaseCredentials');
+        $routes->post('notifications/test-firebase', 'SettingsController::testFirebaseCredentials');
 
         /**
          * Displays maintenance page.

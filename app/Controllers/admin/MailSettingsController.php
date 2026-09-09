@@ -33,6 +33,26 @@ class MailSettingsController extends BaseAdminController
             $saved[$r['key']] = $r['value'];
         }
 
+        return $this->renderView('admin/settings/notifications', [
+            'pag' => 'admin-settings-notifications',
+            'settings' => $saved,
+        ]);
+    }
+
+    public function fcm_settings()
+    {
+        $db = $this->getDb();
+
+        $this->logAdminAction('settings_view', 'low', true, [
+            'section' => 'fcm',
+        ]);
+
+        $saved = [];
+        $rows = $db->table('settings')->where('class', 'notification')->get()->getResultArray();
+        foreach ($rows as $r) {
+            $saved[$r['key']] = $r['value'];
+        }
+
         // Check Firebase Credentials status
         $fcm = new \App\Controllers\api\v1\FCMCommandController();
         $fbCreds = $fcm->getCredentialsJson();
@@ -43,8 +63,8 @@ class MailSettingsController extends BaseAdminController
             'updated_at' => $saved['firebase_updated_at'] ?? (file_exists(WRITEPATH . 'firebase_credentials.json') ? date('Y-m-d H:i:s', filemtime(WRITEPATH . 'firebase_credentials.json')) : null),
         ];
 
-        return $this->renderView('admin/settings/notifications', [
-            'pag' => 'admin-settings-notifications',
+        return $this->renderView('admin/settings/fcm', [
+            'pag' => 'admin-settings-fcm',
             'settings' => $saved,
             'firebaseStatus' => $firebaseStatus,
         ]);
