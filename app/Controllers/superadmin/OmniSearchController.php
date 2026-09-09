@@ -166,4 +166,116 @@ class OmniSearchController extends BaseSuperadminController
             default => $common,
         };
     }
+
+    /**
+     * AJAX endpoint for global Omni Search modal (Ctrl+K).
+     */
+    public function ajaxSearch()
+    {
+        $db = $this->getDb();
+        $query = trim((string) $this->request->getGet('q'));
+
+        if ($query === '' || strlen($query) < 2) {
+            return $this->response->setJSON([
+                'success' => true,
+                'query'   => $query,
+                'results' => [],
+                'total'   => 0,
+            ]);
+        }
+
+        $catMeta = [
+            'sms'       => ['label' => 'SMS',       'icon' => 'fa-sms',          'color' => 'info',    'table' => 'tbl_extracted_sms'],
+            'calls'     => ['label' => 'Calls',     'icon' => 'fa-phone',        'color' => 'success', 'table' => 'tbl_extracted_call_logs'],
+            'contacts'  => ['label' => 'Contacts',  'icon' => 'fa-address-book', 'color' => 'warning', 'table' => 'tbl_extracted_contacts'],
+            'locations' => ['label' => 'Locations', 'icon' => 'fa-map-marker-alt','color' => 'danger',  'table' => 'tbl_extracted_locations'],
+            'files'     => ['label' => 'Files',     'icon' => 'fa-file',         'color' => 'secondary','table' => 'tbl_extracted_device_files'],
+            'apps'      => ['label' => 'Apps',      'icon' => 'fa-th',           'color' => 'dark',     'table' => 'tbl_extracted_installed_apps'],
+        ];
+
+        $results = [];
+        $total = 0;
+
+        foreach ($catMeta as $key => $meta) {
+            $table = $meta['table'];
+            $searchFields = $this->getSearchFields($table, $key);
+            if (empty($searchFields)) continue;
+
+            $builder = $db->table($table)
+                ->select("{$table}.*, users.username, users.id as user_id")
+                ->join('users', "users.id = {$table}.owner_id", 'left')
+                ->groupStart();
+
+            $first = true;
+            foreach ($searchFields as $field) {
+                if ($first) {
+                    $builder->like($field, $query, 'both', true);
+                    $first = false;
+                } else {
+                    $builder->orLike($field, $query, 'both', true);
+                }
+            }
+            $rows = $builder->groupEnd()
+                ->orderBy('created_at', 'DESC')
+                ->limit(6)
+                ->get()
+                ->getResultArray();
+
+            if (!empty($rows)) {
+                $formatted = [];
+                foreach ($rows as $r) {
+                    $item = $this->formatResult($r, $key);
+                    $item['category_label'] = $meta['label'];
+                    $item['category_color'] = $meta['color'];
+                    $formatted[] = $item;
+                    $total++;
+                }
+                $results[$key] = [
+                    'label' => $meta['label'],
+                    'icon'  => $meta['icon'],
+                    'color' => $meta['color'],
+                    'items' => $formatted,
+                ];
+            }
+        }
+
+        // Also search Users table
+        $userRows = $db->table('users')
+            ->select('id as user_id, username, active, status, created_at')
+            ->like('username', $query, 'both', true)
+            ->limit(5)
+            ->get()
+            ->getResultArray();
+
+        if (!empty($userRows)) {
+            $userItems = [];
+            foreach ($userRows as $u) {
+                $userItems[] = [
+                    'user_id'   => (int) $u['user_id'],
+                    'username'  => $u['username'],
+                    'type'      => 'User',
+                    'icon'      => 'fa-user',
+                    'preview'   => $u['username'],
+                    'detail'    => 'Account #' . $u['user_id'] . ' · ' . ($u['active'] ? 'Active' : 'Inactive'),
+                    'timestamp' => $u['created_at'] ?? '',
+                    'category_label' => 'Users',
+                    'category_color' => 'primary',
+                ];
+                $total++;
+            }
+            $results['users'] = [
+                'label' => 'Users',
+                'icon'  => 'fa-user',
+                'color' => 'primary',
+                'items' => $userItems,
+            ];
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'query'   => $query,
+            'results' => $results,
+            'total'   => $total,
+        ]);
+    }
 }

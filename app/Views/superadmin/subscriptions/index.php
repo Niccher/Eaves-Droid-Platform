@@ -56,13 +56,32 @@
                 </div>
             </div>
 
+            <div class="card card-outline card-primary shadow-sm mb-3">
+                <div class="card-header p-2 bg-light">
+                    <ul class="nav nav-pills">
+                        <li class="nav-item">
+                            <a href="<?= base_url('superadmin/subscriptions') ?>" class="nav-link active">
+                                <i class="fas fa-users mr-1 text-primary"></i> Subscribers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('superadmin/payments') ?>" class="nav-link">
+                                <i class="fas fa-credit-card mr-1 text-success"></i> Payment History
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('superadmin/plans') ?>" class="nav-link">
+                                <i class="fas fa-tags mr-1 text-warning"></i> Plans &amp; Pricing
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
             <div class="card card-primary card-outline">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-list mr-2"></i>All Users & Subscriptions</h3>
+                    <h3 class="card-title"><i class="fas fa-list mr-2"></i>All Users &amp; Subscriptions</h3>
                     <div class="card-tools">
-                        <a href="<?= base_url('superadmin/payments') ?>" class="btn btn-outline-primary btn-sm mr-2">
-                            <i class="fas fa-credit-card mr-1"></i> Payment History
-                        </a>
                         <div class="btn-group btn-group-sm">
                             <a href="<?= base_url('superadmin/subscriptions') ?>" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-outline-secondary' ?>">All</a>
                             <a href="<?= base_url('superadmin/subscriptions?status=active') ?>" class="btn <?= $status === 'active' ? 'btn-primary' : 'btn-outline-secondary' ?>">Active</a>

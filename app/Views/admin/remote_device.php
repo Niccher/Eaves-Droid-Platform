@@ -19,6 +19,31 @@
     <section class="content">
         <div class="container-fluid">
 
+            <!-- Navigation Hub Submenu -->
+            <div class="card card-outline card-info mb-3">
+                <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between">
+                    <ul class="nav nav-pills">
+                        <li class="nav-item">
+                            <a class="nav-link active font-weight-bold" href="<?= base_url('admin/remote-device') ?>">
+                                <i class="fas fa-satellite-dish mr-1"></i> Remote Commands
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?= base_url('admin/defaults') ?>">
+                                <i class="fas fa-sliders-h mr-1"></i> App Defaults
+                            </a>
+                        </li>
+                        <?php if (function_exists('auth') && auth()->loggedIn() && auth()->user()->inGroup('superadmin')): ?>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="<?= base_url('superadmin/fleet') ?>">
+                                <i class="fas fa-shield-alt mr-1"></i> SuperAdmin Fleet Grid
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+            </div>
+
             <!-- Page Callout -->
             <div class="callout callout-info">
                 <h5><i class="fas fa-satellite-dish mr-2"></i>Remote Device Control Console</h5>

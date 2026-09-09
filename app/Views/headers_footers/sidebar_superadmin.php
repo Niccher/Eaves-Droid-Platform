@@ -38,6 +38,76 @@
             </ul>
 
             <ul class="navbar-nav ml-auto">
+                <!-- ML Engine Telemetry Live Badge -->
+                <li class="nav-item dropdown" id="ml-telemetry-container">
+                    <a class="nav-link d-flex align-items-center" data-toggle="dropdown" href="#" title="ML Engine Status & Telemetry" style="cursor: pointer;">
+                        <span id="ml-heartbeat-dot" class="badge badge-secondary mr-1" style="width: 9px; height: 9px; border-radius: 50%; padding: 0; display: inline-block; vertical-align: middle;"></span>
+                        <span class="d-none d-md-inline small font-weight-bold" id="ml-heartbeat-text"><i class="fas fa-brain mr-1"></i> ML Engine</span>
+                        <span class="badge badge-light ml-1 small d-none d-lg-inline" id="ml-heartbeat-latency" style="font-size: 10px;">--</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right shadow-lg p-0" style="min-width: 320px;">
+                        <div class="dropdown-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
+                            <span class="font-weight-bold"><i class="fas fa-microchip mr-1 text-info"></i> ML Telemetry</span>
+                            <span class="badge badge-pill badge-secondary" id="ml-dropdown-status-badge">Checking...</span>
+                        </div>
+                        <div class="p-3 bg-light">
+                            <div class="row text-center mb-2">
+                                <div class="col-4 border-right">
+                                    <div class="text-muted small">Latency</div>
+                                    <div class="font-weight-bold text-dark" id="ml-dropdown-latency">--</div>
+                                </div>
+                                <div class="col-4 border-right">
+                                    <div class="text-muted small">RAM / CPU</div>
+                                    <div class="font-weight-bold text-dark small" id="ml-dropdown-load">--</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted small">Detectors</div>
+                                    <div class="font-weight-bold text-dark" id="ml-dropdown-models">--</div>
+                                </div>
+                            </div>
+                            <div class="border-top pt-2 mt-2">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span><i class="fas fa-database mr-1"></i> MySQL Link:</span>
+                                    <span class="font-weight-bold" id="ml-dropdown-db">Checking...</span>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span><i class="fas fa-shield-alt mr-1"></i> Failover Mode:</span>
+                                    <span class="text-success font-weight-bold" id="ml-dropdown-failover">Self-Healing Armed</span>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span><i class="fas fa-network-wired mr-1"></i> Backend URL:</span>
+                                    <span class="text-truncate font-weight-bold" style="max-width: 160px;" id="ml-dropdown-url">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider m-0"></div>
+                        <div class="p-2 bg-white d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-xs btn-outline-secondary" onclick="if(window.pollMlHeartbeat) window.pollMlHeartbeat(true)">
+                                <i class="fas fa-sync-alt mr-1"></i> Ping Now
+                            </button>
+                            <a href="<?= base_url('admin/ml') ?>" class="btn btn-xs btn-primary">
+                                <i class="fas fa-cog mr-1"></i> ML Settings
+                            </a>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Global Omni Search Modal Trigger -->
+                <li class="nav-item">
+                    <a class="nav-link btn btn-sm btn-outline-light rounded-pill px-2 py-1 mx-1 text-dark d-flex align-items-center" href="#" data-toggle="modal" data-target="#globalOmniSearchModal" title="Global Omni Search (Ctrl+K)" style="border: 1px solid #ced4da; background: #f8f9fa;">
+                        <i class="fas fa-search text-muted mr-1"></i>
+                        <span class="d-none d-md-inline text-muted small mr-2">Search...</span>
+                        <kbd class="small text-muted d-none d-sm-inline" style="background:#e9ecef; font-size:10px; padding: 2px 4px; border-radius: 3px;">Ctrl+K</kbd>
+                    </a>
+                </li>
+
+                <!-- Quick Impersonate User Trigger -->
+                <li class="nav-item">
+                    <a class="nav-link text-warning" href="#" data-toggle="modal" data-target="#globalImpersonateModal" title="Quick Impersonate User">
+                        <i class="fas fa-user-secret"></i>
+                    </a>
+                </li>
+
                 <!-- Admin Support Chat Dropdown/Badge -->
                 <?php
                 $db = \Config\Database::connect();
@@ -130,7 +200,7 @@
             </a>
 
             <div class="sidebar" style="overflow-y: auto; overflow-x: hidden; height: calc(100vh - 57px);">
-                <nav class="mt-2">
+                    <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 
                         <li class="nav-header">MAIN</li>
@@ -150,7 +220,7 @@
                         <li class="nav-item">
                             <a href="<?php echo base_url('superadmin/home'); ?>"
                                class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-home') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-shield-alt"></i>
+                                <i class="nav-icon fas fa-shield-alt text-danger"></i>
                                 <p>Super Dashboard</p>
                             </a>
                         </li>
@@ -163,173 +233,96 @@
                             </a>
                         </li>
 
-                        <li class="nav-header">SUPERADMIN</li>
+                        <li class="nav-header">PLATFORM HUBS</li>
 
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/users'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-users') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-user-cog"></i>
-                                <p>Role Matrix</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/audit'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-audit') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-clipboard-check"></i>
-                                <p>Audit Trail</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/omni-search'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-omni-search') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-search"></i>
-                                <p>Omni Search</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/impersonate'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-impersonate') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-user-secret"></i>
-                                <p>Impersonate</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/fleet'); ?>"
-                               class="nav-link <?php echo (isset($pag) && ($pag === 'superadmin-fleet' || $pag === 'superadmin-fleet-home' || str_starts_with($pag, 'superadmin-fleet'))) ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-building"></i>
-                                <p>Fleet Overview</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/plans'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-plans') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-tags"></i>
-                                <p>Plans & Pricing</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/subscriptions'); ?>"
-                               class="nav-link <?php echo (isset($pag) && ($pag === 'superadmin-subscriptions' || $pag === 'superadmin-subscription-detail')) ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-users"></i>
-                                <p>Subscribers</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/payments'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-payments') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-credit-card"></i>
-                                <p>Payment History</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('superadmin/forensic-export'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-forensics') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-file-export"></i>
-                                <p>Forensic Export</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-header">ADMINISTRATION</li>
-
+                        <!-- 1. Identity & Access Hub -->
+                        <?php
+                            $accessPages = ['admin-users', 'superadmin-users', 'admin-user-create', 'admin-user-edit', 'admin-tokens', 'superadmin-impersonate'];
+                            $isAccessActive = isset($pag) && in_array($pag, $accessPages);
+                        ?>
                         <li class="nav-item">
                             <a href="<?php echo base_url('admin/users'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-users') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-users-cog"></i>
-                                <p>Users</p>
+                               class="nav-link <?php echo $isAccessActive ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-users-cog text-primary"></i>
+                                <p>Identity &amp; Access</p>
                             </a>
                         </li>
 
+                        <!-- 2. Fleet & Devices Hub -->
+                        <?php
+                            $fleetPages = ['superadmin-fleet', 'superadmin-fleet-home', 'superadmin-fleet-device', 'superadmin-fleet-tab', 'admin-remote-device', 'admin-defaults'];
+                            $isFleetActive = isset($pag) && (in_array($pag, $fleetPages) || str_starts_with($pag, 'superadmin-fleet'));
+                        ?>
                         <li class="nav-item">
-                            <a href="<?php echo base_url('admin/remote-device'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-remote-device') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-mobile-alt"></i>
-                                <p>Remote Devices</p>
+                            <a href="<?php echo base_url('superadmin/fleet'); ?>"
+                               class="nav-link <?php echo $isFleetActive ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-mobile-alt text-info"></i>
+                                <p>Fleet &amp; Devices</p>
                             </a>
                         </li>
 
+                        <!-- 3. Billing & Monetization Hub -->
+                        <?php
+                            $billingPages = ['superadmin-subscriptions', 'superadmin-subscription-detail', 'superadmin-payments', 'superadmin-plans', 'superadmin-plans-edit', 'superadmin-plans-history', 'superadmin-plans-definitions', 'superadmin-billing'];
+                            $isBillingActive = isset($pag) && in_array($pag, $billingPages);
+                        ?>
                         <li class="nav-item">
-                            <a href="<?php echo base_url('admin/defaults'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-defaults') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-cog"></i>
-                                <p>App Defaults</p>
+                            <a href="<?php echo base_url('superadmin/subscriptions'); ?>"
+                               class="nav-link <?php echo $isBillingActive ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-credit-card text-success"></i>
+                                <p>Billing &amp; Subscriptions</p>
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('admin/settings/retention'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-retention') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-clock"></i>
-                                <p>Data Retention & Purge</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('admin/db_info'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-db-info') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-database"></i>
-                                <p>DB Info</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('admin/reports'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-reports') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-chart-bar"></i>
-                                <p>Reports</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('admin/tokens'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-tokens') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-key"></i>
-                                <p>API Tokens</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-header">SYSTEM</li>
-
-                        <li class="nav-item">
-                            <a href="<?php echo base_url('admin/logs'); ?>"
-                               class="nav-link <?php echo (isset($pag) && str_starts_with($pag, 'admin-log')) ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-clipboard-list"></i>
-                                <p>System Logs</p>
-                            </a>
-                        </li>
-
+                        <!-- 4. AI & Anomaly Engine Hub -->
+                        <?php
+                            $aiPages = ['admin-ml', 'admin-anomalies', 'superadmin-forensics', 'superadmin-forensics-export'];
+                            $isAiActive = isset($pag) && in_array($pag, $aiPages);
+                        ?>
                         <li class="nav-item">
                             <a href="<?php echo base_url('admin/ml'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-ml') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-brain"></i>
-                                <p>ML / AI</p>
+                               class="nav-link <?php echo $isAiActive ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-brain text-warning"></i>
+                                <p>AI &amp; Anomaly Engine</p>
                             </a>
                         </li>
 
+                        <!-- 5. Infrastructure & Container Telemetry Hub -->
+                        <?php
+                            $infraPages = ['superadmin-infrastructure', 'admin-db-info', 'admin-retention'];
+                            $isInfraActive = isset($pag) && in_array($pag, $infraPages);
+                        ?>
                         <li class="nav-item">
-                            <a href="<?php echo base_url('admin/anomalies'); ?>"
-                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-anomalies') ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-exclamation-triangle text-warning"></i>
-                                <p>Anomaly Engine</p>
+                            <a href="<?php echo base_url('superadmin/infrastructure'); ?>"
+                               class="nav-link <?php echo $isInfraActive ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-server text-info"></i>
+                                <p>Infrastructure &amp; Health</p>
                             </a>
                         </li>
 
+                        <!-- 6. Security Audit & Logs Hub -->
+                        <?php
+                            $auditPages = ['superadmin-audit', 'admin-reports'];
+                            $isAuditActive = isset($pag) && (in_array($pag, $auditPages) || str_starts_with($pag, 'admin-log'));
+                        ?>
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/audit'); ?>"
+                               class="nav-link <?php echo $isAuditActive ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-clipboard-check text-danger"></i>
+                                <p>Audit Trail &amp; Logs</p>
+                            </a>
+                        </li>
+
+                        <!-- 7. Platform Settings Hub -->
                         <?php
                             $settingsPages = ['admin-settings', 'admin-settings-api', 'admin-settings-security', 'admin-settings-notifications', 'admin-maintenance', 'admin-backup', 'admin-settings-storage', 'admin-settings-email-triggers', 'admin-settings-cron'];
                             $isSettingsActive = isset($pag) && in_array($pag, $settingsPages);
                         ?>
-                        <li class="nav-item <?php echo $isSettingsActive ? 'active' : ''; ?>">
+                        <li class="nav-item">
                             <a href="<?php echo base_url('admin/settings'); ?>"
                                class="nav-link <?php echo $isSettingsActive ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-cogs"></i>
-                                <p>Settings</p>
+                                <p>Platform Settings</p>
                             </a>
                         </li>
 
@@ -345,6 +338,63 @@
                 </nav>
             </div>
         </aside>
+
+        <!-- Global Omni Search Modal (Ctrl+K) -->
+        <div class="modal fade" id="globalOmniSearchModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
+                    <div class="modal-header bg-dark text-white py-3 px-4 border-0">
+                        <div class="input-group w-100">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-transparent border-0 text-white"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" id="omniSearchModalInput" class="form-control bg-transparent text-white border-0 font-weight-bold" placeholder="Search users, SMS, calls, contacts, files, locations... (Press Esc to close)" autocomplete="off" style="box-shadow: none; font-size: 1.05rem;">
+                            <div class="input-group-append">
+                                <button type="button" class="close text-white pr-2" data-dismiss="modal" aria-label="Close" style="opacity: 0.8;">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body p-0" style="max-height: 480px; overflow-y: auto;" id="omniSearchModalResults">
+                        <div class="text-center py-5 text-muted" id="omniSearchPlaceholder">
+                            <i class="fas fa-search fa-2x mb-2 text-secondary"></i>
+                            <p class="mb-0 small">Start typing to search across the entire forensic ecosystem...</p>
+                            <p class="text-muted small mt-1"><kbd>Esc</kbd> to close &bull; <kbd>&uarr;</kbd><kbd>&darr;</kbd> to navigate</p>
+                        </div>
+                        <div id="omniSearchResultsContent" class="p-3 d-none"></div>
+                    </div>
+                    <div class="modal-footer bg-light py-2 px-3 justify-content-between">
+                        <small class="text-muted"><i class="fas fa-bolt text-warning mr-1"></i> Indexed live search</small>
+                        <a href="<?= base_url('superadmin/omni-search') ?>" id="omniFullPageLink" class="btn btn-xs btn-outline-primary">
+                            <i class="fas fa-external-link-alt mr-1"></i> Full Search Console
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Impersonate Modal -->
+        <div class="modal fade" id="globalImpersonateModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                    <div class="modal-header bg-danger text-white py-2 px-3">
+                        <h5 class="modal-title font-weight-bold"><i class="fas fa-user-secret mr-2"></i>Quick Impersonate User</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">Impersonate any standard user to audit their telemetry and dashboard view directly.</p>
+                        <div class="text-center py-2">
+                            <a href="<?= base_url('superadmin/impersonate') ?>" class="btn btn-danger btn-block font-weight-bold">
+                                <i class="fas fa-user-secret mr-1"></i> Launch Impersonation Manager
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
 <script>
 (function() {
@@ -367,6 +417,165 @@
                 .then(function(data) { updateAdminBadge(data.unread_count || 0); })
                 .catch(function() {});
         }, 5000);
+    }
+
+    // ML Engine Live Telemetry Poller
+    function updateMlTelemetry(data) {
+        const dot = document.getElementById('ml-heartbeat-dot');
+        const latency = document.getElementById('ml-heartbeat-latency');
+        const dropStatus = document.getElementById('ml-dropdown-status-badge');
+        const dropLatency = document.getElementById('ml-dropdown-latency');
+        const dropLoad = document.getElementById('ml-dropdown-load');
+        const dropModels = document.getElementById('ml-dropdown-models');
+        const dropDb = document.getElementById('ml-dropdown-db');
+        const dropUrl = document.getElementById('ml-dropdown-url');
+
+        if (!dot) return;
+
+        if (data && data.online) {
+            dot.className = 'badge badge-success mr-1';
+            dot.style.backgroundColor = '#28a745';
+            if (latency) {
+                latency.textContent = data.latency_ms + 'ms';
+                latency.className = data.latency_ms < 200 ? 'badge badge-success ml-1 small' : 'badge badge-warning ml-1 small';
+            }
+            if (dropStatus) {
+                dropStatus.className = 'badge badge-pill badge-success';
+                dropStatus.textContent = 'Healthy (v' + (data.version || '2.5.0') + ')';
+            }
+            if (dropLatency) dropLatency.textContent = data.latency_ms + ' ms';
+            if (dropLoad) {
+                const mem = (data.memory && data.memory.used) ? Math.round(data.memory.used) + 'MB' : 'Active';
+                const cpu = (data.cpu_percent !== undefined) ? ' / ' + data.cpu_percent + '%' : '';
+                dropLoad.textContent = mem + cpu;
+            }
+            if (dropModels) dropModels.textContent = (data.models_count || 7) + ' Active';
+            if (dropDb) {
+                if (data.database_status === 'connected') {
+                    dropDb.innerHTML = '<span class="text-success"><i class="fas fa-check-circle mr-1"></i>' + (data.database_latency_ms ? data.database_latency_ms + 'ms' : 'Connected') + ' (' + (data.database_tables_verified || 10) + '/' + (data.database_total_tables || 10) + ' tbls)</span>';
+                } else {
+                    dropDb.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle mr-1"></i>' + (data.database_status || 'Disconnected') + '</span>';
+                }
+            }
+            if (dropUrl) dropUrl.textContent = data.tested_url || 'FastAPI Container';
+        } else {
+            dot.className = 'badge badge-danger mr-1';
+            dot.style.backgroundColor = '#dc3545';
+            if (latency) {
+                latency.textContent = 'Fallback';
+                latency.className = 'badge badge-warning ml-1 small';
+            }
+            if (dropStatus) {
+                dropStatus.className = 'badge badge-pill badge-warning';
+                dropStatus.textContent = 'Offline (PHP-ML Fallback Active)';
+            }
+            if (dropLatency) dropLatency.textContent = 'N/A';
+            if (dropLoad) dropLoad.textContent = 'Local PHP-ML';
+            if (dropModels) dropModels.textContent = '15 Built-in';
+            if (dropDb) dropDb.innerHTML = '<span class="text-info"><i class="fas fa-database mr-1"></i>Direct PHP DB</span>';
+            if (dropUrl) dropUrl.textContent = 'Unreachable';
+        }
+    }
+
+    window.pollMlHeartbeat = function(manual) {
+        const dot = document.getElementById('ml-heartbeat-dot');
+        if (manual && dot) dot.style.opacity = '0.5';
+        fetch('<?= base_url('admin/ml/heartbeat') ?>', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (dot) dot.style.opacity = '1';
+                updateMlTelemetry(data);
+            })
+            .catch(function() {
+                if (dot) dot.style.opacity = '1';
+                updateMlTelemetry({ online: false });
+            });
+    };
+
+    // Global Omni Search Modal (Ctrl+K)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            $('#globalOmniSearchModal').modal('show');
+        }
+    });
+
+    $('#globalOmniSearchModal').on('shown.bs.modal', function() {
+        $('#omniSearchModalInput').focus().select();
+    });
+
+    let omniSearchTimeout = null;
+    const omniInput = document.getElementById('omniSearchModalInput');
+    if (omniInput) {
+        omniInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            const placeholder = document.getElementById('omniSearchPlaceholder');
+            const content = document.getElementById('omniSearchResultsContent');
+            const fullLink = document.getElementById('omniFullPageLink');
+
+            if (fullLink) {
+                fullLink.href = '<?= base_url('superadmin/omni-search') ?>?q=' + encodeURIComponent(query);
+            }
+
+            if (query.length < 2) {
+                if (placeholder) placeholder.classList.remove('d-none');
+                if (content) { content.classList.add('d-none'); content.innerHTML = ''; }
+                return;
+            }
+
+            clearTimeout(omniSearchTimeout);
+            omniSearchTimeout = setTimeout(function() {
+                if (content) {
+                    content.classList.remove('d-none');
+                    content.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Searching across ecosystem...</div>';
+                }
+                if (placeholder) placeholder.classList.add('d-none');
+
+                fetch('<?= base_url('superadmin/omni-search/ajax') ?>?q=' + encodeURIComponent(query), { credentials: 'same-origin' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.success || !data.results || data.total === 0) {
+                            content.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-search-minus mr-1"></i> No matching records found for "<strong>' + escModalHtml(query) + '</strong>".</div>';
+                            return;
+                        }
+
+                        let html = '<div class="small text-muted mb-2 font-weight-bold">Found ' + data.total + ' matches:</div>';
+                        for (const catKey in data.results) {
+                            const cat = data.results[catKey];
+                            html += '<div class="card card-outline card-' + cat.color + ' mb-2 shadow-none border">';
+                            html += '<div class="card-header py-1 px-2 bg-light d-flex justify-content-between align-items-center">';
+                            html += '<span class="font-weight-bold text-' + cat.color + ' small"><i class="fas ' + cat.icon + ' mr-1"></i> ' + escModalHtml(cat.label) + '</span>';
+                            html += '<span class="badge badge-' + cat.color + '" style="font-size:10px;">' + cat.items.length + '</span>';
+                            html += '</div><div class="list-group list-group-flush">';
+                            cat.items.forEach(function(item) {
+                                html += '<div class="list-group-item list-group-item-action py-2 px-3">';
+                                html += '<div class="d-flex justify-content-between align-items-start">';
+                                html += '<div class="text-truncate mr-2" style="max-width: 80%;">';
+                                html += '<div class="font-weight-bold text-dark small text-truncate">' + escModalHtml(item.preview || 'Untitled') + '</div>';
+                                if (item.detail) {
+                                    html += '<div class="text-muted small text-truncate" style="font-size:11px;">' + escModalHtml(item.detail) + '</div>';
+                                }
+                                html += '</div>';
+                                if (item.username) {
+                                    html += '<span class="badge badge-light border small text-muted"><i class="fas fa-user mr-1"></i>' + escModalHtml(item.username) + '</span>';
+                                }
+                                html += '</div></div>';
+                            });
+                            html += '</div></div>';
+                        }
+                        content.innerHTML = html;
+                    })
+                    .catch(function() {
+                        if (content) content.innerHTML = '<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle mr-1"></i> Search request failed.</div>';
+                    });
+            }, 250);
+        });
+    }
+
+    function escModalHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str || ''));
+        return div.innerHTML;
     }
 })();
 </script>

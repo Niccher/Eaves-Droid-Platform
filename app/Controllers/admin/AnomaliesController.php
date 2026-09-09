@@ -12,28 +12,7 @@ class AnomaliesController extends BaseAdminController
             return $this->save();
         }
 
-        $db = $this->getDb();
-        $model = new AnomaliesModel();
-
-        $saved = [];
-        $rows = $db->table('settings')->where('class', 'anomaly')->get()->getResultArray();
-        foreach ($rows as $r) {
-            $saved[$r['key']] = $r['value'];
-        }
-
-        $defaultEngine = $saved['default_engine'] ?? 'php';
-        $allowedRaw = $saved['allowed_algorithms'] ?? '';
-
-        $jobHistory = $model->getJobHistory(50);
-
-        return $this->renderView('admin/anomalies', [
-            'pag' => 'admin-anomalies',
-            'default_engine' => $defaultEngine,
-            'allowed_algorithms' => $allowedRaw ? json_decode($allowedRaw, true) : [],
-            'categories' => $model->getAlgorithmCategories(),
-            'engines' => $model->getEngines(),
-            'job_history' => $jobHistory,
-        ]);
+        return redirect()->to(base_url('admin/ml?tab=algorithms'));
     }
 
     protected function save()
@@ -49,7 +28,7 @@ class AnomaliesController extends BaseAdminController
                     $url = $test['tested_url'] ?? 'unknown URL';
                     $msg = $test['message'] ?? 'Service offline';
                     session()->setFlashdata('error', "Cannot switch to Python or Hybrid engine: The Python ML service is unreachable or not healthy at {$url} (Error: {$msg}). Please ensure the service is running before enabling it.");
-                    return redirect()->to(base_url('admin/anomalies'));
+                    return redirect()->to(base_url('admin/ml?tab=engines'));
                 }
             }
 
@@ -87,6 +66,6 @@ class AnomaliesController extends BaseAdminController
         $this->logAdminAction('update_anomaly_settings', 'low', true);
 
         session()->setFlashdata('success', 'Anomaly detection settings saved successfully.');
-        return redirect()->to(base_url('admin/anomalies'));
+        return redirect()->to(base_url('admin/ml?tab=algorithms'));
     }
 }

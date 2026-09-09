@@ -1598,7 +1598,9 @@ $routes->group('admin', [
     // -------------------------------------------------------------
 
     $routes->get('ml', 'MlController::index', ['as' => 'admin-ml']);
+    $routes->get('ml/heartbeat', 'MlController::heartbeat', ['as' => 'admin-ml-heartbeat']);
     $routes->post('ml/test-python', 'MlController::testPython', ['as' => 'admin-ml-test-python']);
+    $routes->post('ml/test-database', 'MlController::testDatabase', ['as' => 'admin-ml-test-database']);
     $routes->post('ml/set-connection', 'MlController::setConnection', ['as' => 'admin-ml-set-connection']);
 
     // -------------------------------------------------------------
@@ -1915,6 +1917,11 @@ $routes->group('superadmin', [
      */
     $routes->get('home', 'Dashboard::index', ['as' => 'superadmin-home']);
 
+    // Infrastructure & Container Telemetry
+    $routes->get('infrastructure', 'InfrastructureController::index', ['as' => 'superadmin-infrastructure']);
+    $routes->get('infrastructure/telemetry', 'InfrastructureController::getTelemetry', ['as' => 'superadmin-infrastructure-telemetry']);
+    $routes->post('infrastructure/benchmark', 'InfrastructureController::runBenchmark', ['as' => 'superadmin-infrastructure-benchmark']);
+
     /**
      * Displays fleet overview dashboard.
      *
@@ -1964,6 +1971,7 @@ $routes->group('superadmin', [
      */
     $routes->get('audit', 'AuditLogController::index', ['as' => 'superadmin-audit']);
     $routes->get('omni-search', 'OmniSearchController::index', ['as' => 'superadmin-omni-search']);
+    $routes->get('omni-search/ajax', 'OmniSearchController::ajaxSearch', ['as' => 'superadmin-omni-search-ajax']);
     $routes->get('impersonate', 'ImpersonateController::index', ['as' => 'superadmin-impersonate']);
     $routes->post('impersonate/act-as/(:num)', 'ImpersonateController::actAs/$1', ['as' => 'superadmin-impersonate-act']);
     $routes->match(['get', 'post'], 'impersonate/stop', 'ImpersonateController::stop', ['as' => 'superadmin-impersonate-stop']);
@@ -1991,12 +1999,13 @@ $routes->group('superadmin', [
     $routes->post('plans/updateDefinitions', 'PlansController::updateDefinitions', ['as' => 'superadmin-plans-update-definitions']);
 
     // -------------------------------------------------------------
-    // 7.7.3 SUBSCRIPTIONS & PAYMENTS
+    // 7.7.3 SUBSCRIPTIONS & PAYMENTS (BILLING HUB)
     // -------------------------------------------------------------
 
     /**
-     * List all users with their subscription status.
+     * Billing Hub alias & List all users with their subscription status.
      */
+    $routes->get('billing', 'SubscriptionsController::index', ['as' => 'superadmin-billing']);
     $routes->get('subscriptions', 'SubscriptionsController::index', ['as' => 'superadmin-subscriptions']);
 
     /**

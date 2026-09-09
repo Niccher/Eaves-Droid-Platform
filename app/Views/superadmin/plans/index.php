@@ -30,6 +30,28 @@
                 </div>
             </div>
 
+            <div class="card card-outline card-primary shadow-sm mb-3">
+                <div class="card-header p-2 bg-light">
+                    <ul class="nav nav-pills">
+                        <li class="nav-item">
+                            <a href="<?= base_url('superadmin/subscriptions') ?>" class="nav-link">
+                                <i class="fas fa-users mr-1 text-primary"></i> Subscribers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('superadmin/payments') ?>" class="nav-link">
+                                <i class="fas fa-credit-card mr-1 text-success"></i> Payment History
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('superadmin/plans') ?>" class="nav-link active">
+                                <i class="fas fa-tags mr-1 text-warning"></i> Plans &amp; Pricing
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
             <div class="row">
                 <?php foreach ($plans as $plan): ?>
                     <?php $version = $versions[$plan['id']] ?? null; ?>

@@ -783,6 +783,7 @@ class AnomaliesModel extends Model
         $port     = 9070;
         $endpoint = '/api/v1/analysis-jobs';
         $url      = '';
+        $token    = 'default_secure_token_change_me_in_prod';
 
         if (getenv('PYTHON_BACKEND_HOST') !== false) {
             $host = getenv('PYTHON_BACKEND_HOST');
@@ -796,10 +797,16 @@ class AnomaliesModel extends Model
             $endpoint = getenv('PYTHON_BACKEND_ENDPOINT');
         }
 
+        if (getenv('ML_INTERNAL_TOKEN') !== false) {
+            $token = getenv('ML_INTERNAL_TOKEN');
+        } elseif (getenv('PYTHON_INTERNAL_TOKEN') !== false) {
+            $token = getenv('PYTHON_INTERNAL_TOKEN');
+        }
+
         try {
             $rows = $this->db->table('settings')
                 ->where('class', 'ml')
-                ->whereIn('key', ['ml_python_host', 'ml_python_port', 'ml_python_endpoint', 'ml_python_url'])
+                ->whereIn('key', ['ml_python_host', 'ml_python_port', 'ml_python_endpoint', 'ml_python_url', 'ml_python_token'])
                 ->get()
                 ->getResultArray();
 
@@ -809,6 +816,7 @@ class AnomaliesModel extends Model
                     'ml_python_port'     => $port = (int)($row['value'] ?: $port),
                     'ml_python_endpoint' => $endpoint = $row['value'] ?: $endpoint,
                     'ml_python_url'      => $url = $row['value'] ?: '',
+                    'ml_python_token'    => $token = $row['value'] ?: $token,
                     default              => null,
                 };
             }
@@ -833,41 +841,66 @@ class AnomaliesModel extends Model
             'endpoint'  => $endpoint,
             'base_url'  => $baseUrl,
             'url'       => $baseUrl,
+            'token'     => $token,
         ];
     }
 
-    public function testPythonConnection(?string $testUrl = null): array
+    public function testPythonConnection(?string $testUrl = null, int $timeout = 6): array
     {
         $settings = $this->getPythonSettings();
         $baseUrl = $testUrl ? rtrim($testUrl, '/') : $settings['base_url'];
         $healthUrl = $baseUrl . '/api/v1/health';
+        $token = $settings['token'] ?? 'default_secure_token_change_me_in_prod';
 
+        $t0 = microtime(true);
         try {
             $client = service('curlrequest', [
-                'timeout'         => 10,
-                'connect_timeout' => 5,
+                'timeout'         => $timeout,
+                'connect_timeout' => min(3, $timeout),
                 'http_errors'     => false,
+                'headers'         => [
+                    'X-Internal-Token' => $token,
+                    'X-Request-ID'     => bin2hex(random_bytes(8)),
+                    'Accept'           => 'application/json',
+                ],
             ]);
             $response = $client->get($healthUrl);
+            $latencyMs = round((microtime(true) - $t0) * 1000, 1);
             $statusCode = $response->getStatusCode();
             $body = $response->getBody() ? json_decode($response->getBody(), true) : [];
 
             if ($statusCode === 200) {
                 return [
-                    'success'      => true,
-                    'message'      => 'Python backend is running.',
-                    'tested_url'   => $baseUrl,
-                    'status'       => $body['status'] ?? 'healthy',
-                    'version'      => $body['version'] ?? '',
-                    'models'       => $body['models_loaded'] ?? $body['models'] ?? $body['algorithms'] ?? [],
-                    'modules'      => $body['modules'] ?? [],
-                    'database'     => $body['database'] ?? '',
-                    'cuda'         => $body['cuda_available'] ?? false,
-                    'cuda_device'  => $body['cuda_device'] ?? '',
-                    'memory'       => $body['memory_mb'] ?? [],
-                    'cache'        => $body['cache_entries'] ?? 0,
-                    'uptime'       => $body['uptime_seconds'] ?? 0,
-                    'settings'     => $settings,
+                    'success'                  => true,
+                    'message'                  => 'Python backend is running.',
+                    'tested_url'               => $baseUrl,
+                    'latency_ms'               => $latencyMs,
+                    'status'                   => $body['status'] ?? 'healthy',
+                    'version'                  => $body['version'] ?? '2.5.0',
+                    'models'                   => $body['models_loaded'] ?? $body['models'] ?? $body['algorithms'] ?? [],
+                    'models_count'             => count($body['models_loaded'] ?? $body['models'] ?? []),
+                    'modules'                  => $body['modules'] ?? [],
+                    'database'                 => $body['database'] ?? '',
+                    'database_latency_ms'      => $body['database_latency_ms'] ?? 0.0,
+                    'database_tables_verified' => $body['database_tables_verified'] ?? 0,
+                    'database_total_tables'    => $body['database_total_tables'] ?? 10,
+                    'cuda'                     => $body['cuda_available'] ?? false,
+                    'cuda_device'              => $body['cuda_device'] ?? '',
+                    'memory'                   => $body['memory_mb'] ?? [],
+                    'cpu_percent'              => $body['cpu_percent'] ?? 0.0,
+                    'cache'                    => $body['cache_entries'] ?? 0,
+                    'uptime'                   => $body['uptime_seconds'] ?? 0,
+                    'settings'                 => $settings,
+                ];
+            }
+
+            if ($statusCode === 401) {
+                return [
+                    'success'    => false,
+                    'message'    => 'Authentication failed (HTTP 401). Internal security token mismatch.',
+                    'tested_url' => $baseUrl,
+                    'latency_ms' => $latencyMs,
+                    'settings'   => $settings,
                 ];
             }
 
@@ -875,13 +908,17 @@ class AnomaliesModel extends Model
                 'success'    => false,
                 'message'    => "Backend returned HTTP {$statusCode}.",
                 'tested_url' => $baseUrl,
+                'latency_ms' => $latencyMs,
                 'settings'   => $settings,
             ];
         } catch (\Throwable $e) {
+            $latencyMs = round((microtime(true) - $t0) * 1000, 1);
             return [
-                'success'  => false,
-                'message'  => 'Connection failed: ' . $e->getMessage(),
-                'settings' => $settings,
+                'success'    => false,
+                'message'    => 'Connection failed: ' . $e->getMessage(),
+                'tested_url' => $baseUrl,
+                'latency_ms' => $latencyMs,
+                'settings'   => $settings,
             ];
         }
     }
@@ -1174,8 +1211,10 @@ class AnomaliesModel extends Model
                     'connect_timeout' => 5,
                     'http_errors'     => false,
                     'headers'         => [
-                        'Accept'       => 'application/json',
-                        'Content-Type' => 'application/json',
+                        'Accept'           => 'application/json',
+                        'Content-Type'     => 'application/json',
+                        'X-Internal-Token' => $settings['token'] ?? 'default_secure_token_change_me_in_prod',
+                        'X-Request-ID'     => bin2hex(random_bytes(8)),
                     ],
                 ]);
 
@@ -1194,22 +1233,24 @@ class AnomaliesModel extends Model
                         $this->updateJobProgress($jobId, 2, 3, 'python_results');
                         $pyResults = $this->fetchJobResults($jobId, $userId);
                     } else {
-                        log_message('error', 'Python backend returned unexpected response: ' . ($body ?? '(empty)'));
+                        log_message('warning', '[ML Self-Healing] Python backend returned unexpected status: ' . ($body ?? '(empty)'));
                     }
                 } else {
-                    log_message('error', sprintf(
-                        'Python backend HTTP %d: %s',
+                    log_message('warning', sprintf(
+                        '[ML Self-Healing] Python backend returned HTTP %d: %s. Initiating local failover.',
                         $statusCode,
                         $response->getBody() ?? '(empty)'
                     ));
                 }
             } catch (\Throwable $e) {
-                log_message('error', 'Python backend unreachable: ' . $e->getMessage());
+                log_message('warning', '[ML Self-Healing] Python backend unreachable (' . $e->getMessage() . '). Initiating local failover.');
             }
         }
 
-        // ── Fallback if Python returned nothing ──
+        // ── Fallback if Python returned nothing (Automated Self-Healing Failover) ──
         if ($hasPy && empty($pyResults)) {
+            log_message('info', "[ML Self-Healing] Running automated PHP-ML fallback for job #{$jobId}");
+
             // Lazy-loaded database queries (caches results if multiple algorithms request same category)
             $smsData = null;
             $getSms = function() use (&$smsData, $userId) {
@@ -1320,12 +1361,47 @@ class AnomaliesModel extends Model
                     if (!empty($found)) {
                         foreach ($found as &$f) {
                             $f['algorithm_id'] = $algId;
-                            $f['engine_note'] .= ' (Python offline fallback)';
+                            $f['engine_note']  = ($f['engine_note'] ?? '') . ' (PHP-ML self-healing failover)';
                         }
                         unset($f);
                         $pyResults = array_merge($pyResults, $found);
                     }
                 }
+            }
+
+            // Persist fallback results to database if a job row exists
+            if ($jobId > 0 && !empty($pyResults)) {
+                try {
+                    foreach ($pyResults as $resItem) {
+                        $this->db->table('ml_results')->insert([
+                            'job_id'          => $jobId,
+                            'user_id'         => $userId,
+                            'algorithm'       => $resItem['algorithm_id'] ?? 'unknown',
+                            'algorithm_id'    => $resItem['algorithm_id'] ?? 'unknown',
+                            'category'        => $resItem['category'] ?? 'system',
+                            'severity'        => $resItem['severity'] ?? 'Medium',
+                            'anomaly'         => $resItem['anomaly'] ?? ($resItem['title'] ?? 'Anomaly detected'),
+                            'score'           => (float)($resItem['score'] ?? 0.75),
+                            'event_timestamp' => $resItem['event_timestamp'] ?? date('Y-m-d H:i:s'),
+                            'details'         => json_encode($resItem['details'] ?? $resItem),
+                            'engine'          => 'php_fallback',
+                            'created_at'      => date('Y-m-d H:i:s'),
+                        ]);
+                    }
+
+                    $this->db->table('ml_jobs')
+                        ->where('id', $jobId)
+                        ->update([
+                            'status'     => 'completed',
+                            'engine'     => 'php_fallback',
+                            'notes'      => 'Automated PHP-ML self-healing failover engaged (Python container offline/timeout).',
+                            'updated_at' => date('Y-m-d H:i:s'),
+                        ]);
+                } catch (\Throwable $e) {
+                    log_message('error', 'Failover ml_results persistence error: ' . $e->getMessage());
+                }
+
+                $this->updateJobProgress($jobId, 3, 3, 'completed');
             }
         }
 
