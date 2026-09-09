@@ -845,12 +845,12 @@ class AnomaliesModel extends Model
         ];
     }
 
-    public function testPythonConnection(?string $testUrl = null, int $timeout = 6): array
+    public function testPythonConnection(?string $testUrl = null, int $timeout = 6, ?string $overrideToken = null): array
     {
         $settings = $this->getPythonSettings();
         $baseUrl = $testUrl ? rtrim($testUrl, '/') : $settings['base_url'];
         $healthUrl = $baseUrl . '/api/v1/health';
-        $token = $settings['token'] ?? 'default_secure_token_change_me_in_prod';
+        $token = ($overrideToken !== null && $overrideToken !== '') ? $overrideToken : ($settings['token'] ?? 'default_secure_token_change_me_in_prod');
 
         $t0 = microtime(true);
         try {

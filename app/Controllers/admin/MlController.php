@@ -50,7 +50,8 @@ class MlController extends BaseAdminController
     {
         $model = new AnomaliesModel();
         $testUrl = $this->request->getPost('url');
-        $result = $model->testPythonConnection($testUrl ?: null);
+        $token = $this->request->getPost('token');
+        $result = $model->testPythonConnection($testUrl ?: null, 6, $token ?: null);
         return $this->response->setJSON($result);
     }
 

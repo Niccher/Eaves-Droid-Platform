@@ -40,6 +40,8 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
             <!-- Live ML Engine Telemetry Hero Banner -->
             <div class="card card-outline card-info shadow-sm mb-4" id="heroTelemetryCard">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
@@ -202,6 +204,389 @@
                                 </form>
                             </div>
 
+                            <!-- ======================== DETECTION ENGINES TAB ======================== -->
+                            <div class="tab-pane fade <?= ($active_tab === 'engines') ? 'show active' : '' ?>" id="pane-engines" role="tabpanel">
+                                <form method="post" action="<?= base_url('admin/anomalies') ?>" id="anomalyEngineForm">
+                                    <?= csrf_field() ?>
+                                    <div class="callout callout-info bg-light border-left-info py-2 px-3 mb-3 small">
+                                        <i class="fas fa-info-circle text-info mr-1"></i>
+                                        Choose which detection engine is enabled for anomalous behavior analysis. <strong>Hybrid Mode</strong> automatically routes deep-learning detectors to the Python container and falls back gracefully to local PHP-ML if unreachable.
+                                    </div>
+                                    <div class="row">
+                                        <?php if (!empty($engines)): ?>
+                                        <?php foreach ($engines as $e):
+                                            $checked = ($default_engine ?? 'php') === $e['id'] ? 'checked' : '';
+                                        ?>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card h-100 border <?= $checked ? 'border-primary shadow-sm' : '' ?>">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-3" style="font-size:2.5rem;">
+                                                        <i class="<?= $e['icon'] ?> text-<?= $e['icon_color'] ?>"></i>
+                                                    </div>
+                                                    <h5 class="font-weight-bold"><?= $e['label'] ?></h5>
+                                                    <p class="text-muted small"><?= $e['description'] ?></p>
+                                                    <div class="d-flex justify-content-center flex-wrap" style="gap:.25rem;">
+                                                        <?php foreach ($e['badges'] as $b): ?>
+                                                        <span class="badge badge-<?= $b['color'] ?>">
+                                                            <i class="<?= $b['icon'] ?> mr-1"></i><?= $b['text'] ?>
+                                                        </span>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                    <div class="mt-3">
+                                                        <div class="custom-control custom-radio">
+                                                            <input type="radio" id="engine_<?= $e['id'] ?>"
+                                                                   name="default_engine" value="<?= $e['id'] ?>"
+                                                                   class="custom-control-input" <?= $checked ?>>
+                                                            <label class="custom-control-label font-weight-bold" for="engine_<?= $e['id'] ?>">
+                                                                <?= $e['id'] === 'both' ? 'Enable Hybrid Failover' : 'Set as Default' ?>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="border-top pt-3 text-right">
+                                        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save Engine Selection</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- ======================== ALGORITHMS & RULES TAB ======================== -->
+                            <div class="tab-pane fade <?= ($active_tab === 'algorithms') ? 'show active' : '' ?>" id="pane-algorithms" role="tabpanel">
+                                <form method="post" action="<?= base_url('admin/anomalies') ?>" id="anomalyAlgoForm">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="default_engine" value="<?= esc($default_engine ?? 'php') ?>">
+                                    <div class="callout callout-warning bg-light border-left-warning py-2 px-3 mb-3 small">
+                                        <i class="fas fa-sliders-h text-warning mr-1"></i>
+                                        Select which anomaly detection algorithms users can run. Unchecked algorithms will be hidden from users. When "Allow All" is checked, all 15 detectors are active.
+                                    </div>
+
+                                    <?php
+                                    $allowedSet = !empty($allowed_algorithms) ? array_flip($allowed_algorithms) : [];
+                                    $allAllowed = empty($allowed_algorithms);
+                                    ?>
+                                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="toggle-all-algs" <?= $allAllowed ? 'checked' : '' ?>>
+                                            <label class="custom-control-label font-weight-bold" for="toggle-all-algs">
+                                                <i class="fas fa-check-double mr-1 text-primary"></i> Allow All Algorithms
+                                            </label>
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-warning font-weight-bold">
+                                            <i class="fas fa-save mr-1"></i> Save Allowed Algorithms
+                                        </button>
+                                    </div>
+                                    <hr>
+
+                                    <?php if (!empty($categories)): ?>
+                                    <?php foreach ($categories as $catKey => $cat): ?>
+                                    <div class="card card-outline card-<?= $cat['color'] ?> shadow-sm mb-3">
+                                        <div class="card-header py-2">
+                                            <h5 class="card-title text-dark font-weight-bold mb-0">
+                                                <i class="<?= $cat['icon'] ?> text-<?= $cat['color'] ?> mr-2"></i><?= $cat['label'] ?>
+                                            </h5>
+                                            <div class="card-tools">
+                                                <span class="badge badge-<?= $cat['color'] ?>"><?= count($cat['algorithms']) ?> algorithms</span>
+                                            </div>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            <div class="row">
+                                                <?php foreach ($cat['algorithms'] as $alg): 
+                                                    $checked = $allAllowed || isset($allowedSet[$alg['id']]);
+                                                    $compatLabel = match($alg['compat']) {
+                                                        'both' => 'PHP + Python',
+                                                        'php' => 'PHP',
+                                                        'python' => 'Python',
+                                                        default => $alg['compat'],
+                                                    };
+                                                    $compatBadge = match($alg['compat']) {
+                                                        'both' => 'primary',
+                                                        'php' => 'success',
+                                                        'python' => 'warning',
+                                                        default => 'secondary',
+                                                    };
+                                                ?>
+                                                <div class="col-md-6 col-lg-4 mb-2">
+                                                    <div class="custom-control custom-checkbox">
+                                                        <input type="checkbox" class="custom-control-input alg-checkbox"
+                                                               id="alg_<?= $alg['id'] ?>"
+                                                               name="allowed_algorithms[]" value="<?= $alg['id'] ?>"
+                                                               <?= $checked ? 'checked' : '' ?>>
+                                                        <label class="custom-control-label" for="alg_<?= $alg['id'] ?>">
+                                                            <strong><?= esc($alg['name']) ?></strong>
+                                                            <span class="badge badge-<?= $compatBadge ?> ml-1" style="font-size:10px;"><?= $compatLabel ?></span>
+                                                            <br>
+                                                            <small class="text-muted"><?= esc($alg['description']) ?></small>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                    <?php endif; ?>
+
+                                    <div class="border-top pt-3 text-right">
+                                        <button type="submit" class="btn btn-warning font-weight-bold"><i class="fas fa-save mr-1"></i> Save Algorithm Preferences</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- ======================== PYTHON ======================== -->
+                            <div class="tab-pane fade <?= ($active_tab === 'python') ? 'show active' : '' ?>" id="pane-python" role="tabpanel">
+                                <form action="<?= base_url('admin/settings/update') ?>" method="post">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="section" value="ml">
+
+                                    <div class="callout callout-warning bg-light py-2 px-3 mb-3 small">
+                                    <i class="fas fa-exclamation-triangle text-warning mr-1"></i>
+                                    <strong>Requires a running Python backend service.</strong> Deploy via Docker (FastAPI + scikit-learn). The Python backend provides the 7 detector models — Isolation Forest, One-Class SVM, PCA anomaly scanner, contact-graph outlier, activity MLP, phishing keyword heuristic, and suspicious-file scanner — that extend beyond PHP-ML. All detectors are CPU-only sklearn/networkx models; no GPU or deep-learning framework required.
+                                </div>
+                                <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
+                                    <i class="fas fa-database text-info mr-1"></i>
+                                    Python algorithm parameters below are stored in the database and sent to the Python backend at runtime. Defaults apply when no custom value has been saved.
+                                </div>
+
+                                <!-- Connection Settings -->
+                                <div class="card card-outline card-warning shadow-sm mb-3">
+                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-plug mr-1"></i> Microservice Connection Settings</h3></div>
+                                    <div class="card-body">
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Microservice Status</label>
+                                            <div class="col-sm-10">
+                                                <div class="custom-control custom-switch">
+                                                    <input type="hidden" name="ml_python_enabled" value="0">
+                                                    <input type="checkbox" name="ml_python_enabled" class="custom-control-input" id="ml_python_enabled" value="1" <?= ($settings['ml_python_enabled'] ?? '0') === '1' ? 'checked' : '' ?>>
+                                                    <label class="custom-control-label" for="ml_python_enabled">Enable Python ML Microservice (Fallback to PHP-ML if unreachable)</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Connection URL</label>
+                                            <div class="col-sm-10">
+                                                <input type="text" name="ml_python_url" id="python_connection_url" class="form-control" value="<?= htmlspecialchars($settings['ml_python_url'] ?? $python_settings['url'] ?? '') ?>" placeholder="http://ml-eaves-droid:9070">
+                                                <small class="text-muted">Direct URL to the Python service. Overrides host/port below when set. Default internal Docker: <code>http://ml-eaves-droid:9070</code></small>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Internal Security Token</label>
+                                            <div class="col-sm-10">
+                                                <div class="input-group">
+                                                    <input type="password" name="ml_python_token" id="python_internal_token" class="form-control" value="<?= htmlspecialchars($settings['ml_python_token'] ?? $python_settings['token'] ?? '') ?>" placeholder="Enter shared ML internal secret token">
+                                                    <div class="input-group-append">
+                                                        <button class="btn btn-outline-secondary" type="button" onclick="toggleTokenVisibility()" title="Toggle visibility">
+                                                            <i class="fas fa-eye" id="tokenToggleIcon"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">Pre-shared secret header (<code>X-Internal-Token</code>) required for inter-container communication.</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Service Host</label>
+                                            <div class="col-sm-4">
+                                                <input type="text" name="ml_python_host" class="form-control" value="<?= htmlspecialchars($settings['ml_python_host'] ?? $python_settings['host'] ?? 'ml-eaves-droid') ?>">
+                                                <small class="text-muted">Container name or hostname (e.g. <code>ml-eaves-droid</code>, <code>localhost</code>)</small>
+                                            </div>
+                                            <label class="col-sm-2 col-form-label">Service Port</label>
+                                            <div class="col-sm-4">
+                                                <input type="number" name="ml_python_port" class="form-control" value="<?= htmlspecialchars($settings['ml_python_port'] ?? $python_settings['port'] ?? '9070') ?>" min="1" max="65535">
+                                                <small class="text-muted">Default: <code>9070</code> (Docker internal), <code>9071</code> (external)</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Analysis Endpoint</label>
+                                            <div class="col-sm-10">
+                                                <input type="text" name="ml_python_endpoint" class="form-control" value="<?= htmlspecialchars($settings['ml_python_endpoint'] ?? $python_settings['endpoint'] ?? '/api/v1/analysis-jobs') ?>">
+                                                <small class="text-muted">REST endpoint for analysis dispatch</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row mb-0">
+                                            <label class="col-sm-2 col-form-label">Test Connection</label>
+                                            <div class="col-sm-10">
+                                                <button type="button" class="btn btn-info" onclick="testPythonConnection()"><i class="fas fa-plug mr-1"></i> Test Microservice Connection</button>
+                                                <button type="button" class="btn btn-secondary ml-2" onclick="setPythonConnection()"><i class="fas fa-check mr-1"></i> Set as Active Backend</button>
+                                                <div id="connectionTestResult" class="mt-2" style="display:none;"></div>
+                                                <div id="activeConnectionInfo" class="mt-2 small text-muted">
+                                                    <?php if (!empty($settings['ml_python_url'])): ?>
+                                                    <i class="fas fa-info-circle text-info mr-1"></i>Active configured URL: <code><?= htmlspecialchars($settings['ml_python_url']) ?></code>
+                                                    <?php else: ?>
+                                                    <i class="fas fa-info-circle text-info mr-1"></i>Active backend: <code>http://<?= htmlspecialchars($settings['ml_python_host'] ?? 'ml-eaves-droid') ?>:<?= htmlspecialchars($settings['ml_python_port'] ?? '9070') ?></code>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Python Algorithm Parameters -->
+                                <div class="card card-outline card-warning shadow-sm mb-3">
+                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-brain mr-1"></i> Python Detector Parameters</h3></div>
+                                    <div class="card-body">
+                                        <!-- Isolation Forest (Py) -->
+                                        <h5 class="text-warning font-weight-bold"><i class="fas fa-tree mr-1"></i> Isolation Forest (Python / scikit-learn)</h5>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Estimators / Trees <small class="text-muted">(default: 100)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" name="ml_py_iforest_n_estimators" class="form-control" value="<?= htmlspecialchars($settings['ml_py_iforest_n_estimators'] ?? '100') ?>" min="10" max="500">
+                                            </div>
+                                            <label class="col-sm-2 col-form-label">Contamination <small class="text-muted">(default: 0.05)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" step="0.01" name="ml_py_iforest_contamination" class="form-control" value="<?= htmlspecialchars($settings['ml_py_iforest_contamination'] ?? '0.05') ?>" min="0.01" max="0.5">
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Max Samples <small class="text-muted">(default: auto)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="text" name="ml_py_iforest_max_samples" class="form-control" value="<?= htmlspecialchars($settings['ml_py_iforest_max_samples'] ?? 'auto') ?>" placeholder="auto or integer">
+                                            </div>
+                                            <label class="col-sm-2 col-form-label">Random State <small class="text-muted">(default: 42)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" name="ml_py_iforest_random_state" class="form-control" value="<?= htmlspecialchars($settings['ml_py_iforest_random_state'] ?? '42') ?>">
+                                            </div>
+                                        </div>
+                                        <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
+                                            <i class="fas fa-book-open text-info mr-1"></i>
+                                            <strong>How it works:</strong> Python implementation of Isolation Forest via <code>sklearn.ensemble.IsolationForest</code>. Faster and more memory-efficient than PHP-ML for datasets &gt;10k rows. Supports parallel processing via <code>n_jobs=-1</code>.
+                                        </div>
+                                        <hr>
+
+                                        <!-- One-Class SVM -->
+                                        <h5 class="text-warning font-weight-bold"><i class="fas fa-vector-square mr-1"></i> One-Class SVM</h5>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Kernel <small class="text-muted">(default: rbf)</small></label>
+                                            <div class="col-sm-4">
+                                                <select name="ml_py_ocsvm_kernel" class="form-control">
+                                                    <?php $k = $settings['ml_py_ocsvm_kernel'] ?? 'rbf'; ?>
+                                                    <option value="rbf" <?= $k === 'rbf' ? 'selected' : '' ?>>RBF (Radial Basis Function)</option>
+                                                    <option value="linear" <?= $k === 'linear' ? 'selected' : '' ?>>Linear</option>
+                                                    <option value="poly" <?= $k === 'poly' ? 'selected' : '' ?>>Polynomial</option>
+                                                    <option value="sigmoid" <?= $k === 'sigmoid' ? 'selected' : '' ?>>Sigmoid</option>
+                                                </select>
+                                            </div>
+                                            <label class="col-sm-2 col-form-label">Nu (&nu;) <small class="text-muted">(default: 0.05)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" step="0.01" name="ml_py_ocsvm_nu" class="form-control" value="<?= htmlspecialchars($settings['ml_py_ocsvm_nu'] ?? '0.05') ?>" min="0.01" max="0.5">
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Gamma (&gamma;) <small class="text-muted">(default: scale)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="text" name="ml_py_ocsvm_gamma" class="form-control" value="<?= htmlspecialchars($settings['ml_py_ocsvm_gamma'] ?? 'scale') ?>" placeholder="scale, auto, or float">
+                                            </div>
+                                        </div>
+                                        <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
+                                            <i class="fas fa-book-open text-info mr-1"></i>
+                                            <strong>How it works:</strong> Fits a hyperplane around the "normal" data region in a high-dimensional feature space. Points outside the boundary are anomalies. Best for detecting multi-modal normal behaviour (e.g., user is active morning AND evening, but inactive mid-day).
+                                            <br><br>
+                                            <strong>Low &nu; (0.01&ndash;0.05):</strong> Tight boundary &mdash; very few false positives, flags only extreme deviations.
+                                            <br>
+                                            <strong>High &nu; (0.1&ndash;0.3):</strong> Loose boundary &mdash; higher sensitivity, flags more potential anomalies.
+                                        </div>
+                                        <hr>
+
+                                        <!-- Local Outlier Factor (LOF) -->
+                                        <h5 class="text-warning font-weight-bold"><i class="fas fa-braille mr-1"></i> Local Outlier Factor (LOF)</h5>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Number of Neighbours <small class="text-muted">(default: 20)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" name="ml_py_lof_n_neighbors" class="form-control" value="<?= htmlspecialchars($settings['ml_py_lof_n_neighbors'] ?? '20') ?>" min="2" max="100">
+                                            </div>
+                                            <label class="col-sm-2 col-form-label">Contamination <small class="text-muted">(default: 0.05)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" step="0.01" name="ml_py_lof_contamination" class="form-control" value="<?= htmlspecialchars($settings['ml_py_lof_contamination'] ?? '0.05') ?>" min="0.01" max="0.5">
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Metric <small class="text-muted">(default: minkowski)</small></label>
+                                            <div class="col-sm-4">
+                                                <select name="ml_py_lof_metric" class="form-control">
+                                                    <?php $m = $settings['ml_py_lof_metric'] ?? 'minkowski'; ?>
+                                                    <option value="minkowski" <?= $m === 'minkowski' ? 'selected' : '' ?>>Minkowski (Euclidean)</option>
+                                                    <option value="manhattan" <?= $m === 'manhattan' ? 'selected' : '' ?>>Manhattan</option>
+                                                    <option value="cosine" <?= $m === 'cosine' ? 'selected' : '' ?>>Cosine</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
+                                            <i class="fas fa-book-open text-info mr-1"></i>
+                                            <strong>How it works:</strong> Compares the local density of a point to the local densities of its neighbours. A point that has a significantly lower density than its neighbours is considered an outlier. Highly effective for non-uniform density distributions (e.g. dense urban clusters vs sparse rural locations).
+                                        </div>
+                                        <hr>
+
+                                        <!-- Autoencoder (Deep Learning) -->
+                                        <h5 class="text-warning font-weight-bold"><i class="fas fa-network-wired mr-1"></i> Deep-Learning Autoencoder</h5>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Latent Dimension <small class="text-muted">(default: 4)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" name="ml_py_autoencoder_latent_dim" class="form-control" value="<?= htmlspecialchars($settings['ml_py_autoencoder_latent_dim'] ?? '4') ?>" min="2" max="32">
+                                            </div>
+                                            <label class="col-sm-2 col-form-label">Epochs <small class="text-muted">(default: 50)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" name="ml_py_autoencoder_epochs" class="form-control" value="<?= htmlspecialchars($settings['ml_py_autoencoder_epochs'] ?? '50') ?>" min="10" max="500">
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-2 col-form-label">Batch Size <small class="text-muted">(default: 32)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" name="ml_py_autoencoder_batch_size" class="form-control" value="<?= htmlspecialchars($settings['ml_py_autoencoder_batch_size'] ?? '32') ?>" min="8" max="256">
+                                            </div>
+                                            <label class="col-sm-2 col-form-label">Threshold Percentile <small class="text-muted">(default: 95)</small></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" step="0.5" name="ml_py_autoencoder_threshold" class="form-control" value="<?= htmlspecialchars($settings['ml_py_autoencoder_threshold'] ?? '95.0') ?>" min="80" max="99.9">
+                                            </div>
+                                        </div>
+                                        <div class="callout callout-info bg-light py-2 px-3 mb-0 small">
+                                            <i class="fas fa-book-open text-info mr-1"></i>
+                                            <strong>How it works:</strong> Trains a neural network to compress (encode) and reconstruct (decode) normal behavioural features. When presented with anomalous data, reconstruction error is high. Points with reconstruction error above the threshold percentile are flagged as anomalies. Detects non-linear patterns that statistical methods miss.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Python Model Capabilities Summary -->
+                                <div class="card card-outline card-secondary shadow-sm mb-3">
+                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-list-check mr-1"></i> Python ML Model Capabilities</h3></div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <strong>Contact Graph Anomaly Scanner</strong>
+                                                <br><small>Analyzes communication graph metrics (degree, betweenness centrality, community structure) using NetworkX. Flags unexpected new connections and isolated high-frequency links. Params: <code>min_degree_threshold</code>, <code>community_resolution</code>.</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <strong>Activity MLP Classifier</strong>
+                                                <br><small>Multi-layer perceptron neural network predicting normal vs anomalous device usage patterns by time of day, session duration, and app category transitions. Params: <code>hidden_layer_sizes</code>, <code>activation</code> (relu/tanh).</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <strong>Phishing Keyword Scanner</strong>
+                                                <br><small>NLP-based heuristic scoring of SMS text and contact notes against known phishing/smishing indicators and credential-harvesting patterns. Params: <code>threshold_score</code> (0.0&ndash;1.0), <code>use_levenshtein</code>.</small>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-4">
+                                                <strong>Suspicious File Classifier</strong>
+                                                <br><small>Flags disguised extensions, double extensions, hidden directories, and abnormal MIME type mismatches in extracted device file lists. Params: <code>check_mime_mismatch</code>, <code>entropy_threshold</code>.</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <strong>Local Outlier Factor (LOF)</strong>
+                                                <br><small>Density-based detector comparing local density to neighbours. Effective for local anomalies. Params: <code>n_neighbors</code> (10&ndash;50), <code>contamination</code>.</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <strong>PCA Anomaly Detector</strong>
+                                                <br><small>Projects data onto principal components and measures reconstruction error. Fast, interpretable. Params: <code>n_components</code>, <code>threshold_&sigma;</code>.</small>
+                                            </div>
+                                        </div>
+                                        <div class="border-top pt-3 mt-3 text-right">
+                                            <button type="submit" class="btn btn-warning font-weight-bold"><i class="fas fa-save mr-1"></i> Save Python ML Settings</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                </form>
+                            </div>
+
                             <!-- ======================== PHP-ML ======================== -->
                             <div class="tab-pane fade <?= ($active_tab === 'phpml') ? 'show active' : '' ?>" id="pane-phpml" role="tabpanel">
                                 <form action="<?= base_url('admin/settings/update') ?>" method="post">
@@ -302,290 +687,6 @@
                                     </div>
                                     <div class="border-top pt-3 mt-3 text-right">
                                         <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save PHP-ML Settings</button>
-                                    </div>
-                                </form>
-                            </div>
-
-                            <!-- ======================== PYTHON ======================== -->
-                            <div class="tab-pane fade <?= ($active_tab === 'python') ? 'show active' : '' ?>" id="pane-python" role="tabpanel">
-                                <form action="<?= base_url('admin/settings/update') ?>" method="post">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="section" value="ml">
-
-                                    <div class="callout callout-warning bg-light py-2 px-3 mb-3 small">
-                                    <i class="fas fa-exclamation-triangle text-warning mr-1"></i>
-                                    <strong>Requires a running Python backend service.</strong> Deploy via Docker (FastAPI + scikit-learn). The Python backend provides the 7 detector models — Isolation Forest, One-Class SVM, PCA anomaly scanner, contact-graph outlier, activity MLP, phishing keyword heuristic, and suspicious-file scanner — that extend beyond PHP-ML. All detectors are CPU-only sklearn/networkx models; no GPU or deep-learning framework required.
-                                </div>
-                                <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
-                                    <i class="fas fa-database text-info mr-1"></i>
-                                    Python algorithm parameters below are stored in the database and sent to the Python backend at runtime. Defaults apply when no custom value has been saved.
-                                </div>
-
-                                <!-- Connection Settings -->
-                                <div class="card card-outline card-warning shadow-sm mb-3">
-                                    <div class="card-header">
-                                        <h3 class="card-title"><i class="fas fa-plug mr-1"></i> Connection Settings</h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Enable Python</label>
-                                            <div class="col-sm-10">
-                                                <div class="custom-control custom-switch">
-                                                    <input type="hidden" name="ml_python_enabled" value="0">
-                                                    <input type="checkbox" name="ml_python_enabled" class="custom-control-input" id="ml_python_enabled" value="1" <?= ($settings['ml_python_enabled'] ?? '0') === '1' ? 'checked' : '' ?>>
-                                                    <label class="custom-control-label" for="ml_python_enabled">Use external Python ML backend</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Connection URL</label>
-                                            <div class="col-sm-10">
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control" id="python_connection_url"
-                                                        value="<?= htmlspecialchars($settings['ml_python_url'] ?? $python_settings['url']) ?>"
-                                                        placeholder="http://ml-eaves-droid:9070">
-                                                    <div class="input-group-append">
-                                                        <button class="btn btn-outline-info" type="button" onclick="testPythonConnection()">
-                                                            <i class="fas fa-plug mr-1"></i> Test
-                                                        </button>
-                                                        <button class="btn btn-outline-success" type="button" onclick="setPythonConnection()">
-                                                            <i class="fas fa-check mr-1"></i> Set
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <small class="text-muted">Enter the full URL of the Python ML backend (e.g., <code>http://ml-eaves-droid:9070</code>). Click <strong>Test</strong> to verify connectivity, then <strong>Set</strong> to activate.</small>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Internal Security Token</label>
-                                            <div class="col-sm-10">
-                                                <div class="input-group">
-                                                    <input type="password" class="form-control" id="python_internal_token"
-                                                        value="<?= htmlspecialchars($settings['ml_python_token'] ?? ($python_settings['token'] ?? '')) ?>"
-                                                        placeholder="default_secure_token_change_me_in_prod">
-                                                    <div class="input-group-append">
-                                                        <button class="btn btn-outline-secondary" type="button" onclick="toggleTokenVisibility()" title="Toggle Token Visibility">
-                                                            <i class="fas fa-eye" id="tokenToggleIcon"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <small class="text-muted">Header <code>X-Internal-Token</code> passed to the FastAPI microservice. Matches <code>settings.internal_token</code> in the Python container.</small>
-                                            </div>
-                                        </div>
-
-                                        <!-- Test result display -->
-                                        <div id="connectionTestResult" class="mt-2" style="display:none;"></div>
-
-                                        <?php
-                                        $activeUrl = $settings['ml_python_url'] ?? ($python_settings['url'] ?? '');
-                                        $lastTest = $settings['ml_python_last_test'] ?? '';
-                                        $lastTestOk = ($settings['ml_python_last_test_status'] ?? '') === 'ok';
-                                        ?>
-                                        <div class="mt-2 p-2 bg-light rounded small" id="activeConnectionInfo">
-                                            <i class="fas fa-info-circle text-info mr-1"></i>
-                                            <strong>Active backend:</strong>
-                                            <?php if ($activeUrl && $lastTestOk): ?>
-                                                <span class="text-success"><i class="fas fa-check-circle mr-1"></i></span>
-                                            <?php elseif ($activeUrl): ?>
-                                                <span class="text-warning"><i class="fas fa-exclamation-triangle mr-1"></i> (not tested)</span>
-                                            <?php else: ?>
-                                                <span class="text-muted">not configured</span>
-                                            <?php endif; ?>
-                                            <code><?= htmlspecialchars($activeUrl ?: '—') ?></code>
-                                            <?php if ($lastTest): ?>
-                                                <span class="text-muted ml-2">| Last tested: <?= htmlspecialchars($lastTest) ?></span>
-                                            <?php endif; ?>
-                                        </div>
-
-                                        <?php if (!empty($docker_settings) && ($docker_settings['detected'] ?? false)): ?>
-                                        <div class="mt-3 p-3 bg-light rounded small">
-                                            <i class="fab fa-docker text-success mr-1"></i>
-                                            <strong>Docker-compose detected</strong> — ml-eaves-droid container (<code><?= esc($docker_settings['host']) ?></code>)
-                                            <table class="table table-sm table-bordered mt-2 mb-0">
-                                                <thead class="thead-light"><tr><th>Service</th><th>Internal Port</th><th>External (Host)</th></tr></thead>
-                                                <tbody>
-                                                    <tr><td><i class="fas fa-brain mr-1"></i>FastAPI (ML)</td><td><code><?= (int)($docker_settings['internal_port'] ?? 9070) ?></code></td><td><code><?= (int)($docker_settings['external_port'] ?? 9071) ?></code></td></tr>
-                                                    <tr><td><i class="fas fa-chart-line mr-1"></i>Metrics</td><td><code><?= (int)($docker_settings['metrics_port'] ?? 9073) ?></code></td><td><code><?= (int)($docker_settings['metrics_port'] ?? 9073) ?></code></td></tr>
-                                                    <tr><td><i class="fas fa-microchip mr-1"></i>TF Serving</td><td><code><?= (int)($docker_settings['tf_serving_port'] ?? 9072) ?></code></td><td><code><?= (int)($docker_settings['tf_serving_port'] ?? 9072) ?></code></td></tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-
-                                <!-- App Manifest Anomaly Scanner -->
-                                <div class="card card-outline card-info shadow-sm mb-3">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-network-wired mr-1"></i> App Manifest Anomaly Scanner (PCA)</h3></div>
-                                    <div class="card-body">
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Latent Dimensions <small class="text-muted">(default: 2)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" name="ml_python_autoencoder_latent" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_latent'] ?? '2') ?>" min="2" max="128">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    <strong>How it works:</strong> Extracts manifest-style features (package-name patterns, sensitive permissions, name length) and fits a PCA model. PCA acts as a linear autoencoder &mdash; apps whose features are poorly reconstructed have high reconstruction error and are flagged.
-                                                    <br><br>
-                                                    <strong>Low (2&ndash;8):</strong> High compression &mdash; captures only the strongest patterns. Faster, may miss subtle anomalies.
-                                                    <br>
-                                                    <strong>High (32+):</strong> Low compression &mdash; captures finer details. Higher fidelity but may overfit.
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Anomaly Threshold (&sigma;) <small class="text-muted">(default: 2.0)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" step="0.1" name="ml_python_autoencoder_threshold" class="form-control" value="<?= htmlspecialchars($settings['ml_python_autoencoder_threshold'] ?? '2.0') ?>" min="1.0" max="6.0">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    Reconstruction error cutoff in standard deviations from the mean.
-                                                    <br><br>
-                                                    <strong>Low (2&sigma;):</strong> More sensitive &mdash; flags more apps. Higher recall, lower precision.
-                                                    <br>
-                                                    <strong>High (4&sigma;+):</strong> Very strict &mdash; only flags extreme deviations. Higher precision.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Activity Sequence Predictor -->
-                                <div class="card card-outline card-info shadow-sm mb-3">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> Activity Sequence Predictor (MLP)</h3></div>
-                                    <div class="card-body">
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Sequence Length <small class="text-muted">(default: 20)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" name="ml_python_lstm_sequence" class="form-control" value="<?= htmlspecialchars($settings['ml_python_lstm_sequence'] ?? '20') ?>" min="5" max="100">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    <strong>How it works:</strong> Trains a small multi-layer perceptron (MLP) on chronologically ordered app-usage timestamps to model normal activity rhythms. The model predicts the next usage time; a large prediction error signals an anomalous transition.
-                                                    <br><br>
-                                                    <strong>Low (5&ndash;10):</strong> Short memory window &mdash; faster training, less contextual awareness.
-                                                    <br>
-                                                    <strong>High (50+):</strong> Extended memory &mdash; captures longer-range patterns. Slower training.
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Hidden Units <small class="text-muted">(default: 32)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" name="ml_python_lstm_units" class="form-control" value="<?= htmlspecialchars($settings['ml_python_lstm_units'] ?? '32') ?>" min="16" max="256">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    Size of the MLP hidden layer. Controls the model's capacity to learn usage rhythms.
-                                                    <br><br>
-                                                    <strong>Low (16&ndash;32):</strong> Simple patterns, fast inference.
-                                                    <br>
-                                                    <strong>High (128+):</strong> Complex pattern recognition, higher accuracy potential. More compute required.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- One-Class SVM -->
-                                <div class="card card-outline card-info shadow-sm mb-3">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-vector-square mr-1"></i> One-Class SVM</h3></div>
-                                    <div class="card-body">
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Nu (&nu;) <small class="text-muted">(default: 0.05)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" step="0.01" name="ml_python_oneclass_nu" class="form-control" value="<?= htmlspecialchars($settings['ml_python_oneclass_nu'] ?? '0.05') ?>" min="0.01" max="0.5">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    <strong>How it works:</strong> One-Class SVM learns a decision boundary around normal system states (CPU, RAM, battery temperature, active radios). Points outside the boundary are flagged anomalous. Unsupervised &mdash; no labelled data required.
-                                                    <br><br>
-                                                    <strong>Low (0.01&ndash;0.05):</strong> Tight boundary &mdash; few anomalies flagged, high confidence. Suitable for stable environments.
-                                                    <br>
-                                                    <strong>High (0.2+):</strong> Loose boundary &mdash; more anomalies flagged, higher false-positive rate. Use when expecting subtle deviations.
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Gamma (&gamma;) <small class="text-muted">(default: 0.01)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" step="0.001" name="ml_python_oneclass_gamma" class="form-control" value="<?= htmlspecialchars($settings['ml_python_oneclass_gamma'] ?? '0.01') ?>" min="0.001" max="1.0">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    RBF kernel coefficient &mdash; controls the influence radius of each training point.
-                                                    <br><br>
-                                                    <strong>Low (0.001):</strong> Broad decision boundary &mdash; smooth, generalised normal region. May miss localised anomalies.
-                                                    <br>
-                                                    <strong>High (0.1):</strong> Tight boundary around each data point &mdash; sensitive to local deviations. Risk of overfitting to training noise.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Python Isolation Forest -->
-                                <div class="card card-outline card-info shadow-sm mb-0">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-tree mr-1"></i> Isolation Forest (Python)</h3></div>
-                                    <div class="card-body">
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Trees <small class="text-muted">(default: 200)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" name="ml_python_iforest_trees" class="form-control" value="<?= htmlspecialchars($settings['ml_python_iforest_trees'] ?? '200') ?>" min="10" max="2000">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    <strong>How it works:</strong> Python scikit-learn Isolation Forest implementation with enhanced options. Uses random partitioning to isolate anomalies, supporting larger ensembles and configurable contamination rate for automatic thresholding.
-                                                    <br><br>
-                                                    <strong>Low (10&ndash;50):</strong> Fast training &mdash; higher variance. Suitable for rapid iteration during tuning.
-                                                    <br>
-                                                    <strong>High (500+):</strong> Stable, converged scores &mdash; higher memory footprint. Recommended for production.
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row">
-                                            <label class="col-sm-2 col-form-label">Samples <small class="text-muted">(default: 512)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" name="ml_python_iforest_samples" class="form-control" value="<?= htmlspecialchars($settings['ml_python_iforest_samples'] ?? '512') ?>" min="32" max="8192">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    Number of samples drawn for each tree.
-                                                    <br><br>
-                                                    <strong>Low (32&ndash;128):</strong> Smaller subsample &mdash; faster training, suitable for very large datasets.
-                                                    <br>
-                                                    <strong>High (1024+):</strong> More representative subsample &mdash; better anomaly scoring accuracy. Higher memory usage.
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row mb-0">
-                                            <label class="col-sm-2 col-form-label">Contamination <small class="text-muted">(default: 0.05)</small></label>
-                                            <div class="col-sm-10">
-                                                <input type="number" step="0.01" name="ml_python_iforest_contamination" class="form-control" value="<?= htmlspecialchars($settings['ml_python_iforest_contamination'] ?? '0.05') ?>" min="0.01" max="0.5">
-                                                <div class="callout callout-info bg-light py-2 px-3 mt-2 mb-0 small">
-                                                    <i class="fas fa-book-open text-info mr-1"></i>
-                                                    Expected proportion of anomalies in the dataset. Used to set the automatic threshold.
-                                                    <br><br>
-                                                    <strong>Low (0.01&ndash;0.03):</strong> Expects 1&ndash;3% anomaly rate. Strict threshold, higher precision.
-                                                    <br>
-                                                    <strong>High (0.15+):</strong> Expects more anomalies &mdash; lower threshold, higher recall. Adjust based on your environment's typical anomaly rate.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="callout callout-success bg-light py-2 px-3 mt-3 small mb-0">
-                                    <h6 class="text-success font-weight-bold"><i class="fas fa-plus-circle mr-1"></i> Additional Python Models Available</h6>
-                                    <div class="row mt-2">
-                                        <div class="col-md-4">
-                                            <strong>Gaussian Mixture Model (GMM)</strong>
-                                            <br><small>Soft clustering for behavioural profiling. Better than K-Means for overlapping behaviour patterns. Params: <code>n_components</code> (2&ndash;10), <code>covariance_type</code> (full|tied|diag).</small>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <strong>Local Outlier Factor (LOF)</strong>
-                                            <br><small>Density-based detector comparing local density to neighbours. Effective for local anomalies. Params: <code>n_neighbors</code> (10&ndash;50), <code>contamination</code>.</small>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <strong>PCA Anomaly Detector</strong>
-                                            <br><small>Projects data onto principal components and measures reconstruction error. Fast, interpretable. Params: <code>n_components</code>, <code>threshold_&sigma;</code>.</small>
-                                        </div>
-                                    </div>
-                                    <div class="border-top pt-3 mt-3 text-right">
-                                        <button type="submit" class="btn btn-warning font-weight-bold"><i class="fas fa-save mr-1"></i> Save Python ML Settings</button>
                                     </div>
                                 </form>
                             </div>
@@ -802,138 +903,6 @@ networks:
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- ======================== DETECTION ENGINES TAB ======================== -->
-                            <div class="tab-pane fade <?= ($active_tab === 'engines') ? 'show active' : '' ?>" id="pane-engines" role="tabpanel">
-                                <form method="post" action="<?= base_url('admin/anomalies') ?>" id="anomalyEngineForm">
-                                    <?= csrf_field() ?>
-                                    <div class="callout callout-info bg-light border-left-info py-2 px-3 mb-3 small">
-                                        <i class="fas fa-info-circle text-info mr-1"></i>
-                                        Choose which detection engine is enabled for anomalous behavior analysis. <strong>Hybrid Mode</strong> automatically routes deep-learning detectors to the Python container and falls back gracefully to local PHP-ML if unreachable.
-                                    </div>
-                                    <div class="row">
-                                        <?php if (!empty($engines)): ?>
-                                        <?php foreach ($engines as $e):
-                                            $checked = ($default_engine ?? 'php') === $e['id'] ? 'checked' : '';
-                                        ?>
-                                        <div class="col-md-4 mb-3">
-                                            <div class="card h-100 border <?= $checked ? 'border-primary shadow-sm' : '' ?>">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-3" style="font-size:2.5rem;">
-                                                        <i class="<?= $e['icon'] ?> text-<?= $e['icon_color'] ?>"></i>
-                                                    </div>
-                                                    <h5 class="font-weight-bold"><?= $e['label'] ?></h5>
-                                                    <p class="text-muted small"><?= $e['description'] ?></p>
-                                                    <div class="d-flex justify-content-center flex-wrap" style="gap:.25rem;">
-                                                        <?php foreach ($e['badges'] as $b): ?>
-                                                        <span class="badge badge-<?= $b['color'] ?>">
-                                                            <i class="<?= $b['icon'] ?> mr-1"></i><?= $b['text'] ?>
-                                                        </span>
-                                                        <?php endforeach; ?>
-                                                    </div>
-                                                    <div class="mt-3">
-                                                        <div class="custom-control custom-radio">
-                                                            <input type="radio" id="engine_<?= $e['id'] ?>"
-                                                                   name="default_engine" value="<?= $e['id'] ?>"
-                                                                   class="custom-control-input" <?= $checked ?>>
-                                                            <label class="custom-control-label font-weight-bold" for="engine_<?= $e['id'] ?>">
-                                                                <?= $e['id'] === 'both' ? 'Enable Hybrid Failover' : 'Set as Default' ?>
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="border-top pt-3 text-right">
-                                        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save Engine Selection</button>
-                                    </div>
-                                </form>
-                            </div>
-
-                            <!-- ======================== ALGORITHMS & RULES TAB ======================== -->
-                            <div class="tab-pane fade <?= ($active_tab === 'algorithms') ? 'show active' : '' ?>" id="pane-algorithms" role="tabpanel">
-                                <form method="post" action="<?= base_url('admin/anomalies') ?>" id="anomalyAlgoForm">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="default_engine" value="<?= esc($default_engine ?? 'php') ?>">
-                                    <div class="callout callout-warning bg-light border-left-warning py-2 px-3 mb-3 small">
-                                        <i class="fas fa-sliders-h text-warning mr-1"></i>
-                                        Select which anomaly detection algorithms users can run. Unchecked algorithms will be hidden from users. When "Allow All" is checked, all 15 detectors are active.
-                                    </div>
-
-                                    <?php
-                                    $allowedSet = !empty($allowed_algorithms) ? array_flip($allowed_algorithms) : [];
-                                    $allAllowed = empty($allowed_algorithms);
-                                    ?>
-                                    <div class="mb-3 d-flex justify-content-between align-items-center">
-                                        <div class="custom-control custom-checkbox">
-                                            <input type="checkbox" class="custom-control-input" id="toggle-all-algs" <?= $allAllowed ? 'checked' : '' ?>>
-                                            <label class="custom-control-label font-weight-bold" for="toggle-all-algs">
-                                                <i class="fas fa-check-double mr-1 text-primary"></i> Allow All Algorithms
-                                            </label>
-                                        </div>
-                                        <button type="submit" class="btn btn-sm btn-warning font-weight-bold">
-                                            <i class="fas fa-save mr-1"></i> Save Allowed Algorithms
-                                        </button>
-                                    </div>
-                                    <hr>
-
-                                    <?php if (!empty($categories)): ?>
-                                    <?php foreach ($categories as $catKey => $cat): ?>
-                                    <div class="card card-outline card-<?= $cat['color'] ?> shadow-sm mb-3">
-                                        <div class="card-header py-2">
-                                            <h5 class="card-title text-dark font-weight-bold mb-0">
-                                                <i class="<?= $cat['icon'] ?> text-<?= $cat['color'] ?> mr-2"></i><?= $cat['label'] ?>
-                                            </h5>
-                                            <div class="card-tools">
-                                                <span class="badge badge-<?= $cat['color'] ?>"><?= count($cat['algorithms']) ?> algorithms</span>
-                                            </div>
-                                        </div>
-                                        <div class="card-body py-2">
-                                            <div class="row">
-                                                <?php foreach ($cat['algorithms'] as $alg): 
-                                                    $checked = $allAllowed || isset($allowedSet[$alg['id']]);
-                                                    $compatLabel = match($alg['compat']) {
-                                                        'both' => 'PHP + Python',
-                                                        'php' => 'PHP',
-                                                        'python' => 'Python',
-                                                        default => $alg['compat'],
-                                                    };
-                                                    $compatBadge = match($alg['compat']) {
-                                                        'both' => 'primary',
-                                                        'php' => 'success',
-                                                        'python' => 'warning',
-                                                        default => 'secondary',
-                                                    };
-                                                ?>
-                                                <div class="col-md-6 col-lg-4 mb-2">
-                                                    <div class="custom-control custom-checkbox">
-                                                        <input type="checkbox" class="custom-control-input alg-checkbox"
-                                                               id="alg_<?= $alg['id'] ?>"
-                                                               name="allowed_algorithms[]" value="<?= $alg['id'] ?>"
-                                                               <?= $checked ? 'checked' : '' ?>>
-                                                        <label class="custom-control-label" for="alg_<?= $alg['id'] ?>">
-                                                            <strong><?= esc($alg['name']) ?></strong>
-                                                            <span class="badge badge-<?= $compatBadge ?> ml-1" style="font-size:10px;"><?= $compatLabel ?></span>
-                                                            <br>
-                                                            <small class="text-muted"><?= esc($alg['description']) ?></small>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <?php endforeach; ?>
-                                    <?php endif; ?>
-
-                                    <div class="border-top pt-3 text-right">
-                                        <button type="submit" class="btn btn-warning font-weight-bold"><i class="fas fa-save mr-1"></i> Save Algorithm Preferences</button>
-                                    </div>
-                                </form>
                             </div>
 
                             <!-- ======================== RUN HISTORY TAB ======================== -->
@@ -1177,7 +1146,8 @@ function testPythonConnection() {
 
     $.post('<?= base_url('admin/ml/test-python') ?>', {
         '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
-        'url': lastTestedUrl
+        'url': lastTestedUrl,
+        'token': lastTestedToken
     }, function(data) {
         lastTestResult = data;
         let html = '';
@@ -1261,7 +1231,8 @@ function setPythonConnection() {
 
     $.post('<?= base_url('admin/ml/test-python') ?>', {
         '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
-        'url': url
+        'url': url,
+        'token': token
     }, function(data) {
         if (data.success) {
             $.post('<?= base_url('admin/ml/set-connection') ?>', {
@@ -1352,16 +1323,30 @@ if (toggleAll) {
     });
 }
 
-// Auto-switch to tab if passed in query param or hash
+// Auto-switch to tab if passed in query param or hash (#pane-* or #*)
 (function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab') || window.location.hash.replace('#', '');
-    if (tabParam) {
-        const tabEl = document.getElementById('tab-' + tabParam);
-        if (tabEl) {
-            $(tabEl).tab('show');
+    function activateTabFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab') || window.location.hash.replace('#', '');
+        if (tabParam) {
+            const cleanParam = tabParam.replace(/^pane-/, '');
+            const tabEl = document.getElementById('tab-' + cleanParam) || document.getElementById('tab-' + tabParam);
+            if (tabEl) {
+                $(tabEl).tab('show');
+            }
         }
     }
+
+    activateTabFromUrl();
+    window.addEventListener('hashchange', activateTabFromUrl);
+
+    // Update URL hash when tab is clicked
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        const href = $(e.target).attr('href');
+        if (href && history.replaceState) {
+            history.replaceState(null, null, href);
+        }
+    });
 })();
 
 // Initial hero telemetry check
