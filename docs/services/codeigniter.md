@@ -1,6 +1,6 @@
 # Service Guide: CodeIgniter 4 WebApp
 
-This guide covers the internal layout, controllers, parsers, and machine learning components of the CodeIgniter 4 backend.
+This guide covers the internal layout, controllers, parsers, filters, and machine learning components of the CodeIgniter 4 backend (`Niccher/Eaves-Droid-WebApp`).
 
 ---
 
@@ -11,18 +11,19 @@ app/
 ├── Config/             # Routes.php, Database.php, Shield configurations
 ├── Controllers/
 │   ├── Receive.php     # Ingestion endpoint (POST /api/v1/files/upload)
-│   ├── Admin/          # System administration, logs, user CRUD
-│   ├── Superadmin/     # Fleet management, plan versioning, audit trail
-│   ├── Billing.php     # Pesapal checkout and IPN webhook
-│   └── Client/         # User forensic dashboards (SMS, Calls, Location, Apps, etc.)
+│   ├── admin/          # Admin dashboard, logs, user CRUD, ML settings, telemetry
+│   ├── superadmin/     # Role matrix, fleet management, plan versioning, audit trail
+│   ├── billing/        # Pesapal checkout and IPN webhook
+│   └── users/          # User forensic dashboards (SMS, Calls, Location, Apps, etc.)
 ├── Filters/
 │   ├── RoleFilter.php  # Shield group & permission gating
 │   └── PlanGate.php    # Subscription tier feature gating
-├── Models/             # Models for tbl_sms, tbl_logs, tbl_tokens, tbl_plans, etc.
-└── Modules/
-    ├── Mod_Parse_Loot.php       # Ingestion parser for legacy categories
-    ├── Mod_Parse_Advanced.php   # Ingestion parser for advanced telemetry
-    └── Mod_Anomalies.php        # PHP-ML clustering & dispatch to Python engine
+├── Models/             # Models for tbl_sms, tbl_logs, tbl_tokens, tbl_plans, AnomaliesModel, etc.
+└── Views/
+    ├── admin/          # AdminLTE 3 views (ml.php, users, reports, logs)
+    ├── superadmin/     # SuperAdmin views (role_matrix.php, infrastructure.php, audit.php)
+    ├── users/          # Client forensic dashboards & correlation engine
+    └── headers_footers/# Global navigation, omni search modal & sidebars
 ```
 
 ---
@@ -38,20 +39,20 @@ When the Android client uploads forensic data, `Controllers\Receive.php` decodes
 
 ---
 
-## 3. Machine Learning (PHP-ML)
+## 3. Local Machine Learning Engine (PHP-ML)
 
-In-process analytics execute inside `Mod_Anomalies`:
+In-process analytics execute inside `AnomaliesModel` / `Mod_Anomalies`:
 
 * **K-Means Clustering (`PhpMl\Clustering\KMeans`)**:
-  Used in `detectSmsCluster()` with $k=3$. Analyzes sender frequency, night-time ratio, and unique recipients. Outliers outside major clusters trigger suspicion flags.
-* **DBSCAN Clustering (`PhpMl\Clustering\DBSCAN`)**:
+  Used in `detectSmsCluster()` with configurable $K$ (default: 3). Clusters sender frequency, night-time ratio, and unique recipients to flag outlier communications.
+* **DBSCAN Density Clustering (`PhpMl\Clustering\DBSCAN`)**:
   Used in `detectLocationDBSCAN()` with $\epsilon = 0.01$ and `minPts = 2`. Clusters geographic coordinates to detect unnatural trajectory outliers or spoofed GPS points.
-* **Rolling Z-Score Monitors**:
-  Calculates dynamic baselines over 7-day windows to detect spikes in late-night call duration and SMS frequency.
+* **Isolation Forest (`PhpMl`)**:
+  Constructs random decision trees to isolate multi-dimensional feature anomalies across SMS, calls, and app activity.
 
 ---
 
-## 4. Useful Developer Commands
+## 4. Useful CLI Commands
 
 All standard CodeIgniter 4 CLI operations run via `spark`:
 
@@ -64,4 +65,7 @@ php spark migrate --all
 
 # Clear compiled view and config cache
 php spark cache:clear
+
+# Execute test seeder
+php spark db:seed PlanSeeder
 ```

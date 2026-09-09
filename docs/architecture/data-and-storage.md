@@ -1,51 +1,122 @@
-# Architecture: Data and Storage
+# Architecture: Data & Storage Topology
 
-This document details the database architecture, schema categories, and data retention rules across the Eaves Droid platform.
-
----
-
-## 1. Primary Datastore (MySQL 8.4)
-
-The database `db_eaves_droid` serves as the centralized source of truth for all components. It organizes data into distinct functional categories:
-
-### Data Tables (Forensic Evidence)
-
-| Category | Primary Tables | Primary Key | Description |
-|----------|----------------|-------------|-------------|
-| **SMS** | `tbl_sms` | `id` | Incoming/outgoing SMS messages, timestamps, threads |
-| **Contacts** | `tbl_contacts` | `id` | Address book entries, phone numbers, interaction counts |
-| **Call Logs** | `tbl_logs` | `id` | Call duration, direction, phone number, timestamps |
-| **Locations** | `tbl_location` | `id` | Latitude, longitude, altitude, accuracy, GPS speed |
-| **Applications** | `tbl_apps` | `id` | Package names, install dates, granted permissions |
-| **App Usage** | `tbl_app_usage` | `id` | Foreground duration, launch frequency, last time used |
-| **Files** | `tbl_device_files` | `id` | Scanned file metadata, extensions, byte sizes, paths |
-| **Device Info** | `tbl_device_profile` | `id` | Hardware identifiers, OS version, battery status, network state |
-| **Notifications**| `tbl_notifications` | `id` | Intercepted system notifications and alert text |
-
-### System & Access Tables
-
-| Category | Tables | Description |
-|----------|--------|-------------|
-| **Auth & RBAC** | `users`, `auth_identities`, `auth_groups_users`, `auth_permissions_users` | CodeIgniter Shield user accounts and role assignments |
-| **Plans & Billing** | `tbl_plans`, `tbl_plan_versions`, `tbl_subscriptions`, `tbl_ipn_logs` | Plan gating limits, version diffs, subscription history |
-| **Tokens & Devices** | `tbl_tokens`, `tbl_devices`, `tbl_remote_commands` | Mobile authentication tokens and remote command dispatch |
-| **ML Coordination** | `ml_jobs`, `ml_results`, `ml_analysis_tracking` | Job dispatch tracking and anomaly detector findings |
+This document details the database schema, relational models, forensic storage directory layout, and data retention policies for Eaves Droid WebApp.
 
 ---
 
-## 2. File Storage (`writable/`)
+## 1. Database Schema & Entity Relationship Diagram
 
-* **Forensic Payload Backups:** Uploaded encrypted raw payloads are archived in `writable/loot/` for offline inspection or forensic verification.
-* **Logs:** CI4 application runtime logs are written to `writable/logs/`.
-* **Export Artifacts:** Legal forensic bundles and ZIP packages are generated in `writable/exports/`.
+```mermaid
+erDiagram
+  USERS ||--o{ USER_GROUPS : has
+  USERS ||--o{ TOKENS : owns
+  USERS ||--o{ SUBSCRIPTIONS : billed
+  USERS ||--o{ ML_JOBS : runs
+  USERS ||--o{ AUDIT_LOGS : generates
+
+  TOKENS ||--o{ SMS_RECORDS : ingests
+  TOKENS ||--o{ CALL_LOGS : ingests
+  TOKENS ||--o{ LOCATIONS : ingests
+  TOKENS ||--o{ APP_INVENTORY : ingests
+  TOKENS ||--o{ FILE_LISTS : ingests
+
+  ML_JOBS ||--o{ ML_RESULTS : produces
+
+  USERS {
+    int id PK
+    string username
+    string email
+    string password_hash
+    string status
+    datetime created_at
+  }
+
+  TOKENS {
+    int id PK
+    int user_id FK
+    string token_hash
+    string device_name
+    string device_id
+    datetime last_used_at
+  }
+
+  SUBSCRIPTIONS {
+    int id PK
+    int user_id FK
+    string plan_id
+    string status
+    datetime expires_at
+  }
+
+  SMS_RECORDS {
+    int id PK
+    int token_id FK
+    string address
+    string body
+    int type
+    datetime date
+  }
+
+  CALL_LOGS {
+    int id PK
+    int token_id FK
+    string number
+    int duration
+    int type
+    datetime date
+  }
+
+  LOCATIONS {
+    int id PK
+    int token_id FK
+    float latitude
+    float longitude
+    float speed
+    datetime timestamp
+  }
+
+  ML_JOBS {
+    int id PK
+    int user_id FK
+    string engine
+    string status
+    json algorithms
+    datetime created_at
+  }
+
+  ML_RESULTS {
+    int id PK
+    int job_id FK
+    string detector
+    float anomaly_score
+    json metadata
+    datetime detected_at
+  }
+```
 
 ---
 
-## 3. Data Retention Lifecycle
+## 2. Multi-Tenant Isolation
 
-Data retention is strictly enforced by the background cron engine according to user subscription tiers:
-* **Free Tier:** Automatically purges records older than **10 days**.
-* **Gold Tier:** Retains forensic history for **60 days**.
-* **Platinum Tier:** Extended forensic archive of **180 days**.
+1. **Tenant Scoping:** All forensic records (`tbl_sms`, `tbl_logs`, `tbl_location`, `tbl_installed_apps`, `tbl_files`) contain foreign keys referencing `token_id` and the user's account ID.
+2. **Query Scoping:** CodeIgniter models automatically scope queries with `where('user_id', $userId)` preventing Cross-Tenant IDOR.
+3. **Shield Group Protections:** Non-superadmin users are restricted from viewing data belonging to other user accounts.
 
-Purging is scheduled via `php spark cron:run` and removes records in batch chunks to maintain database responsiveness.
+---
+
+## 3. File Storage & Directory Layout
+
+Forensic binary uploads, chat attachments, and system caches are persisted in the `writable/` directory:
+
+```
+writable/
+├── cache/                  # CodeIgniter transient query & view cache
+├── exports/                # Generated forensic PDF, CSV, and JSON exports
+├── logs/                   # System error logs & debug traces
+├── loot/                   # Encrypted and raw extracted mobile dumps
+│   └── {user_id}/
+│       └── {device_id}/
+├── session/                # PHP secure file session storage
+├── temp/                   # Transient decompression & staging files
+└── uploads/                # User avatar uploads & chat attachments
+```

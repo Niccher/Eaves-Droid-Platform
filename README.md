@@ -1,11 +1,21 @@
 # Eaves Droid WebApp
 
-Self-hosted forensic data ingestion server and analytical web dashboard for the Eaves Droid platform. Ingests encrypted on-device telemetry, parses multi-category forensic logs, and presents dashboards with real-time anomaly detection.
+Self-hosted forensic data ingestion server, analytics control plane, and administrative dashboard for the Eaves Droid platform. Ingests encrypted on-device telemetry, parses multi-category forensic logs, and provides real-time anomaly detection with self-healing ML failover.
 
-**Stack:** CodeIgniter 4.5 (PHP 8.3), MySQL 8.4, Docker Compose.
+**Stack:** CodeIgniter 4.5 (PHP 8.3), MySQL 8.4, Docker Compose, PHP-ML.
 
 **If you only need to run the system, this page is enough.**  
 Software engineers: [docs/README.md](docs/README.md).
+
+---
+
+## Sibling Ecosystem Repositories
+
+| Component | Responsibility | Repository URL | Documentation |
+|---|---|---|---|
+| **Web App** | CodeIgniter 4 Web UI, Auth, Billing & Ingestion | [GitHub Repo](https://github.com/Niccher/Eaves-Droid-WebApp) | [docs/](docs/README.md) |
+| **ML Microservice** | FastAPI, scikit-learn, PyOD, PyTorch & Deep Autoencoders | [GitHub Repo](https://github.com/Niccher/ML-Eaves-Droid) | [docs/](https://github.com/Niccher/ML-Eaves-Droid/tree/main/docs) |
+| **Android Client** | Kotlin Native App, 60+ Forensic Extractors & AES Upload | [GitHub Repo](https://github.com/Niccher/Eaves-Droid-App) | [docs/](https://github.com/Niccher/Eaves-Droid-App/tree/main/docs) |
 
 ---
 
@@ -15,6 +25,7 @@ Software engineers: [docs/README.md](docs/README.md).
 |-----------|----------------|-------------------------|
 | Web Dashboard | http://localhost:9007 | Seeded via `SuperAdminSeeder` |
 | Health Check | GET http://localhost:9007/api/health | *(None - returns HTTP 200)* |
+| ML Telemetry Heartbeat | GET http://localhost:9007/admin/ml/heartbeat | Session / Admin Auth |
 | Data Ingestion Endpoint | POST http://localhost:9007/api/v1/files/upload | Requires mobile token |
 
 ---
@@ -26,7 +37,7 @@ Software engineers: [docs/README.md](docs/README.md).
 * Docker Engine 24.0+ and Docker Compose v2
 
 ### Option B — Without Docker
-* PHP 8.3 (with `curl`, `mysqlnd`, `mbstring`, `intl`, `xml`)
+* PHP 8.3 (with `curl`, `mysqlnd`, `mbstring`, `intl`, `xml`, `gd`)
 * Composer 2.7+
 * MySQL 8.4 server
 
@@ -71,6 +82,7 @@ Software engineers: [docs/README.md](docs/README.md).
 | `app.baseURL` | `http://localhost:9007/` | Web application base URL |
 | `database.default.hostname` | `mysql` | MySQL hostname or container name |
 | `database.default.database` | `db_eaves_droid` | Primary database name |
+| `ml_python_url` | `http://ml-eaves-droid:9070` | Python ML microservice backend URL |
 
 Full configuration reference: [docs/user/configuration.md](docs/user/configuration.md).
 
@@ -79,8 +91,9 @@ Full configuration reference: [docs/user/configuration.md](docs/user/configurati
 ## Something Went Wrong?
 
 * **Port 9007 in use:** Another process occupies port 9007. Change published host port in `docker-compose.yml`.
-* **Database connection refused:** Wait for `shared-mysql` container health check to pass before accessing the web app.
+* **Database connection refused:** Wait for MySQL container health check to pass before accessing the web app.
 * **Storage permission denied:** Run `chmod -R 777 writable/` to allow file uploads and session cache.
+* **ML microservice offline:** WebApp automatically engages synchronous PHP-ML failover with zero downtime.
 
 Detailed troubleshooting steps: [docs/user/troubleshooting.md](docs/user/troubleshooting.md).
 
@@ -90,7 +103,8 @@ Detailed troubleshooting steps: [docs/user/troubleshooting.md](docs/user/trouble
 
 * **Architecture Overview:** [docs/architecture/overview.md](docs/architecture/overview.md)
 * **Inter-Service Communication:** [docs/architecture/communication.md](docs/architecture/communication.md)
-* **Database & Storage Topology:** [docs/architecture/data-and-storage.md](docs/architecture/data-and-storage.md)
-* **Deployment Guide:** [docs/architecture/deployment.md](docs/architecture/deployment.md)
+* **Threat Model & Security:** [docs/architecture/threat-model.md](docs/architecture/threat-model.md)
+* **API Specification & Contract:** [docs/api/contract.md](docs/api/contract.md)
 * **CodeIgniter 4 Service Details:** [docs/services/codeigniter.md](docs/services/codeigniter.md)
-* **Local Development & Recipes:** [docs/engineering/making-changes.md](docs/engineering/making-changes.md)
+* **Making Changes & Recipes:** [docs/engineering/making-changes.md](docs/engineering/making-changes.md)
+* **Operational Runbooks:** [docs/runbooks/restart.md](docs/runbooks/restart.md)
