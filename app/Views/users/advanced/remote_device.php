@@ -113,7 +113,7 @@
                             <div class="row text-center" id="command-grid">
                                 <?php
                                 $gate = new \App\Services\PlanGate();
-                                $ownerId = isset($targetDevice['owner_id']) ? (int)$targetDevice['owner_id'] : 0;
+                                $ownerId = (int)($currentUserId ?? (session()->get('user_id') ?? (function_exists('auth') && auth()->loggedIn() ? auth()->id() : ($targetDevice['owner_id'] ?? 0))));
 
                                 if (!function_exists('getRequiredTierForFeat')) {
                                     function getRequiredTierForFeat($feat) {
@@ -195,7 +195,7 @@
                         <div class="tab-pane fade" id="tab-mgmt" role="tabpanel">
                             <?php
                                 $gate = new \App\Services\PlanGate();
-                                $ownerId = isset($targetDevice['owner_id']) ? (int)$targetDevice['owner_id'] : 0;
+                                $ownerId = (int)($currentUserId ?? (session()->get('user_id') ?? (function_exists('auth') && auth()->loggedIn() ? auth()->id() : ($targetDevice['owner_id'] ?? 0))));
                                 $canReset = $ownerId ? $gate->hasFeature($ownerId, 'fcm_cmd_reset_app') : false;
                                 $canDeactivate = $ownerId ? $gate->hasFeature($ownerId, 'fcm_cmd_deactivate') : false;
                                 $canLogout = $ownerId ? $gate->hasFeature($ownerId, 'fcm_cmd_logout') : false;

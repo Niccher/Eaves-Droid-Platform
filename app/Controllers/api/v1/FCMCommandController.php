@@ -153,6 +153,12 @@ class FCMCommandController extends BaseController
                 ->get()
                 ->getRowArray();
             $ownerId = $deviceProfile ? (int)$deviceProfile['owner_id'] : 0;
+
+            if ($ownerId <= 0 && function_exists('auth') && auth()->loggedIn()) {
+                $ownerId = (int)auth()->id();
+            } elseif ($ownerId <= 0 && session()->has('user_id')) {
+                $ownerId = (int)session()->get('user_id');
+            }
             
             if ($ownerId) {
                 $planGate = new \App\Services\PlanGate();
@@ -165,7 +171,7 @@ class FCMCommandController extends BaseController
 
         $credentials = $this->getCredentialsJson();
         if (!$credentials) {
-            return $this->fail('Firebase credentials file missing. Please configure your Firebase Service Account JSON in Admin Settings -> Notifications, or set FIREBASE_CREDENTIALS_JSON in Railway environment variables.', 500);
+            return $this->fail('Firebase credentials file missing. Please configure your Firebase Service Account JSON in Admin Settings -> Firebase (FCM), or set FIREBASE_CREDENTIALS_JSON in Railway environment variables.', 500);
         }
 
         $accessToken = $this->getAccessToken();

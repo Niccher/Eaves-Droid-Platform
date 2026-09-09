@@ -674,6 +674,30 @@ class ForensicsUserController extends BaseClientController
                 ->get()
                 ->getResultArray();
 
+            // Fetch recent fetch_file action logs in a single batch query to avoid N+1 scans
+            $actionLogs = $db->table('tbl_user_actions')
+                ->where('user_id', $this->userId)
+                ->where('action_type', 'fetch_file')
+                ->orderBy('id', 'DESC')
+                ->limit(100)
+                ->get()
+                ->getResultArray();
+
+            $pathMap = [];
+            foreach ($actionLogs as $act) {
+                if (!empty($act['new_values'])) {
+                    $nv = json_decode($act['new_values'], true);
+                    $p = $nv['payload'] ?? '';
+                    if ($p) {
+                        $fn = basename($p);
+                        if (!isset($pathMap[$fn])) {
+                            $dir = dirname($p);
+                            $pathMap[$fn] = ($dir !== '.' && $dir !== '/') ? rtrim($dir, '/') . '/' : '';
+                        }
+                    }
+                }
+            }
+
             foreach ($fileRows as $r) {
                 $originalName = $r['original_filename'];
                 if (str_ends_with(strtolower($originalName), '.enc')) {
@@ -685,28 +709,7 @@ class ForensicsUserController extends BaseClientController
                     continue;
                 }
 
-                // Resolve original Android path from tbl_user_actions
-                $androidPath = '';
-                $actionLog = $db->table('tbl_user_actions')
-                    ->where('user_id', $this->userId)
-                    ->where('action_type', 'fetch_file')
-                    ->like('new_values', $originalName)
-                    ->orderBy('id', 'DESC')
-                    ->get()
-                    ->getRowArray();
-
-                if ($actionLog) {
-                    $newVals = json_decode($actionLog['new_values'], true);
-                    $fullPath = $newVals['payload'] ?? '';
-                    if ($fullPath) {
-                        $androidPath = dirname($fullPath);
-                        if ($androidPath !== '.' && $androidPath !== '/') {
-                            $androidPath = rtrim($androidPath, '/') . '/';
-                        } else {
-                            $androidPath = '';
-                        }
-                    }
-                }
+                $androidPath = $pathMap[$originalName] ?? '';
 
                 $downloadedMedia[] = [
                     'id' => $r['file_id'],
@@ -727,14 +730,14 @@ class ForensicsUserController extends BaseClientController
             });
         }
 
-        $counts = $this->getUserDataCounts();
-        $data = array_merge($counts, [
+        $data = [
             'pag' => 'remote_device',
             'title' => 'Remote Device Control',
             'targetDevice' => $targetDevice,
             'recentUploadSources' => $recentUploadSources,
             'downloadedMedia' => $downloadedMedia,
-        ]);
+            'currentUserId' => $this->userId,
+        ];
 
         return $this->renderAppView('users/advanced/remote_device', $data);
     }

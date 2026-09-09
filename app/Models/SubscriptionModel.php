@@ -192,7 +192,33 @@ class SubscriptionModel extends Model
                 $tierMap = ['free' => 'core', 'gold' => 'advanced', 'platinum' => 'deep'];
                 $requiredGroup = $tierMap[$requiredTier] ?? 'core';
 
-                return in_array($requiredGroup, $fcmGroups, true);
+                // Cumulative tier inheritance:
+                // Platinum ('deep') grants deep, advanced, and core
+                // Gold ('advanced') grants advanced and core
+                // Free ('core') grants core
+                if (in_array('deep', $fcmGroups, true)) {
+                    return true;
+                }
+                if (in_array('advanced', $fcmGroups, true)) {
+                    return in_array($requiredGroup, ['core', 'advanced'], true);
+                }
+                if (in_array('core', $fcmGroups, true) && $requiredGroup === 'core') {
+                    return true;
+                }
+
+                // Fallback to active plan tier name
+                $planName = strtolower($limits['plan'] ?? 'free');
+                if ($planName === 'platinum') {
+                    return true;
+                }
+                if ($planName === 'gold') {
+                    return in_array($requiredGroup, ['core', 'advanced'], true);
+                }
+                if ($planName === 'free') {
+                    return $requiredGroup === 'core';
+                }
+
+                return false;
             }
 
             if ($category === 'hardware') {
@@ -230,7 +256,29 @@ class SubscriptionModel extends Model
                 $tierMap = ['free' => 'core', 'gold' => 'advanced', 'platinum' => 'deep'];
                 $requiredGroup = $tierMap[$requiredTier] ?? 'core';
 
-                return in_array($requiredGroup, $allowedAlgos, true);
+                // Cumulative tier inheritance for ML
+                if (in_array('deep', $allowedAlgos, true)) {
+                    return true;
+                }
+                if (in_array('advanced', $allowedAlgos, true)) {
+                    return in_array($requiredGroup, ['core', 'advanced'], true);
+                }
+                if (in_array('core', $allowedAlgos, true) && $requiredGroup === 'core') {
+                    return true;
+                }
+
+                $planName = strtolower($limits['plan'] ?? 'free');
+                if ($planName === 'platinum') {
+                    return true;
+                }
+                if ($planName === 'gold') {
+                    return in_array($requiredGroup, ['core', 'advanced'], true);
+                }
+                if ($planName === 'free') {
+                    return $requiredGroup === 'core';
+                }
+
+                return false;
             }
         }
 
@@ -240,7 +288,7 @@ class SubscriptionModel extends Model
             $featArr = json_decode($featArr, true) ?: [];
         }
         $val = $featArr[$feature] ?? false;
-        if ($val === true) {
+        if (!empty($val) && $val !== false && $val !== 'false') {
             return true;
         }
         if ($feature === 'wellbeing' && isset($featArr['wellbeing_summary_days']) && (int)$featArr['wellbeing_summary_days'] > 0) {
