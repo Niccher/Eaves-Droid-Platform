@@ -75,9 +75,33 @@ class DeviceConfigController extends BaseController
                 $db->table('tbl_device_configs')->insert($data);
             }
 
+            // Query any pending unacknowledged commands for this device (HTTP fallback channel)
+            $pendingCommands = [];
+            $pendingActions = $db->table('tbl_user_actions')
+                ->where('action_category', 'fcm_command')
+                ->where('device_id', $profile['device_id'])
+                ->where('created_at >=', date('Y-m-d H:i:s', time() - 3600))
+                ->orderBy('id', 'DESC')
+                ->limit(5)
+                ->get()
+                ->getResultArray();
+
+            foreach ($pendingActions as $action) {
+                $nv = !empty($action['new_values']) ? json_decode($action['new_values'], true) : [];
+                if (empty($nv['device_ack'])) {
+                    $pendingCommands[] = [
+                        'action_log_id' => (string)$action['id'],
+                        'command'       => $action['action_type'],
+                        'payload'       => $nv['payload'] ?? 'all',
+                        'ack_url'       => site_url('api/v1/fcm/ack/' . $action['id']),
+                    ];
+                }
+            }
+
             return $this->respond([
-                'success' => true,
-                'message' => 'Config synced.',
+                'success'          => true,
+                'message'          => 'Config synced.',
+                'pending_commands' => $pendingCommands,
             ]);
         } catch (\Exception $e) {
             log_message('error', 'DeviceConfig sync error: ' . $e->getMessage());

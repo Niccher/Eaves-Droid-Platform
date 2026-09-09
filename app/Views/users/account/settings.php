@@ -44,41 +44,100 @@
 
                                 <!-- ==================== API TOKENS ==================== -->
                                 <div class="tab-pane fade show active" id="api-tokens" role="tabpanel">
+                                    <?php 
+                                    $hasActiveToken = !empty($user_token['token']) && ($user_token['status'] ?? '') === '00';
+                                    $activeToken = $user_token['token'] ?? '';
+                                    $serverUrl = rtrim(site_url(), '/');
+                                    ?>
                                     <div class="row">
-                                        <!-- Create Token Panel -->
+                                        <!-- Active / Create Token Panel -->
                                         <div class="col-lg-5 mb-4">
                                             <div class="card card-secondary h-100 shadow-sm">
-                                                <div class="card-header bg-gradient-secondary text-white">
-                                                    <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>New Token</h5>
+                                                <div class="card-header bg-gradient-secondary text-white d-flex justify-content-between align-items-center">
+                                                    <h5 class="mb-0"><i class="fas fa-key mr-2"></i>API Access Token</h5>
+                                                    <?php if ($hasActiveToken): ?>
+                                                    <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i>Active</span>
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="card-body text-center">
-                                                    <form id="createTokenForm" method="post">
-                                                        <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
-                                                        <div class="form-group">
-                                                            <label for="tokenName" class="font-weight-bold">Device Label</label>
-                                                            <input type="text" class="form-control text-center" id="tokenName" name="token_name" placeholder="e.g. My Pixel 7">
-                                                            <small class="text-muted">Optional name to identify this token</small>
+                                                    <?php if ($hasActiveToken): ?>
+                                                    <!-- Active Token Display & QR -->
+                                                    <div id="activeTokenSection">
+                                                        <div class="d-flex justify-content-center mb-3">
+                                                            <div class="p-2 border rounded bg-white shadow-sm" style="display:inline-block;">
+                                                                <canvas id="active-qr" style="width:140px;height:140px;"></canvas>
+                                                            </div>
                                                         </div>
-                                                        <button type="submit" class="btn btn-outline-secondary btn-lg btn-block shadow-sm font-weight-bold" id="createTokenBtn">
-                                                            <i class="fas fa-plus mr-2"></i> Generate Token
-                                                        </button>
-                                                    </form>
+                                                        <p class="text-muted small mb-2"><i class="fas fa-camera mr-1"></i>Scan with the Android app to auto-configure server and sign in.</p>
+                                                        
+                                                        <div class="input-group input-group-sm mb-2">
+                                                            <input type="text" class="form-control text-center font-monospace font-weight-bold" id="activeTokenVal" value="<?= htmlspecialchars($activeToken) ?>" readonly>
+                                                            <div class="input-group-append">
+                                                                <button class="btn btn-outline-secondary" type="button" id="copyActiveToken" title="Copy Token">
+                                                                    <i class="fas fa-copy"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
 
-                                                    <div id="tokenResult" style="display:none;" class="mt-4">
-                                                        <hr>
-                                                        <div class="alert alert-success py-2">
-                                                            <i class="fas fa-check-circle mr-1"></i> <strong>Token created!</strong> Copy it now — it won't be shown again.
+                                                        <div class="mb-3 text-center">
+                                                            <small class="text-muted"><i class="fas fa-link mr-1"></i>Server URL:</small><br>
+                                                            <a href="<?= $serverUrl ?>" target="_blank" class="badge badge-light border text-primary font-weight-bold p-2 text-wrap" style="word-break: break-all;">
+                                                                <i class="fas fa-globe mr-1"></i><span><?= $serverUrl ?></span>
+                                                            </a>
                                                         </div>
-                                                        <div class="input-group input-group-lg mb-3">
-                                                            <input type="text" class="form-control text-center font-weight-bold" id="generatedToken" readonly>
+
+                                                        <hr>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnToggleNewToken">
+                                                            <i class="fas fa-sync-alt mr-1"></i> Generate New / Replace Token
+                                                        </button>
+                                                    </div>
+                                                    <?php endif; ?>
+
+                                                    <!-- Generate Token Form -->
+                                                    <div id="tokenFormContainer" style="<?= $hasActiveToken ? 'display:none;' : '' ?>">
+                                                        <form id="createTokenForm" method="post">
+                                                            <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                                                            <div class="form-group text-left">
+                                                                <label for="tokenName" class="font-weight-bold small text-muted text-uppercase">Device Label</label>
+                                                                <input type="text" class="form-control text-center" id="tokenName" name="token_name" placeholder="e.g. My Pixel 7">
+                                                                <small class="text-muted">Optional label to identify this device session</small>
+                                                            </div>
+                                                            <button type="submit" class="btn btn-primary btn-block shadow-sm font-weight-bold" id="createTokenBtn">
+                                                                <i class="fas fa-plus mr-2"></i> Generate Token
+                                                            </button>
+                                                            <?php if ($hasActiveToken): ?>
+                                                            <button type="button" class="btn btn-sm btn-link text-muted mt-2" id="btnCancelNewToken">
+                                                                Cancel
+                                                            </button>
+                                                            <?php endif; ?>
+                                                        </form>
+                                                    </div>
+
+                                                    <!-- Newly Generated Token Result -->
+                                                    <div id="tokenResult" style="display:none;" class="mt-3">
+                                                        <div class="alert alert-success py-2 text-left small">
+                                                            <i class="fas fa-check-circle mr-1"></i> <strong>New Token Generated!</strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-center mb-3">
+                                                            <div class="p-2 border rounded bg-white shadow-sm" style="display:inline-block;">
+                                                                <canvas id="result-qr" style="width:140px;height:140px;"></canvas>
+                                                            </div>
+                                                        </div>
+                                                        <div class="input-group input-group-sm mb-2">
+                                                            <input type="text" class="form-control text-center font-monospace font-weight-bold" id="generatedToken" readonly>
                                                             <div class="input-group-append">
                                                                 <button class="btn btn-primary" type="button" id="copyGeneratedToken" title="Copy to clipboard">
                                                                     <i class="fas fa-copy"></i>
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                        <canvas id="result-qr" style="width:130px;height:130px;margin:0 auto;"></canvas>
-                                                        <p class="text-muted small mt-2">Scan this QR from the Android app's token scanner</p>
+                                                        <p class="text-muted small mt-1 mb-2">Scan this QR from the Android app to login instantly.</p>
+                                                        <div class="text-center">
+                                                            <small class="text-muted"><i class="fas fa-link mr-1"></i>Server URL:</small><br>
+                                                            <a href="<?= $serverUrl ?>" id="serverUrlLink" target="_blank" class="badge badge-light border text-primary font-weight-bold p-2 text-wrap" style="word-break: break-all;">
+                                                                <i class="fas fa-globe mr-1"></i><span id="serverUrlText"><?= $serverUrl ?></span>
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -104,6 +163,7 @@
                                                                     <th>Status</th>
                                                                     <th>Used</th>
                                                                     <th>Created</th>
+                                                                    <th class="text-right">Action</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -111,9 +171,17 @@
                                                                 <tr>
                                                                     <td><?= htmlspecialchars($t['device_name'] ?? '—') ?></td>
                                                                     <td><code class="small"><?= htmlspecialchars($t['token'] ?? '—') ?></code></td>
-                                                                    <td><span class="badge badge-secondary">Used</span></td>
+                                                                    <td><span class="badge badge-secondary"><?= ($t['status'] === '00') ? 'Active' : 'Used' ?></span></td>
                                                                     <td class="small text-muted"><?= !empty($t['last_used_at']) ? date('M d, Y H:i', strtotime($t['last_used_at'])) : '—' ?></td>
                                                                     <td class="small text-muted"><?= !empty($t['created_at']) ? date('M d, Y H:i', strtotime($t['created_at'])) : '—' ?></td>
+                                                                    <td class="text-right">
+                                                                        <button type="button" class="btn btn-xs btn-outline-primary btn-history-qr" 
+                                                                            data-token="<?= htmlspecialchars($t['token'] ?? '') ?>" 
+                                                                            data-device="<?= htmlspecialchars($t['device_name'] ?? 'Device') ?>"
+                                                                            title="View Pairing QR">
+                                                                            <i class="fas fa-qrcode"></i>
+                                                                        </button>
+                                                                    </td>
                                                                 </tr>
                                                                 <?php endforeach; ?>
                                                             </tbody>
@@ -220,9 +288,55 @@
     </section>
 </div>
 
+<!-- History QR Modal -->
+<div class="modal fade" id="historyQrModal" tabindex="-1" role="dialog" aria-labelledby="historyQrModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content text-center shadow-lg border-0">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title font-weight-bold" id="historyQrModalLabel"><i class="fas fa-qrcode mr-2"></i>Token Pairing QR</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">Scan this QR code from the <strong>Eaves Droid</strong> app to authenticate.</p>
+                <div class="d-flex justify-content-center mb-3">
+                    <div class="p-2 border rounded bg-white shadow-sm" style="display:inline-block;">
+                        <canvas id="historyQrCanvas" style="width:180px;height:180px;"></canvas>
+                    </div>
+                </div>
+
+                <div class="mb-3 text-left">
+                    <label class="font-weight-bold small text-muted text-uppercase mb-1">Server URL</label>
+                    <input type="text" class="form-control form-control-sm text-center font-monospace" id="historyModalUrl" value="<?= rtrim(site_url(), '/') ?>" readonly>
+                </div>
+
+                <div class="mb-3 text-left">
+                    <label class="font-weight-bold small text-muted text-uppercase mb-1">Token</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control text-center font-monospace font-weight-bold" id="historyModalToken" readonly>
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="copyHistoryToken" title="Copy Token"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-muted small border-top pt-2 mt-3 text-left">
+                    <strong>Device:</strong> <span id="historyModalDevice">—</span>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
 <script>
 $(document).ready(function() {
+    var serverUrl = '<?= rtrim(site_url(), '/') ?>';
+
     function showToast(msg, type) {
         type = type || 'info';
         var t = $('<div class="toast fade show" role="alert" style="position:fixed;top:20px;right:20px;z-index:9999;min-width:250px;">'
@@ -235,6 +349,34 @@ $(document).ready(function() {
         setTimeout(function() { t.remove(); }, 3000);
     }
 
+    // 1. Render active token QR on load if active token exists
+    <?php if ($hasActiveToken): ?>
+    var activeQrPayload = JSON.stringify({
+        url: serverUrl,
+        token: '<?= addslashes($activeToken) ?>',
+        type: 'eaves_droid_auth'
+    });
+    var activeCanvas = document.getElementById('active-qr');
+    if (activeCanvas) {
+        QRCode.toCanvas(activeCanvas, activeQrPayload, { width: 140, margin: 1 }, function(err) {
+            if (err) console.error('Active QR Render Error:', err);
+        });
+    }
+    <?php endif; ?>
+
+    // 2. Toggle new token form
+    $('#btnToggleNewToken').on('click', function() {
+        $('#activeTokenSection').slideUp(200);
+        $('#tokenResult').hide();
+        $('#tokenFormContainer').slideDown(200);
+    });
+
+    $('#btnCancelNewToken').on('click', function() {
+        $('#tokenFormContainer').slideUp(200);
+        $('#activeTokenSection').slideDown(200);
+    });
+
+    // 3. Create token AJAX
     $('#createTokenForm').on('submit', function(e) {
         e.preventDefault();
         var btn = $('#createTokenBtn');
@@ -246,11 +388,21 @@ $(document).ready(function() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             success: function(res) {
                 if (res.success) {
-                    $('#createTokenForm').hide();
+                    $('#tokenFormContainer').hide();
                     $('#generatedToken').val(res.token);
-                    QRCode.toCanvas(document.getElementById('result-qr'), res.token, { width: 130, margin: 1 });
+                    
+                    var qrUrl = res.server_url || serverUrl;
+                    var qrPayload = JSON.stringify({
+                        url: qrUrl,
+                        token: res.token,
+                        type: 'eaves_droid_auth'
+                    });
+                    
+                    QRCode.toCanvas(document.getElementById('result-qr'), qrPayload, { width: 140, margin: 1 });
+                    $('#serverUrlLink').attr('href', qrUrl);
+                    $('#serverUrlText').text(qrUrl);
                     $('#tokenResult').show();
-                    showToast('Token created! Scan from the Android app.', 'success');
+                    showToast('Token created! Scan QR code from the Android app.', 'success');
                 } else {
                     showToast(res.message || 'Failed', 'danger');
                     btn.prop('disabled', false).html('<i class="fas fa-plus mr-2"></i> Generate Token');
@@ -263,8 +415,37 @@ $(document).ready(function() {
         });
     });
 
+    // 4. Token History QR Modal
+    $('.btn-history-qr').on('click', function() {
+        var token = $(this).data('token');
+        var device = $(this).data('device');
+
+        $('#historyModalToken').val(token);
+        $('#historyModalDevice').text(device);
+
+        var qrPayload = JSON.stringify({
+            url: serverUrl,
+            token: token,
+            type: 'eaves_droid_auth'
+        });
+
+        QRCode.toCanvas(document.getElementById('historyQrCanvas'), qrPayload, { width: 180, margin: 1 });
+        $('#historyQrModal').modal('show');
+    });
+
+    // 5. Copy buttons
+    $('#copyActiveToken').click(function() {
+        navigator.clipboard.writeText($('#activeTokenVal').val());
+        showToast('Active token copied!', 'success');
+    });
+
     $('#copyGeneratedToken').click(function() {
         navigator.clipboard.writeText($('#generatedToken').val());
+        showToast('New token copied!', 'success');
+    });
+
+    $('#copyHistoryToken').click(function() {
+        navigator.clipboard.writeText($('#historyModalToken').val());
         showToast('Token copied!', 'success');
     });
 });

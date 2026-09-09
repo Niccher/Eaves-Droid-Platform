@@ -82,6 +82,13 @@
                                 <td><?= htmlspecialchars($t['last_used_at'] ?? 'Never') ?></td>
                                 <td class="text-nowrap">
                                     <div class="d-flex align-items-center">
+                                        <button type="button" class="btn btn-sm btn-primary mr-1 btn-qr-modal" 
+                                            data-token="<?= htmlspecialchars($t['token']) ?>" 
+                                            data-owner="<?= htmlspecialchars($t['username'] ?? 'Unknown') ?>" 
+                                            data-device="<?= htmlspecialchars($t['device_name'] ?? 'None') ?>"
+                                            title="View Android Pairing QR Code">
+                                            <i class="fas fa-qrcode"></i>
+                                        </button>
                                         <?php if ($t['status'] === '00'): ?>
                                         <form method="post" action="<?= base_url('admin/tokens/revoke/' . $t['counter']) ?>" class="action-form mr-1" data-confirm-title="Revoke Token" data-confirm-text="Are you sure you want to revoke this token? It will no longer authenticate API requests.">
                                             <?= csrf_field() ?>
@@ -248,9 +255,94 @@
     </section>
 </div>
 
+<!-- QR Code Pairing Modal -->
+<div class="modal fade" id="qrPairingModal" tabindex="-1" role="dialog" aria-labelledby="qrPairingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content text-center shadow-lg border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="qrPairingModalLabel"><i class="fas fa-qrcode mr-2"></i>Android App Pairing QR</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">Scan this QR code from the <strong>Eaves Droid</strong> Android app to automatically configure the server URL and authenticate instantly.</p>
+                <div class="d-flex justify-content-center mb-3">
+                    <div class="p-2 border rounded bg-white shadow-sm" style="display:inline-block;">
+                        <canvas id="adminQrCanvas" style="width:200px;height:200px;"></canvas>
+                    </div>
+                </div>
+                
+                <div class="mb-3 text-left">
+                    <label class="font-weight-bold small text-muted text-uppercase mb-1">Server URL</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control text-center font-monospace" id="modalServerUrl" value="<?= rtrim(site_url(), '/') ?>" readonly>
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="copyModalUrl" title="Copy Server URL"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3 text-left">
+                    <label class="font-weight-bold small text-muted text-uppercase mb-1">Token</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control text-center font-monospace font-weight-bold" id="modalToken" readonly>
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="copyModalToken" title="Copy Token"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between text-muted small border-top pt-2 mt-3">
+                    <span><strong>Owner:</strong> <span id="modalOwner">—</span></span>
+                    <span><strong>Device:</strong> <span id="modalDevice">—</span></span>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between bg-light">
+                <small class="text-muted"><i class="fas fa-shield-alt mr-1 text-primary"></i>Merged Auth Payload (URL + Token)</small>
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
 <script>
 $(document).ready(function() {
+    var serverUrl = '<?= rtrim(site_url(), '/') ?>';
+
+    $('.btn-qr-modal').on('click', function() {
+        var token = $(this).data('token');
+        var owner = $(this).data('owner');
+        var device = $(this).data('device');
+
+        $('#modalToken').val(token);
+        $('#modalOwner').text(owner);
+        $('#modalDevice').text(device);
+
+        var qrPayload = JSON.stringify({
+            url: serverUrl,
+            token: token,
+            type: 'eaves_droid_auth'
+        });
+
+        QRCode.toCanvas(document.getElementById('adminQrCanvas'), qrPayload, { width: 200, margin: 2 }, function(err) {
+            if (err) console.error('QR Render Error:', err);
+        });
+        $('#qrPairingModal').modal('show');
+    });
+
+    $('#copyModalUrl').on('click', function() {
+        navigator.clipboard.writeText($('#modalServerUrl').val());
+        if (typeof toastr !== 'undefined') { toastr.success('Server URL copied to clipboard'); } else { alert('Server URL copied'); }
+    });
+
+    $('#copyModalToken').on('click', function() {
+        navigator.clipboard.writeText($('#modalToken').val());
+        if (typeof toastr !== 'undefined') { toastr.success('Token copied to clipboard'); } else { alert('Token copied'); }
+    });
+
     <?php if ($tab === 'all'): ?>
     $('#tokenTable').DataTable({ order: [[0, 'desc']], searching: false, paging: false, responsive: true });
     <?php elseif ($tab === 'expired'): ?>

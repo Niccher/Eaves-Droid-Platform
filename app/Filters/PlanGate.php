@@ -34,6 +34,43 @@ class PlanGate implements FilterInterface
         ],
         'risk_score' => [
             'analysis/behavioral-anomalies',
+            'analysis/anomalies',
+        ],
+        'cell_towers' => [
+            'data/cell-towers',
+        ],
+        'display_info' => [
+            'data/display-info',
+        ],
+        'storage' => [
+            'data/storage',
+        ],
+        'nfc' => [
+            'data/nfc',
+        ],
+        'hardware_network' => [
+            'data/hardware-network',
+        ],
+        'hardware_graphics' => [
+            'data/hardware-graphics',
+        ],
+        'audio_devices' => [
+            'data/audio-devices',
+        ],
+        'biometric' => [
+            'data/biometric',
+        ],
+        'gnss_hardware' => [
+            'data/gnss-hardware',
+        ],
+        'usb_devices' => [
+            'data/usb-devices',
+        ],
+        'vibration' => [
+            'data/vibration',
+        ],
+        'sim_configs' => [
+            'data/sim-configs',
         ],
     ];
 

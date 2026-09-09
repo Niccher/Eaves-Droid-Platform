@@ -57,6 +57,28 @@ class TelemetryReceiverService
     ];
 
     /**
+     * Validate HMAC-SHA256 request signature
+     */
+    public function verifyHmacSignature(string $deviceId, string $signature, string $timestamp, string $secretKey): bool
+    {
+        if (empty($signature) || empty($timestamp) || empty($deviceId)) {
+            return false;
+        }
+
+        // 5 minute max clock skew allowed
+        $now = time();
+        if (abs($now - (int)$timestamp) > 300) {
+            log_message('warning', "verifyHmacSignature failed: Clock skew too large for device $deviceId");
+            return false;
+        }
+
+        $dataToSign = $deviceId . ':' . $timestamp;
+        $expectedSignature = hash_hmac('sha256', $dataToSign, $secretKey);
+
+        return hash_equals($expectedSignature, strtolower($signature));
+    }
+
+    /**
      * Validate token
      */
     public function validateToken($token): bool

@@ -564,8 +564,17 @@ class ClientProfileController extends BaseClientController
      */
     private function generateQRCodeData(string $token): array
     {
+        $serverUrl = rtrim(site_url(), '/');
+        $payload = json_encode([
+            'url' => $serverUrl,
+            'token' => $token,
+            'type' => 'eaves_droid_auth'
+        ], JSON_UNESCAPED_SLASHES);
+
         return [
-            'text' => $token,
+            'text' => $payload,
+            'url' => $serverUrl,
+            'token' => $token,
             'size' => 200,
             'color' => '#000000',
             'bgColor' => '#ffffff',

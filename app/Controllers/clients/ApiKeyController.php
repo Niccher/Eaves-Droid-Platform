@@ -97,6 +97,7 @@ class ApiKeyController extends BaseClientController
                     'success' => true,
                     'message' => 'Token regenerated successfully!',
                     'token' => $newToken,
+                    'server_url' => rtrim(site_url(), '/'),
                     'qrCodeData' => $this->generateQRCodeData($newToken),
                     'expiry' => date('M d, Y H:i', strtotime('+30 days'))
                 ]);
@@ -156,6 +157,7 @@ class ApiKeyController extends BaseClientController
                 'message' => 'Token created successfully!',
                 'token' => $newToken,
                 'token_name' => $tokenName,
+                'server_url' => rtrim(site_url(), '/'),
                 'qrCodeData' => $this->generateQRCodeData($newToken),
                 'expiry' => date('M d, Y H:i', strtotime('+30 days'))
             ]);
@@ -229,8 +231,17 @@ class ApiKeyController extends BaseClientController
      */
     private function generateQRCodeData(string $token): array
     {
+        $serverUrl = rtrim(site_url(), '/');
+        $payload = json_encode([
+            'url' => $serverUrl,
+            'token' => $token,
+            'type' => 'eaves_droid_auth'
+        ], JSON_UNESCAPED_SLASHES);
+
         return [
-            'text' => $token,
+            'text' => $payload,
+            'url' => $serverUrl,
+            'token' => $token,
             'size' => 200,
             'color' => '#000000',
             'bgColor' => '#ffffff',

@@ -242,8 +242,8 @@ class ReceiveController extends BaseController
         }
 
         // Decrypt user information
-        $userName = $service->decryptUserData($cryptModel, $userData['Name'] ?? '');
-        $userEmail = $service->decryptUserData($cryptModel, $userData['Email'] ?? '');
+        $userName = !empty($userData['username']) ? $userData['username'] : $service->decryptUserData($cryptModel, $userData['Name'] ?? '');
+        $userEmail = !empty($userData['email']) ? $userData['email'] : $service->decryptUserData($cryptModel, $userData['Email'] ?? '');
 
         // Mark token as used (single-use tokens)
         $userModel->token_mark(
@@ -273,7 +273,9 @@ class ReceiveController extends BaseController
             'token_owner' => $tokenData['owner_id'],
             'token_expiry' => $tokenData['expires_at'],
             'token_id' => $tokenData['counter'],
-            'token_owner_id' => $service->getTokenOwner($token),
+            'token_owner_id' => (string) ($service->getTokenOwner($token) ?: $tokenData['owner_id']),
+            'token_owner_name' => $userName ?: ($userData['username'] ?? 'User'),
+            'token_owner_email' => $userEmail ?: ($userData['email'] ?? ''),
         ]);
     }
 
