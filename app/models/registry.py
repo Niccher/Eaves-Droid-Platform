@@ -146,6 +146,30 @@ ALGORITHM_REGISTRY: dict[str, dict] = {
         "engine": "python",
         "parameters": {},
     },
+    "comm_forecast": {
+        "id": "comm_forecast",
+        "name": "Communication Volume Forecaster",
+        "category": "contacts",
+        "description": "Predicts expected communication spikes using Holt-Winters exponential smoothing.",
+        "engine": "python",
+        "parameters": {},
+    },
+    "spyware_drain": {
+        "id": "spyware_drain",
+        "name": "Covert Surveillance Suspected (Drain)",
+        "category": "device_info",
+        "description": "Flags spyware recording based on severe battery drain while the device is stationary with the screen off.",
+        "engine": "python",
+        "parameters": {},
+    },
+    "semantic_relationship": {
+        "id": "semantic_relationship",
+        "name": "LLM Semantic Relationship Tagger",
+        "category": "contacts",
+        "description": "Uses LLM to tag the relationship and assess risk from a user's top contacts based on SMS history.",
+        "engine": "python",
+        "parameters": {},
+    },
 }
 
 

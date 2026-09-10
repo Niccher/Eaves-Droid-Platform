@@ -61,6 +61,9 @@ def load_detectors():
     from app.detectors.communication_spikes import CommunicationSpikesDetector
     from app.detectors.fusion_scorer import FusionScorerDetector
     from app.detectors.behaviour_markov import BehaviourMarkovDetector
+    from app.detectors.communication_forecast import CommunicationForecaster
+    from app.detectors.spyware_drain import SpywareDrainDetector
+    from app.detectors.semantic_relationship import SemanticRelationshipDetector
 
     for d in [
         SmsPhishingHeuristicDetector(),
@@ -78,6 +81,9 @@ def load_detectors():
         CommunicationSpikesDetector(),
         FusionScorerDetector(),
         BehaviourMarkovDetector(),
+        CommunicationForecaster(),
+        SpywareDrainDetector(),
+        SemanticRelationshipDetector(),
     ]:
         DETECTOR_MAP[d.algorithm_id] = d
     logger.info("Loaded %d detectors", len(DETECTOR_MAP))

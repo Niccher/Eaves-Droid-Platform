@@ -6,22 +6,26 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 _llama = None
-_LLAMA_MODEL_PATH = os.getenv("LLAMA_MODEL_PATH", "models/Meta-Llama-3-8B-Instruct.Q4_K_M.gguf")
 
 def get_llama():
     global _llama
-    if _llama is None:
-        if os.path.exists(_LLAMA_MODEL_PATH):
+    
+    from app.services.llm_manager import manager
+    model_path = manager.get_active_model_path()
+    
+    if _llama is None or getattr(_llama, 'model_path', None) != model_path:
+        if os.path.exists(model_path):
             try:
                 from llama_cpp import Llama
-                logger.info(f"Loading local LLM from {_LLAMA_MODEL_PATH}")
-                # We offload everything we can to CPU since Railway provides good RAM
-                _llama = Llama(model_path=_LLAMA_MODEL_PATH, n_ctx=8192, n_threads=8, verbose=False)
+                logger.info(f"Loading local LLM from {model_path}")
+                _llama = Llama(model_path=model_path, n_ctx=8192, n_threads=8, verbose=False)
+                _llama.model_path = model_path
             except Exception as e:
                 logger.error(f"Failed to load llama.cpp: {e}")
                 return None
         else:
-            logger.info(f"Local LLM not found at {_LLAMA_MODEL_PATH}. Falling back to external API.")
+            logger.info(f"Local LLM not found at {model_path}. Falling back to external API.")
+            _llama = None
     return _llama
 
 async def generate_text(system_prompt: str, user_prompt: str) -> str:
