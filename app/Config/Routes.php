@@ -1941,6 +1941,11 @@ $routes->group('superadmin', [
     $routes->get('infrastructure', 'InfrastructureController::index', ['as' => 'superadmin-infrastructure']);
     $routes->get('infrastructure/telemetry', 'InfrastructureController::getTelemetry', ['as' => 'superadmin-infrastructure-telemetry']);
     $routes->post('infrastructure/benchmark', 'InfrastructureController::runBenchmark', ['as' => 'superadmin-infrastructure-benchmark']);
+    
+    // LLM Management
+    $routes->get('llm/dashboard', 'LLMController::dashboard', ['as' => 'superadmin-llm-dashboard']);
+    $routes->post('llm/set-active', 'LLMController::setActive', ['as' => 'superadmin-llm-set-active']);
+    $routes->post('llm/download', 'LLMController::download', ['as' => 'superadmin-llm-download']);
 
     /**
      * Displays fleet overview dashboard.

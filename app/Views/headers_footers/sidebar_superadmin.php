@@ -286,6 +286,13 @@
                                 <p>AI &amp; Anomaly Engine</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/llm/dashboard'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-llm-dashboard') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-microchip text-info"></i>
+                                <p>LLM Management</p>
+                            </a>
+                        </li>
 
                         <!-- 5. Infrastructure & Container Telemetry Hub -->
                         <?php
