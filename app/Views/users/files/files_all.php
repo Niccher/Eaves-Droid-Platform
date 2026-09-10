@@ -701,20 +701,17 @@
         tl.innerHTML += '<div>' + time + ' — ' + entry + '</div>';
     }
 
-    // ─── Polling engine ──────────────────────────────────────────────────────────
+    const FCM_STREAM_BASE = '<?= base_url('api/v1/fcm-stream') ?>';
+    
     function _startPolling(logId) {
         let tries = 0;
         _appendTimeline('Command dispatched. Waiting for device…');
-        _pollTimer = setInterval(function() {
-            tries++;
-            if (tries > POLL_MAX_TRIES) {
-                _stopPolling();
-                _showStatus('Device did not respond within 2 minutes. It may be offline.', 'timeout');
-                _appendTimeline('Timed out — no ACK received.');
-                _setActionBtnsDisabled(false);
-                return;
-            }
-            $.getJSON(FCM_STATUS_BASE + '/' + logId, function(resp) {
+        
+        if (window.EventSource) {
+            _pollTimer = new EventSource(FCM_STREAM_BASE + '/' + logId);
+            
+            _pollTimer.onmessage = function(e) {
+                const resp = JSON.parse(e.data);
                 const status = resp.status || 'pending';
                 const uiState = status === 'pending' ? 'pending'
                               : status === 'ack_success' ? 'success'
@@ -722,27 +719,73 @@
                 _showStatus(resp.message || '…', uiState);
                 if (status === 'ack_success') {
                     _stopPolling();
-                    _appendTimeline('✅ Device ACK received — ' + (resp.acked_at || ''));
+                    _appendTimeline('✅ Device ACK received.');
                     _setActionBtnsDisabled(false);
                 } else if (status === 'ack_failed') {
                     _stopPolling();
-                    _appendTimeline('❌ Device reported failure — ' + (resp.acked_at || ''));
+                    _appendTimeline('❌ Device reported failure.');
                     _setActionBtnsDisabled(false);
                 } else if (status === 'timeout') {
                     _stopPolling();
                     _appendTimeline('⏰ Server timeout — device never responded.');
                     _setActionBtnsDisabled(false);
                 } else {
-                    _appendTimeline('Still waiting… (' + (resp.elapsed || tries * 3) + 's)');
+                    _appendTimeline('Still waiting…');
                 }
-            }).fail(function() {
-                _appendTimeline('Polling error on try ' + tries + '…');
-            });
-        }, POLL_INTERVAL_MS);
+            };
+            
+            _pollTimer.onerror = function() {
+                // If it fails, fallback gracefully or just log
+                _appendTimeline('EventSource connection lost.');
+            };
+        } else {
+            // Fallback to traditional polling
+            _pollTimer = setInterval(function() {
+                tries++;
+                if (tries > POLL_MAX_TRIES) {
+                    _stopPolling();
+                    _showStatus('Device did not respond within 2 minutes. It may be offline.', 'timeout');
+                    _appendTimeline('Timed out — no ACK received.');
+                    _setActionBtnsDisabled(false);
+                    return;
+                }
+                $.getJSON(FCM_STATUS_BASE + '/' + logId, function(resp) {
+                    const status = resp.status || 'pending';
+                    const uiState = status === 'pending' ? 'pending'
+                                : status === 'ack_success' ? 'success'
+                                : status === 'timeout'     ? 'timeout' : 'error';
+                    _showStatus(resp.message || '…', uiState);
+                    if (status === 'ack_success') {
+                        _stopPolling();
+                        _appendTimeline('✅ Device ACK received — ' + (resp.acked_at || ''));
+                        _setActionBtnsDisabled(false);
+                    } else if (status === 'ack_failed') {
+                        _stopPolling();
+                        _appendTimeline('❌ Device reported failure — ' + (resp.acked_at || ''));
+                        _setActionBtnsDisabled(false);
+                    } else if (status === 'timeout') {
+                        _stopPolling();
+                        _appendTimeline('⏰ Server timeout — device never responded.');
+                        _setActionBtnsDisabled(false);
+                    } else {
+                        _appendTimeline('Still waiting… (' + (resp.elapsed || tries * 3) + 's)');
+                    }
+                }).fail(function() {
+                    _appendTimeline('Polling error on try ' + tries + '…');
+                });
+            }, POLL_INTERVAL_MS);
+        }
     }
 
     function _stopPolling() {
-        if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+        if (_pollTimer) {
+            if (_pollTimer instanceof window.EventSource) {
+                _pollTimer.close();
+            } else {
+                clearInterval(_pollTimer);
+            }
+            _pollTimer = null;
+        }
     }
 
     $('#fileDetailsModal').on('hidden.bs.modal', function() { _stopPolling(); _hideStatus(); });

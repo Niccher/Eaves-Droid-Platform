@@ -433,6 +433,18 @@ class ReceiveController extends BaseController
 
         try {
             $db->table('tbl_device_health_checks')->insert($data);
+
+            // Phase 2: Redis Pub/Sub for SSE
+            try {
+                $redis = new \App\Services\RedisService();
+                $client = $redis->getClient();
+                if ($client) {
+                    $client->publish("health:update:{$deviceId}", json_encode($data));
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Redis publish failed on health update: ' . $e->getMessage());
+            }
+
             return $this->respondCreated([
                 'success' => true,
                 'message' => 'Health check telemetry recorded successfully.',

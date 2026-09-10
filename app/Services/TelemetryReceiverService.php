@@ -637,8 +637,34 @@ class TelemetryReceiverService
             'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
         ]);
 
-        // Process the queue item immediately (synchronous)
+        // 11. Push to Redis Stream for async worker processing
         if ($queueId !== null) {
+            try {
+                $redis = new \App\Services\RedisService();
+                $client = $redis->getClient();
+                if ($client) {
+                    $client->xadd('upload_queue', '*', [
+                        'queue_id' => $queueId,
+                        'category' => $uploadCategory,
+                        'owner_id' => $owner,
+                        'device'   => $devicePrintId,
+                    ]);
+                    
+                    return [
+                        'success' => true,
+                        'status' => 'queued',
+                        'file_id' => $newName,
+                        'queue_id' => $queueId,
+                        'category' => $fileInfo['category'],
+                        'record_count' => 0, // async
+                        'timestamp' => (string) (time() * 1000)
+                    ];
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Redis stream xadd failed: ' . $e->getMessage());
+            }
+
+            // Fallback to inline processing if Redis is completely unreachable
             $queueModel->markProcessing($queueId);
             $processResult = $this->processQueueItemInline($queueId, $queueModel, $fileInfo['category'], $owner, $newName, $devicePrintId);
 
@@ -655,10 +681,6 @@ class TelemetryReceiverService
                 ];
             }
 
-            // Parse failed: keep the queue item in 'processing' so queue:cleanup
-            // resets it to 'pending' for queue:process to retry. Do NOT mark it
-            // failed here, and return a real 4xx so the client keeps its local
-            // copy instead of treating this upload as successful.
             return [
                 'success' => false,
                 'error' => 'Processing failed: ' . ($processResult['error'] ?? 'unknown'),

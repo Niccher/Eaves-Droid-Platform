@@ -1214,9 +1214,11 @@ $routes->group('api/v1', [
     $routes->post('devices/health-update', 'ReceiveController::health_update', ['as' => 'api-device-health-update']);
 
     /**
+     * GET /api/v1/devices/health-latest/(:any)
      * Retrieves the latest health check diagnostics record for a device.
      */
-    $routes->get('devices/health-latest/(:any)', 'ReceiveController::health_latest/$1', ['as' => 'api-device-health-latest']);
+    $routes->get("devices/health-latest/(:any)", "ReceiveController::health_latest/$1", ["as" => "api-devices-health-latest"]);
+    $routes->get("devices/health-stream/(:any)", "HealthStatusStream::stream/$1", ["as" => "api-devices-health-stream"]);
 
     // -------------------------------------------------------------
     // 6.3 DATA INGESTION ENDPOINTS
@@ -1325,6 +1327,7 @@ $routes->group('api/v1', [
      * GET /api/v1/fcm-status/{logId}
      */
     $routes->get("fcm-status/(:num)", "FCMStatusController::status/$1", ["as" => "api-fcm-status"]);
+    $routes->get("fcm-stream/(:num)", "FCMStatusStream::stream/$1", ["as" => "api-fcm-stream"]);
 
     // -------------------------------------------------------------
     // 6.6 UTILITY & HEALTH CHECK ENDPOINTS
@@ -1772,6 +1775,10 @@ $routes->group('admin', [
         $routes->get('cron/get/(:num)', 'SettingsController::cron_get/$1', ['as' => 'admin-cron-get']);
         $routes->post('cron/delete/(:num)', 'SettingsController::cron_delete/$1', ['as' => 'admin-cron-delete']);
     });
+
+    // -------------------------------------------------------------
+    $routes->get('reports/forensic/(:num)', 'ReportController::generateReport/$1', ['as' => 'client-reports-forensic']);
+    // -------------------------------------------------------------
 
     // -------------------------------------------------------------
     // 7.5 REPORTS & ANALYTICS

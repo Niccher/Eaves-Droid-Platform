@@ -82,4 +82,12 @@ echo "Starting background cron runner daemon..."
     done
 ) &
 
+echo "Starting background Redis upload worker..."
+(
+    while true; do
+        php /var/www/html/spark worker:upload >> /var/log/upload_worker.log 2>&1 || true
+        sleep 5
+    done
+) &
+
 exec apache2-foreground

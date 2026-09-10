@@ -184,7 +184,8 @@ class FCMCommandController extends BaseController
         $result = $this->dispatchFCMV1($fcmToken, $command, $payload, $accessToken, $logId);
 
         $responseBody = json_decode(json_encode($result), true) ?? [];
-        $success = !isset($responseBody['error']);
+        // A true success means $result is not null AND doesn't contain an error
+        $success = ($result !== null && !isset($responseBody['error']));
 
         $this->updateLogEntry($logId, $responseBody, $success);
 
@@ -201,8 +202,9 @@ class FCMCommandController extends BaseController
             $errorBody = $result->error ?? null;
             $errorCode = null;
 
-            // Extract FCM error code from the nested response
-            if (is_object($errorBody)) {
+            if ($result === null) {
+                $errorCode = 'CURL_ERROR';
+            } elseif (is_object($errorBody)) {
                 $errorCode = $errorBody->status ?? null; // e.g. "NOT_FOUND"
                 if (empty($errorCode) && !empty($errorBody->details)) {
                     foreach ($errorBody->details as $detail) {
@@ -232,6 +234,19 @@ class FCMCommandController extends BaseController
                 ], 410); // 410 Gone — resource no longer available
             }
 
+            // If it's a transient error (quota, unavailable, timeout), queue for retry
+            $transientErrors = ['QUOTA_EXCEEDED', 'UNAVAILABLE', 'INTERNAL', 'CURL_ERROR'];
+            if (in_array($errorCode, $transientErrors, true) || $errorCode === null) {
+                $this->queueForRetry($fcmToken, $command, $payload, $logId);
+                return $this->respond([
+                    'success'       => false,
+                    'status'        => 'queued',
+                    'message'       => 'Command queued, will retry when FCM is reachable',
+                    'error_code'    => $errorCode,
+                    'action_log_id' => $logId,
+                ], 202);
+            }
+
             return $this->fail([
                 'success'       => false,
                 'message'       => 'FCM dispatch failed.',
@@ -239,6 +254,20 @@ class FCMCommandController extends BaseController
                 'action_log_id' => $logId,
             ], 500);
         }
+    }
+
+    private function queueForRetry(string $token, string $command, string $payload, int $logId): void
+    {
+        $db = \Config\Database::connect();
+        $db->table('tbl_fcm_retry_queue')->insert([
+            'fcm_token'     => $token,
+            'command'       => $command,
+            'payload'       => $payload,
+            'attempts'      => 0,
+            'next_retry'    => date('Y-m-d H:i:s', time() + 60),  // retry in 1 min
+            'action_log_id' => $logId,
+            'created_at'    => date('Y-m-d H:i:s'),
+        ]);
     }
 
     /**
@@ -281,6 +310,21 @@ class FCMCommandController extends BaseController
                     'success' => ($status === 'success') ? 1 : 0,
                     'error_message' => ($status !== 'success') ? ($deviceMessage ?? 'Command failed on device') : null,
                 ]);
+
+            // Phase 2: Redis Pub/Sub for SSE
+            try {
+                $redis = new \App\Services\RedisService();
+                $client = $redis->getClient();
+                if ($client) {
+                    $client->publish("fcm:ack:{$logId}", json_encode([
+                        'status' => ($status === 'success') ? 'ack_success' : 'ack_failed',
+                        'message' => $deviceMessage ?? '',
+                        'device_status' => $deviceStatus ?? '',
+                    ]));
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Redis publish failed on ACK: ' . $e->getMessage());
+            }
 
             return $this->respond(['success' => true, 'message' => 'Acknowledged.']);
         } catch (\Exception $e) {

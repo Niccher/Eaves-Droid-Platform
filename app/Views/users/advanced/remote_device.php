@@ -786,12 +786,32 @@ $(function() {
 
             executeCommand();
 
-            setTimeout(() => {
-                pollInterval = setInterval(pollLatestHealth, 2000);
-            }, 1000);
+            let es = null;
+            if (window.EventSource) {
+                es = new EventSource(`<?= base_url('api/v1/devices/health-stream') ?>/${activeFcmToken}`);
+                es.onmessage = function(e) {
+                    const r = JSON.parse(e.data);
+                    if (r && r.success && r.data) {
+                        es.close();
+                        renderHealthMetrics(r.data);
+                    } else if (r && !r.success) {
+                        es.close();
+                        showHealthError('No Response', r.message || 'The device is currently offline or FCM communication was interrupted.');
+                    }
+                };
+                es.onerror = function() {
+                    es.close();
+                    showHealthError('Connection Error', 'Lost connection to server.');
+                };
+            } else {
+                setTimeout(() => {
+                    pollInterval = setInterval(pollLatestHealth, 2000);
+                }, 1000);
+            }
 
             $('#modal-health-check').on('hidden.bs.modal', function () {
                 if (pollInterval) clearInterval(pollInterval);
+                if (es) es.close();
             });
         } else {
             executeCommand();

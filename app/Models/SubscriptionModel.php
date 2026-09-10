@@ -45,6 +45,22 @@ class SubscriptionModel extends Model
 
     public function getPlanLimits(int $userId): array
     {
+        $redis = new \App\Services\RedisService();
+        $cacheKey = "user:{$userId}:plan_limits";
+        
+        $cached = $redis->get($cacheKey);
+        if ($cached !== null) {
+            return json_decode($cached, true);
+        }
+
+        $limits = $this->_fetchPlanLimitsFromDB($userId);
+
+        $redis->setex($cacheKey, 300, json_encode($limits));
+        return $limits;
+    }
+
+    private function _fetchPlanLimitsFromDB(int $userId): array
+    {
         // Check if user is admin or superadmin to grant full unlimited access
         if (function_exists('auth') && auth()->loggedIn() && (int)auth()->id() === $userId) {
             $user = auth()->user();
@@ -350,7 +366,15 @@ class SubscriptionModel extends Model
         // history stays in sync with subscriber onboarding.
         $this->recordManualPayment($userId, $plan, $billing);
 
+        $this->invalidatePlanCache($userId);
+
         return $ok;
+    }
+
+    public function invalidatePlanCache(int $userId): void
+    {
+        $redis = new \App\Services\RedisService();
+        $redis->del("user:{$userId}:plan_limits");
     }
 
     /**

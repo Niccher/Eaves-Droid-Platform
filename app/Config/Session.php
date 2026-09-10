@@ -21,7 +21,7 @@ class Session extends BaseConfig
      *
      * @phpstan-var class-string<BaseHandler>
      */
-    public string $driver = \CodeIgniter\Session\Handlers\DatabaseHandler::class;
+    public string $driver = \App\Libraries\ResilientSessionHandler::class;
 
     /**
      * --------------------------------------------------------------------------
