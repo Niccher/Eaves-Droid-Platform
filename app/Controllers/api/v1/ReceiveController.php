@@ -91,6 +91,11 @@ class ReceiveController extends BaseController
      * Individual data upload endpoints - each delegates to the generic upload logic
      * with a predetermined category.
      */
+    public function upload_media_exif()
+    {
+        return $this->uploadWithCategory('media_exif');
+    }
+
     public function upload_sms()
     {
         return $this->uploadWithCategory('sms');

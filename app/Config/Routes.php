@@ -1237,6 +1237,7 @@ $routes->group('api/v1', [
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
     $routes->post('extracted/sms', 'ReceiveController::upload_sms', ['as' => 'api-data-sms']);
+    $routes->post('extracted/media-exif', 'ReceiveController::upload_media_exif', ['as' => 'api-data-media-exif']);
 
     /**
      * Ingests call logs data.
