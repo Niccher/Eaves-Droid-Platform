@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 
-from app.routers import health, analyze, models_info
+from app.routers import health, analyze, models_info, llm
 from app.config import settings
 
 
@@ -49,6 +49,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(analyze.router)
 app.include_router(models_info.router)
+app.include_router(llm.router)
 
 # Prometheus metrics exposed at /metrics for operational monitoring.
 metrics_app = make_asgi_app()

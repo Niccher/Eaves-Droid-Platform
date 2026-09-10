@@ -59,6 +59,8 @@ def load_detectors():
     from app.detectors.sleep_disturbance import SleepDisturbanceDetector
     from app.detectors.battery_drain import BatteryDrainDetector
     from app.detectors.communication_spikes import CommunicationSpikesDetector
+    from app.detectors.fusion_scorer import FusionScorerDetector
+    from app.detectors.behaviour_markov import BehaviourMarkovDetector
 
     for d in [
         SmsPhishingHeuristicDetector(),
@@ -74,6 +76,8 @@ def load_detectors():
         SleepDisturbanceDetector(),
         BatteryDrainDetector(),
         CommunicationSpikesDetector(),
+        FusionScorerDetector(),
+        BehaviourMarkovDetector(),
     ]:
         DETECTOR_MAP[d.algorithm_id] = d
     logger.info("Loaded %d detectors", len(DETECTOR_MAP))

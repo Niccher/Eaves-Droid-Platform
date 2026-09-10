@@ -335,14 +335,14 @@ class SmsPhishingHeuristicDetector(BaseDetector):
 
         # -- 2. Score each message ------------------------------------------
         if _VECTORIZER is not None and _CLASSIFIER is not None:
-            return self._score_with_model(rows)
-        return self._score_with_keywords(rows)
+            return await self._score_with_model(rows)
+        return await self._score_with_keywords(rows)
 
     # -----------------------------------------------------------------------
     # Model-based scoring (TF-IDF + Naive Bayes / Logistic Regression)
     # -----------------------------------------------------------------------
 
-    def _score_with_model(self, rows) -> list[AnomalyResult]:
+    async def _score_with_model(self, rows) -> list[AnomalyResult]:
         """Vectorise SMS bodies in one batch and run classifier.predict_proba."""
         import numpy as np
 
@@ -364,7 +364,7 @@ class SmsPhishingHeuristicDetector(BaseDetector):
             scores_arr = proba[:, spam_col]
         except Exception as exc:
             logger.error("sms_bert: model inference failed — %s; falling back to keywords", exc)
-            return self._score_with_keywords(rows)
+            return await self._score_with_keywords(rows)
 
         results: list[AnomalyResult] = []
         for rank, (orig_idx, score) in enumerate(
@@ -404,7 +404,7 @@ class SmsPhishingHeuristicDetector(BaseDetector):
     # the trained model artefacts are not yet available.
     # -----------------------------------------------------------------------
 
-    def _score_with_keywords(self, rows) -> list[AnomalyResult]:
+    async def _score_with_keywords(self, rows) -> list[AnomalyResult]:
         """
         Named _score_with_keywords for internal consistency (called from
         _score_with_model on inference failure), but now backed by the full
@@ -427,6 +427,29 @@ class SmsPhishingHeuristicDetector(BaseDetector):
                 {h.category for h in hits}
             )
             top_signals = [h.label for h in sorted(hits, key=lambda h: -h.weight)][:4]
+            
+            # --- PHASE 4: LLM Escalation for Sheng / Swahili / Coded Scams ---
+            # If the rule engine suspects something (score >= 0.40), ask the LLM for a second opinion
+            # since rules often miss nuances in East African slang.
+            llm_result = None
+            if score >= 0.40:
+                try:
+                    from app.services.llm_provider import generate_text
+                    import json
+                    prompt_sys = (
+                        "You are an expert fraud analyst focusing on East Africa. "
+                        "Analyze this SMS for scams, fraud, coercion, or coded language (including Swahili/Sheng). "
+                        "Respond ONLY with a JSON object containing keys: 'risk' (low/medium/high), 'reason', and 'category'."
+                    )
+                    prompt_user = f"Message from {row['address']}: {body}"
+                    llm_resp = await generate_text(prompt_sys, prompt_user)
+                    # Clean up JSON if wrapped in markdown block
+                    llm_resp = llm_resp.replace('```json', '').replace('```', '').strip()
+                    llm_result = json.loads(llm_resp)
+                    if llm_result.get('risk') == 'high':
+                        score = max(score, 0.90)
+                except Exception as e:
+                    logger.error(f"Failed LLM escalation: {e}")
 
             severity = "High" if score >= 0.80 else "Medium"
             cat_str  = ", ".join(categories_fired)
@@ -451,6 +474,7 @@ class SmsPhishingHeuristicDetector(BaseDetector):
                         "top_signals":          top_signals,
                         "total_rule_hits":      len(hits),
                         "classifier":           "rule_engine_fallback",
+                        "llm_escalated":        score >= 0.40,
                     },
                 )
             )

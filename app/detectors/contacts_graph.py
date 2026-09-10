@@ -167,7 +167,16 @@ class GraphContactDetector(BaseDetector):
             G.add_edge("__owner__", node_id, weight=weight)
 
 
-        # -- 5. Louvain community detection ----------------------------------
+        # -- 5. Structural Metrics (PageRank & Betweenness) ------------------
+        try:
+            pagerank = nx.pagerank(G, weight="weight")
+            betweenness = nx.betweenness_centrality(G, weight="weight")
+        except Exception as exc:
+            logger.warning("contacts_graph: Centrality failed (%s)", exc)
+            pagerank = {}
+            betweenness = {}
+
+        # -- 6. Louvain community detection ----------------------------------
         # Uses networkx.community.louvain_communities (NetworkX ≥ 3.0)
         try:
             from networkx.algorithms.community import louvain_communities
@@ -182,8 +191,14 @@ class GraphContactDetector(BaseDetector):
             for node in community:
                 node_community[node] = ci
 
-        # -- 6. Flag anomalies -----------------------------------------------
+        # -- 7. Flag anomalies -----------------------------------------------
         results: list[AnomalyResult] = []
+
+        # Find 90th percentile thresholds for pagerank and betweenness
+        pr_vals = [v for k, v in pagerank.items() if k != "__owner__"]
+        bw_vals = [v for k, v in betweenness.items() if k != "__owner__"]
+        pr_threshold = np.percentile(pr_vals, 95) if pr_vals else 0.0
+        bw_threshold = np.percentile(bw_vals, 95) if bw_vals else 0.0
 
         for node_id, attrs in G.nodes(data=True):
             if node_id == "__owner__":
@@ -195,6 +210,9 @@ class GraphContactDetector(BaseDetector):
             edge_data   = G.edges["__owner__", node_id] if G.has_edge("__owner__", node_id) else {}
             weight      = float(edge_data.get("weight", 0.0))
             in_community = node_id in node_community
+            
+            pr_score = pagerank.get(node_id, 0.0)
+            bw_score = betweenness.get(node_id, 0.0)
 
             # Case A: stored contact with zero interaction weight → orphan
             if weight == 0.0:
@@ -211,6 +229,8 @@ class GraphContactDetector(BaseDetector):
                         "phone": phone,
                         "interaction_weight": 0.0,
                         "in_community": False,
+                        "pagerank": round(pr_score, 4),
+                        "betweenness": round(bw_score, 4),
                         "reason": "zero_interaction",
                     },
                 ))
@@ -234,7 +254,57 @@ class GraphContactDetector(BaseDetector):
                         "phone": phone,
                         "interaction_weight": round(weight, 4),
                         "in_community": False,
+                        "pagerank": round(pr_score, 4),
+                        "betweenness": round(bw_score, 4),
                         "reason": "community_outlier",
+                    },
+                ))
+                
+            # Case C: High Betweenness Centrality (Bridge node)
+            elif bw_threshold > 0 and bw_score > bw_threshold and weight > 0.1:
+                results.append(AnomalyResult(
+                    algorithm=self.algorithm_name,
+                    algorithm_id=self.algorithm_id,
+                    category=self.category,
+                    severity="Medium",
+                    anomaly=(
+                        f"Contact '{label}' acts as a major bridge between distinct social clusters "
+                        f"(betweenness={bw_score:.4f})"
+                    ),
+                    score=0.75,
+                    event_timestamp="",
+                    details={
+                        "contact": label,
+                        "phone": phone,
+                        "interaction_weight": round(weight, 4),
+                        "in_community": in_community,
+                        "pagerank": round(pr_score, 4),
+                        "betweenness": round(bw_score, 4),
+                        "reason": "high_betweenness",
+                    },
+                ))
+
+            # Case D: High PageRank (Unusually high influence)
+            elif pr_threshold > 0 and pr_score > pr_threshold and weight > 0.1:
+                results.append(AnomalyResult(
+                    algorithm=self.algorithm_name,
+                    algorithm_id=self.algorithm_id,
+                    category=self.category,
+                    severity="Low",
+                    anomaly=(
+                        f"Contact '{label}' has unusually high network influence "
+                        f"(PageRank={pr_score:.4f})"
+                    ),
+                    score=0.65,
+                    event_timestamp="",
+                    details={
+                        "contact": label,
+                        "phone": phone,
+                        "interaction_weight": round(weight, 4),
+                        "in_community": in_community,
+                        "pagerank": round(pr_score, 4),
+                        "betweenness": round(bw_score, 4),
+                        "reason": "high_pagerank",
                     },
                 ))
 

@@ -130,6 +130,22 @@ ALGORITHM_REGISTRY: dict[str, dict] = {
         "engine": "python",
         "parameters": {},
     },
+    "fusion_scorer": {
+        "id": "fusion_scorer",
+        "name": "Sensor Fusion Multi-Modal Score",
+        "category": "system",
+        "description": "Combines signals from battery, location, app installs, and communication into a single ML anomaly score using an Isolation Forest.",
+        "engine": "python",
+        "parameters": {},
+    },
+    "behaviour_markov": {
+        "id": "behaviour_markov",
+        "name": "Markov Chain Behaviour Modelling",
+        "category": "activity",
+        "description": "Models daily routines as sequence of states. Alerts when observed sequence is improbable.",
+        "engine": "python",
+        "parameters": {},
+    },
 }
 
 
