@@ -211,41 +211,53 @@ class SubscriptionsController extends BaseSuperadminController
 
         $now = date('Y-m-d H:i:s');
 
-        $adminUserIdsSubquery = function (\CodeIgniter\Database\BaseBuilder $b) {
-            return $b->select('user_id')->from('auth_groups_users')->whereIn('group', ['admin', 'superadmin']);
-        };
+        $adminIdsRows = $db->table('auth_groups_users')
+            ->select('user_id')
+            ->whereIn('group', ['admin', 'superadmin'])
+            ->get()
+            ->getResultArray();
+        $adminUserIds = array_map('intval', array_column($adminIdsRows, 'user_id'));
 
-        $paidPlans = $db->table('user_subscriptions s')
+        $paidPlansBuilder = $db->table('user_subscriptions s')
             ->where('s.status', 'active')
             ->where('s.plan !=', 'free')
-            ->where('s.current_period_end >=', $now)
-            ->whereNotIn('s.user_id', $adminUserIdsSubquery)
-            ->countAllResults();
+            ->where('s.current_period_end >=', $now);
+        if (!empty($adminUserIds)) {
+            $paidPlansBuilder->whereNotIn('s.user_id', $adminUserIds);
+        }
+        $paidPlans = $paidPlansBuilder->countAllResults();
 
-        $totalNonAdminUsers = $db->table('users u')
-            ->whereNotIn('u.id', $adminUserIdsSubquery)
-            ->countAllResults();
+        $totalUsersBuilder = $db->table('users u')->where('deleted_at IS NULL');
+        if (!empty($adminUserIds)) {
+            $totalUsersBuilder->whereNotIn('u.id', $adminUserIds);
+        }
+        $totalNonAdminUsers = $totalUsersBuilder->countAllResults();
 
-        $paidUserCount = $db->table('user_subscriptions s')
+        $paidUserBuilder = $db->table('user_subscriptions s')
             ->select('s.user_id')
             ->where('s.status', 'active')
             ->where('s.plan !=', 'free')
-            ->where('s.current_period_end >=', $now)
-            ->whereNotIn('s.user_id', $adminUserIdsSubquery)
-            ->distinct()
-            ->countAllResults();
+            ->where('s.current_period_end >=', $now);
+        if (!empty($adminUserIds)) {
+            $paidUserBuilder->whereNotIn('s.user_id', $adminUserIds);
+        }
+        $paidUserCount = $paidUserBuilder->distinct()->countAllResults();
 
         $freeUsers = max(0, $totalNonAdminUsers - $paidUserCount);
 
-        $activeSubs = $db->table('user_subscriptions s')
-            ->where('s.status', 'active')
-            ->whereNotIn('s.user_id', $adminUserIdsSubquery)
-            ->countAllResults();
+        $activeSubsBuilder = $db->table('user_subscriptions s')
+            ->where('s.status', 'active');
+        if (!empty($adminUserIds)) {
+            $activeSubsBuilder->whereNotIn('s.user_id', $adminUserIds);
+        }
+        $activeSubs = $activeSubsBuilder->countAllResults();
 
-        $canceled = $db->table('user_subscriptions s')
-            ->where('s.status', 'canceled')
-            ->whereNotIn('s.user_id', $adminUserIdsSubquery)
-            ->countAllResults();
+        $canceledBuilder = $db->table('user_subscriptions s')
+            ->where('s.status', 'canceled');
+        if (!empty($adminUserIds)) {
+            $canceledBuilder->whereNotIn('s.user_id', $adminUserIds);
+        }
+        $canceled = $canceledBuilder->countAllResults();
 
         return [
             'paid_active' => $paidPlans,

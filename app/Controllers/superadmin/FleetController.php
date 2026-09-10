@@ -142,31 +142,16 @@ class FleetController extends BaseSuperadminController
     {
         $db = $this->getDb();
 
-        $latestTimestamps = $db->table('tbl_device_profiles')
-            ->select('device_id, MAX(extraction_timestamp) as max_ts')
-            ->groupBy('device_id')
-            ->get()
-            ->getResultArray();
+        $sql = "SELECT dp.* 
+                FROM tbl_device_profiles dp
+                INNER JOIN (
+                    SELECT device_id, MAX(counter) AS max_counter
+                    FROM tbl_device_profiles
+                    WHERE device_id IS NOT NULL AND device_id != ''
+                    GROUP BY device_id
+                ) latest ON dp.counter = latest.max_counter";
 
-        if (empty($latestTimestamps)) {
-            return [];
-        }
-
-        $devices = [];
-        foreach ($latestTimestamps as $lt) {
-            $device = $db->table('tbl_device_profiles')
-                ->where('device_id', $lt['device_id'])
-                ->where('extraction_timestamp', $lt['max_ts'])
-                ->where('device_id IS NOT NULL')
-                ->limit(1)
-                ->get()
-                ->getRowArray();
-            if ($device) {
-                $devices[] = $device;
-            }
-        }
-
-        return $devices;
+        return $db->query($sql)->getResultArray();
     }
 
     private function countActiveDevices(array $devices): int

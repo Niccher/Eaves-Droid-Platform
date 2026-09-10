@@ -55,14 +55,18 @@ class UsersController extends BaseAdminController
             ->getResultArray();
 
         $grouped = [];
-        $groupRows = $db->table('auth_groups_users')
-            ->select('user_id, `group`')
-            ->get()
-            ->getResultArray();
-        foreach ($groupRows as $gr) {
-            $uid = $gr['user_id'];
-            if (!isset($grouped[$uid])) $grouped[$uid] = [];
-            $grouped[$uid][] = $gr['group'];
+        $userIds = array_column($users, 'id');
+        if (!empty($userIds)) {
+            $groupRows = $db->table('auth_groups_users')
+                ->select('user_id, `group`')
+                ->whereIn('user_id', $userIds)
+                ->get()
+                ->getResultArray();
+            foreach ($groupRows as $gr) {
+                $uid = $gr['user_id'];
+                if (!isset($grouped[$uid])) $grouped[$uid] = [];
+                $grouped[$uid][] = $gr['group'];
+            }
         }
 
         $pager = \Config\Services::pager();

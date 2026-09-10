@@ -3,6 +3,11 @@
 if (!function_exists('get_system_version_data')) {
     function get_system_version_data(): array
     {
+        static $cachedVersionData = null;
+        if ($cachedVersionData !== null) {
+            return $cachedVersionData;
+        }
+
         $version = '2.7.0';
         $build = 20700;
         $releaseName = 'Security Hardening, Plans Definitions UI, Correlation Tier Gating & Label Cleanup';
@@ -11,24 +16,23 @@ if (!function_exists('get_system_version_data')) {
         // 1. Try querying the database first (Runtime Source of Truth)
         try {
             $db = \Config\Database::connect();
-            if ($db->tableExists('system_versions')) {
-                $v = $db->table('system_versions')
-                    ->where('is_current', 1)
-                    ->orderBy('id', 'DESC')
+            $v = $db->table('system_versions')
+                ->where('is_current', 1)
+                ->orderBy('id', 'DESC')
+                ->get()
+                ->getRowArray();
+            if ($v) {
+                $changelogs = $db->table('system_changelogs')
+                    ->where('version_id', (int) $v['id'])
                     ->get()
-                    ->getRowArray();
-                if ($v) {
-                    $changelogs = $db->table('system_changelogs')
-                        ->where('version_id', (int) $v['id'])
-                        ->get()
-                        ->getResultArray();
-                    return [
-                        'platform_version'   => $v['version'],
-                        'platform_build'     => $v['build_number'],
-                        'platform_name'      => $v['release_name'],
-                        'version_changelogs' => $changelogs,
-                    ];
-                }
+                    ->getResultArray();
+                $cachedVersionData = [
+                    'platform_version'   => $v['version'],
+                    'platform_build'     => $v['build_number'],
+                    'platform_name'      => $v['release_name'],
+                    'version_changelogs' => $changelogs,
+                ];
+                return $cachedVersionData;
             }
         } catch (\Throwable $e) {
             log_message('debug', 'Version DB query failed, falling back to files: ' . $e->getMessage());

@@ -57,10 +57,7 @@ class Dashboard extends BaseAdminController
             ->get()
             ->getResultArray();
 
-        $totalUsersWithData = $db->table('tbl_uploaded_files')
-            ->select('token_owner_id')
-            ->groupBy('token_owner_id')
-            ->countAllResults();
+        $totalUsersWithData = (int) ($db->query("SELECT COUNT(DISTINCT token_owner_id) AS total FROM tbl_uploaded_files")->getRow()->total ?? 0);
 
         $latestBackup = null;
 

@@ -111,12 +111,12 @@
                 <!-- Admin Support Chat Dropdown/Badge -->
                 <?php
                 $db = \Config\Database::connect();
-                $unreadAdminChatsCount = $db->table('support_messages')
-                    ->where('is_read', 0)
-                    ->whereNotIn('sender_id', function (\CodeIgniter\Database\BaseBuilder $b) {
-                        return $b->select('user_id')->from('auth_groups_users')->whereIn('group', ['admin', 'superadmin']);
-                    })
-                    ->countAllResults();
+                $unreadAdminChatsCount = (int) ($db->query("
+                    SELECT COUNT(*) AS total
+                    FROM support_messages sm
+                    LEFT JOIN auth_groups_users agu ON agu.user_id = sm.sender_id AND agu.group IN ('admin', 'superadmin')
+                    WHERE sm.is_read = 0 AND agu.user_id IS NULL
+                ")->getRow()->total ?? 0);
                 ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link" href="<?php echo base_url('admin/support'); ?>" title="Client Support Messages">
