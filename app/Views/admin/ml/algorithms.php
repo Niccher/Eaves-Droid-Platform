@@ -1,4 +1,4 @@
-<div class="tab-pane fade <?= ($active_tab === 'algorithms') ? 'show active' : '' ?>" id="pane-algorithms" role="tabpanel">
+                            <div class="tab-pane active show" id="pane-algorithms" role="tabpanel">
                                 <form method="post" action="<?= base_url('admin/anomalies') ?>" id="anomalyAlgoForm">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="default_engine" value="<?= esc($default_engine ?? 'php') ?>">
@@ -79,5 +79,3 @@
                                 </form>
                             </div>
 
-                            <!-- ======================== PYTHON ======================== -->
-                            

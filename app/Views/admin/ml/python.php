@@ -1,4 +1,4 @@
-<div class="tab-pane fade <?= ($active_tab === 'python') ? 'show active' : '' ?>" id="pane-python" role="tabpanel">
+                            <div class="tab-pane active show" id="pane-python" role="tabpanel">
                                 <form action="<?= base_url('admin/settings/update') ?>" method="post">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="section" value="ml">
@@ -248,5 +248,3 @@
                                 </form>
                             </div>
 
-                            <!-- ======================== PHP-ML ======================== -->
-                            

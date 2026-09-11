@@ -260,7 +260,7 @@
                             <a href="<?php echo base_url('admin/broadcasts'); ?>"
                                class="nav-link <?php echo (isset($pag) && $pag === 'admin-broadcasts') ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-bullhorn text-danger"></i>
-                                <p>Broadcasts &amp; Announcements</p>
+                                <p>Broadcasts</p>
                             </a>
                         </li>
 

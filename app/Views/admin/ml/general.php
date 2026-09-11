@@ -1,4 +1,4 @@
-<div class="tab-pane fade <?= (empty($active_tab) || $active_tab === 'overview' || $active_tab === 'general') ? 'show active' : '' ?>" id="pane-general" role="tabpanel">
+                            <div class="tab-pane active show" id="pane-general" role="tabpanel">
                                 <form action="<?= base_url('admin/settings/update') ?>" method="post">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="section" value="ml">
@@ -50,5 +50,3 @@
                                 </form>
                             </div>
 
-                            <!-- ======================== DETECTION ENGINES TAB ======================== -->
-                            

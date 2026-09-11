@@ -1905,8 +1905,17 @@ $routes->group('admin', [
     // 7.6 SUPPORT CHAT MANAGEMENT UI
     // -------------------------------------------------------------
     $routes->get('support', 'SupportChatController::index', ['as' => 'admin-support']);
+    $routes->get('support/tickets', 'SupportChatController::index', ['as' => 'admin-support-tickets']);
     $routes->get('support/thread/(:num)', 'SupportChatController::thread/$1', ['as' => 'admin-support-thread']);
     $routes->get('support/attachment/(:any)', 'SupportChatController::attachment/$1', ['as' => 'admin-support-attachment']);
+
+    // -------------------------------------------------------------
+    // 7.7 SYSTEM BROADCASTS
+    // -------------------------------------------------------------
+    $routes->get('broadcasts', 'BroadcastsController::index', ['as' => 'admin-broadcasts']);
+    $routes->post('broadcasts/send', 'BroadcastsController::send', ['as' => 'admin-broadcasts-send']);
+    $routes->get('broadcasts/toggle/(:any)', 'BroadcastsController::toggle/$1', ['as' => 'admin-broadcasts-toggle']);
+    $routes->get('broadcasts/delete/(:any)', 'BroadcastsController::delete/$1', ['as' => 'admin-broadcasts-delete']);
 });
 
 // =============================================================

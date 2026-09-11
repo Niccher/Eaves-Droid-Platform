@@ -27,6 +27,9 @@
                             <li class="nav-item">
                                 <a class="nav-link <?= ($active_tab === 'history') ? 'active' : '' ?>" href="<?= base_url('admin/ml/history') ?>">
                                     <i class="fas fa-history mr-1 text-secondary"></i> Run History
+                                    <?php if (!empty($job_history)): ?>
+                                    <span class="badge badge-secondary ml-1"><?= count($job_history) ?></span>
+                                    <?php endif; ?>
                                 </a>
                             </li>
                         </ul>

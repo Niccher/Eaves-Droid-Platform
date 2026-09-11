@@ -1,4 +1,4 @@
-<div class="tab-pane fade <?= ($active_tab === 'phpml') ? 'show active' : '' ?>" id="pane-phpml" role="tabpanel">
+                            <div class="tab-pane active show" id="pane-phpml" role="tabpanel">
                                 <form action="<?= base_url('admin/settings/update') ?>" method="post">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="section" value="ml">
@@ -100,8 +100,3 @@
                                     </div>
                                 </form>
                             </div>
-
-
-
-                            <!-- ======================== RUN HISTORY TAB ======================== -->
-                            

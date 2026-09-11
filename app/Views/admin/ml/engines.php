@@ -1,4 +1,4 @@
-<div class="tab-pane fade <?= ($active_tab === 'engines') ? 'show active' : '' ?>" id="pane-engines" role="tabpanel">
+                            <div class="tab-pane active show" id="pane-engines" role="tabpanel">
                                 <form method="post" action="<?= base_url('admin/anomalies') ?>" id="anomalyEngineForm">
                                     <?= csrf_field() ?>
                                     <div class="callout callout-info bg-light border-left-info py-2 px-3 mb-3 small">
@@ -47,5 +47,3 @@
                                 </form>
                             </div>
 
-                            <!-- ======================== ALGORITHMS & RULES TAB ======================== -->
-                            

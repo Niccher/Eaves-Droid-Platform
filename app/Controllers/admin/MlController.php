@@ -9,6 +9,11 @@ class MlController extends BaseAdminController
     public function index($tab = 'general')
     {
         $validTabs = ['general', 'overview', 'engines', 'algorithms', 'python', 'phpml', 'history'];
+        $getTab = $this->request->getGet('tab');
+        if (!empty($getTab) && in_array($getTab, $validTabs)) {
+            $tab = $getTab;
+        }
+
         if (!in_array($tab, $validTabs)) {
             $tab = 'general';
         }
