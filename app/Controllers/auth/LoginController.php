@@ -135,6 +135,11 @@ class LoginController extends Controller
         // Success! Clear the failed-attempt counter for this IP.
         $this->clearFailedAttempts($this->request->getIPAddress());
 
+        // If the user is suspended, route immediately to the quarantine appeal page
+        if ((int)$user->active === 0 || $user->status === 'suspended') {
+            return redirect()->to('/account/suspended')->with('message', 'Your account is suspended. You may submit an appeal below.');
+        }
+
         // Success! Redirect to intended page or dashboard
         $session = session();
         $redirect = $session->getTempdata('beforeLoginUrl');

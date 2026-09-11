@@ -89,7 +89,7 @@ class SupportMessageModel extends Model
 
         // Main query joining user and latest message details
         $builder = $db->table('support_messages sm')
-            ->select('sm.*, u.username, up.profile_image')
+            ->select('sm.*, u.username, u.active, u.status, up.profile_image')
             ->join('users u', 'u.id = sm.client_id')
             ->join('user_profiles up', 'up.user_id = sm.client_id', 'left')
             ->join('(SELECT client_id, MAX(id) as max_id FROM support_messages GROUP BY client_id) latest', 'latest.client_id = sm.client_id AND latest.max_id = sm.id')

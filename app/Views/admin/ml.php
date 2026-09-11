@@ -133,11 +133,7 @@
                                     <i class="fab fa-php mr-1 text-primary"></i> PHP-ML Local
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link <?= ($active_tab === 'requirements') ? 'active' : '' ?>" id="tab-requirements" data-toggle="pill" href="#pane-requirements" role="tab">
-                                    <i class="fas fa-cubes mr-1 text-secondary"></i> Specs &amp; Docker
-                                </a>
-                            </li>
+
                             <li class="nav-item">
                                 <a class="nav-link <?= ($active_tab === 'history') ? 'active' : '' ?>" id="tab-history" data-toggle="pill" href="#pane-history" role="tab">
                                     <i class="fas fa-history mr-1 text-success"></i> Run History
@@ -691,219 +687,7 @@
                                 </form>
                             </div>
 
-                            <!-- ======================== REQUIREMENTS ======================== -->
-                            <div class="tab-pane fade <?= ($active_tab === 'requirements') ? 'show active' : '' ?>" id="pane-requirements" role="tabpanel">
-                                <div class="callout callout-info bg-light py-2 px-3 mb-3 small">
-                                    <i class="fas fa-info-circle text-info mr-1"></i>
-                                    System requirements vary significantly based on dataset size. Below are recommended specifications for the PHP server and Python Docker backend at different data volumes. These assume processing SMS + Calls + Contacts + Locations + Apps + FilesController + Device Activity simultaneously.
-                                </div>
 
-                                <!-- Scale Comparison Table -->
-                                <div class="card card-outline card-dark shadow-sm mb-3">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-server mr-1"></i> PHP Server Requirements (PHP-ML Engine)</h3></div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-hover mb-0">
-                                                <thead class="thead-dark">
-                                                    <tr>
-                                                        <th style="width:120px;">Dataset Size</th>
-                                                        <th>CPU</th>
-                                                        <th>RAM</th>
-                                                        <th>PHP Memory Limit</th>
-                                                        <th>Max Execution Time</th>
-                                                        <th>Storage (DB + Temp)</th>
-                                                        <th>Notes</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr class="table-success">
-                                                        <td><strong>&lt; 1k entries</strong></td>
-                                                        <td>1 vCPU (any)</td>
-                                                        <td>512 MB</td>
-                                                        <td>128 MB</td>
-                                                        <td>30 seconds</td>
-                                                        <td>&lt; 100 MB</td>
-                                                        <td>Development / single-user. PHP-ML runs easily within shared hosting limits.</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>&lt; 5k entries</strong></td>
-                                                        <td>1&ndash;2 vCPU</td>
-                                                        <td>1 GB</td>
-                                                        <td>256 MB</td>
-                                                        <td>60 seconds</td>
-                                                        <td>&lt; 500 MB</td>
-                                                        <td>Small team / testing. K-Means and DBSCAN complete in seconds.</td>
-                                                    </tr>
-                                                    <tr class="table-warning">
-                                                        <td><strong>&lt; 10k entries</strong></td>
-                                                        <td>2 vCPU @ 2+ GHz</td>
-                                                        <td>2 GB</td>
-                                                        <td>256&ndash;512 MB</td>
-                                                        <td>120 seconds</td>
-                                                        <td>&lt; 1 GB</td>
-                                                        <td>Small production. Isolation Forest with 100 trees finishes within 30s.</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>&lt; 20k entries</strong></td>
-                                                        <td>2&ndash;4 vCPU @ 2.5+ GHz</td>
-                                                        <td>4 GB</td>
-                                                        <td>512 MB</td>
-                                                        <td>180 seconds</td>
-                                                        <td>1&ndash;2 GB</td>
-                                                        <td>Medium production. Consider queue-based processing for long-running tasks.</td>
-                                                    </tr>
-                                                    <tr class="table-danger">
-                                                        <td><strong>&lt; 50k entries</strong></td>
-                                                        <td>4+ vCPU @ 3+ GHz</td>
-                                                        <td>8 GB</td>
-                                                        <td>1 GB</td>
-                                                        <td>300 seconds</td>
-                                                        <td>2&ndash;5 GB</td>
-                                                        <td>Heavy production. Strongly recommend switching to Python backend at this scale. DBSCAN &amp; Isolation Forest may timeout on large PHP-ML runs.</td>
-                                                    </tr>
-                                                    <tr class="table-danger">
-                                                        <td><strong>50k+ entries</strong></td>
-                                                        <td>4&ndash;8 vCPU</td>
-                                                        <td>16 GB+</td>
-                                                        <td>2 GB+</td>
-                                                        <td>600+ seconds</td>
-                                                        <td>5&ndash;20 GB</td>
-                                                        <td>Production with heavy data. PHP-ML not recommended &mdash; use Python backend with job queue. PHP only feasible with subset sampling.</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer small text-muted">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        PHP-ML runs synchronously within the web request. For datasets &gt;20k entries, configure a queue worker or use the Python backend to avoid HTTP timeouts.
-                                    </div>
-                                </div>
-
-                                <div class="card card-outline card-warning shadow-sm mb-3">
-                                    <div class="card-header"><h3 class="card-title"><i class="fab fa-python mr-1"></i> Python Backend Requirements (Docker)</h3></div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-hover mb-0">
-                                                <thead class="thead-dark">
-                                                    <tr>
-                                                        <th style="width:120px;">Dataset Size</th>
-                                                        <th>CPU</th>
-                                                        <th>RAM</th>
-                                                        <th>GPU</th>
-                                                        <th>Docker Image Size</th>
-                                                        <th>Python Packages</th>
-                                                        <th>Notes</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr class="table-success">
-                                                        <td><strong>&lt; 1k entries</strong></td>
-                                                        <td>0.5 vCPU</td>
-                                                        <td>256 MB</td>
-                                                        <td>Not required</td>
-                                                        <td>~1.2 GB (slim)</td>
-                                                        <td>scikit-learn, numpy, FastAPI</td>
-                                                        <td>Overkill for this size. PHP-ML sufficient. Runs on any Docker host.</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>&lt; 5k entries</strong></td>
-                                                        <td>1 vCPU</td>
-                                                        <td>512 MB</td>
-                                                        <td>Not required</td>
-                                                        <td>~1.5 GB</td>
-                                                        <td>+ pandas, scipy, networkx</td>
-                                                        <td>All 7 detectors finish in seconds. No GPU needed.</td>
-                                                    </tr>
-                                                    <tr class="table-warning">
-                                                        <td><strong>&lt; 10k entries</strong></td>
-                                                        <td>2 vCPU</td>
-                                                        <td>1 GB</td>
-                                                        <td>Optional</td>
-                                                        <td>~1.8 GB</td>
-                                                        <td>+ onnxruntime (optional)</td>
-                                                        <td>Isolation Forest, One-Class SVM complete in &lt;10s. All detectors are CPU-only sklearn models.</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>&lt; 20k entries</strong></td>
-                                                        <td>2&ndash;4 vCPU</td>
-                                                        <td>2&ndash;4 GB</td>
-                                                        <td>Not required</td>
-                                                        <td>~2.0 GB</td>
-                                                        <td>+ onnxruntime (optional)</td>
-                                                        <td>Detectors scale on CPU; use Redis-like caching (model cache) to avoid recomputation.</td>
-                                                    </tr>
-                                                    <tr class="table-danger">
-                                                        <td><strong>&lt; 50k entries</strong></td>
-                                                        <td>4+ vCPU</td>
-                                                        <td>4&ndash;8 GB</td>
-                                                        <td>Not required</td>
-                                                        <td>~2.5 GB</td>
-                                                        <td>+ onnxruntime (optional)</td>
-                                                        <td>Recommended production target for the Python backend. All 7 detectors complete within 60s on CPU. Use the model cache to avoid recomputation.</td>
-                                                    </tr>
-                                                    <tr class="table-danger">
-                                                        <td><strong>50k+ entries</strong></td>
-                                                        <td>8+ vCPU</td>
-                                                        <td>16&ndash;32 GB</td>
-                                                        <td>Not required</td>
-                                                        <td>~3.0 GB + model storage</td>
-                                                        <td>+ onnxruntime (optional)</td>
-                                                        <td>Large-scale production. Implement an async job queue with the model cache to avoid recomputation. All detectors are CPU-only sklearn models.</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer small text-muted">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        The Python backend runs as a separate Docker container communicating via HTTP REST. It does NOT share PHP server resources. All detectors are CPU-only sklearn/networkx models — no GPU or nvidia-docker runtime is required.
-                                    </div>
-                                </div>
-
-                                <div class="card card-outline card-success shadow-sm mb-0">
-                                    <div class="card-header"><h3 class="card-title"><i class="fas fa-cubes mr-1"></i> Docker Compose Reference</h3></div>
-                                    <div class="card-body">
-                                        <div class="callout callout-success bg-light py-2 px-3 mb-3 small">
-                                            <i class="fas fa-book-open text-success mr-1"></i>
-                                            Below is a reference <code>docker-compose.yml</code> snippet for deploying the Python ML backend alongside the PHP application. Adjust resource limits based on dataset size from the tables above.
-                                        </div>
-                                        <pre class="bg-dark text-light p-3 rounded" style="overflow-x: auto; font-size: 0.85rem; line-height: 1.5;">
-<code>services:
-  ml-eaves-droid:
-    build: ./ML Eaves Droid
-    image: ml-eaves-droid:latest
-    ports:
-      - "9071:9070"   # FastAPI (external : internal)
-    env_file:
-      - .env
-    volumes:
-      - ./ML Eaves Droid:/app
-    restart: unless-stopped
-    networks:
-      - hosts-shared-network
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:9070/api/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-networks:
-  hosts-shared-network:
-    name: hosts-shared-network
-    external: true</code>
-                                        </pre>
-                                        <div class="row mt-2">
-                                            <div class="col-md-12">
-                                                <div class="small">
-                                                    <strong class="text-success"><i class="fas fa-check-circle mr-1"></i>Deployment:</strong><br>
-                                                    The backend listens on port <code>9070</code> internally (mapped to <code>9071</code> externally) and exposes <code>/api/health</code>, <code>/api/models</code>, and <code>/api/analyze</code>. All detectors are CPU-only sklearn/networkx models — no GPU, TensorFlow, or PyTorch required. Point the webapp at <code>http://ml-eaves-droid:9070</code> (internal) or <code>http://&lt;host&gt;:9071</code>.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
                             <!-- ======================== RUN HISTORY TAB ======================== -->
                             <div class="tab-pane fade <?= ($active_tab === 'history') ? 'show active' : '' ?>" id="pane-history" role="tabpanel">
@@ -1007,7 +791,7 @@ networks:
     </section>
 </div>
 
-<div class="modal fade" id="pythonTestModal" tabindex="-1" role="dialog" aria-labelledby="pythonTestModalLabel" aria-hidden="true">
+<div class="modal fade" id="pythonTestModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-labelledby="pythonTestModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
         <div class="modal-content">
             <div class="modal-header bg-info">
@@ -1340,8 +1124,8 @@ if (toggleAll) {
     activateTabFromUrl();
     window.addEventListener('hashchange', activateTabFromUrl);
 
-    // Update URL hash when tab is clicked
-    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    // Update URL hash when tab or pill is clicked
+    $('a[data-toggle="tab"], a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
         const href = $(e.target).attr('href');
         if (href && history.replaceState) {
             history.replaceState(null, null, href);

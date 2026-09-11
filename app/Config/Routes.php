@@ -200,6 +200,14 @@ $routes->group('', ['namespace' => 'App\Controllers\auth'], static function ($ro
      */
     $routes->get('forgot/offline', 'ForgotPasswordController::offlineResetView', ['as' => 'forgot-offline']);
     $routes->post('forgot/offline', 'ForgotPasswordController::offlineResetAction');
+
+    /**
+     * Suspended Account Quarantine & Appeal Center
+     */
+    $routes->get('account/suspended', 'SuspendedController::index', ['as' => 'account-suspended']);
+    $routes->post('account/suspended/chat/send', 'SuspendedController::sendMessage', ['as' => 'account-suspended-chat-send']);
+    $routes->get('account/suspended/chat/poll', 'SuspendedController::poll', ['as' => 'account-suspended-chat-poll']);
+    $routes->get('account/suspended/chat/attachment/(:any)', 'SuspendedController::attachment/$1', ['as' => 'account-suspended-attachment']);
 });
 
 // Load Shield routes after custom routes so custom routes take precedence (for password reset, email verification, etc.)

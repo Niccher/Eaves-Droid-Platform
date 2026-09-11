@@ -37,18 +37,46 @@ class RemoteDeviceController extends BaseAdminController
         }
 
         // Fetch stats per user
-        $stats = $db->table('users u')
-            ->select('u.id, u.username, ai.secret as email,
-                (SELECT COUNT(*) FROM tbl_extracted_media_files WHERE owner_id = u.id) as media_count,
-                (SELECT COALESCE(SUM(file_size), 0) FROM tbl_extracted_media_files WHERE owner_id = u.id) as media_size,
-                (SELECT COUNT(*) FROM tbl_uploaded_files WHERE token_owner_id = u.id AND file_category = \'files\') as files_count,
-                (SELECT COALESCE(SUM(file_size_bytes), 0) FROM tbl_uploaded_files WHERE token_owner_id = u.id AND file_category = \'files\') as files_size')
-            ->join('tbl_device_profiles dp', 'dp.owner_id = u.id', 'inner')
-            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
-            ->groupBy('u.id')
-            ->orderBy('u.username', 'ASC')
-            ->get()
-            ->getResultArray();
+        $stats = [];
+        try {
+            $userRows = $db->table('users u')
+                ->select('u.id, u.username, ai.secret as email')
+                ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
+                ->orderBy('u.username', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            foreach ($userRows as $u) {
+                $uid = (int) $u['id'];
+
+                $mediaRow = $db->table('tbl_extracted_media_files')
+                    ->select('COUNT(*) as media_count, COALESCE(SUM(file_size), 0) as media_size')
+                    ->where('owner_id', $uid)
+                    ->get()
+                    ->getRowArray();
+
+                $filesRow = $db->table('tbl_uploaded_files')
+                    ->select('COUNT(*) as files_count, COALESCE(SUM(file_size_bytes), 0) as files_size')
+                    ->where('token_owner_id', $uid)
+                    ->where('file_category', 'files')
+                    ->get()
+                    ->getRowArray();
+
+                $stats[] = [
+                    'id'          => $uid,
+                    'username'    => $u['username'],
+                    'email'       => $u['email'] ?? '',
+                    'media_count' => (int) ($mediaRow['media_count'] ?? 0),
+                    'media_size'  => (int) ($mediaRow['media_size'] ?? 0),
+                    'files_count' => (int) ($filesRow['files_count'] ?? 0),
+                    'files_size'  => (int) ($filesRow['files_size'] ?? 0),
+                ];
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'RemoteDeviceController stats error: ' . $e->getMessage());
+            $stats = [];
+        }
+
 
         return $this->renderView('admin/remote_device', [
             'pag' => 'admin-remote-device',

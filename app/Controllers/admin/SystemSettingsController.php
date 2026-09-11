@@ -10,14 +10,17 @@ class SystemSettingsController extends BaseAdminController
 
     private function requirePermission(string $permission)
     {
-        if (!auth()->user()->can($permission)) {
-            $this->logAdminAction('permission_denied', 'medium', false, [
-                'new_values' => json_encode(['uri' => current_url()]),
-            ]);
-            return redirect()->to('admin/dashboard')->with('error', 'You do not have permission to access this page.');
+        $user = auth()->user();
+        if ($user && ($user->inGroup('superadmin') || $user->can('admin.settings') || $user->can($permission))) {
+            return null;
         }
-        return null;
+
+        $this->logAdminAction('permission_denied', 'medium', false, [
+            'new_values' => json_encode(['uri' => current_url(), 'required_permission' => $permission]),
+        ]);
+        return redirect()->to('admin/dashboard')->with('error', 'You do not have permission to access this page.');
     }
+
 
     public function index()
     {

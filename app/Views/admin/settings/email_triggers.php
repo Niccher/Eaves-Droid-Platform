@@ -88,11 +88,11 @@
                                 <div class="row">
                                     <?php foreach ($userTriggers as $key => $info): ?>
                                     <div class="col-md-6 mb-3">
-                                        <div class="card">
-                                            <div class="card-body">
+                                        <div class="card shadow-sm">
+                                            <div class="card-body py-3">
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
-                                                        <strong><?= esc($info['label']) ?></strong>
+                                                        <i class="<?= esc($info['icon'] ?? 'fas fa-envelope text-primary') ?> mr-2"></i> <strong><?= esc($info['label']) ?></strong>
                                                         <br><small class="text-muted"><?= esc($info['description']) ?></small>
                                                     </div>
                                                     <div class="custom-control custom-switch">
@@ -111,11 +111,11 @@
                                 <div class="row">
                                     <?php foreach ($userSystemTriggers as $key => $info): ?>
                                     <div class="col-md-6 mb-3">
-                                        <div class="card">
-                                            <div class="card-body">
+                                        <div class="card shadow-sm">
+                                            <div class="card-body py-3">
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
-                                                        <strong><?= esc($info['label']) ?></strong>
+                                                        <i class="<?= esc($info['icon'] ?? 'fas fa-shield-alt text-danger') ?> mr-2"></i> <strong><?= esc($info['label']) ?></strong>
                                                         <br><small class="text-muted"><?= esc($info['description']) ?></small>
                                                     </div>
                                                     <div class="custom-control custom-switch">
@@ -134,11 +134,11 @@
                                 <div class="row">
                                     <?php foreach ($adminTriggers as $key => $info): ?>
                                     <div class="col-md-6 mb-3">
-                                        <div class="card border-warning">
-                                            <div class="card-body">
+                                        <div class="card border-warning shadow-sm">
+                                            <div class="card-body py-3">
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
-                                                        <strong class="text-warning"><?= esc($info['label']) ?></strong>
+                                                        <i class="<?= esc($info['icon'] ?? 'fas fa-exclamation-triangle text-warning') ?> mr-2"></i> <strong class="text-dark"><?= esc($info['label']) ?></strong>
                                                         <br><small class="text-muted"><?= esc($info['description']) ?></small>
                                                     </div>
                                                     <div class="custom-control custom-switch">
@@ -157,11 +157,11 @@
                                 <div class="row">
                                     <?php foreach ($systemTriggers as $key => $info): ?>
                                     <div class="col-md-6 mb-3">
-                                        <div class="card border-secondary">
-                                            <div class="card-body">
+                                        <div class="card border-secondary shadow-sm">
+                                            <div class="card-body py-3">
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
-                                                        <strong class="text-secondary"><?= esc($info['label']) ?></strong>
+                                                        <i class="<?= esc($info['icon'] ?? 'fas fa-cogs text-secondary') ?> mr-2"></i> <strong class="text-dark"><?= esc($info['label']) ?></strong>
                                                         <br><small class="text-muted"><?= esc($info['description']) ?></small>
                                                     </div>
                                                     <div class="custom-control custom-switch">

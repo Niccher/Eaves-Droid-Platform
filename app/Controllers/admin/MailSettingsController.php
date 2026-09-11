@@ -10,14 +10,17 @@ class MailSettingsController extends BaseAdminController
 
     private function requirePermission(string $permission)
     {
-        if (!auth()->user()->can($permission)) {
-            $this->logAdminAction('permission_denied', 'medium', false, [
-                'new_values' => json_encode(['uri' => current_url()]),
-            ]);
-            return redirect()->to('admin/dashboard')->with('error', 'You do not have permission to access this page.');
+        $user = auth()->user();
+        if ($user && ($user->inGroup('superadmin') || $user->can('admin.settings') || $user->can($permission))) {
+            return null;
         }
-        return null;
+
+        $this->logAdminAction('permission_denied', 'medium', false, [
+            'new_values' => json_encode(['uri' => current_url(), 'required_permission' => $permission]),
+        ]);
+        return redirect()->to('admin/dashboard')->with('error', 'You do not have permission to access this page.');
     }
+
 
     public function notification_settings()
     {
@@ -180,31 +183,31 @@ class MailSettingsController extends BaseAdminController
     {
         return [
             'userTriggers' => [
-                'on_new_user' => ['label' => 'New User Registered', 'description' => 'Send welcome email when a new user signs up.'],
-                'on_password_reset' => ['label' => 'Password Reset Request', 'description' => 'Send password reset link when user requests it.'],
-                'on_password_changed' => ['label' => 'Password Changed', 'description' => 'Notify user when their password is successfully changed.'],
-                'on_email_changed' => ['label' => 'Email Changed', 'description' => 'Notify user when their email address is updated.'],
+                'on_new_user' => ['label' => 'New User Registered', 'description' => 'Send welcome email when a new user signs up.', 'icon' => 'fas fa-user-plus text-success'],
+                'on_password_reset' => ['label' => 'Password Reset Request', 'description' => 'Send password reset link when user requests it.', 'icon' => 'fas fa-key text-warning'],
+                'on_password_changed' => ['label' => 'Password Changed', 'description' => 'Notify user when their password is successfully changed.', 'icon' => 'fas fa-lock text-info'],
+                'on_email_changed' => ['label' => 'Email Changed', 'description' => 'Notify user when their email address is updated.', 'icon' => 'fas fa-envelope-open-text text-primary'],
             ],
             'userSystemTriggers' => [
-                'on_user_suspended' => ['label' => 'AccountController Suspended', 'description' => 'Notify user when their account is suspended by admin.'],
-                'on_user_reactivated' => ['label' => 'AccountController Reactivated', 'description' => 'Notify user when their suspended account is reactivated.'],
-                'on_maintenance_notice' => ['label' => 'Maintenance Notice', 'description' => 'Notify all users when maintenance mode is enabled.'],
+                'on_user_suspended' => ['label' => 'Account Suspended', 'description' => 'Notify user when their account is suspended by admin.', 'icon' => 'fas fa-user-slash text-danger'],
+                'on_user_reactivated' => ['label' => 'Account Reactivated', 'description' => 'Notify user when their suspended account is reactivated.', 'icon' => 'fas fa-user-check text-success'],
+                'on_maintenance_notice' => ['label' => 'Maintenance Notice', 'description' => 'Notify all users when maintenance mode is enabled.', 'icon' => 'fas fa-tools text-warning'],
             ],
             'adminTriggers' => [
-                'on_user_deleted' => ['label' => 'User Deleted', 'description' => 'Notify admins when a user account is deleted.'],
-                'on_maintenance_toggle' => ['label' => 'Maintenance Mode Changed', 'description' => 'Notify admins when maintenance mode is enabled/disabled.'],
-                'on_backup_success' => ['label' => 'Backup Completed', 'description' => 'Notify admins when a scheduled backup finishes successfully.'],
-                'on_backup_failed' => ['label' => 'Backup Failed', 'description' => 'Alert admins when a scheduled backup fails.'],
-                'on_anomaly_high' => ['label' => 'High Severity Anomaly', 'description' => 'Alert admins when ML detects high-severity anomaly.'],
-                'on_cron_failed' => ['label' => 'Cron Job Failed', 'description' => 'Alert admins when a scheduled cron job fails.'],
-                'on_settings_changed' => ['label' => 'Critical SettingsController Changed', 'description' => 'Alert admins when critical system settings are modified.'],
-                'on_brute_force' => ['label' => 'Brute-Force Lockout', 'description' => 'Alert superadmins when the failed-login threshold is exceeded.'],
+                'on_user_deleted' => ['label' => 'User Deleted', 'description' => 'Notify admins when a user account is deleted.', 'icon' => 'fas fa-user-times text-danger'],
+                'on_maintenance_toggle' => ['label' => 'Maintenance Mode Changed', 'description' => 'Notify admins when maintenance mode is enabled/disabled.', 'icon' => 'fas fa-power-off text-warning'],
+                'on_backup_success' => ['label' => 'Backup Completed', 'description' => 'Notify admins when a scheduled backup finishes successfully.', 'icon' => 'fas fa-database text-success'],
+                'on_backup_failed' => ['label' => 'Backup Failed', 'description' => 'Alert admins when a scheduled backup fails.', 'icon' => 'fas fa-exclamation-triangle text-danger'],
+                'on_anomaly_high' => ['label' => 'High Severity Anomaly', 'description' => 'Alert admins when ML detects high-severity anomaly.', 'icon' => 'fas fa-shield-virus text-danger'],
+                'on_cron_failed' => ['label' => 'Cron Job Failed', 'description' => 'Alert admins when a scheduled cron job fails.', 'icon' => 'fas fa-clock text-danger'],
+                'on_settings_changed' => ['label' => 'Critical Settings Changed', 'description' => 'Alert admins when critical system settings are modified.', 'icon' => 'fas fa-sliders-h text-info'],
+                'on_brute_force' => ['label' => 'Brute-Force Lockout', 'description' => 'Alert superadmins when the failed-login threshold is exceeded.', 'icon' => 'fas fa-user-lock text-danger'],
             ],
             'systemTriggers' => [
-                'on_storage_warning' => ['label' => 'Storage Warning', 'description' => 'Alert when disk usage exceeds warning threshold.'],
-                'on_storage_critical' => ['label' => 'Storage Critical', 'description' => 'Alert when disk usage exceeds critical threshold.'],
-                'on_queue_stalled' => ['label' => 'Upload Queue Stalled', 'description' => 'Alert when upload queue has too many pending items.'],
-                'on_ssl_expiring' => ['label' => 'SSL Certificate Expiring', 'description' => 'Alert when SSL certificate expires within 30 days.'],
+                'on_storage_warning' => ['label' => 'Storage Warning', 'description' => 'Alert when disk usage exceeds warning threshold.', 'icon' => 'fas fa-hdd text-warning'],
+                'on_storage_critical' => ['label' => 'Storage Critical', 'description' => 'Alert when disk usage exceeds critical threshold.', 'icon' => 'fas fa-exclamation-circle text-danger'],
+                'on_queue_stalled' => ['label' => 'Upload Queue Stalled', 'description' => 'Alert when upload queue has too many pending items.', 'icon' => 'fas fa-layer-group text-warning'],
+                'on_ssl_expiring' => ['label' => 'SSL Certificate Expiring', 'description' => 'Alert when SSL certificate expires within 30 days.', 'icon' => 'fas fa-certificate text-danger'],
             ],
         ];
     }

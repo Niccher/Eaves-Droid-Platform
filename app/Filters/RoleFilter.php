@@ -44,6 +44,7 @@ class RoleFilter implements FilterInterface
         'contactus',
         'pricing',
         'api',
+        'account/suspended',
     ];
 
     public function before(RequestInterface $request, $arguments = null): ?RedirectResponse
@@ -67,7 +68,17 @@ class RoleFilter implements FilterInterface
             return redirect()->to('/login')->with('error', 'Please log in first.');
         }
 
-        $route = $request->getUri()->getPath();
+        $user = auth()->user();
+
+        // Enforce quarantine on suspended users across all application routes
+        if ($user && ((int)$user->active === 0 || $user->status === 'suspended')) {
+            if ($route !== 'account/suspended' && !str_starts_with($route, 'account/suspended/') && $route !== 'logout') {
+                return redirect()->to('/account/suspended')->with('message', 'Your account is suspended. You are restricted to the appeal center.');
+            }
+            return null;
+        }
+
+        $route = '/' . $route;
         $requiredRoles = [];
 
         // Determine required roles based on route prefix

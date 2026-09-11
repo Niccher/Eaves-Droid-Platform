@@ -69,6 +69,9 @@
                                                     <?= esc(ucwords($conv['username'])) ?>
                                                 </h6>
                                                 <small class="text-muted ml-2">#<?= esc($conv['client_id']) ?></small>
+                                                <?php if ((isset($conv['active']) && (int)$conv['active'] === 0) || (isset($conv['status']) && $conv['status'] === 'suspended')): ?>
+                                                    <span class="badge badge-danger ml-2"><i class="fas fa-ban mr-1"></i>Suspended</span>
+                                                <?php endif; ?>
                                             </div>
                                             <p class="mb-0 text-muted small text-truncate" style="max-width: 450px;">
                                                 <?php if (!empty($conv['message'])): ?>
