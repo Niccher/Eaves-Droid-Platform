@@ -25,14 +25,9 @@
             </div>
             <?php endif; ?>
 
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Maintenance Block Logs</h5>
-                        <p class="mb-0 small text-muted">Non-admin users blocked from accessing the system during maintenance mode. Each entry records the attempted URL, IP address, and whether the visitor was authenticated.</p>
-                    </div>
-                </div>
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-info-circle mr-2"></i>Maintenance Block Logs</h5>
+                <p class="mb-0">Non-admin users blocked from accessing the system during maintenance mode. Each entry records the attempted URL, IP address, and whether the visitor was authenticated.</p>
             </div>
 
             <div class="card card-outline card-secondary shadow-sm">

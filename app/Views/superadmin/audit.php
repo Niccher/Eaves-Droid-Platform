@@ -18,14 +18,9 @@
 
     <section class="content">
         <div class="container-fluid">
-            <div class="callout callout-danger bg-light shadow-sm border-left-danger mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-search text-danger fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-danger font-weight-bold mb-1">Accountability Log</h5>
-                        <p class="mb-0 small text-muted">Every admin, authentication and system action with its severity and outcome. Filter by severity, category or outcome.</p>
-                    </div>
-                </div>
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-info-circle mr-2"></i>Audit & Accountability</h5>
+                <p class="mb-0">These audit logs are immutable and are strictly used for legal compliance. Every admin and system action is permanently recorded here.</p>
             </div>
 
             <div class="card">

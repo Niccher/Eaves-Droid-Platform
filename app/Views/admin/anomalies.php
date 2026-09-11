@@ -31,14 +31,9 @@
             </div>
             <?php endif; ?>
 
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Anomaly Engine Configuration</h5>
-                        <p class="mb-0 small text-muted">Configure the anomaly detection engine — select default detection engine (PHP, Python, or Hybrid), and control which algorithms users can access.</p>
-                    </div>
-                </div>
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-brain mr-2"></i>Anomaly Engine Configuration</h5>
+                <p class="mb-0">This page configures the AI detection engine and determines what the AI considers a "behavioral anomaly" vs normal user behavior.</p>
             </div>
 
             <div class="card card-warning shadow-sm">

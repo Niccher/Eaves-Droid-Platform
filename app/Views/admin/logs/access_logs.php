@@ -49,14 +49,9 @@ function detectSource(array $log): string {
 
     <section class="content">
         <div class="container-fluid">
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Access Logs</h5>
-                        <p class="mb-0 small text-muted">Authentication and session events — successful and failed login attempts, registrations, password resets, and logout actions.</p>
-                    </div>
-                </div>
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-info-circle mr-2"></i>Access Logs</h5>
+                <p class="mb-0">Authentication and session events — successful and failed login attempts, registrations, password resets, and logout actions.</p>
             </div>
 
             <div class="card">

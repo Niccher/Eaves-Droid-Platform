@@ -25,14 +25,9 @@
             </div>
             <?php endif; ?>
 
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Error Logs</h5>
-                        <p class="mb-0 small text-muted">Failed system actions — errors triggered by user actions, API calls, and system operations. Each entry shows what went wrong and who triggered it.</p>
-                    </div>
-                </div>
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-info-circle mr-2"></i>Error Logs</h5>
+                <p class="mb-0">Failed system actions — errors triggered by user actions, API calls, and system operations. Each entry shows what went wrong and who triggered it.</p>
             </div>
 
             <div class="card card-outline card-danger shadow-sm">

@@ -18,14 +18,9 @@
 
     <section class="content">
         <div class="container-fluid">
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Firebase Cloud Messaging Logs</h5>
-                        <p class="mb-0 small text-muted">Remote commands dispatched to Android devices via Firebase Cloud Messaging. Each entry shows the command, target device, and delivery status.</p>
-                    </div>
-                </div>
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-info-circle mr-2"></i>Firebase Cloud Messaging Logs</h5>
+                <p class="mb-0">Remote commands dispatched to Android devices via Firebase Cloud Messaging. Each entry shows the command, target device, and delivery status.</p>
             </div>
 
             <div class="card card-outline card-info shadow-sm">

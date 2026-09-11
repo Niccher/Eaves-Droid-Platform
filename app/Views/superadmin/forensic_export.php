@@ -21,15 +21,10 @@
             <!-- Forensic Export Callout -->
             <div class="row mb-2">
                 <div class="col-12">
-                    <div class="callout callout-danger">
-                        <h5><i class="fas fa-file-export mr-2"></i>Forensic Data Export</h5>
-                        <p class="mb-1">Export a user's complete dataset for legal/forensic handover. Select categories, date range, and format. Export includes manifest, README, and CSV files per category in a ZIP archive.</p>
-                        <ul class="mb-0 small">
-                            <li><strong>Data Integrity:</strong> Each CSV includes all columns. Manifest.json provides export metadata and record counts.</li>
-                            <li><strong>Chain of Custody:</strong> Export is logged with exporter identity, timestamp, and selected parameters.</li>
-                            <li><strong>Legal Compliance:</strong> Only superadmins can export. Each export is logged as a critical action.</li>
-                        </ul>
-                    </div>
+                    <div class="callout callout-danger shadow-sm mb-4">
+                <h5><i class="fas fa-exclamation-triangle mr-2"></i>DANGER: Highly Sensitive Area</h5>
+                <p class="mb-0">Warning: You are extracting unencrypted, raw forensic telemetry data. This action is logged and violates strict privacy policies if mishandled.</p>
+            </div>
                 </div>
             </div>
 

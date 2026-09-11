@@ -22,6 +22,11 @@ $isChecked = fn($key) => filter_var($defConfig[$key] ?? false, FILTER_VALIDATE_B
     <section class="content">
         <div class="container-fluid">
 
+            <div class="callout callout-warning shadow-sm mb-4">
+                <h5><i class="fas fa-exclamation-triangle mr-2"></i>Global App Defaults</h5>
+                <p class="mb-0">Warning: Changing a default setting here will instantly impact thousands of future users when they register.</p>
+            </div>
+
             <!-- Navigation Hub Submenu -->
             <div class="card card-outline card-info mb-3">
                 <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between">

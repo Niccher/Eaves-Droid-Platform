@@ -18,14 +18,9 @@
 
     <section class="content">
         <div class="container-fluid">
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Anomaly Detection Engine Runs</h5>
-                        <p class="mb-0 small text-muted">Anomaly detection engine runs triggered by any user (admin or ordinary). Shows the engine type, algorithms selected, status, duration, and who requested it.</p>
-                    </div>
-                </div>
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-clipboard-list mr-2"></i>System Logs</h5>
+                <p class="mb-0">Engine Logs track behavioral AI processing runs and algorithms, whereas Error Logs track failed system actions and crashes.</p>
             </div>
 
             <div class="card card-outline card-secondary shadow-sm">
