@@ -88,14 +88,17 @@ $mlVersion = '2.5.1';
                         </div>
 
                         <!-- Top Link -->
-                        <div class="mb-4">
+                        <div class="mb-4 d-flex justify-content-between align-items-center">
                             <a href="<?= url_to('login') ?>" class="text-muted small font-weight-bold">
                                 <i class="fas fa-arrow-left mr-1"></i> Back to Sign In
+                            </a>
+                            <a href="<?= url_to('demo-login') ?>" class="btn btn-sm btn-outline-warning shadow-sm font-weight-bold">
+                                <i class="fas fa-magic mr-1"></i> Try Interactive Demo
                             </a>
                         </div>
 
                         <!-- Form Title -->
-                        <div class="mb-4">
+                        <div class="mb-4 d-flex justify-content-between align-items-center">
                             <h3 class="font-weight-bold text-dark mb-1">Forgot Password</h3>
                             <p class="text-muted small">Enter your account email to receive a secure password recovery link.</p>
                         </div>

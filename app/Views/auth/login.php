@@ -98,9 +98,12 @@ $mlVersion = '2.5.1';
                         </div>
 
                         <!-- Top Link -->
-                        <div class="mb-4">
+                        <div class="mb-4 d-flex justify-content-between align-items-center">
                             <a href="<?= base_url('landing') ?>" class="text-muted small font-weight-bold">
                                 <i class="fas fa-arrow-left mr-1"></i> Back to Homepage
+                            </a>
+                            <a href="<?= url_to('demo-login') ?>" class="btn btn-sm btn-outline-warning shadow-sm font-weight-bold">
+                                <i class="fas fa-magic mr-1"></i> Try Interactive Demo
                             </a>
                         </div>
 

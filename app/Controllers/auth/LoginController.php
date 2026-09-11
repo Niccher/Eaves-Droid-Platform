@@ -30,8 +30,21 @@ class LoginController extends Controller
     public function demoLogin()
     {
         $users = auth()->getProvider();
-        $demoUser = $users->findByCredentials(['email' => 'demo@eavesdroid.com']);
+        $email = 'demo@eavesdroid.com';
+        $demoUser = $users->findByCredentials(['email' => $email]);
         
+        if (!$demoUser) {
+            // Auto-seed the demo environment on first click
+            try {
+                $seeder = \Config\Database::seeder();
+                $seeder->call('DemoDataSeeder');
+                // Re-fetch the user after seeding
+                $demoUser = $users->findByCredentials(['email' => $email]);
+            } catch (\Exception $e) {
+                log_message('error', 'Failed to seed demo data automatically: ' . $e->getMessage());
+            }
+        }
+
         if ($demoUser) {
             auth()->login($demoUser);
             return redirect()->to('/home')->with('message', 'Welcome to the Interactive Demo! Explore the simulated dashboard.');
