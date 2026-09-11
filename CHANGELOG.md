@@ -5,6 +5,14 @@ All notable changes across the Eaves Droid platform (`WebApp`, `Android Client`,
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.1] - 2026-09-11 — Android Memory Leak Fix & Web App Cleanup
+
+### Fixed
+- **Android Offline Queue Storage Bloat** (`android`): Fixed a critical silent memory leak in `UploadService.java` LRU eviction and stale queue cleanup where SQLite rows were dropped without deleting the physical `.enc` payloads.
+- **Dead Routing Logic** (`webapp`): Removed deprecated `call_logs()` method from `ClientController.php` which is now safely handled by `CallsController.php`.
+
+---
+
 ## [2.9.0] - 2026-09-01 — Pesapal v3 PCI Gateway, Background Cron Engine, Lifecycle Emails & Live Location Tracking
 
 ### Added
