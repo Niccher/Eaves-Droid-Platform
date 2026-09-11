@@ -9,7 +9,7 @@ use CodeIgniter\HTTP\RedirectResponse;
 
 class RegisterController extends Controller
 {
-    protected $helpers = ['auth', 'form', 'url'];
+    protected $helpers = ['auth', 'form', 'url', 'group'];
 
     /**
      * Display the registration view
@@ -51,7 +51,7 @@ class RegisterController extends Controller
 
         $allowedPostFields = array_merge(
             config('Auth')->validFields,
-            ['username']
+            ['username', 'password']
         );
 
         // Get form data
@@ -93,6 +93,7 @@ class RegisterController extends Controller
             $user = $users->findById($userId);
 
             // Assign the default (exclusive) group
+            helper('group');
             setUserGroup((int) $userId, 'user');
 
             // Create user profile record
@@ -140,7 +141,7 @@ class RegisterController extends Controller
                     'error_message'   => 'Transaction failed',
                     'request_url'     => current_url(),
                 ]);
-                throw new \Exception('Failed to save user to tbl_Users table.');
+                throw new \Exception('Failed to save user profile record.');
             }
 
             // Send email verification if enabled
@@ -156,7 +157,7 @@ class RegisterController extends Controller
             // Registration successful
             return redirect()->to('/home')->with('message', 'Registration successful! Welcome to our platform.');
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Rollback on error
             if (isset($db) && $db->transStatus() !== false) {
                 $db->transRollback();

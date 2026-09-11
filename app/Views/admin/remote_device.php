@@ -19,6 +19,12 @@
     <section class="content">
         <div class="container-fluid">
 
+            <!-- Page Callout -->
+            <div class="callout callout-info shadow-sm mb-4">
+                <h5><i class="fas fa-satellite-dish mr-2"></i>Remote Device Control Console</h5>
+                <p class="mb-0">Send push commands to connected Android client devices to extract logs, change configurations, query status, or manage the app installation lifecycle. Select a target user below, then choose a command.</p>
+            </div>
+
             <!-- Navigation Hub Submenu -->
             <div class="card card-outline card-info mb-3">
                 <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between">
@@ -42,15 +48,6 @@
                         <?php endif; ?>
                     </ul>
                 </div>
-            </div>
-
-            <!-- Page Callout -->
-            <div class="callout callout-info">
-                <h5><i class="fas fa-satellite-dish mr-2"></i>Remote Device Control Console</h5>
-                <p class="mb-0 text-muted small">
-                    Send push commands to connected Android client devices to extract logs, change configurations, query status,
-                    or manage the app installation lifecycle. Select a target user below, then choose a command.
-                </p>
             </div>
 
             <!-- Target Selection Card -->

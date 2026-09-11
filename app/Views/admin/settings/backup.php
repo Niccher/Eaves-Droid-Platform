@@ -116,11 +116,11 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="custom-control custom-switch mb-3">
-                                            <input type="checkbox" class="custom-control-input" name="notify_on_success" id="notify_on_success" value="1" <?= !empty($settings['notify_on_success']) ? 'checked' : '' ?>>
+                                            <input type="checkbox" class="custom-control-input" name="notify_on_success" id="notify_on_success" value="1" <?= ($settings['notify_on_success'] ?? '1') === '1' ? 'checked' : '' ?>>
                                             <label class="custom-control-label" for="notify_on_success">Email admins on successful backup</label>
                                         </div>
                                         <div class="custom-control custom-switch mb-3">
-                                            <input type="checkbox" class="custom-control-input" name="notify_on_failure" id="notify_on_failure" value="1" <?= !empty($settings['notify_on_failure']) ? 'checked' : '' ?>>
+                                            <input type="checkbox" class="custom-control-input" name="notify_on_failure" id="notify_on_failure" value="1" <?= ($settings['notify_on_failure'] ?? '1') === '1' ? 'checked' : '' ?>>
                                             <label class="custom-control-label" for="notify_on_failure">Email admins on backup failure</label>
                                         </div>
                                     </div>

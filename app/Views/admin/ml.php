@@ -1108,15 +1108,25 @@ if (toggleAll) {
 }
 
 // Auto-switch to tab if passed in query param or hash (#pane-* or #*)
-(function() {
+window.addEventListener('load', function() {
     function activateTabFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         const tabParam = urlParams.get('tab') || window.location.hash.replace('#', '');
         if (tabParam) {
             const cleanParam = tabParam.replace(/^pane-/, '');
             const tabEl = document.getElementById('tab-' + cleanParam) || document.getElementById('tab-' + tabParam);
+            const paneEl = document.getElementById('pane-' + cleanParam) || document.getElementById('pane-' + tabParam) || document.getElementById(tabParam);
+
             if (tabEl) {
-                $(tabEl).tab('show');
+                if (window.jQuery && typeof $(tabEl).tab === 'function') {
+                    $(tabEl).tab('show');
+                } else {
+                    // Safe fallback
+                    document.querySelectorAll('#ml-tabs .nav-link').forEach(el => el.classList.remove('active'));
+                    document.querySelectorAll('.tab-content .tab-pane').forEach(el => el.classList.remove('show', 'active'));
+                    tabEl.classList.add('active');
+                    if (paneEl) paneEl.classList.add('show', 'active');
+                }
             }
         }
     }
@@ -1125,13 +1135,15 @@ if (toggleAll) {
     window.addEventListener('hashchange', activateTabFromUrl);
 
     // Update URL hash when tab or pill is clicked
-    $('a[data-toggle="tab"], a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
-        const href = $(e.target).attr('href');
-        if (href && history.replaceState) {
-            history.replaceState(null, null, href);
-        }
-    });
-})();
+    if (window.jQuery) {
+        $('a[data-toggle="tab"], a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
+            const href = $(e.target).attr('href');
+            if (href && history.replaceState) {
+                history.replaceState(null, null, href);
+            }
+        });
+    }
+});
 
 // Initial hero telemetry check
 setTimeout(refreshHeroTelemetry, 800);

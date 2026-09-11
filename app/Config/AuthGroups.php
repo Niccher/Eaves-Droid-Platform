@@ -112,6 +112,8 @@ public array $matrix = [
          ],
          'admin' => [
              'admin.access',
+             'admin.settings',
+             'system.maintenance',
              'users.create',
              'users.edit',
              'users.delete',

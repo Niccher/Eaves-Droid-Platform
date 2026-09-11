@@ -106,10 +106,10 @@
                                      <div class="col-md-6">
                                          <div class="form-group">
                                              <label for="notify_admins"><strong>Notify Admins</strong></label>
-                                             <div class="custom-control custom-switch">
-                                                 <input type="checkbox" class="custom-control-input" name="notify_admins" id="notify_admins" value="1" <?= !empty($settings['notify_admins']) ? 'checked' : '' ?>>
-                                                 <label class="custom-control-label" for="notify_admins">Send email to all admins when thresholds are breached</label>
-                                             </div>
+                                              <div class="custom-control custom-switch">
+                                                  <input type="checkbox" class="custom-control-input" name="notify_admins" id="notify_admins" value="1" <?= ($settings['notify_admins'] ?? '1') === '1' ? 'checked' : '' ?>>
+                                                  <label class="custom-control-label" for="notify_admins">Send email to all admins when thresholds are breached</label>
+                                              </div>
                                          </div>
                                      </div>
                                  </div>

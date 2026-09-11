@@ -29,6 +29,20 @@
                     </div>
                 <?php endif ?>
 
+                <?php if (session('error') !== null) : ?>
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <?= esc(session('error')) ?>
+                    </div>
+                <?php endif ?>
+
+                <?php if (session('message') !== null) : ?>
+                    <div class="alert alert-success alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <?= esc(session('message')) ?>
+                    </div>
+                <?php endif ?>
+
                 <form action="<?= url_to('register') ?>" method="post">
                     <?= csrf_field() ?>
                     <div class="input-group mb-3">
