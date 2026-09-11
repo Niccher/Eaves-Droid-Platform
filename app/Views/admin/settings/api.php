@@ -20,11 +20,13 @@
     </section>
 
     <section class="content">
-        <div class="container-f<div class="row">t-bold mb-1">API Settings</h5>
-                        <p class="mb-0 small text-muted">Manage API authentication tokens, rate limiting thresholds, CORS origins, and integration endpoints for external services connecting to the platform.</p>
-                    </div>
-                </div>
+        <div class="container-fluid">
+            <?php if (session()->getFlashdata('message')): ?>
+            <div class="alert alert-success alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <?= session()->getFlashdata('message') ?>
             </div>
+            <?php endif; ?>
 
             <div class="row">
                 <div class="col-md-3">
