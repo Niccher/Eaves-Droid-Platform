@@ -1,6 +1,3 @@
-<?= $this->include('headers_footers/header_superadmin') ?>
-<?= $this->include('headers_footers/sidebar_superadmin') ?>
-
 <!-- Content Wrapper. Contains page content -->
 <div class="content-wrapper">
     <!-- Content Header (Page header) -->
@@ -113,5 +110,3 @@
     <!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
-
-<?= $this->include('headers_footers/footer') ?>

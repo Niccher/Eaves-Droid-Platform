@@ -74,8 +74,8 @@
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-primary">
                         <div class="inner">
-                            <h3><i class="fas fa-tags"></i></h3>
-                            <p>Plans & Pricing</p>
+                            <h3>Plans</h3>
+                            <p>Pricing</p>
                         </div>
                         <div class="icon"><i class="fas fa-tags"></i></div>
                         <a href="<?= base_url('superadmin/plans') ?>" class="small-box-footer">Manage Plans <i class="fas fa-arrow-circle-right"></i></a>
@@ -84,8 +84,8 @@
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-success">
                         <div class="inner">
-                            <h3><i class="fas fa-shield-alt"></i></h3>
-                            <p>Geofence Zones</p>
+                            <h3>Zones</h3>
+                            <p>Geofence</p>
                         </div>
                         <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
                         <a href="<?= base_url('superadmin/fleet/geo') ?>" class="small-box-footer">Manage Zones <i class="fas fa-arrow-circle-right"></i></a>
@@ -94,8 +94,8 @@
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                         <div class="inner">
-                            <h3><i class="fas fa-shield-alt"></i></h3>
-                            <p>Risk Scores</p>
+                            <h3>Scores</h3>
+                            <p>Risk</p>
                         </div>
                         <div class="icon"><i class="fas fa-shield-alt"></i></div>
                         <a href="<?= base_url('superadmin/analytics/risk') ?>" class="small-box-footer">View Risk <i class="fas fa-arrow-circle-right"></i></a>
@@ -104,8 +104,8 @@
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-warning">
                         <div class="inner">
-                            <h3><i class="fas fa-bell"></i></h3>
-                            <p>Push Notifications</p>
+                            <h3>Push</h3>
+                            <p>Notifications</p>
                         </div>
                         <div class="icon"><i class="fas fa-bell"></i></div>
                         <a href="<?= base_url('superadmin/notifications') ?>" class="small-box-footer">Configure <i class="fas fa-arrow-circle-right"></i></a>

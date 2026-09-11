@@ -356,7 +356,12 @@ if (!function_exists('render_adv_cell')) {
                                 </div>
                             </div>
                         </div>
-                </div>
+                        <?php if (isset($pager) && $pager): ?>
+                            <div class="card-footer clearfix">
+                                <?= $pager->links('default', 'bootstrap5_full') ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
             </div>
         </div>
     </section>

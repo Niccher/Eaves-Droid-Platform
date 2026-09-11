@@ -16,7 +16,7 @@
             <?php endif; ?>
 
             <!-- Page Numbers -->
-            <?php foreach ($pager->links() as $link): ?>
+            <?php foreach ($pager->links('default', 'bootstrap5_full') as $link): ?>
                 <li class="page-item <?= $link['active'] ? 'active' : '' ?>">
                     <a class="page-link" href="<?= $link['uri'] ?>">
                         <?= $link['title'] ?>

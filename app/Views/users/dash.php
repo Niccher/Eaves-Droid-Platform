@@ -97,7 +97,7 @@
                     <div class="small-box bg-secondary">
                         <div class="inner">
                             <h3><?= number_format($total_files) ?></h3>
-                            <p>FilesController</p>
+                            <p>Files</p>
                         </div>
                         <div class="icon"><i class="fas fa-file"></i></div>
                         <a href="<?= base_url('files') ?>" class="small-box-footer">View All <i class="fas fa-arrow-circle-right"></i></a>

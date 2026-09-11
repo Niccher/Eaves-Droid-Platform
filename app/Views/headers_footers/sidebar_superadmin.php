@@ -38,6 +38,12 @@
             </ul>
 
             <ul class="navbar-nav ml-auto">
+                <!-- Dark Mode Toggle -->
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="darkModeToggle" role="button" title="Toggle Dark Mode">
+                        <i class="fas fa-moon" id="darkModeIcon"></i>
+                    </a>
+                </li>
                 <!-- ML Engine Telemetry Live Badge -->
                 <li class="nav-item dropdown" id="ml-telemetry-container">
                     <a class="nav-link d-flex align-items-center" data-toggle="dropdown" href="#" title="ML Engine Status & Telemetry" style="cursor: pointer;">

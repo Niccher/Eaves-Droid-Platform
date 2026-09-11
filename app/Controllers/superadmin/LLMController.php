@@ -5,10 +5,11 @@ namespace App\Controllers\superadmin;
 use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
 
-class LLMController extends BaseController
+class LLMController extends BaseSuperadminController
 {
     public function dashboard()
     {
+        $data['pag'] = 'superadmin-llm';
         $data['title'] = 'LLM Management Dashboard';
         $data['user_data'] = session()->get('user_data');
         
@@ -35,7 +36,7 @@ class LLMController extends BaseController
         
         $data['models'] = $models;
         
-        return view('superadmin/llm_dashboard', $data);
+        return $this->renderView('superadmin/llm_dashboard', $data);
     }
     
     public function setActive()

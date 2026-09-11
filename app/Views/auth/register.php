@@ -5,7 +5,7 @@
         <div class="register-logo">
             <a href="<?= base_url('/') ?>" class="text-white">
                 <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8; width: 60px; height: 60px;">
-                <span class="font-weight-light text-bold">Eaves Droid</span>
+                <span class="text-bold">Eaves Droid</span>
             </a>
         </div>
 
@@ -68,7 +68,7 @@
                             <div class="icheck-primary">
                                 <input type="checkbox" id="agreeTerms" name="terms" value="agree" required>
                                 <label for="agreeTerms">
-                                    I agree to the <a href="<?= base_url('terms') ?>">terms</a>
+                                    I agree to the <a href="<?= base_url('faqs_terms') ?>">terms</a>
                                 </label>
                             </div>
                         </div>

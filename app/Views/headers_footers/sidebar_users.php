@@ -98,6 +98,12 @@
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
 
+                <!-- Dark Mode Toggle -->
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="darkModeToggle" role="button" title="Toggle Dark Mode">
+                        <i class="fas fa-moon" id="darkModeIcon"></i>
+                    </a>
+                </li>
                 <!-- Support Chat Dropdown/Badge -->
                 <?php
                 $db = \Config\Database::connect();

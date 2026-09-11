@@ -146,9 +146,9 @@ function formatEmbeddedDates(string $text): string {
 /* ── Empty state ── */
 .anomaly-empty            { padding: 60px 20px; text-align: center; }
 .anomaly-empty .ae-icon   { width: 90px; height: 90px; border-radius: 50%;
-                            background: linear-gradient(135deg,#667eea,#764ba2);
+                            background: #007bff;
                             display: flex; align-items: center; justify-content: center;
-                            margin: 0 auto 24px; box-shadow: 0 8px 30px rgba(102,126,234,.35); }
+                            margin: 0 auto 24px; box-shadow: 0 8px 30px rgba(0,123,255,.35); }
 .anomaly-empty .ae-icon i { font-size: 2rem; color: #fff; }
 .anomaly-empty h4         { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; margin-bottom: 10px; }
 .anomaly-empty p          { color: #6c757d; max-width: 440px; margin: 0 auto 28px; line-height: 1.6; }
@@ -157,26 +157,26 @@ function formatEmbeddedDates(string $text): string {
                             padding: 13px 24px; border-radius: 10px; font-weight: 600;
                             font-size: .9rem; border: none; cursor: pointer; transition: all .2s;
                             text-decoration: none; }
-.scan-btn-primary         { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
-                            box-shadow: 0 6px 20px rgba(102,126,234,.4); }
-.scan-btn-primary:hover   { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(102,126,234,.5); color:#fff; }
+.scan-btn-primary         { background: #007bff; color: #fff;
+                            box-shadow: 0 6px 20px rgba(0,123,255,.4); }
+.scan-btn-primary:hover   { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,123,255,.5); color:#fff; }
 .scan-btn-secondary       { background: #fff; color: #495057; border: 1.5px solid #dee2e6; }
 .scan-btn-secondary:hover { border-color: #adb5bd; transform: translateY(-1px); }
 
 /* ── Scanning progress ── */
 .scanning-card            { border-radius: 14px; border: 1.5px solid #dee2e6; overflow: hidden; }
-.scanning-header          { background: linear-gradient(135deg,#667eea,#764ba2);
+.scanning-header          { background: #007bff;
                             color: #fff; padding: 20px 24px; display: flex; align-items: center; gap: 14px; }
 .scanning-header .spin-icon { animation: spin 1.2s linear infinite; font-size: 1.4rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .scanning-body            { padding: 22px 24px; background: #fff; }
 .scan-progress-bar-wrap   { height: 10px; background: #f0f0f0; border-radius: 5px; overflow: hidden; margin: 14px 0; }
 .scan-progress-bar        { height: 100%; border-radius: 5px;
-                            background: linear-gradient(90deg,#667eea,#764ba2);
+                            background: #007bff;
                             transition: width .8s ease; }
 .scan-step-label          { font-size: .82rem; color: #6c757d; display: flex; align-items: center; gap: 6px; }
 .scan-step-label::before  { content: ''; display: inline-block; width: 6px; height: 6px;
-                            border-radius: 50%; background: #667eea; animation: pulse 1.2s infinite; }
+                            border-radius: 50%; background: #007bff; animation: pulse 1.2s infinite; }
 @keyframes pulse          { 0%,100%{opacity:1}50%{opacity:.3} }
 .scan-cats-live           { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .scan-cat-chip            { padding: 4px 10px; border-radius: 20px; font-size: .74rem;

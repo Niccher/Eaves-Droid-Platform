@@ -1,11 +1,14 @@
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>API Settings</h1>
+            <div class="row align-items-center">
+                <div class="col-sm-8">
+                    <h1 class="m-0 text-dark">
+                        <i class="fas fa-info-circle text-primary mr-2"></i> API Settings
+                    </h1>
+                    <p class="text-muted mt-1 mb-0">Manage API authentication tokens, rate limiting thresholds, CORS origins, and integration endpoints for external services connecting to the platform.</p>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-sm-4">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Admin</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/settings') ?>">Settings</a></li>
@@ -17,19 +20,7 @@
     </section>
 
     <section class="content">
-        <div class="container-fluid">
-            <?php if (session()->getFlashdata('message')): ?>
-            <div class="alert alert-success alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <?= session()->getFlashdata('message') ?>
-            </div>
-            <?php endif; ?>
-
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">API Settings</h5>
+        <div class="container-f<div class="row">t-bold mb-1">API Settings</h5>
                         <p class="mb-0 small text-muted">Manage API authentication tokens, rate limiting thresholds, CORS origins, and integration endpoints for external services connecting to the platform.</p>
                     </div>
                 </div>

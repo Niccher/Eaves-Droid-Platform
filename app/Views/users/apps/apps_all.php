@@ -255,7 +255,7 @@
                                 <div class="col-md-6">
                                     <div class="float-right">
                                         <?php if (isset($pager) && $totalApps > $perPage): ?>
-                                            <?php echo $pager->links('bootstrap5_full', 'bootstrap5_full'); ?>
+                                            <?php echo $pager->links('default', 'bootstrap5_full'); ?>
                                         <?php endif; ?>
                                     </div>
                                 </div>

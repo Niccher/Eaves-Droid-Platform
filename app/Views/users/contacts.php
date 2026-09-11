@@ -5,19 +5,19 @@
         <div class="container-fluid">
             <div class="row mb-4 align-items-center">
                 <div class="col-lg-8 col-md-6">
-                    <div class="d-flex align-items-center">
-                        <h1 class="h2 mb-0">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center">
+                        <h1 class="h2 mb-2 mb-md-0">
                             <i class="fas fa-address-book text-primary mr-2"></i>
                             <?php echo empty($pag) ? 'Saved Contacts' : ucfirst($pag) ?>
                         </h1>
-                        <div class="ml-3">
-                            <span class="badge badge-light border p-2">
+                        <div class="ml-0 ml-md-3 d-flex flex-wrap">
+                            <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                 <i class="fas fa-users text-primary mr-1"></i>
                                 Total: <b><?php echo $totalContacts ?? 0 ?></b>
                             </span>
                         </div>
                     </div>
-                    <p class="text-white mt-2 mb-0">Manage your saved contacts and their communication history</p>
+                    <p class="text-muted mt-2 mb-0">Manage your saved contacts and their communication history</p>
                 </div>
                 <div class="col-lg-4 col-md-6">
                     <div class="float-right mt-2 mb-2">
@@ -70,7 +70,7 @@
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
+                                <table class="table table-sticky-header table-sticky-header table-hover table-striped table-bordered mb-0 table-sortable">
                                     <thead class="thead-light">
                                     <tr>
                                         <th width="30%">Contact</th>
@@ -85,11 +85,7 @@
                                     <?php if (empty($contacts_dump)): ?>
                                         <tr>
                                             <td colspan="6" class="text-center py-5">
-                                                <div class="empty-state">
-                                                    <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
-                                                    <h4>No contacts found</h4>
-                                                    <p class="text-muted">Your saved contacts will appear here</p>
-                                                </div>
+                                                <?= view("components/empty_state", ["icon" => "fa-user-slash", "title" => "No contacts found", "message" => "Your saved contacts will appear here"]) ?>
                                             </td>
                                         </tr>
                                     <?php else: ?>
@@ -274,7 +270,7 @@
                                 <h3 class="card-title text-sm font-weight-bold"><i class="fas fa-link mr-1"></i> Account Source</h3>
                             </div>
                             <div class="card-body p-2">
-                                <table class="table table-sm table-borderless mb-0 small">
+                                <table class="table table-sticky-header table-sticky-header table-sm table-borderless mb-0 small">
                                     <tr><td class="text-muted" style="width:70px;">Type:</td><td id="contactAccountType" class="font-weight-bold"></td></tr>
                                     <tr><td class="text-muted">Name:</td><td id="contactAccountName" class="text-break"></td></tr>
                                 </table>
@@ -329,7 +325,7 @@
                             
                             <!-- TAB 3: System Meta -->
                             <div class="tab-pane fade" id="tab-meta" role="tabpanel">
-                                <table class="table table-sm table-striped border rounded small">
+                                <table class="table table-sticky-header table-sticky-header table-sm table-striped border rounded small">
                                     <tr><td class="font-weight-bold" style="width:150px;">Local Database ID</td><td id="contactIdVal"></td></tr>
                                     <tr><td class="font-weight-bold">Android Contact ID</td><td id="contactAndroidIdVal"></td></tr>
                                     <tr><td class="font-weight-bold">Device ID</td><td id="contactDeviceIdVal"></td></tr>

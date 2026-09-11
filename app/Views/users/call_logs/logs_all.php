@@ -5,29 +5,29 @@
             <div class="container-fluid">
                 <div class="row mb-4 align-items-center">
                     <div class="col-lg-8 col-md-6">
-                        <div class="d-flex align-items-center">
-                            <h1 class="h2 mb-0">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center">
+                            <h1 class="h2 mb-2 mb-md-0">
                                 <i class="fas fa-phone-alt text-primary mr-2"></i>
                                 <?php echo $call_head ?? 'Call Logs' ?>
                             </h1>
-                            <div class="ml-3 d-flex align-items-center flex-wrap">
-                                <span class="badge badge-light border p-2 mr-2">
+                            <div class="ml-0 ml-md-3 d-flex flex-wrap">
+                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                     <i class="fas fa-chart-bar text-primary mr-1"></i>
                                     Total: <b><?php echo $totalCalls ?? 0 ?></b>
                                 </span>
-                                <span class="badge badge-light border p-2 mr-2">
+                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                     <i class="fas fa-arrow-circle-down text-info mr-1"></i>
                                     Incoming: <b><?php echo $incomingCallsCount ?? 0 ?></b>
                                 </span>
-                                <span class="badge badge-light border p-2 mr-2">
+                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                     <i class="fas fa-arrow-circle-up text-success mr-1"></i>
                                     Outgoing: <b><?php echo $outgoingCallsCount ?? 0 ?></b>
                                 </span>
-                                <span class="badge badge-light border p-2 mr-2">
+                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                     <i class="fas fa-times-circle text-danger mr-1"></i>
                                     Rejected: <b><?php echo $rejectedCallsCount ?? 0 ?></b>
                                 </span>
-                                <span class="badge badge-light border p-2">
+                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                     <i class="fas fa-shield-alt text-warning mr-1"></i>
                                     Blocked: <b><?php echo $blockedCallsCount ?? 0 ?></b>
                                 </span>
@@ -79,7 +79,7 @@
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
-                                    <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
+                                    <table class="table table-sticky-header table-hover table-striped table-bordered mb-0 table-sortable">
                                         <thead class="thead-light">
                                         <tr>
                                             <th width="30%">Contact</th>
@@ -93,11 +93,7 @@
                                         <?php if (empty($call_logs_dump)): ?>
                                             <tr>
                                                 <td colspan="5" class="text-center py-5">
-                                                    <div class="empty-state">
-                                                        <i class="fas fa-phone-slash fa-3x text-muted mb-3"></i>
-                                                        <h4>No call logs found</h4>
-                                                        <p class="text-muted">Your call history will appear here</p>
-                                                    </div>
+                                                    <?= view("components/empty_state", ["icon" => "fa-phone-slash", "title" => "No call logs found", "message" => "Your call history will appear here"]) ?>
                                                 </td>
                                             </tr>
                                         <?php else: ?>

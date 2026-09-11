@@ -1,11 +1,14 @@
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1><i class="fas fa-database text-primary mr-2"></i>Database Info</h1>
+            <div class="row align-items-center">
+                <div class="col-sm-8">
+                    <h1 class="m-0 text-dark">
+                        <i class="fas fa-database text-primary mr-2"></i> Database Info
+                    </h1>
+                    <p class="text-muted mt-1 mb-0">Database connection parameters, query logging options, backup configuration, and maintenance routines for the application database.</p>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-sm-4">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Admin</a></li>
                         <li class="breadcrumb-item active">DB Info</li>
@@ -17,15 +20,6 @@
 
     <section class="content">
         <div class="container-fluid">
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Database Settings</h5>
-                        <p class="mb-0 small text-muted">Database connection parameters, query logging options, backup configuration, and maintenance routines for the application database.</p>
-                    </div>
-                </div>
-            </div>
             <div class="card card-outline card-primary shadow-sm">
                 <div class="card-header p-0">
                     <ul class="nav nav-pills ml-3 mt-2 mb-2" id="dbTabs" role="tablist">

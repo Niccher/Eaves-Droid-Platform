@@ -5,7 +5,7 @@
         <div class="login-logo">
             <a href="<?= base_url('/') ?>" class="text-white">
                 <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8; width: 60px; height: 60px;">
-                <span class="font-weight-light text-bold">Eaves Droid</span>
+                <span class="text-bold">Eaves Droid</span>
             </a>
         </div>
         <!-- /.login-logo -->

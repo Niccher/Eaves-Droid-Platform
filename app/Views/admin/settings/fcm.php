@@ -1,11 +1,14 @@
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Firebase Cloud Messaging (FCM) Settings</h1>
+            <div class="row align-items-center">
+                <div class="col-sm-8">
+                    <h1 class="m-0 text-dark">
+                        <i class="fas fa-fire text-warning mr-2"></i> Firebase Cloud Messaging (FCM) Settings
+                    </h1>
+                    <p class="text-muted mt-1 mb-0">Manage Google Cloud Firebase credentials used for real-time remote commands, device pinging, SMS/Call extraction triggers, media capture, and push dispatching.</p>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-sm-4">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Admin</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/settings') ?>">Settings</a></li>
@@ -31,16 +34,6 @@
                 <?= session()->getFlashdata('error') ?>
             </div>
             <?php endif; ?>
-
-            <div class="callout callout-warning bg-light shadow-sm border-left-warning mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-fire text-warning fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-warning font-weight-bold mb-1">Firebase Cloud Messaging (FCM) Service Account</h5>
-                        <p class="mb-0 small text-muted">Manage Google Cloud Firebase credentials used for real-time remote commands, device pinging, SMS/Call extraction triggers, media capture, and push dispatching.</p>
-                    </div>
-                </div>
-            </div>
 
             <div class="row">
                 <div class="col-md-3">

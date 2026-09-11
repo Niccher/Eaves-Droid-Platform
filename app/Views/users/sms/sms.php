@@ -5,21 +5,21 @@
             <div class="container-fluid">
                 <div class="row mb-4 align-items-center">
                     <div class="col-lg-8 col-md-6">
-                        <div class="d-flex align-items-center">
-                            <h1 class="h2 mb-0">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center">
+                            <h1 class="h2 mb-2 mb-md-0">
                                 <i class="fas fa-sms text-primary mr-2"></i>
                                 <?php echo $sms_head ?? 'All SMS' ?>
                             </h1>
-                            <div class="ml-3 d-flex flex-wrap" style="gap: 5px;">
-                                <span class="badge badge-light border p-2">
+                            <div class="ml-0 ml-md-3 d-flex flex-wrap">
+                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                     <i class="fas fa-comments text-primary mr-1"></i>
                                     Total: <b><?php echo $totalAllSMS ?? 0 ?></b>
                                 </span>
-                                <span class="badge badge-light border p-2">
+                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                     <i class="fas fa-inbox text-success mr-1"></i>
                                     Inbox: <b><?php echo $totalSmsInbox ?? 0 ?></b>
                                 </span>
-                                <span class="badge badge-light border p-2">
+                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
                                     <i class="fas fa-paper-plane text-secondary mr-1"></i>
                                     Sent: <b><?php echo $totalSmsSent ?? 0 ?></b>
                                 </span>
@@ -72,7 +72,7 @@
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
-                                    <table class="table table-hover table-striped table-bordered mb-0 table-sortable">
+                                    <table class="table table-sticky-header table-hover table-striped table-bordered mb-0 table-sortable">
                                         <thead class="thead-light">
                                         <tr>
                                             <th width="20%">Contact</th>
@@ -85,11 +85,7 @@
                                         <?php if (empty($sms_dump)): ?>
                                             <tr>
                                                 <td colspan="4" class="text-center py-5">
-                                                    <div class="empty-state">
-                                                        <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
-                                                        <h4>No SMS messages found</h4>
-                                                        <p class="text-muted">Your SMS messages will appear here</p>
-                                                    </div>
+                                                    <?= view("components/empty_state", ["icon" => "fa-comment-slash", "title" => "No SMS messages found", "message" => "Your SMS messages will appear here"]) ?>
                                                 </td>
                                             </tr>
                                         <?php else: ?>

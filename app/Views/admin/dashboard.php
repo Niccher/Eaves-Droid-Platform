@@ -35,7 +35,6 @@
                             <p>Total Devices</p>
                         </div>
                         <div class="icon"><i class="fas fa-mobile-alt"></i></div>
-                        <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                 </div>
                 <div class="col-lg-3 col-6">
@@ -45,7 +44,6 @@
                             <p>Total Uploads</p>
                         </div>
                         <div class="icon"><i class="fas fa-upload"></i></div>
-                        <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                 </div>
                 <div class="col-lg-3 col-6">
@@ -55,7 +53,6 @@
                             <p>Storage Used</p>
                         </div>
                         <div class="icon"><i class="fas fa-database"></i></div>
-                        <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                 </div>
             </div>

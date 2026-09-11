@@ -1,11 +1,14 @@
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Storage Monitor</h1>
+            <div class="row align-items-center">
+                <div class="col-sm-8">
+                    <h1 class="m-0 text-dark">
+                        <i class="fas fa-hdd text-info mr-2"></i> Storage Monitor
+                    </h1>
+                    <p class="text-muted mt-1 mb-0">Configure disk usage thresholds and automated checks. When thresholds are exceeded, admins receive email notifications.</p>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-sm-4">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Admin</a></li>
                         <li class="breadcrumb-item"><a href="<?= base_url('admin/settings') ?>">Settings</a></li>
@@ -30,16 +33,6 @@
                 <?= session()->getFlashdata('error') ?>
             </div>
             <?php endif; ?>
-
-            <div class="callout callout-info bg-light shadow-sm border-left-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-info-circle text-info fa-2x mr-3"></i>
-                    <div>
-                        <h5 class="text-info font-weight-bold mb-1">Storage Monitor</h5>
-                        <p class="mb-0 small text-muted">Configure disk usage thresholds and automated checks. When thresholds are exceeded, admins receive email notifications.</p>
-                    </div>
-                </div>
-            </div>
 
             <div class="row">
                 <div class="col-md-3">
