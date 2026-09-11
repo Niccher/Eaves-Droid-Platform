@@ -16,5 +16,6 @@ class DatabaseSeeder extends Seeder
         $this->call('SystemChangelogsSeeder');
         $this->call('AdminUsersSeeder');
         $this->call('SuperAdminSeeder');
+        $this->call('DemoDataSeeder');
     }
 }

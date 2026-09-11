@@ -271,6 +271,7 @@ class UserModel extends Model
             $result = $this->db->table('tbl_user_api_tokens')
                 ->where('owner_id', $user_id)
                 ->where('status', '00')
+                ->where('expires_at >', date('Y-m-d H:i:s'))
                 ->orderBy('counter', 'DESC')  // Using 'counter' as the primary key
                 ->limit(1)
                 ->get()

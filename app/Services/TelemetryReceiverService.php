@@ -89,7 +89,7 @@ class TelemetryReceiverService
 
         $androidModel = new AndroidModel();
         $tokenData = $androidModel->token_test($token);
-        return $tokenData !== null;
+        return $tokenData !== false;
     }
 
     /**

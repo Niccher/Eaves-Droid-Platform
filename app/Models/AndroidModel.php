@@ -15,9 +15,10 @@ class AndroidModel extends Model
     public function token_test(string $token)
     {
         try {
+            $token = trim($token);
             $builder = $this->db->table('tbl_user_api_tokens');
             $result = $builder->where('token', $token)
-                ->where('expires_at > NOW()', NULL, FALSE)
+                ->where('expires_at >', date('Y-m-d H:i:s'))
                 ->limit(1)
                 ->get()
                 ->getRowArray();
