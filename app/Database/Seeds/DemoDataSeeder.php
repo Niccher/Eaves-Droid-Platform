@@ -208,6 +208,51 @@ class DemoDataSeeder extends Seeder
             $db->table('tbl_device_risk_scores_history')->insertBatch($batchHistory);
         }
 
+        // 10. Mock Anomalies
+        if ($db->tableExists('tbl_anomaly_alerts')) {
+            $db->table('tbl_anomaly_alerts')->where('user_id', $ownerId)->delete();
+            $db->table('tbl_anomaly_alerts')->insertBatch([
+                [
+                    'user_id' => $ownerId,
+                    'category' => 'Network',
+                    'alert_type' => 'Suspicious Outbound Traffic',
+                    'description' => 'Unusual data transfer to known suspicious IP (193.x.x.x) detected during background state.',
+                    'severity' => 'High',
+                    'is_read' => 0,
+                    'created_at' => date('Y-m-d H:i:s')
+                ],
+                [
+                    'user_id' => $ownerId,
+                    'category' => 'Apps',
+                    'alert_type' => 'Hidden App Detected',
+                    'description' => 'A package (com.stealth.monitor) was found with no launcher icon and active accessibility permissions.',
+                    'severity' => 'Medium',
+                    'is_read' => 1,
+                    'created_at' => date('Y-m-d H:i:s', time() - 86400 * 2)
+                ]
+            ]);
+        }
+
+        // 11. Mock Wi-Fi Networks
+        if ($db->tableExists('tbl_telemetry_wifi_networks_saved')) {
+            $db->table('tbl_telemetry_wifi_networks_saved')->where('owner_id', $ownerId)->delete();
+            $db->table('tbl_telemetry_wifi_networks_saved')->insertBatch([
+                ['owner_id' => $ownerId, 'device_id' => $deviceId, 'ssid' => 'Home_Network_5G', 'created_at' => date('Y-m-d H:i:s')],
+                ['owner_id' => $ownerId, 'device_id' => $deviceId, 'ssid' => 'Starbucks_Guest', 'created_at' => date('Y-m-d H:i:s')],
+                ['owner_id' => $ownerId, 'device_id' => $deviceId, 'ssid' => 'Office_Corp_WPA3', 'created_at' => date('Y-m-d H:i:s')]
+            ]);
+        }
+
+        // 12. Mock Bluetooth Devices
+        if ($db->tableExists('tbl_telemetry_bluetooth_devices_paired')) {
+            $db->table('tbl_telemetry_bluetooth_devices_paired')->where('owner_id', $ownerId)->delete();
+            // Just basic insert, assuming bluetooth_id might be required or auto-increment, let's just supply bt_name
+            $db->table('tbl_telemetry_bluetooth_devices_paired')->insertBatch([
+                ['bluetooth_id' => 1, 'owner_id' => $ownerId, 'bt_name' => 'AirPods Pro', 'created_at' => date('Y-m-d H:i:s')],
+                ['bluetooth_id' => 2, 'owner_id' => $ownerId, 'bt_name' => 'Sony WH-1000XM4', 'created_at' => date('Y-m-d H:i:s')]
+            ]);
+        }
+
         echo "Demo user and comprehensive mock data seeded successfully!\n";
     }
 }
