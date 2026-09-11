@@ -12,7 +12,7 @@ class ContactMessageModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
-    protected $allowedFields    = ['name', 'email', 'subject', 'message', 'attachment', 'ip_address', 'user_agent'];
+    protected $allowedFields    = ['name', 'email', 'subject', 'message', 'attachment', 'ip_address', 'user_agent', 'status'];
 
     // Dates
     protected $useTimestamps = true;

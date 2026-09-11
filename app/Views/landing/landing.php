@@ -11,6 +11,9 @@
                         <a href="<?= url_to('register') ?>" class="btn btn-warning btn-lg px-4 mr-3 shadow">
                             <i class="fas fa-rocket mr-2"></i>Get Started
                         </a>
+                        <a href="<?= url_to('demo-login') ?>" class="btn btn-outline-warning btn-lg px-4 mr-3 shadow-sm" style="background-color: rgba(255,255,255,0.1); border-color: #ffc107; color: #ffc107;">
+                            <i class="fas fa-magic mr-2"></i>Try Interactive Demo
+                        </a>
                         <a href="<?= url_to('how-to') ?>" class="btn btn-outline-light btn-lg px-4 shadow-sm">
                             <i class="fas fa-play-circle mr-2"></i>How It Works
                         </a>

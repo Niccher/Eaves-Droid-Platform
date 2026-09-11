@@ -66,7 +66,7 @@ $mlVersion = '2.5.1';
                     <!-- Bottom Badges & Guarantee -->
                     <div class="pt-4 border-top border-secondary">
                         <div class="d-flex flex-wrap align-items-center justify-content-between small text-white-50">
-                            <span class="mr-2 mb-1"><i class="fas fa-code-branch text-primary mr-1"></i> WebApp: <strong>v<?= esc($appVersion) ?></strong></span>
+                            <span class="mr-2 mb-1"><i class="fas fa-code-branch text-primary mr-1"></i> WebApp: <strong><?= esc($appVersion) ?></strong></span>
                             <span class="mr-2 mb-1"><i class="fab fa-android text-success mr-1"></i> Android: <strong>v<?= esc($androidVersion) ?></strong></span>
                             <span class="mb-1"><i class="fas fa-robot text-warning mr-1"></i> ML Engine: <strong>v<?= esc($mlVersion) ?></strong></span>
                         </div>

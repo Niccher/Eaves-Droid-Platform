@@ -138,6 +138,7 @@ $routes->group('', ['namespace' => 'App\Controllers\auth'], static function ($ro
      * @return string
      */
     $routes->get('login', 'LoginController::loginView', ['as' => 'login']);
+    $routes->get('demo', 'LoginController::demoLogin', ['as' => 'demo-login']);
 
     /**
      * Handles login action.
@@ -1908,6 +1909,15 @@ $routes->group('admin', [
     $routes->get('support/tickets', 'SupportChatController::tickets', ['as' => 'admin-support-tickets']);
     $routes->get('support/thread/(:num)', 'SupportChatController::thread/$1', ['as' => 'admin-support-thread']);
     $routes->get('support/attachment/(:any)', 'SupportChatController::attachment/$1', ['as' => 'admin-support-attachment']);
+
+    // -------------------------------------------------------------
+    // 7.6.1 ADMIN INQUIRIES (Public Contact Form)
+    // -------------------------------------------------------------
+    $routes->get('support/inquiries', 'AdminInquiriesController::index', ['as' => 'admin_inquiries']);
+    $routes->get('support/inquiries/view/(:num)', 'AdminInquiriesController::viewInquiry/$1', ['as' => 'admin_inquiries_view']);
+    $routes->get('support/inquiries/attachment/(:any)', 'AdminInquiriesController::downloadAttachment/$1', ['as' => 'admin_inquiries_attachment']);
+    $routes->post('support/inquiries/status/(:num)', 'AdminInquiriesController::updateStatus/$1', ['as' => 'admin_inquiries_status']);
+    $routes->post('support/inquiries/delete/(:num)', 'AdminInquiriesController::deleteInquiry/$1', ['as' => 'admin_inquiries_delete']);
 
     // -------------------------------------------------------------
     // 7.7 SYSTEM BROADCASTS

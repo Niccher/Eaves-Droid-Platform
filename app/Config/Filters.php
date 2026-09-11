@@ -25,10 +25,11 @@ class Filters extends BaseConfig
         'apiAuth'       => \App\Filters\ApiAuthFilter::class,
         'session'       => \CodeIgniter\Shield\Filters\SessionAuth::class,
         'activity'      => \App\Filters\UserActivityFilter::class,
+        'demo'          => \App\Filters\DemoModeFilter::class,
     ];
 
     public array $globals = [
-        'before' => ['maintenance', 'role', 'impersonate', 'activity'],
+        'before' => ['maintenance', 'role', 'impersonate', 'activity', 'demo'],
         'after'  => ['toolbar'],
     ];
 

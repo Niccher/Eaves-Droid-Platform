@@ -20,7 +20,7 @@ $mlVersion = '2.5.1';
                             <img src="<?= base_url('assets/img/logo.png') ?>" alt="Eaves Droid Logo" class="img-circle mr-3 shadow" style="width: 48px; height: 48px; object-fit: contain; background: #ffffff; padding: 4px;">
                             <div>
                                 <h4 class="font-weight-bold mb-0 text-white" style="letter-spacing: -0.5px;">Eaves Droid</h4>
-                                <span class="badge badge-primary px-2 py-1 small font-weight-normal">v<?= esc($appVersion) ?> Platform</span>
+                                <span class="badge badge-primary px-2 py-1 small font-weight-normal"><?= esc($appVersion) ?> Platform</span>
                             </div>
                         </div>
 
@@ -66,7 +66,7 @@ $mlVersion = '2.5.1';
                     <!-- Bottom Badges & Guarantee -->
                     <div class="pt-4 border-top border-secondary">
                         <div class="d-flex flex-wrap align-items-center justify-content-between small text-white-50">
-                            <span class="mr-2 mb-1"><i class="fas fa-code-branch text-primary mr-1"></i> WebApp: <strong>v<?= esc($appVersion) ?></strong></span>
+                            <span class="mr-2 mb-1"><i class="fas fa-code-branch text-primary mr-1"></i> WebApp: <strong><?= esc($appVersion) ?></strong></span>
                             <span class="mr-2 mb-1"><i class="fab fa-android text-success mr-1"></i> Android: <strong>v<?= esc($androidVersion) ?></strong></span>
                             <span class="mb-1"><i class="fas fa-robot text-warning mr-1"></i> ML Engine: <strong>v<?= esc($mlVersion) ?></strong></span>
                         </div>
@@ -84,7 +84,7 @@ $mlVersion = '2.5.1';
                         <div class="d-lg-none text-center mb-4">
                             <img src="<?= base_url('assets/img/logo.png') ?>" alt="Eaves Droid Logo" class="img-circle shadow-sm mb-2" style="width: 52px; height: 52px; object-fit: contain;">
                             <h4 class="font-weight-bold text-dark mb-0">Eaves Droid</h4>
-                            <span class="badge badge-primary px-2 py-1 small">v<?= esc($appVersion) ?></span>
+                            <span class="badge badge-primary px-2 py-1 small"><?= esc($appVersion) ?></span>
                         </div>
 
                         <!-- Top Link -->

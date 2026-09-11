@@ -25,6 +25,22 @@ class LoginController extends Controller
     }
 
     /**
+     * Handle automated login for the Interactive Demo
+     */
+    public function demoLogin()
+    {
+        $users = auth()->getProvider();
+        $demoUser = $users->findByCredentials(['email' => 'demo@eavesdroid.com']);
+        
+        if ($demoUser) {
+            auth()->login($demoUser);
+            return redirect()->to('/home')->with('message', 'Welcome to the Interactive Demo! Explore the simulated dashboard.');
+        }
+        
+        return redirect()->route('login')->with('error', 'Demo account is currently unavailable. Please try again later.');
+    }
+
+    /**
      * Handle login form submission
      */
     public function loginAction(): \CodeIgniter\HTTP\ResponseInterface

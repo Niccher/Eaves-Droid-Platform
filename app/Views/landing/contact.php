@@ -64,6 +64,13 @@
                             <h3 class="card-title text-bold"><i class="fas fa-paper-plane mr-2 text-primary"></i>Send us a Message</h3>
                         </div>
                         <div class="card-body">
+                            <?php if (function_exists('auth') && auth()->loggedIn()): ?>
+                                <div class="alert alert-info shadow-sm">
+                                    <h5><i class="icon fas fa-info-circle"></i> Need instant help?</h5>
+                                    You are logged in! Head over to our <a href="<?= base_url('users/support') ?>" class="text-bold text-white text-decoration-underline" style="text-decoration: underline;">Live Support Chat</a> for a faster response.
+                                </div>
+                            <?php endif; ?>
+
                             <?php if (session()->has('success')): ?>
                                 <div class="alert alert-success alert-dismissible shadow-sm">
                                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -80,7 +87,7 @@
                                 </div>
                             <?php endif; ?>
 
-                            <form class="needs-validation" method="post" action="<?= url_to('contact') ?>" novalidate>
+                            <form class="needs-validation" method="post" action="<?= url_to('contact') ?>" enctype="multipart/form-data" novalidate>
                                 <?= csrf_field() ?>
 
                                 <div class="row">
@@ -122,6 +129,17 @@
                                               placeholder="How can we help you?" required><?= old('contact_message') ?></textarea>
                                 </div>
 
+                                <div class="form-group">
+                                    <label for="contact_attachment">Attachment (Optional)</label>
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input <?= session('errors.contact_attachment') ? 'is-invalid' : '' ?>" id="contact_attachment" name="contact_attachment" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+                                        <label class="custom-file-label" for="contact_attachment">Choose file</label>
+                                    </div>
+                                    <?php if(session('errors.contact_attachment')): ?>
+                                        <div class="invalid-feedback d-block"><?= session('errors.contact_attachment') ?></div>
+                                    <?php endif; ?>
+                                </div>
+
                                 <div class="form-group mb-4">
                                     <div class="custom-control custom-checkbox">
                                         <input type="checkbox" class="custom-control-input" id="privacy_consent" 
@@ -138,6 +156,44 @@
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="container mt-5">
+            <h3 class="text-center mb-4">Frequently Asked Questions</h3>
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="card shadow-sm">
+                            <div class="card-header" id="headingOne">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link btn-block text-left font-weight-bold" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                        How long does it take to get a response?
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#faqAccordion">
+                                <div class="card-body">
+                                    We aim to respond to all general inquiries within 24 hours. Technical support and bug reports from active users may receive priority responses within 12 hours.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card shadow-sm">
+                            <div class="card-header" id="headingTwo">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link btn-block text-left collapsed font-weight-bold" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                        Where can I find my application logs?
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#faqAccordion">
+                                <div class="card-body">
+                                    If you are experiencing a technical issue with the Android app, please attach a screenshot or PDF of the issue using the attachment field above.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

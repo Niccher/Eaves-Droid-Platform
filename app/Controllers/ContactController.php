@@ -9,11 +9,14 @@ class ContactController extends BaseController
 {
     public function index()
     {
-        $data['pag']         = 'contact';
-        $data['page_title']  = 'Contact Us | Eaves Droid';
-        $data['page_desc']   = 'Get in touch with the Eaves Droid team. Send us a message for support, partnership inquiries, or feedback about our mobile data intelligence platform.';
-        $data['page_keys']   = 'contact prj images, mobile analytics support, get in touch, data intelligence help';
-        $data['info'] = '';
+        helper('version');
+
+        $data['pag']             = 'contact';
+        $data['page_title']      = 'Contact Us | Eaves Droid';
+        $data['page_desc']       = 'Get in touch with the Eaves Droid team. Send us a message for support, partnership inquiries, or feedback about our mobile data intelligence platform.';
+        $data['page_keys']       = 'contact us, mobile analytics support, get in touch, data intelligence help';
+        $data['info']            = '';
+        $data['system_versions'] = get_system_version_data();
 
         return view('headers_footers/head_landing', $data)
             . view('landing/contact', $data)
@@ -22,6 +25,19 @@ class ContactController extends BaseController
 
     public function send()
     {
+        $model = new ContactMessageModel();
+
+        // Rate Limiting Check: Max 3 messages per IP per hour
+        $ip = $this->request->getIPAddress();
+        $since = date('Y-m-d H:i:s', time() - 3600);
+        $recentCount = $model->where('ip_address', $ip)
+                             ->where('created_at >=', $since)
+                             ->countAllResults();
+                             
+        if ($recentCount >= 3) {
+            return redirect()->route('contact')->withInput()->with('error', 'You have submitted too many messages recently. Please try again later.');
+        }
+
         $rules = [
             'contact_name'    => 'required|min_length[2]|max_length[255]',
             'contact_email'   => 'required|valid_email|max_length[255]',
@@ -62,8 +78,6 @@ class ContactController extends BaseController
             $attachmentPath = 'contact_me/' . $newName;
         }
 
-        $model = new ContactMessageModel();
-        
         $saveData = [
             'name'       => $this->request->getPost('contact_name'),
             'email'      => $this->request->getPost('contact_email'),
@@ -75,6 +89,17 @@ class ContactController extends BaseController
         ];
 
         if ($model->save($saveData)) {
+            helper('email');
+            if (function_exists('send_superadmin_notification')) {
+                send_superadmin_notification(
+                    'New Contact Inquiry: ' . $saveData['subject'],
+                    'email/admin/default_notification',
+                    [
+                        'subject' => 'New Contact Inquiry: ' . $saveData['subject'],
+                        'message' => 'A new message was submitted via the Contact Us form by ' . $saveData['name'] . ' (' . $saveData['email'] . ').',
+                    ]
+                );
+            }
             return redirect()->route('contact')->with('success', 'Your message has been sent successfully. We will get back to you shortly!');
         } else {
             return redirect()->route('contact')->withInput()->with('error', 'Something went wrong. Please try again later.');
