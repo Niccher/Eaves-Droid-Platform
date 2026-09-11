@@ -201,8 +201,8 @@ $isChecked = fn($key) => filter_var($defConfig[$key] ?? false, FILTER_VALIDATE_B
                                 <div class="card h-100 border">
                                     <div class="card-body">
                                         <h6><i class="fas fa-server text-info mr-2"></i>Server URL</h6>
-                                        <input type="url" class="form-control def-input" data-key="pref_server_url" value="<?= htmlspecialchars(json_decode($defaults['config_json'] ?? '{}', true)['pref_server_url'] ?? '') ?>" placeholder="https://your-server.com">
-                                        <small class="text-muted mt-1 d-block">The base URL of the server the device connects to for data uploads and command receipt. Change this to redirect the device to a different server endpoint. Leave empty to use the default URL baked into the app (https://prjs4.chegecache.co.ke).</small>
+                                        <input type="url" class="form-control def-input" data-key="pref_server_url" value="<?= htmlspecialchars(json_decode($defaults['config_json'] ?? '{}', true)['pref_server_url'] ?? rtrim(base_url(), '/')) ?>" placeholder="https://your-server.com">
+                                        <small class="text-muted mt-1 d-block">The base URL of the server the device connects to for data uploads and command receipt. Change this to redirect the device to a different server endpoint. Leave empty to use the default URL baked into the app (<?= rtrim(base_url(), '/') ?>).</small>
                                     </div>
                                 </div>
                             </div>

@@ -279,6 +279,13 @@
                                 <p>Billing &amp; Subscriptions</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/plans/definitions'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-plans-definitions') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-tags text-warning"></i>
+                                <p>Plan Feature Definitions</p>
+                            </a>
+                        </li>
 
                         <!-- 4. AI & Anomaly Engine Hub -->
                         <?php
@@ -312,6 +319,13 @@
                                 <p>Infrastructure &amp; Health</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/infrastructure/queue'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-queue') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-network-wired text-secondary"></i>
+                                <p>Queue &amp; Worker Monitor</p>
+                            </a>
+                        </li>
 
                         <!-- 6. Security Audit & Logs Hub -->
                         <?php
@@ -336,6 +350,13 @@
                                class="nav-link <?php echo $isSettingsActive ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-cogs"></i>
                                 <p>Platform Settings</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('superadmin/developer/keys'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'superadmin-dev-keys') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-key text-muted"></i>
+                                <p>Developer &amp; API Keys</p>
                             </a>
                         </li>
 

@@ -248,6 +248,22 @@
                             </a>
                         </li>
 
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/support/tickets'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-support-tickets') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-ticket-alt text-warning"></i>
+                                <p>Support Tickets</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('admin/broadcasts'); ?>"
+                               class="nav-link <?php echo (isset($pag) && $pag === 'admin-broadcasts') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-bullhorn text-danger"></i>
+                                <p>Broadcasts &amp; Announcements</p>
+                            </a>
+                        </li>
+
                         <!-- 3. Devices & Defaults Hub -->
                         <?php
                             $devicePages = ['admin-remote-device', 'admin-defaults'];

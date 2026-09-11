@@ -6,8 +6,16 @@ use App\Models\AnomaliesModel;
 
 class MlController extends BaseAdminController
 {
-    public function index()
+    public function index($tab = 'general')
     {
+        $validTabs = ['general', 'overview', 'engines', 'algorithms', 'python', 'phpml', 'history'];
+        if (!in_array($tab, $validTabs)) {
+            $tab = 'general';
+        }
+        if ($tab === 'overview') {
+            $tab = 'general';
+        }
+
         $db = $this->getDb();
 
         $saved = [];
@@ -30,8 +38,6 @@ class MlController extends BaseAdminController
         $dockerSettings = $model->getDockerComposeMLSettings();
         $jobHistory = $model->getJobHistory(50);
 
-        $activeTab = $this->request->getGet('tab') ?? 'overview';
-
         return $this->renderView('admin/ml', [
             'pag' => 'admin-ml',
             'settings' => $saved,
@@ -42,7 +48,7 @@ class MlController extends BaseAdminController
             'categories' => $model->getAlgorithmCategories(),
             'engines' => $model->getEngines(),
             'job_history' => $jobHistory,
-            'active_tab' => $activeTab,
+            'active_tab' => $tab,
         ]);
     }
 

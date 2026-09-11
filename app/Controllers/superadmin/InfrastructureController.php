@@ -256,6 +256,82 @@ class InfrastructureController extends BaseSuperadminController
             'message'                  => $pyResult['message'] ?? '',
         ];
 
+        // -------------------------------------------------------------
+        // 4. REDIS METRICS
+        // -------------------------------------------------------------
+        $redisMetrics = [
+            'status'         => 'offline',
+            'memory_used_mb' => 0.0,
+            'clients'        => 0,
+            'queue_length'   => 0
+        ];
+        try {
+            $redis = ConfigServices::redis();
+            if ($redis->ping()) {
+                $redisInfo = $redis->info();
+                $redisMetrics['status'] = 'healthy';
+                // Parse used_memory_human or used_memory
+                if (isset($redisInfo['used_memory'])) {
+                    $redisMetrics['memory_used_mb'] = round($redisInfo['used_memory'] / (1024 * 1024), 2);
+                }
+                $redisMetrics['clients'] = $redisInfo['connected_clients'] ?? 0;
+                
+                // Try to get length of main queues (fallback to 0)
+                $queueLen = 0;
+                try {
+                    $queueLen += $redis->llen('upload_queue') ?: 0;
+                    $queueLen += $redis->llen('ml_queue') ?: 0;
+                } catch (Throwable $e) {}
+                $redisMetrics['queue_length'] = $queueLen;
+            }
+        } catch (Throwable $e) {
+            $redisMetrics['error'] = $e->getMessage();
+        }
+
+        // -------------------------------------------------------------
+        // 5. CRON DAEMON METRICS
+        // -------------------------------------------------------------
+        $cronMetrics = [
+            'status'          => 'offline',
+            'last_run'        => 'Never',
+            'seconds_since'   => -1
+        ];
+        try {
+            $cronFile = WRITEPATH . 'logs/cron_heartbeat.txt';
+            if (file_exists($cronFile)) {
+                $mtime = filemtime($cronFile);
+                $diff = time() - $mtime;
+                $cronMetrics['seconds_since'] = $diff;
+                $cronMetrics['last_run'] = date('Y-m-d H:i:s', $mtime);
+                $cronMetrics['status'] = ($diff <= 120) ? 'healthy' : 'delayed';
+            }
+        } catch (Throwable $e) {}
+
+        // -------------------------------------------------------------
+        // 6. STORAGE METRICS
+        // -------------------------------------------------------------
+        $storageMetrics = [
+            'status'         => 'healthy',
+            'uploads_mb'     => 0.0,
+            'total_space_mb' => 0.0,
+            'free_space_mb'  => 0.0
+        ];
+        try {
+            $storageMetrics['uploads_mb'] = $this->getDirectorySizeMb(WRITEPATH . 'uploads');
+            $storageMetrics['total_space_mb'] = round(disk_total_space(WRITEPATH) / (1024 * 1024), 2);
+            $storageMetrics['free_space_mb'] = round(disk_free_space(WRITEPATH) / (1024 * 1024), 2);
+            
+            $usedPct = $storageMetrics['total_space_mb'] > 0 
+                ? (($storageMetrics['total_space_mb'] - $storageMetrics['free_space_mb']) / $storageMetrics['total_space_mb']) * 100 
+                : 0;
+                
+            if ($usedPct > 90) {
+                $storageMetrics['status'] = 'critical';
+            } elseif ($usedPct > 75) {
+                $storageMetrics['status'] = 'warning';
+            }
+        } catch (Throwable $e) {}
+
         // Overall Collection Summary
         $collectionDurationMs = round((microtime(true) - $t0) * 1000, 1);
 
@@ -266,6 +342,9 @@ class InfrastructureController extends BaseSuperadminController
             'webapp'                 => $webappMetrics,
             'mysql'                  => $mysqlMetrics,
             'python'                 => $pythonMetrics,
+            'redis'                  => $redisMetrics,
+            'cron'                   => $cronMetrics,
+            'storage'                => $storageMetrics,
         ]);
     }
 

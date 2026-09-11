@@ -297,6 +297,100 @@
             </div>
 
             <!-- LIVE TELEMETRY ROLLING CHARTS -->
+            </div>
+
+            <!-- NEW ROW: REDIS, CRON, STORAGE -->
+            <div class="row">
+                <!-- 4. REDIS CACHE & QUEUE CONTAINER -->
+                <div class="col-lg-4 col-md-12 mb-4">
+                    <div class="card card-outline card-danger shadow-sm h-100">
+                        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title font-weight-bold mb-0">
+                                <i class="fas fa-server text-danger mr-2"></i> Redis Memory Node
+                            </h5>
+                            <div>
+                                <span class="badge badge-pill badge-secondary" id="redisStatusBadge">Checking</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Process Memory -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small font-weight-bold mb-1">
+                                    <span><i class="fas fa-memory mr-1 text-danger"></i> Data RAM (Resident)</span>
+                                    <span id="redisMemoryText">-- MB</span>
+                                </div>
+                                <div class="progress progress-sm rounded">
+                                    <div class="progress-bar bg-danger" role="progressbar" id="redisMemoryBar" style="width: 100%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted small mt-1">
+                                    <span>Connections: <strong id="redisClients">--</strong></span>
+                                </div>
+                            </div>
+                            <!-- Queue Depth -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small font-weight-bold mb-1">
+                                    <span><i class="fas fa-list mr-1 text-warning"></i> Background Queue</span>
+                                    <span id="redisQueueText">-- items</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. CRON DAEMON WORKER -->
+                <div class="col-lg-4 col-md-12 mb-4">
+                    <div class="card card-outline card-info shadow-sm h-100">
+                        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title font-weight-bold mb-0">
+                                <i class="fas fa-cogs text-info mr-2"></i> Daemon Worker
+                            </h5>
+                            <div>
+                                <span class="badge badge-pill badge-secondary" id="cronStatusBadge">Checking</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small font-weight-bold mb-1">
+                                    <span><i class="fas fa-clock mr-1 text-info"></i> Last Heartbeat</span>
+                                    <span id="cronTimeText">--</span>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted small mt-1">
+                                    <span>Seconds ago: <strong id="cronSecondsSince">--</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. STORAGE SUBSYSTEM -->
+                <div class="col-lg-4 col-md-12 mb-4">
+                    <div class="card card-outline card-dark shadow-sm h-100">
+                        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title font-weight-bold mb-0">
+                                <i class="fas fa-hdd text-dark mr-2"></i> Disk Storage
+                            </h5>
+                            <div>
+                                <span class="badge badge-pill badge-secondary" id="storageStatusBadge">Checking</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small font-weight-bold mb-1">
+                                    <span><i class="fas fa-hdd mr-1 text-dark"></i> Free Space</span>
+                                    <span id="storageFreeText">-- MB</span>
+                                </div>
+                                <div class="progress progress-sm rounded">
+                                    <div class="progress-bar bg-dark" role="progressbar" id="storageFreeBar" style="width: 0%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted small mt-1">
+                                    <span>Payload Uploads: <strong id="storageUploadsText">-- MB</strong></span>
+                                    <span>Capacity: <strong id="storageTotalText">-- MB</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="card card-outline card-secondary shadow-sm mb-4">
                 <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
                     <h5 class="card-title font-weight-bold mb-0">
@@ -695,6 +789,59 @@
             setText('pyModelsCount', '15 PHP Models');
             setText('pyDbStatus', 'PHP Direct');
             setClass('pyDbStatus', 'badge badge-info');
+        }
+
+        // -- NEW: Redis Rendering --
+        const rd = data.redis || {};
+        if (rd.status === 'healthy') {
+            setText('redisStatusBadge', 'Connected');
+            setClass('redisStatusBadge', 'badge badge-pill badge-success');
+            setText('redisMemoryText', rd.memory_used_mb + ' MB');
+            setText('redisClients', rd.clients);
+            setText('redisQueueText', rd.queue_length + ' items');
+            // Assuming max 512MB for progress bar visual
+            const rdMemPct = Math.min(100, Math.round((rd.memory_used_mb / 512) * 100));
+            setBar('redisMemoryBar', rdMemPct, rdMemPct > 80 ? 'bg-danger' : 'bg-success');
+        } else {
+            setText('redisStatusBadge', 'Offline');
+            setClass('redisStatusBadge', 'badge badge-pill badge-danger');
+            setText('redisMemoryText', '--');
+            setText('redisQueueText', '--');
+        }
+
+        // -- NEW: Cron Rendering --
+        const cr = data.cron || {};
+        if (cr.status === 'healthy') {
+            setText('cronStatusBadge', 'Active');
+            setClass('cronStatusBadge', 'badge badge-pill badge-success');
+            setText('cronTimeText', cr.last_run);
+            setText('cronSecondsSince', cr.seconds_since);
+        } else {
+            setText('cronStatusBadge', cr.status === 'offline' ? 'Dead' : 'Delayed');
+            setClass('cronStatusBadge', 'badge badge-pill badge-danger');
+            setText('cronTimeText', cr.last_run || 'Never');
+            setText('cronSecondsSince', cr.seconds_since > 0 ? cr.seconds_since : '--');
+        }
+
+        // -- NEW: Storage Rendering --
+        const st = data.storage || {};
+        if (st.status) {
+            if (st.status === 'healthy') {
+                setText('storageStatusBadge', 'Healthy');
+                setClass('storageStatusBadge', 'badge badge-pill badge-success');
+            } else if (st.status === 'warning') {
+                setText('storageStatusBadge', 'Warning');
+                setClass('storageStatusBadge', 'badge badge-pill badge-warning');
+            } else {
+                setText('storageStatusBadge', 'Critical');
+                setClass('storageStatusBadge', 'badge badge-pill badge-danger');
+            }
+            setText('storageFreeText', st.free_space_mb + ' MB');
+            setText('storageUploadsText', st.uploads_mb + ' MB');
+            setText('storageTotalText', st.total_space_mb + ' MB');
+            
+            const usedPct = st.total_space_mb > 0 ? Math.round(((st.total_space_mb - st.free_space_mb) / st.total_space_mb) * 100) : 0;
+            setBar('storageFreeBar', usedPct, usedPct > 90 ? 'bg-danger' : (usedPct > 75 ? 'bg-warning' : 'bg-dark'));
         }
 
         // 4. Update Rolling Charts

@@ -1614,6 +1614,7 @@ $routes->group('admin', [
     $routes->post('ml/test-python', 'MlController::testPython', ['as' => 'admin-ml-test-python']);
     $routes->post('ml/test-database', 'MlController::testDatabase', ['as' => 'admin-ml-test-database']);
     $routes->post('ml/set-connection', 'MlController::setConnection', ['as' => 'admin-ml-set-connection']);
+    $routes->get('ml/(:any)', 'MlController::index/$1');
 
     // -------------------------------------------------------------
     // 7.5 SYSTEM SETTINGS & CONFIGURATION
