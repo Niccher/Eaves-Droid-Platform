@@ -105,7 +105,7 @@ async def health():
 
     return HealthResponse(
         status="ok",
-        version="2.5.0",
+        version="2.5.1",
         models_loaded=sorted(DETECTOR_MAP.keys()),
         cuda_available=cuda_avail,
         cuda_device="hidden" if cuda_avail else "",

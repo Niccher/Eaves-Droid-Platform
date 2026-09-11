@@ -29,7 +29,7 @@ is_prod = os.getenv("ENV", "development").lower() == "production"
 app = FastAPI(
     title="ML Eaves Droid",
     description="Python ML backend for Eaves Droid anomaly detection",
-    version="2.5.0",
+    version="2.5.1",
     lifespan=lifespan,
     docs_url=None if is_prod else "/docs",
     redoc_url=None if is_prod else "/redoc",
