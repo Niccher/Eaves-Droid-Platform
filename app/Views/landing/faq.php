@@ -90,7 +90,7 @@
                                     <div class="col-md-6">
                                         <ul class="mb-0">
                                             <li><i class="fas fa-th-large text-primary mr-1"></i> Installed apps</li>
-                                            <li><i class="fas fa-file text-primary mr-1"></i> FilesController &amp; media</li>
+                                            <li><i class="fas fa-file text-primary mr-1"></i> Files &amp; media</li>
                                             <li><i class="fas fa-clock text-primary mr-1"></i> Activities</li>
                                             <li><i class="fas fa-microchip text-primary mr-1"></i> Device metrics</li>
                                         </ul>

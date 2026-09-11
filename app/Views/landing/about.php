@@ -53,44 +53,66 @@
             <div class="row mb-5">
                 <div class="col-12 text-center mb-4">
                     <h2 class="font-weight-light">Platform Architecture</h2>
-                    <p class="text-muted lead">Four pillars powering the Eaves Droid ecosystem</p>
+                    <p class="text-muted lead">Six core pillars powering the modern Eaves Droid ecosystem</p>
                     <hr class="w-25 border-success">
                 </div>
 
-                <div class="col-lg-3 col-md-6 mb-4">
+                <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 card-outline card-primary shadow-sm text-center">
                         <div class="card-body">
                             <i class="fab fa-android fa-3x text-primary mb-3"></i>
                             <h5 class="text-bold">Android Client</h5>
-                            <p class="text-muted small">Native APK data collector that extracts 60+ types of data from Android devices with secure, AES-encrypted sync.</p>
-                            <span class="badge badge-primary">Java 17</span>
+                            <p class="text-muted small">Native APK data collector that extracts 60+ types of telemetry across Android 8.0+ to 14+ (API 26–34) with zero-knowledge AES-256 encrypted sync.</p>
+                            <span class="badge badge-primary">Java 17 / API 26-34</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-lg-3 col-md-6 mb-4">
+                <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 card-outline card-success shadow-sm text-center">
                         <div class="card-body">
                             <i class="fas fa-tachometer-alt fa-3x text-success mb-3"></i>
-                            <h5 class="text-bold">Web Dashboard</h5>
-                            <p class="text-muted small">CodeIgniter 4 + AdminLTE interface providing real-time visualizations, user management, and export capabilities.</p>
+                            <h5 class="text-bold">Web Intelligence Dashboard</h5>
+                            <p class="text-muted small">CodeIgniter 4 + AdminLTE interface providing interactive correlation maps, behavioral timelines, user management, and automated export engines.</p>
                             <span class="badge badge-success">PHP 8.3 / CI4</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-lg-3 col-md-6 mb-4">
+                <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 card-outline card-info shadow-sm text-center">
                         <div class="card-body">
                             <i class="fas fa-brain fa-3x text-info mb-3"></i>
-                            <h5 class="text-bold">ML Engine</h5>
-                            <p class="text-muted small">Python FastAPI service running 7 anomaly detectors — Isolation Forest, One-Class SVM, PCA app scanning, contact-graph outliers, activity prediction, phishing heuristics, and suspicious-file scanning.</p>
-                            <span class="badge badge-info">Python + scikit-learn</span>
+                            <h5 class="text-bold">Dual-Engine ML Stack</h5>
+                            <p class="text-muted small">Python FastAPI microservice running 7 anomaly detectors (Isolation Forest, One-Class SVM, PCA) paired with PHP-ML for localized KMeans clustering.</p>
+                            <span class="badge badge-info">FastAPI + PHP-ML</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-lg-3 col-md-6 mb-4">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-danger shadow-sm text-center">
+                        <div class="card-body">
+                            <i class="fas fa-satellite-dish fa-3x text-danger mb-3"></i>
+                            <h5 class="text-bold">FCM Push Orchestration</h5>
+                            <p class="text-muted small">Firebase Cloud Messaging channel delivering instant remote actions: loud siren alarm triggers, screen lock enforcement, and on-demand telemetry sweeps.</p>
+                            <span class="badge badge-danger">Firebase FCM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 card-outline card-secondary shadow-sm text-center">
+                        <div class="card-body">
+                            <i class="fas fa-bolt fa-3x text-secondary mb-3"></i>
+                            <h5 class="text-bold">Redis High-Speed Caching</h5>
+                            <p class="text-muted small">Dedicated in-memory caching tier accelerating active telemetry queries, session state handling, and automated background heartbeat polling.</p>
+                            <span class="badge badge-secondary">Redis 7+</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 card-outline card-warning shadow-sm text-center">
                         <div class="card-body">
                             <i class="fab fa-docker fa-3x text-warning mb-3"></i>

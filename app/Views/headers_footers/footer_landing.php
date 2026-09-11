@@ -72,6 +72,55 @@
             }
         });
     });
+
+    // AdminLTE Theme Toggle Logic
+    document.addEventListener("DOMContentLoaded", function() {
+        var toggleBtn = document.getElementById("darkModeToggle");
+        var icon = document.getElementById("darkModeIcon");
+        var body = document.body;
+        var navbars = document.querySelectorAll(".main-header.navbar");
+        
+        function applyDarkMode(isDark) {
+            if (isDark) {
+                body.classList.add("dark-mode");
+                if (icon) {
+                    icon.classList.remove("fa-moon");
+                    icon.classList.add("fa-sun");
+                }
+                navbars.forEach(function(nav) {
+                    nav.classList.remove("navbar-white", "navbar-light");
+                    nav.classList.add("navbar-dark");
+                });
+            } else {
+                body.classList.remove("dark-mode");
+                if (icon) {
+                    icon.classList.remove("fa-sun");
+                    icon.classList.add("fa-moon");
+                }
+                navbars.forEach(function(nav) {
+                    nav.classList.remove("navbar-dark");
+                    nav.classList.add("navbar-white", "navbar-light");
+                });
+            }
+        }
+        
+        var currentMode = localStorage.getItem("eaves_dark_mode");
+        applyDarkMode(currentMode === "enabled");
+        
+        if (toggleBtn) {
+            toggleBtn.addEventListener("click", function(e) {
+                e.preventDefault();
+                var isDark = body.classList.contains("dark-mode");
+                if (isDark) {
+                    localStorage.setItem("eaves_dark_mode", "disabled");
+                    applyDarkMode(false);
+                } else {
+                    localStorage.setItem("eaves_dark_mode", "enabled");
+                    applyDarkMode(true);
+                }
+            });
+        }
+    });
 </script>
 </body>
 </html>

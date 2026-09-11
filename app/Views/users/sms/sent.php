@@ -327,10 +327,10 @@
                                                                             </div>
                                                                             <div class="mb-1 mt-3">
                                                                                 <?php if ($contactInfo): ?>
-                                                                                    <a href="<?= base_url('contacts/analyze/sms/' . $contactInfo['enc_id']) ?>" class="btn btn-sm btn-info text-white btn-block mb-2" title="AnalyzeController SMS conversation">
+                                                                                    <a href="<?= base_url('contacts/analyze/sms/' . $contactInfo['enc_id']) ?>" class="btn btn-sm btn-info text-white btn-block mb-2" title="Analyze SMS conversation">
                                                                                         <i class="fas fa-comments mr-1"></i> All SMS Convos
                                                                                     </a>
-                                                                                    <a href="<?= base_url('contacts/analyze/calls/' . $contactInfo['enc_id']) ?>" class="btn btn-sm btn-success text-white btn-block mb-2" title="AnalyzeController call logs">
+                                                                                    <a href="<?= base_url('contacts/analyze/calls/' . $contactInfo['enc_id']) ?>" class="btn btn-sm btn-success text-white btn-block mb-2" title="Analyze call logs">
                                                                                         <i class="fas fa-phone-alt mr-1"></i> All Call Logs
                                                                                     </a>
                                                                                 <?php endif; ?>

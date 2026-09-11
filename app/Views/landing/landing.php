@@ -53,11 +53,11 @@
         </div>
     </div>
 
-    <!-- What You Can AnalyzeController -->
+    <!-- What You Can Analyze -->
     <div class="content py-5">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="font-weight-light mb-2"><i class="fas fa-database text-primary mr-2"></i>What You Can AnalyzeController</h2>
+                <h2 class="font-weight-light mb-2"><i class="fas fa-database text-primary mr-2"></i>What You Can Analyze</h2>
                 <p class="text-muted lead">Every data type your Android device generates — captured and correlated</p>
                 <hr class="w-25 border-primary">
             </div>
@@ -112,7 +112,7 @@
                     <div class="card h-100 card-outline card-secondary shadow-sm text-center p-3">
                         <div class="card-body">
                             <div class="mb-3"><i class="fas fa-folder-open fa-3x text-secondary"></i></div>
-                            <h5 class="text-bold">FilesController & Media</h5>
+                            <h5 class="text-bold">Files &amp; Media</h5>
                             <p class="text-muted small mb-0">File metadata indexing, media library scanning, and storage usage breakdowns.</p>
                         </div>
                     </div>
@@ -205,6 +205,54 @@
                     <a href="<?= base_url('aboutus') ?>" class="btn btn-outline-primary btn-lg px-4 shadow-sm">
                         <i class="fas fa-brain mr-2"></i>See the Full ML Engine
                     </a>
+                </div>
+            </div>
+
+            <!-- Remote Fleet Orchestration & Real-Time Controls -->
+            <div class="mt-5">
+                <div class="text-center mb-5">
+                    <h2 class="font-weight-light mb-2"><i class="fas fa-satellite-dish text-primary mr-2"></i>Remote Device Orchestration</h2>
+                    <p class="text-muted lead">Zero-latency command execution powered by Firebase Cloud Messaging (FCM)</p>
+                    <hr class="w-25 border-primary">
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card h-100 card-outline card-danger shadow-sm text-center p-3">
+                            <div class="card-body">
+                                <div class="mb-3"><i class="fas fa-bell fa-3x text-danger"></i></div>
+                                <h5 class="text-bold">Siren Alarm</h5>
+                                <p class="text-muted small mb-0">Trigger loud audio sirens remotely to pinpoint misplaced devices or raise security alerts.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card h-100 card-outline card-warning shadow-sm text-center p-3">
+                            <div class="card-body">
+                                <div class="mb-3"><i class="fas fa-lock fa-3x text-warning"></i></div>
+                                <h5 class="text-bold">Remote Screen Lock</h5>
+                                <p class="text-muted small mb-0">Instantly lock active devices and enforce authentication during security quarantines.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card h-100 card-outline card-info shadow-sm text-center p-3">
+                            <div class="card-body">
+                                <div class="mb-3"><i class="fas fa-sync-alt fa-3x text-info"></i></div>
+                                <h5 class="text-bold">On-Demand Sync</h5>
+                                <p class="text-muted small mb-0">Dispatch instant telemetry sweep commands to pull updated GPS, battery, and call status.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card h-100 card-outline card-success shadow-sm text-center p-3">
+                            <div class="card-body">
+                                <div class="mb-3"><i class="fas fa-headset fa-3x text-success"></i></div>
+                                <h5 class="text-bold">Live Support Chat</h5>
+                                <p class="text-muted small mb-0">Direct real-time communication channel between fleet operators, users, and system administrators.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

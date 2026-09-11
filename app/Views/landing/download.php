@@ -179,7 +179,7 @@
                         <div class="info-box shadow-sm h-100 bg-white">
                             <span class="info-box-icon bg-secondary"><i class="fas fa-file"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text text-bold">FilesController & Media</span>
+                                <span class="info-box-text text-bold">Files &amp; Media</span>
                                 <span class="info-box-number small font-weight-normal">With categorization and indexing</span>
                             </div>
                         </div>
@@ -219,7 +219,7 @@
                                 <ul class="list-group list-group-flush">
                                     <li class="list-group-item">
                                         <i class="fas fa-check-circle text-success mr-2"></i>
-                                        <strong>Android 7.0+</strong> <span class="text-muted">(Nougat or higher)</span>
+                                        <strong>Android 8.0+ to 14+</strong> <span class="text-muted">(API level 26 to 34 supported)</span>
                                     </li>
                                     <li class="list-group-item">
                                         <i class="fas fa-check-circle text-success mr-2"></i>
@@ -238,14 +238,15 @@
                         </div>
                     </div>
 
+                    <?php $androidVer = $system_versions['android_version'] ?? '2.8.1'; ?>
                     <div class="col-lg-6 mb-4">
                         <div class="card bg-primary shadow-sm h-100 text-center d-flex align-items-center justify-content-center p-5" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
                             <div class="card-body text-white">
                                 <i class="fab fa-android fa-5x mb-4"></i>
                                 <h3 class="text-bold mb-2">Eaves Droid Client</h3>
-                                <p class="mb-4 opacity-75">Version 1.1 &bull; Android 7.0+ (API 25)</p>
-                                <a href="<?= base_url('downloads/eaves_droid_v1.1.apk') ?>" class="btn btn-warning btn-lg btn-block shadow text-bold" <?php if (!is_file(ROOTPATH . 'public/downloads/eaves_droid_v1.1.apk')): ?>data-toggle="tooltip" title="APK will be available after a release build is published"<?php endif; ?>>
-                                    <i class="fas fa-download mr-2"></i>DOWNLOAD APK
+                                <p class="mb-4 opacity-75">Version <?= esc($androidVer) ?> &bull; Android 8.0+ to 14+ (API 26&ndash;34)</p>
+                                <a href="<?= base_url('downloads/eaves_droid_v' . esc($androidVer) . '.apk') ?>" class="btn btn-warning btn-lg btn-block shadow text-bold" <?php if (!is_file(ROOTPATH . 'public/downloads/eaves_droid_v' . $androidVer . '.apk')): ?>data-toggle="tooltip" title="APK will be available after a release build is published"<?php endif; ?>>
+                                    <i class="fas fa-download mr-2"></i>DOWNLOAD APK (v<?= esc($androidVer) ?>)
                                 </a>
                                 <p class="mt-3 mb-0 small opacity-75">
                                     <i class="fas fa-shield-alt mr-1"></i>APK built from source &mdash; see the README for checksum

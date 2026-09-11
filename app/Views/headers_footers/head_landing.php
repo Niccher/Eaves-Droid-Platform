@@ -37,6 +37,16 @@
     <!-- Theme style -->
     <link rel="stylesheet" href="<?php echo base_url('assets/css/adminlte.min.css?v=1.4'); ?>"/>
     
+    <!-- Dark Mode Pre-loader -->
+    <script>
+        if (localStorage.getItem('eaves_dark_mode') === 'enabled') {
+            document.documentElement.classList.add('dark-mode-preload');
+            document.addEventListener("DOMContentLoaded", function() {
+                document.body.classList.add('dark-mode');
+                document.documentElement.classList.remove('dark-mode-preload');
+            });
+        }
+    </script>
     <style>
         .navbar-brand .brand-text { font-size: 1.5rem; letter-spacing: -0.5px; }
         .nav-link.active { color: #007bff !important; font-weight: 700; border-bottom: 3px solid #007bff; }
@@ -44,6 +54,36 @@
         .nav-link:hover { color: #007bff !important; }
         .content-wrapper { background-color: #fff !important; }
         .brand-image-custom { height: 35px; width: auto; margin-right: 10px; margin-top: -5px; }
+
+        /* Dark Mode Preload & AdminLTE Theme Styles */
+        html.dark-mode-preload { background-color: #1a222d; }
+        body.dark-mode { background-color: #1a222d; color: #f8fafc; }
+        body.dark-mode .content-wrapper { background-color: #1a222d !important; }
+        body.dark-mode .main-header.navbar { background-color: #111827 !important; border-bottom: 1px solid #1f2937 !important; }
+        body.dark-mode .main-header .brand-text { color: #f8fafc !important; }
+        body.dark-mode .main-header .nav-link { color: #cbd5e1 !important; }
+        body.dark-mode .main-header .nav-link:hover,
+        body.dark-mode .main-header .nav-link.active { color: #38bdf8 !important; border-bottom-color: #38bdf8; }
+        body.dark-mode .card:not(.bg-primary):not(.bg-success):not(.bg-danger):not(.bg-info):not(.bg-warning) {
+            background-color: #1e293b;
+            color: #f8fafc;
+            border-color: #334155;
+        }
+        body.dark-mode .bg-light { background-color: #1e293b !important; }
+        body.dark-mode .text-dark { color: #f8fafc !important; }
+        body.dark-mode .text-muted { color: #94a3b8 !important; }
+        body.dark-mode .list-group-item { background-color: #1e293b; color: #f8fafc; border-color: #334155; }
+        body.dark-mode .info-box { background-color: #1e293b !important; color: #f8fafc !important; }
+        body.dark-mode .info-box-text { color: #f8fafc !important; }
+
+        /* Dark Mode Auth Split Layout */
+        body.dark-mode .auth-split-layout { background-color: #0b1120 !important; }
+        body.dark-mode .auth-split-layout .bg-white { background-color: #1e293b !important; }
+        body.dark-mode .auth-split-layout .border-top { border-top-color: #334155 !important; }
+        body.dark-mode .auth-split-layout .input-group-text { background-color: #334155 !important; border-color: #475569 !important; color: #94a3b8 !important; }
+        body.dark-mode .auth-split-layout .form-control { background-color: #0f172a !important; border-color: #475569 !important; color: #f8fafc !important; }
+        body.dark-mode .auth-split-layout .form-control:focus { background-color: #0f172a !important; border-color: #38bdf8 !important; color: #ffffff !important; }
+        body.dark-mode .auth-split-layout .btn-light { background-color: #334155 !important; border-color: #475569 !important; color: #cbd5e1 !important; }
     </style>
 
     <!-- jQuery -->
@@ -89,8 +129,14 @@
             </div>
 
             <!-- Right navbar links -->
-            <ul class="order-1 order-md-3 navbar-nav navbar-no-expand ml-auto">
-                <li class="nav-item ml-md-3">
+            <ul class="order-1 order-md-3 navbar-nav navbar-no-expand ml-auto align-items-center">
+                <!-- Theme Toggle Button (AdminLTE Based) -->
+                <li class="nav-item mr-2">
+                    <a class="nav-link" href="#" id="darkModeToggle" role="button" title="Toggle Dark/Light Mode">
+                        <i class="fas fa-moon" id="darkModeIcon"></i>
+                    </a>
+                </li>
+                <li class="nav-item ml-md-2">
                     <a class="btn btn-primary btn-sm px-4 shadow-sm" href="<?= url_to('login') ?>">
                         <i class="fas fa-sign-in-alt mr-2"></i> Log In
                     </a>
