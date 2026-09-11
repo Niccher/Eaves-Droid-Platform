@@ -31,7 +31,10 @@ class ResilientSessionHandler extends DatabaseHandler
         }
     }
 
-    public function read(string $id): string|false
+    /**
+     * {@inheritDoc}
+     */
+    public function read($id)
     {
         // For CodeIgniter's DatabaseHandler, calling parent::read($id) ensures the DB row gets locked 
         // (if matchIP/matchFingerprint requires it) and populates internal state like $this->rowExists.
@@ -60,7 +63,10 @@ class ResilientSessionHandler extends DatabaseHandler
         return ($redisData !== null) ? $redisData : $dbData;
     }
 
-    public function write(string $id, string $data): bool
+    /**
+     * {@inheritDoc}
+     */
+    public function write($id, $data): bool
     {
         if ($this->redis) {
             try {
@@ -74,7 +80,10 @@ class ResilientSessionHandler extends DatabaseHandler
         return parent::write($id, $data);
     }
 
-    public function destroy(string $id): bool
+    /**
+     * {@inheritDoc}
+     */
+    public function destroy($id): bool
     {
         if ($this->redis) {
             try {
@@ -87,8 +96,12 @@ class ResilientSessionHandler extends DatabaseHandler
         return parent::destroy($id);
     }
 
-    public function gc(int $max_lifetime): int|false
+    /**
+     * {@inheritDoc}
+     */
+    public function gc($max_lifetime)
     {
         return parent::gc($max_lifetime);
     }
 }
+
