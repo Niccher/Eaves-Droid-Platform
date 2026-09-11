@@ -34,6 +34,19 @@ class SupportChatController extends BaseAdminController
     }
 
     /**
+     * GET /admin/support/tickets
+     */
+    public function tickets(): string
+    {
+        $conversations = $this->supportMessages->getConversationsList();
+
+        return $this->renderView('admin/support/list', [
+            'pag'           => 'admin-support-tickets',
+            'conversations' => $conversations,
+        ]);
+    }
+
+    /**
      * GET /admin/support/thread/{clientId}
      */
     public function thread(int $clientId): string

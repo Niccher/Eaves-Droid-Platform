@@ -71,6 +71,7 @@ class RegisterController extends Controller
             $result = $users->save($user);
 
             if (!$result) {
+                $db->transRollback();
                 $errors = $users->errors();
                 $logModel = new \App\Models\LogUserActionModel();
                 $logModel->logAction([
@@ -86,62 +87,83 @@ class RegisterController extends Controller
                     ->with('errors', $errors);
             }
 
-            // Get the new user's ID
-            $userId = $users->getInsertID();
+            // Reliably obtain the newly created user record from the users table
+            $savedUser = null;
+            if (!empty($user->id)) {
+                $savedUser = $users->find($user->id);
+            }
+            if (!$savedUser && !empty($userRegistrationData['username'])) {
+                $savedUser = $users->where('username', $userRegistrationData['username'])->first();
+            }
+            if (!$savedUser) {
+                $savedUser = $users->findById($users->getInsertID());
+            }
 
-            // Get the user entity
-            $user = $users->findById($userId);
+            if (!$savedUser || empty($savedUser->id)) {
+                $db->transRollback();
+                throw new \Exception('Failed to locate newly created user record.');
+            }
+
+            $user   = $savedUser;
+            $userId = (int) $user->id;
 
             // Assign the default (exclusive) group
             helper('group');
-            setUserGroup((int) $userId, 'user');
+            setUserGroup($userId, 'user');
 
             // Create user profile record
             $profileData = [
-                'user_id' => $userId,
-                'language' => 'en',
-                'timezone' => null,
-                'theme' => 'system',
-                'account_status' => 'active',
-                'notifications_enabled' => true,
-                'email_notifications' => true,
-                'push_notifications' => true,
-                'onboarding_completed' => false,
-                'profile_completed' => false,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'user_id'               => $userId,
+                'language'              => 'en',
+                'timezone'              => null,
+                'theme'                 => 'system',
+                'account_status'        => 'active',
+                'notifications_enabled' => 1,
+                'email_notifications'   => 1,
+                'push_notifications'    => 1,
+                'onboarding_completed'  => 0,
+                'profile_completed'     => 0,
+                'created_at'            => date('Y-m-d H:i:s'),
+                'updated_at'            => date('Y-m-d H:i:s'),
             ];
 
-            $db->table('user_profiles')->insert($profileData);
-
-            // Send welcome email
-            $this->sendWelcomeEmail($user);
-
-            // Log registration action
-            $logModel = new \App\Models\LogUserActionModel();
-            $logModel->logAction([
-                'user_id'         => $userId,
-                'action_category' => 'authentication',
-                'action_type'     => 'register',
-                'action_severity' => 'medium',
-                'success'         => 1,
-                'request_url'     => current_url(),
-            ]);
+            // Prevent duplicate key if already created by another event/hook
+            $existingProfile = $db->table('user_profiles')->where('user_id', $userId)->get()->getRow();
+            if (!$existingProfile) {
+                $db->table('user_profiles')->insert($profileData);
+            } else {
+                $db->table('user_profiles')->where('user_id', $userId)->update($profileData);
+            }
 
             // Commit transaction
             $db->transComplete();
 
             if ($db->transStatus() === false) {
+                $dbError = $db->error();
+                $detail = !empty($dbError['message']) ? ': ' . $dbError['message'] : '';
+                throw new \Exception('Failed to save user profile record' . $detail);
+            }
+
+            // Send welcome email (outside transaction so email failure doesn't abort registration)
+            try {
+                $this->sendWelcomeEmail($user);
+            } catch (\Throwable $mEx) {
+                log_message('warning', 'Welcome email failed: ' . $mEx->getMessage());
+            }
+
+            // Log registration action (outside transaction)
+            try {
                 $logModel = new \App\Models\LogUserActionModel();
                 $logModel->logAction([
+                    'user_id'         => $userId,
                     'action_category' => 'authentication',
                     'action_type'     => 'register',
-                    'action_severity' => 'low',
-                    'success'         => 0,
-                    'error_message'   => 'Transaction failed',
+                    'action_severity' => 'medium',
+                    'success'         => 1,
                     'request_url'     => current_url(),
                 ]);
-                throw new \Exception('Failed to save user profile record.');
+            } catch (\Throwable $lEx) {
+                log_message('warning', 'Registration action log failed: ' . $lEx->getMessage());
             }
 
             // Send email verification if enabled

@@ -14,12 +14,22 @@ if (!function_exists('setUserGroup')) {
     {
         $db = \Config\Database::connect();
 
-        $validGroups = array_keys(setting('AuthGroups.groups'));
+        $groups = setting('AuthGroups.groups') ?: (config('AuthGroups')->groups ?? []);
+        $validGroups = is_array($groups) ? array_keys($groups) : [];
         if (!in_array($group, $validGroups, true)) {
             return false;
         }
 
-        $db->transStart();
+        try {
+            $users = model(\CodeIgniter\Shield\Models\UserModel::class);
+            $user = $users->findById($userId);
+            if ($user) {
+                $user->syncGroups($group);
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // Fall back to direct DB table operation
+        }
 
         $db->table('auth_groups_users')->where('user_id', $userId)->delete();
         $db->table('auth_groups_users')->insert([
@@ -28,8 +38,6 @@ if (!function_exists('setUserGroup')) {
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
-        $db->transComplete();
-
-        return $db->transStatus();
+        return true;
     }
 }

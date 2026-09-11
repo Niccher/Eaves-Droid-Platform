@@ -1905,7 +1905,7 @@ $routes->group('admin', [
     // 7.6 SUPPORT CHAT MANAGEMENT UI
     // -------------------------------------------------------------
     $routes->get('support', 'SupportChatController::index', ['as' => 'admin-support']);
-    $routes->get('support/tickets', 'SupportChatController::index', ['as' => 'admin-support-tickets']);
+    $routes->get('support/tickets', 'SupportChatController::tickets', ['as' => 'admin-support-tickets']);
     $routes->get('support/thread/(:num)', 'SupportChatController::thread/$1', ['as' => 'admin-support-thread']);
     $routes->get('support/attachment/(:any)', 'SupportChatController::attachment/$1', ['as' => 'admin-support-attachment']);
 
