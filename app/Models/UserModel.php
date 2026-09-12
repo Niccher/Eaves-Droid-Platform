@@ -186,13 +186,13 @@ class UserModel extends Model
                 'owner_id' => $user_id,
                 'token' => $token,
                 'status' => "00",
-                'initiator' => substr($ip_add, 0, 45),
+                'initiator' => substr($ip_add, 0, 64),
                 'expires_at' => $future_date,
-                'device_name' => substr($token_name ?? ('Android_' . date('Ymd_His')), 0, 100),
+                'device_name' => substr($token_name ?? ('Android_' . date('Ymd_His')), 0, 64),
                 'last_used_at' => $dated,
                 'ip_address' => substr($ip_add, 0, 45),
                 'user_agent' => substr((string)service('request')->getUserAgent()->getAgentString(), 0, 255),
-                'token_type' => 'api',
+                'token_type' => 'qr', // Must be 'qr' or 'pin' per ENUM constraint
                 'is_refreshable' => 1,
                 'scopes' => 'all',
                 'device_checksum' => md5($token . $user_id . $dated),
@@ -200,24 +200,22 @@ class UserModel extends Model
             ];
 
             if ($this->db->table('tbl_user_api_tokens')->insert($data)) {
-                $logData = new AccessLogsModel();
+                $logData = new \App\Models\LogUserActionModel();
                 // Log action
                 $logData->logAction([
                     'user_id' => $user_id,
                     'action_type' => 'Create Token',
                     'action_category' => 'authentication',
                     'action_severity' => 'medium',
-                    // 'ip_address' => $this->request->getIPAddress(),
-                    // 'user_agent' => $this->request->getUserAgent()->getAgentString(),
-                    'request_url'     => current_url(),
-                    'device_type' => 'desktop',
                     'success' => 1,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'execution_time_ms' => round((microtime(true) - (defined('APP_START_TIME') ? APP_START_TIME : $_SERVER['REQUEST_TIME_FLOAT'])) * 1000, 2),
+                    'request_url' => current_url(),
+                    'new_values' => json_encode(['device_name' => $data['device_name']])
                 ]);
 
                 log_message('info', 'Token created for user ' . $user_id);
                 return true;
+            } else {
+                log_message('error', 'Token insert failed: ' . json_encode($this->db->error()));
             }
 
             log_message('error', 'Token creation failed for user ' . $user_id);
