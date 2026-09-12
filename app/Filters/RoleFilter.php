@@ -45,6 +45,7 @@ class RoleFilter implements FilterInterface
         'pricing',
         'api',
         'account/suspended',
+        'demo',
     ];
 
     public function before(RequestInterface $request, $arguments = null): ?RedirectResponse

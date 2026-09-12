@@ -173,6 +173,10 @@ class LoginController extends Controller
         $session = session();
         $redirect = $session->getTempdata('beforeLoginUrl');
 
+        if ($redirect !== null && strpos($redirect, '/api/') !== false) {
+            $redirect = null;
+        }
+
         if ($redirect === null) {
             if ($user->inGroup('superadmin')) {
                 $redirect = '/superadmin/home';
