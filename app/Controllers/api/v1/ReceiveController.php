@@ -250,7 +250,7 @@ class ReceiveController extends BaseController
         $userName = !empty($userData['username']) ? $userData['username'] : $service->decryptUserData($cryptModel, $userData['Name'] ?? '');
         $userEmail = !empty($userData['email']) ? $userData['email'] : $service->decryptUserData($cryptModel, $userData['Email'] ?? '');
 
-        // Mark token as used (single-use tokens)
+        // Update token last used timestamp
         $userModel->token_mark(
             $tokenData['owner_id'],
             $token,

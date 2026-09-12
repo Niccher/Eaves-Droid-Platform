@@ -240,8 +240,7 @@ class UserModel extends Model
     {
         try {
             $builder = $this->db->table('tbl_user_api_tokens');
-            $builder->set('status', "11")
-                ->set('last_used_at', date('Y-m-d H:i:s'))
+            $builder->set('last_used_at', date('Y-m-d H:i:s'))
                 ->where('token', $token)
                 ->where('counter', $token_id)  // Using 'counter' as the primary key
                 ->where('owner_id', $token_owner);
