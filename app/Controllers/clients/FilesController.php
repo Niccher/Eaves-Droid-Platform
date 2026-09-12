@@ -28,7 +28,7 @@ class FilesController extends BaseClientController
             'current_type' => $type
         ]);
 
-        return $this->renderAppView('users/files/files_all', $data);
+        return $this->renderAppView('users/files/files_with_type', $data);
     }
 
     /**

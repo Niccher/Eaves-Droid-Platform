@@ -2875,6 +2875,54 @@ private function decryptIfEncrypted(string $content): ?string
     return $content;
 }
 
+    public function parse_media_exif(string|array $payload, int $owner_id, string $device_id, int $fileRecordId = null): bool
+    {
+        $file_name = is_string($payload) ? $payload : 'ArrayPayload';
+        $json = $this->payloadToArray($payload, $file_name);
+        if (!$json) {
+            return false;
+        }
+
+        if (!isset($json['exif_data']) || !is_array($json['exif_data'])) {
+            log_message('error', '[parse_media_exif] Invalid JSON or missing exif_data: ' . $file_name);
+            return false;
+        }
+
+        $batchData = [];
+        $dated = date('Y-m-d H:i:s');
+
+        foreach ($json['exif_data'] as $item) {
+            $batchData[] = [
+                'device_id'   => $device_id,
+                'media_id'    => $item['media_id'] ?? 0,
+                'date_added'  => isset($item['date_added']) ? (int) $item['date_added'] : 0,
+                'latitude'    => $item['latitude'] ?? null,
+                'longitude'   => $item['longitude'] ?? null,
+                'mime_type'   => $item['mime_type'] ?? null,
+                'file_name'   => $item['file_name'] ?? null,
+                'file_size'   => $item['file_size'] ?? null,
+                'folder_name' => $item['folder_name'] ?? null,
+                'created_at'  => $dated,
+            ];
+        }
+
+        if (empty($batchData)) {
+            return true;
+        }
+
+        try {
+            $chunks = array_chunk($batchData, 500);
+            foreach ($chunks as $chunk) {
+                $this->db->table('tbl_extracted_media_exif')->insertBatch($chunk);
+            }
+            log_message('info', '[parse_media_exif] Inserted ' . count($batchData) . ' media exif records for device: ' . $device_id);
+            return true;
+        } catch (\Exception $e) {
+            log_message('error', '[parse_media_exif] Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Normalize a parser payload into a decoded associative array.
      *

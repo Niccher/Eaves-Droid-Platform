@@ -114,9 +114,17 @@ class BaseClientController extends BaseController
      *
      * @return array
      */
-protected function getUserDataCounts(): array
+    protected function getUserDataCounts(): array
     {
-        return [
+        $cache = \Config\Services::cache();
+        $cacheKey = 'user_data_counts_' . $this->userId;
+        
+        // Cache the counts for 5 minutes (300 seconds) to drastically improve page load time
+        if ($cachedCounts = $cache->get($cacheKey)) {
+            return $cachedCounts;
+        }
+        
+        $counts = [
             'total_apps'             => $this->finderModel->get_count_Apps($this->userId),
             'total_contacts'         => $this->finderModel->get_count_Contacts($this->userId),
             'total_sms'              => $this->finderModel->get_count_Sms($this->userId),
@@ -184,6 +192,11 @@ protected function getUserDataCounts(): array
             'active_sms'             => $this->finderModel->get_sms_active($this->userId),
             'active_calls'           => $this->finderModel->get_calls_active($this->userId),
         ];
+
+        // Save to cache for 5 minutes (300 seconds)
+        $cache->save($cacheKey, $counts, 300);
+
+        return $counts;
     }
 
     /**

@@ -35,7 +35,7 @@ class TelemetryReceiverService
         // Device info & security
         'deviceinfo', 'device_info', 'security_audit', 'securityaudit',
         // Media categories
-        'audio', 'image',
+        'audio', 'image', 'media_exif',
         // Proc info
         'proc_info',
         // New extractors
@@ -314,6 +314,7 @@ class TelemetryReceiverService
             'securityaudit'  => 'parse_security_audit',
             'audio'          => 'parse_captured_media',
             'image'          => 'parse_captured_media',
+            'media_exif'     => 'parse_media_exif',
             'proc_info'      => 'parse_proc_info',
             'processes'      => 'parse_processes',
             'camera_info'    => 'parse_camera_info',
@@ -488,6 +489,7 @@ class TelemetryReceiverService
                 'securityaudit'       => 'parse_security_audit',
                 'audio'               => 'parse_captured_media',
                 'image'               => 'parse_captured_media',
+                'media_exif'          => 'parse_media_exif',
                 'proc_info'           => 'parse_proc_info',
                 'processes'           => 'parse_processes',
                 'camera_info'         => 'parse_camera_info',
