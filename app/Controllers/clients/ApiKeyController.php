@@ -81,12 +81,16 @@ class ApiKeyController extends BaseClientController
             $username = auth()->user()->username ?? explode('@', $userEmail)[0];
 
             // Create new token using the model method
-            $this->modUser->create_token(
+            $isCreated = $this->modUser->create_token(
                 $this->userId,
                 $newToken,
                 $this->request->getIPAddress(),
                 $this->request->getUserAgent()->getAgentString()
             );
+
+            if (!$isCreated) {
+                throw new \Exception("Database insertion failed when regenerating token.");
+            }
 
             // Log the action
             $this->logUserAction('token_regenerate', 'security', 'medium', 1);
@@ -140,12 +144,16 @@ class ApiKeyController extends BaseClientController
         try {
             $newToken = bin2hex(random_bytes(4));
 
-            $this->modUser->create_token(
+            $isCreated = $this->modUser->create_token(
                 $this->userId,
                 $newToken,
                 $this->request->getIPAddress(),
                 $tokenName ?: null
             );
+
+            if (!$isCreated) {
+                throw new \Exception("Database insertion failed when creating token.");
+            }
 
             $this->logUserAction('token_create', 'security', 'medium', 1);
 

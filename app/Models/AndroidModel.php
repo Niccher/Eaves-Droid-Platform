@@ -18,6 +18,7 @@ class AndroidModel extends Model
             $token = trim($token);
             $builder = $this->db->table('tbl_user_api_tokens');
             $result = $builder->where('token', $token)
+                ->where('status', '00')
                 ->where('expires_at >', date('Y-m-d H:i:s'))
                 ->limit(1)
                 ->get()
