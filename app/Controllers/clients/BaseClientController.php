@@ -474,13 +474,17 @@ class BaseClientController extends BaseController
         $viewOutput = view('headers_footers/head_users', $data)
             . view('headers_footers/sidebar_users', $data);
             
+        $mainContent = view($mainView, $data);
+        
         // Inject Data Hub Tabs for telemetry data pages
         $dataPages = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'sms_analyse'];
         if (isset($data['pag']) && in_array($data['pag'], $dataPages)) {
-            $viewOutput .= view('users/partials/data_hub_tabs', $data);
+            $tabsHtml = view('users/partials/data_hub_tabs', $data);
+            // Insert tabs right before <section class="content"> so it sits between the page header and page content
+            $mainContent = preg_replace('/(<section\s+class=["\']content["\'][^>]*>)/i', $tabsHtml . "\n$1", $mainContent, 1);
         }
         
-        $viewOutput .= view($mainView, $data)
+        $viewOutput .= $mainContent
             . view('headers_footers/footer_data_datatables', $data);
             
         return $viewOutput;

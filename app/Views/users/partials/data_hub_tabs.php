@@ -13,16 +13,7 @@ $activeTab = $pag ?? 'sms';
 if ($activeTab == 'activities' || $activeTab == 'activity') $activeTab = 'location';
 if ($activeTab == 'sms_analyse') $activeTab = 'contacts';
 ?>
-<section class="content-header pb-1">
-    <div class="container-fluid">
-        <div class="row mb-2 align-items-center">
-            <div class="col-sm-12">
-                <h1 class="m-0 h3"><i class="fas fa-database text-primary mr-2"></i>Data Hub</h1>
-                <p class="text-muted mt-1 mb-0">View and manage all synchronized device telemetry.</p>
-            </div>
-        </div>
-    </div>
-</section>
+
 
 <section class="content mb-1">
     <div class="container-fluid">
