@@ -471,10 +471,19 @@ class BaseClientController extends BaseController
             'user_info' => $this->userData,
         ], $this->getDeviceViewData(), $this->getSystemVersionData(), $this->getUserDataCounts(), $extraData);
 
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view($mainView, $data)
+        $viewOutput = view('headers_footers/head_users', $data)
+            . view('headers_footers/sidebar_users', $data);
+            
+        // Inject Data Hub Tabs for telemetry data pages
+        $dataPages = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'sms_analyse'];
+        if (isset($data['pag']) && in_array($data['pag'], $dataPages)) {
+            $viewOutput .= view('users/partials/data_hub_tabs', $data);
+        }
+        
+        $viewOutput .= view($mainView, $data)
             . view('headers_footers/footer_data_datatables', $data);
+            
+        return $viewOutput;
     }
 
     /**
@@ -486,14 +495,7 @@ class BaseClientController extends BaseController
      */
     protected function renderSmsView(string $mainView, array $extraData = []): string
     {
-        $data = array_merge([
-            'user_info' => $this->userData,
-        ], $this->getDeviceViewData(), $this->getSystemVersionData(), $this->getUserDataCounts(), $extraData);
-
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view($mainView, $data)
-            . view('headers_footers/footer_data_datatables', $data);
+        return $this->renderUserView($mainView, $extraData);
     }
 
     /**
@@ -505,14 +507,7 @@ class BaseClientController extends BaseController
      */
     protected function renderCallView(string $mainView, array $extraData = []): string
     {
-        $data = array_merge([
-            'user_info' => $this->userData,
-        ], $this->getDeviceViewData(), $this->getSystemVersionData(), $this->getUserDataCounts(), $extraData);
-
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view($mainView, $data)
-            . view('headers_footers/footer_data_datatables', $data);
+        return $this->renderUserView($mainView, $extraData);
     }
 
     /**
@@ -524,14 +519,7 @@ class BaseClientController extends BaseController
      */
     protected function renderAppView(string $mainView, array $extraData = []): string
     {
-        $data = array_merge([
-            'user_info' => $this->userData,
-        ], $this->getDeviceViewData(), $this->getSystemVersionData(), $this->getUserDataCounts(), $extraData);
-
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view($mainView, $data)
-            . view('headers_footers/footer_data_datatables', $data);
+        return $this->renderUserView($mainView, $extraData);
     }
 
     /**

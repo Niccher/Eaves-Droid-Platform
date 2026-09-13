@@ -19,35 +19,27 @@
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-4 align-items-center">
-                <div class="col-lg-8 col-md-6">
-                    <div class="d-flex align-items-center flex-wrap">
-                        <h1 class="h2 mb-0 mr-3">
-                            <i class="fas fa-mobile-alt text-primary mr-2"></i>
-                            <?= esc($apps_head ?? 'Apps') ?>
-                        </h1>
-                        <div class="d-flex align-items-center mt-2 mt-sm-0">
-                            <span class="badge badge-light border p-2 mr-2">
-                                <i class="fas fa-boxes text-primary mr-1"></i>
-                                Total: <b><?php echo $totalApps ?? 0 ?></b>
-                            </span>
-                            <span class="badge badge-light border p-2 mr-2">
-                                <i class="fas fa-shield-alt text-info mr-1"></i>
-                                System: <b><?php echo $systemAppsCount ?? 0 ?></b>
-                            </span>
-                            <span class="badge badge-light border p-2">
-                                <i class="fas fa-user text-success mr-1"></i>
-                                User: <b><?php echo $userAppsCount ?? 0 ?></b>
-                            </span>
+                <div class="col-lg-12">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 15px;">
+                        <div>
+                            <h1 class="h2 mb-0">
+                                <i class="fas fa-mobile-alt text-primary mr-2"></i>
+                                <?= esc($apps_head ?? 'Apps') ?>
+                            </h1>
+                            <p class="text-muted mt-2 mb-0">View and manage apps installed on the device</p>
+                        </div>
+                        <div class="btn-group flex-wrap">
+                            <a class="btn <?php echo (strpos(current_url(), 'system') === false && strpos(current_url(), 'user') === false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("apps"); ?>">
+                                <i class="fas fa-boxes"></i> All <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $totalApps ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (strpos(current_url(), 'system') !== false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("apps/system"); ?>">
+                                <i class="fas fa-shield-alt"></i> System <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $systemAppsCount ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (strpos(current_url(), 'user') !== false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("apps/user"); ?>">
+                                <i class="fas fa-user"></i> User <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $userAppsCount ?? 0; ?></span>
+                            </a>
                         </div>
                     </div>
-                    <p class="text-muted mt-2 mb-0">View and manage apps installed on the device</p>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <nav aria-label="breadcrumb" class="float-right mt-2">
-                        <ol class="breadcrumb bg-transparent p-0 mb-0">
-                            <?php echo $apps_urls ?? ''; ?>
-                        </ol>
-                    </nav>
                 </div>
             </div>
         </div>

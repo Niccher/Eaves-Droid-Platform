@@ -4,41 +4,31 @@
         <section class="content-header">
             <div class="container-fluid">
                 <div class="row mb-4 align-items-center">
-                    <div class="col-lg-8 col-md-6">
-                        <div class="d-flex flex-column flex-md-row align-items-md-center">
-                            <h1 class="h2 mb-2 mb-md-0">
-                                <i class="fas fa-phone-alt text-primary mr-2"></i>
-                                <?php echo $call_head ?? 'Call Logs' ?>
-                            </h1>
-                            <div class="ml-0 ml-md-3 d-flex flex-wrap">
-                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
-                                    <i class="fas fa-chart-bar text-primary mr-1"></i>
-                                    Total: <b><?php echo $totalCalls ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
-                                    <i class="fas fa-arrow-circle-down text-info mr-1"></i>
-                                    Incoming: <b><?php echo $incomingCallsCount ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
-                                    <i class="fas fa-arrow-circle-up text-success mr-1"></i>
-                                    Outgoing: <b><?php echo $outgoingCallsCount ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
-                                    <i class="fas fa-times-circle text-danger mr-1"></i>
-                                    Rejected: <b><?php echo $rejectedCallsCount ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
-                                    <i class="fas fa-shield-alt text-warning mr-1"></i>
-                                    Blocked: <b><?php echo $blockedCallsCount ?? 0 ?></b>
-                                </span>
+                    <div class="col-lg-12">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 15px;">
+                            <div>
+                                <h1 class="h2 mb-0">
+                                    <i class="fas fa-phone-alt text-primary mr-2"></i>
+                                    <?php echo $call_head ?? 'Call Logs' ?>
+                                </h1>
+                                <p class="text-muted mt-2 mb-0">View and manage your call history</p>
                             </div>
-                        </div>
-                        <p class="text-muted mt-2 mb-0">View and manage your call history</p>
-                    </div>
-                    <div class="col-lg-4 col-md-6">
-                                <div class="float-right mt-2 mb-2">
-                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                                <?php echo $call_urls; ?>
+                            <div class="btn-group flex-wrap">
+                                <a class="btn <?php echo (strpos(current_url(), 'incoming') === false && strpos(current_url(), 'outgoing') === false && strpos(current_url(), 'rejected') === false && strpos(current_url(), 'blocked') === false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("call_logs"); ?>">
+                                    <i class="fas fa-chart-bar"></i> All <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $totalCalls ?? 0; ?></span>
+                                </a>
+                                <a class="btn <?php echo (strpos(current_url(), 'incoming') !== false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("call_logs/incoming"); ?>">
+                                    <i class="fas fa-arrow-circle-down"></i> Incoming <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $incomingCallsCount ?? 0; ?></span>
+                                </a>
+                                <a class="btn <?php echo (strpos(current_url(), 'outgoing') !== false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("call_logs/outgoing"); ?>">
+                                    <i class="fas fa-arrow-circle-up"></i> Outgoing <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $outgoingCallsCount ?? 0; ?></span>
+                                </a>
+                                <a class="btn <?php echo (strpos(current_url(), 'rejected') !== false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("call_logs/rejected"); ?>">
+                                    <i class="fas fa-times-circle"></i> Rejected <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $rejectedCallsCount ?? 0; ?></span>
+                                </a>
+                                <a class="btn <?php echo (strpos(current_url(), 'blocked') !== false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("call_logs/blocked"); ?>">
+                                    <i class="fas fa-shield-alt"></i> Blocked <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $blockedCallsCount ?? 0; ?></span>
+                                </a>
                             </div>
                         </div>
                     </div>

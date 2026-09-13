@@ -21,45 +21,34 @@
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-4 align-items-center">
-                <div class="col-lg-8 col-md-6">
-                        <div class="d-flex align-items-center">
+                <div class="col-lg-12">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 15px;">
+                        <div>
                             <h1 class="h2 mb-0">
                                 <i class="fas fa-folder text-primary mr-2"></i>
-                                <?php echo $files_head ?? 'All FilesController' ?>
+                                <?php echo $files_head ?? 'All Files' ?>
                             </h1>
-                            <div class="ml-3 d-flex flex-wrap" style="gap: 5px;">
-                                <span class="badge badge-light border p-2">
-                                    <i class="fas fa-folder text-primary mr-1"></i>
-                                    Total: <b><?php echo $filesCounts['all'] ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2">
-                                    <i class="fas fa-photo-video text-info mr-1"></i>
-                                    Media: <b><?php echo $filesCounts['media'] ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2">
-                                    <i class="fas fa-file-alt text-success mr-1"></i>
-                                    Documents: <b><?php echo $filesCounts['documents'] ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2">
-                                    <i class="fas fa-music text-warning mr-1"></i>
-                                    Audio: <b><?php echo $filesCounts['audio'] ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2">
-                                    <i class="fas fa-file-archive text-purple mr-1"></i>
-                                    Archives: <b><?php echo $filesCounts['archives'] ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2">
-                                    <i class="fas fa-ellipsis-h text-secondary mr-1"></i>
-                                    Others: <b><?php echo $filesCounts['others'] ?? 0 ?></b>
-                                </span>
-                            </div>
+                            <p class="text-muted mt-2 mb-0"><?php echo $files_desc ?? 'View and manage files on the device' ?></p>
                         </div>
-                        <p class="text-muted mt-2 mb-0"><?php echo $files_desc ?? 'View and manage files on the device' ?></p>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="float-right mt-2">
-                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                            <?php echo $files_urls; ?>
+                        <div class="btn-group flex-wrap">
+                            <a class="btn <?php echo (($current_type ?? 'all') === 'all') ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("files"); ?>">
+                                <i class="fas fa-folder"></i> All <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $filesCounts['all'] ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (($current_type ?? 'all') === 'media') ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("files/media"); ?>">
+                                <i class="fas fa-photo-video"></i> Media <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $filesCounts['media'] ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (($current_type ?? 'all') === 'documents') ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("files/documents"); ?>">
+                                <i class="fas fa-file-alt"></i> Documents <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $filesCounts['documents'] ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (($current_type ?? 'all') === 'audio') ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("files/audio"); ?>">
+                                <i class="fas fa-music"></i> Audio <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $filesCounts['audio'] ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (($current_type ?? 'all') === 'archives') ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("files/archives"); ?>">
+                                <i class="fas fa-file-archive"></i> Archives <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $filesCounts['archives'] ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (($current_type ?? 'all') === 'others') ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("files/others"); ?>">
+                                <i class="fas fa-ellipsis-h"></i> Others <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $filesCounts['others'] ?? 0; ?></span>
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -3,38 +3,30 @@
         <!-- Content Header (Page header) -->
         <section class="content-header">
             <div class="container-fluid">
-                <div class="row mb-4 align-items-center">
-                    <div class="col-lg-8 col-md-6">
-                        <div class="d-flex flex-column flex-md-row align-items-md-center">
-                            <h1 class="h2 mb-2 mb-md-0">
+            <div class="row mb-4 align-items-center">
+                <div class="col-lg-12">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 15px;">
+                        <div>
+                            <h1 class="h2 mb-0">
                                 <i class="fas fa-sms text-primary mr-2"></i>
                                 <?php echo $sms_head ?? 'All SMS' ?>
                             </h1>
-                            <div class="ml-0 ml-md-3 d-flex flex-wrap">
-                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
-                                    <i class="fas fa-comments text-primary mr-1"></i>
-                                    Total: <b><?php echo $totalAllSMS ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
-                                    <i class="fas fa-inbox text-success mr-1"></i>
-                                    Inbox: <b><?php echo $totalSmsInbox ?? 0 ?></b>
-                                </span>
-                                <span class="badge badge-light border p-2 mr-2 mb-2 mb-md-0">
-                                    <i class="fas fa-paper-plane text-secondary mr-1"></i>
-                                    Sent: <b><?php echo $totalSmsSent ?? 0 ?></b>
-                                </span>
-                            </div>
+                            <p class="text-muted mt-2 mb-0">View and manage all your SMS messages</p>
                         </div>
-                        <p class="text-muted mt-2 mb-0">View and manage all your SMS messages</p>
-                    </div>
-                    <div class="col-lg-4 col-md-6">
-                        <div class="float-right mt-2">
-                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                                <?php echo $sms_urls; ?>
-                            </div>
+                        <div class="btn-group flex-wrap">
+                            <a class="btn <?php echo (strpos(current_url(), 'inbox') === false && strpos(current_url(), 'sent') === false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("sms"); ?>">
+                                <i class="fas fa-comments"></i> All <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $totalAllSMS ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (strpos(current_url(), 'inbox') !== false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("sms/inbox"); ?>">
+                                <i class="fas fa-inbox"></i> Inbox <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $totalSmsInbox ?? 0; ?></span>
+                            </a>
+                            <a class="btn <?php echo (strpos(current_url(), 'sent') !== false) ? 'btn-primary' : 'btn-outline-primary'; ?>" href="<?php echo base_url("sms/sent"); ?>">
+                                <i class="fas fa-paper-plane"></i> Sent <span class="badge badge-pill badge-light text-dark ml-1"><?php echo $totalSmsSent ?? 0; ?></span>
+                            </a>
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
             <!-- /.container-fluid -->
         </section>

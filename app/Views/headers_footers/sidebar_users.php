@@ -273,57 +273,16 @@
                         </li>
                         <?php endif; ?>
 
-                        <!-- 1. Telemetry & Data Hub (Collapsible) -->
+                        <!-- 1. Data Hub (Replaces 6 separate telemetry links) -->
                         <?php 
                             $data_pages     = ['apps', 'call_logs', 'contacts', 'sms', 'files', 'location', 'activities', 'activity', 'sms_analyse'];
-                            $is_data_open   = (isset($pag) && in_array($pag, $data_pages));
+                            $is_data_active   = (isset($pag) && in_array($pag, $data_pages));
                         ?>
-                        <li class="nav-item has-treeview <?php echo $is_data_open ? 'menu-open' : ''; ?>">
-                            <a href="#" class="nav-link <?php echo $is_data_open ? 'active' : ''; ?>">
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('sms'); ?>" class="nav-link <?php echo $is_data_active ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-database"></i>
-                                <p>
-                                    Telemetry &amp; Data
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
+                                <p>Data Hub</p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('apps'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'apps') ? 'active' : ''; ?>">
-                                        <i class="fas fa-th nav-icon"></i><p>Apps</p>
-                                        <span class="badge badge-success float-right"><?php echo isset($total_apps) ? $total_apps : 0; ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('call_logs'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'call_logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-phone nav-icon"></i><p>Call Logs</p>
-                                        <span class="badge badge-success float-right"><?php echo isset($total_calls) ? $total_calls : 0; ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('contacts'); ?>" class="nav-link <?php echo (isset($pag) && ($pag == 'contacts' || $pag == 'sms_analyse')) ? 'active' : ''; ?>">
-                                        <i class="fas fa-address-book nav-icon"></i><p>Contacts</p>
-                                        <span class="badge badge-success float-right"><?php echo isset($total_contacts) ? $total_contacts : 0; ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('sms'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'sms') ? 'active' : ''; ?>">
-                                        <i class="fas fa-comment-dots nav-icon"></i><p>SMS</p>
-                                        <span class="badge badge-success float-right"><?php echo isset($total_sms) ? $total_sms : 0; ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('files'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'files') ? 'active' : ''; ?>">
-                                        <i class="fas fa-folder nav-icon"></i><p>Files</p>
-                                        <span class="badge badge-success float-right"><?php echo isset($total_files) ? $total_files : 0; ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                     <a href="<?php echo base_url('location'); ?>" class="nav-link <?php echo (isset($pag) && ($pag == 'location' || $pag == 'activities')) ? 'active' : ''; ?>">
-                                         <i class="fas fa-map-pin nav-icon"></i><p>Location &amp; Activity</p>
-                                         <span class="badge badge-success float-right"><?php echo isset($total_location_activity) ? $total_location_activity : (($total_locations ?? 0) + ($total_activities ?? 0)); ?></span>
-                                     </a>
-                                 </li>
-                            </ul>
                         </li>
 
                         <!-- 2. Device & Control Hub (Collapsible) -->
@@ -363,8 +322,8 @@
 
                         <!-- 3. Intelligence Suite Hub (Collapsible) -->
                         <?php 
-                            $intel_pages = ['analysis', 'timeline', 'alerts'];
-                            $intel_subs = ['timeline', 'wellbeing', 'anomalies', 'behavioral', 'correlation_engine', 'risk_care_plan'];
+                            $intel_pages = ['analysis'];
+                            $intel_subs = ['anomalies'];
                             $is_intel_open = (isset($pag) && in_array($pag, $intel_pages)) || (isset($sub_pag) && in_array($sub_pag, $intel_subs));
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_intel_open ? 'menu-open' : ''; ?>">
@@ -377,20 +336,9 @@
                             </a>
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <a href="<?php echo base_url('analysis'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'analysis' && (!isset($sub_pag) || $sub_pag != 'timeline')) ? 'active' : ''; ?>">
+                                    <a href="<?php echo base_url('analysis'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'analysis') ? 'active' : ''; ?>">
                                         <i class="fas fa-chart-bar nav-icon"></i><p>Analysis</p>
                                         <span class="badge badge-info float-right">AI</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('analysis/timeline'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'timeline') || (isset($sub_pag) && $sub_pag == 'timeline') ? 'active' : ''; ?>">
-                                        <i class="fas fa-clock nav-icon"></i><p>Timeline</p>
-                                        <span class="badge badge-info float-right">New</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('analysis/wellbeing'); ?>" class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'wellbeing') ? 'active' : ''; ?>">
-                                        <i class="fas fa-heartbeat nav-icon"></i><p>Digital Wellbeing</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -399,106 +347,61 @@
                                         <span class="badge badge-danger float-right">Live</span>
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                     <a href="<?php echo base_url('analysis/behavioral-anomalies'); ?>" class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'behavioral') ? 'active' : ''; ?>">
-                                         <i class="fas fa-brain nav-icon"></i><p>Behavioral Analysis</p>
-                                     </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('alerts'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'alerts') ? 'active' : ''; ?>">
-                                        <i class="nav-icon fas fa-bell text-warning"></i><p>Alerts &amp; Automations</p>
-                                    </a>
-                                </li>
                             </ul>
                         </li>
 
-                        <!-- 4. Account & Security Hub (Collapsible) -->
+                        <!-- 4. Settings & Account Hub (Collapsible) -->
                         <?php 
-                            $account_pages = ['account_profile', 'account_setting', 'account_devices', 'account_logs', 'reports'];
-                            $is_account_open = (isset($pag) && in_array($pag, $account_pages)) || (isset($sub_pag) && $sub_pag == 'blocklist');
+                            $account_pages = ['account_profile', 'account_setting', 'account_devices', 'account_logs', 'reports', 'billing'];
+                            $is_account_open = (isset($pag) && in_array($pag, $account_pages));
                         ?>
                         <li class="nav-item has-treeview <?php echo $is_account_open ? 'menu-open' : ''; ?>">
                             <a href="#" class="nav-link <?php echo $is_account_open ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-user-shield"></i>
+                                <i class="nav-icon fas fa-user-cog"></i>
                                 <p>
-                                    Account &amp; Security
+                                    Settings &amp; Account
                                     <i class="right fas fa-angle-left"></i>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('account/profile'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'account_profile') ? 'active' : ''; ?>">
-                                        <i class="fas fa-user-circle nav-icon"></i><p>Profile</p>
+                                        <i class="fas fa-user-circle nav-icon"></i><p>Profile &amp; Security</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?php echo base_url('account/access_logs/uploads'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'account_logs' && isset($activeTab) && $activeTab == 'uploads') ? 'active' : ''; ?>">
+                                        <i class="fas fa-file-upload nav-icon text-info"></i><p>Upload Activity</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('account/setting'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'account_setting') ? 'active' : ''; ?>">
-                                        <i class="fas fa-cog nav-icon"></i><p>Settings</p>
+                                        <i class="fas fa-cog nav-icon"></i><p>App Settings</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="<?php echo base_url('account/devices'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'account_devices') ? 'active' : ''; ?>">
-                                        <i class="fas fa-mobile-alt nav-icon"></i><p>Device</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('analysis/blocklist'); ?>" class="nav-link <?php echo (isset($sub_pag) && $sub_pag == 'blocklist') ? 'active' : ''; ?>">
-                                        <i class="fas fa-ban nav-icon"></i><p>Blocklist</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('account/logs'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'account_logs') ? 'active' : ''; ?>">
-                                        <i class="fas fa-history nav-icon"></i><p>Access Logs</p>
+                                    <a href="<?php echo base_url('billing'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'billing') ? 'active' : ''; ?>">
+                                        <i class="nav-icon fas fa-credit-card text-success"></i><p>Billing &amp; Payments</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="<?php echo base_url('reports'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'reports') ? 'active' : ''; ?>">
-                                        <i class="nav-icon fas fa-file-export text-info"></i><p>Reports &amp; Export</p>
+                                        <i class="nav-icon fas fa-file-export"></i><p>Reports &amp; Export</p>
                                     </a>
                                 </li>
                             </ul>
                         </li>
 
-                        <!-- 5. Billing & Support Hub (Collapsible) -->
-                        <?php 
-                            $billing_pages = ['billing', 'support_chat', 'faqs'];
-                            $is_billing_open = (isset($pag) && in_array($pag, $billing_pages));
-                        ?>
-                        <li class="nav-item has-treeview <?php echo $is_billing_open ? 'menu-open' : ''; ?>">
-                            <a href="#" class="nav-link <?php echo $is_billing_open ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-credit-card"></i>
-                                <p>
-                                    Billing &amp; Support
-                                    <i class="right fas fa-angle-left"></i>
+                        <!-- 5. Support -->
+                        <li class="nav-item">
+                            <a href="<?php echo base_url('support/chat'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'support_chat') ? 'active' : ''; ?>">
+                                <i class="nav-icon fas fa-comments text-primary"></i>
+                                <p>Support Chat
+                                <?php if (isset($unreadSupportCount) && $unreadSupportCount > 0): ?>
+                                    <span class="badge badge-danger right"><?php echo $unreadSupportCount; ?></span>
+                                <?php endif; ?>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('billing'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'billing' && (!isset($sub_pag) || $sub_pag !== 'payments')) ? 'active' : ''; ?>">
-                                        <i class="nav-icon fas fa-credit-card text-info"></i><p>Billing / Upgrade</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('account/payments'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'billing' && isset($sub_pag) && $sub_pag == 'payments') ? 'active' : ''; ?>">
-                                        <i class="nav-icon fas fa-file-invoice-dollar text-success"></i><p>Payment History</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('support/chat'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'support_chat') ? 'active' : ''; ?>">
-                                        <i class="nav-icon fas fa-comments text-primary"></i>
-                                        <p>Support Chat
-                                        <?php if (isset($unreadSupportCount) && $unreadSupportCount > 0): ?>
-                                            <span class="badge badge-danger right"><?php echo $unreadSupportCount; ?></span>
-                                        <?php endif; ?>
-                                        </p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="<?php echo base_url('faqs'); ?>" class="nav-link <?php echo (isset($pag) && $pag == 'faqs') ? 'active' : ''; ?>">
-                                        <i class="nav-icon fas fa-info-circle"></i><p>FAQs</p>
-                                    </a>
-                                </li>
-                            </ul>
                         </li>
 
                     </ul>
