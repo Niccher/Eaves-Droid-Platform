@@ -187,16 +187,12 @@ class SmsController extends BaseClientController
         }
         
         $extraData['contactMap'] = $this->getContactLookupMap();
-        
-        $data = array_merge([
-            'user_info' => $this->userData,
-            'total_sms' => $extraData['totalSMS'],
-        ], $this->getUserDataCounts(), $extraData);
+        $extraData['total_sms'] = $extraData['totalSMS'];
+        if (!isset($extraData['pag'])) {
+            $extraData['pag'] = 'sms';
+        }
 
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view($mainView, $data)
-            . view('headers_footers/footer_data_datatables', $data);
+        return $this->renderUserView($mainView, $extraData);
     }
 
     /**

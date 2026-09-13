@@ -107,15 +107,11 @@ class CallsController extends BaseClientController
     protected function renderCallView(string $mainView, array $extraData = []): string
     {
         $extraData['contactMap'] = $this->getContactLookupMap();
-        
-        $data = array_merge([
-            'user_info' => $this->userData,
-        ], $this->getDeviceViewData(), $this->getUserDataCounts(), $extraData);
+        if (!isset($extraData['pag'])) {
+            $extraData['pag'] = 'call_logs';
+        }
 
-        return view('headers_footers/head_users', $data)
-            . view('headers_footers/sidebar_users', $data)
-            . view($mainView, $data)
-            . view('headers_footers/footer_data_datatables', $data);
+        return $this->renderUserView($mainView, $extraData);
     }
 
     /**
