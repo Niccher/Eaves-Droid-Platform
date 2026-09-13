@@ -464,7 +464,9 @@ $routes->group('', [
             $routes->get('storage_analysis', 'CorrelationController::storageIntelligence', ['as' => 'adv-storage-analysis']);
 
             $routes->get('device', 'AdvancedController::device_context', ['as' => 'adv-device']);
+            $routes->get('device_context', 'AdvancedController::device_context', ['as' => 'adv-device-context']);
             $routes->get('network', 'AdvancedController::network_info', ['as' => 'adv-network']);
+            $routes->get('network_info', 'AdvancedController::network_info', ['as' => 'adv-network-info']);
             $routes->get('bluetooth', 'AdvancedController::bluetooth', ['as' => 'adv-bluetooth']);
             $routes->get('sensors', 'AdvancedController::sensors', ['as' => 'adv-sensors']);
             $routes->get('camera_info', 'AdvancedController::camera_info', ['as' => 'adv-camera-info']);
@@ -497,7 +499,9 @@ $routes->group('', [
 
             // Delete routes - hardware pages
             $routes->post('device/delete/(:num)', 'AdvancedController::delete_device_context/$1');
+            $routes->post('device_context/delete/(:num)', 'AdvancedController::delete_device_context/$1');
             $routes->post('network/delete/(:num)', 'AdvancedController::delete_network_info/$1');
+            $routes->post('network_info/delete/(:num)', 'AdvancedController::delete_network_info/$1');
             $routes->post('bluetooth/delete/(:num)', 'AdvancedController::delete_bluetooth_row/$1');
             $routes->post('sensors/delete/(:num)', 'AdvancedController::delete_sensor_profile/$1');
             $routes->post('camera_info/delete/(:num)', 'AdvancedController::delete_camera_info/$1');

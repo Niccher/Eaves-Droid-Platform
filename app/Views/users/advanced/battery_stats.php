@@ -1,5 +1,19 @@
-<?php /** @var array $rows @var int $total @var object $pager @var string $nav_urls */ ?>
+<?php /** @var array $rows @var array $history @var int $total @var object $pager @var string $nav_urls */ ?>
 <?php
+// Prepare chart telemetry timeline from history
+$chartLabels = [];
+$chartLevels = [];
+$chartTemps  = [];
+$chartVolts  = [];
+
+foreach ($history ?? [] as $h) {
+    $ts = !empty($h['extracted_at']) ? date('M d H:i', (int)($h['extracted_at'] > 1000000000000 ? $h['extracted_at']/1000 : $h['extracted_at'])) : ($h['created_at'] ?? '—');
+    $chartLabels[] = $ts;
+    $chartLevels[] = round((float)($h['capacity_percent'] ?? $h['level_percent'] ?? 0), 1);
+    $chartTemps[]  = round((float)(($h['temperature_deci_c'] ?? 0) / 10 ?: ($h['temperature_celsius'] ?? 0)), 1);
+    $chartVolts[]  = round((int)($h['voltage_mv'] ?? 0) / 1000, 2);
+}
+
 // Group & deduplicate: keep only the latest battery snapshot per device
 $seen = [];
 $unique = [];
@@ -106,6 +120,45 @@ $pluggedMap = [
           <p class="text-muted">Battery profiles will appear here once extracted.</p>
         </div>
       <?php else: ?>
+
+      <?php if (!empty($chartLabels)): ?>
+      <!-- Battery Telemetry Trend Chart -->
+      <div class="card card-outline card-info shadow-sm mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap" style="gap:10px;">
+          <h3 class="card-title font-weight-bold m-0 text-dark">
+            <i class="fas fa-chart-line text-info mr-2"></i>Battery &amp; Thermal Timeline
+            <small class="text-muted ml-2">(Last <?= count($chartLabels) ?> Snapshots)</small>
+          </h3>
+          <div class="btn-group btn-group-sm" role="group" id="batteryChartControls">
+            <button type="button" class="btn btn-outline-info active" data-view="all">
+              <i class="fas fa-layer-group mr-1"></i>Combined View
+            </button>
+            <button type="button" class="btn btn-outline-success" data-view="level">
+              <i class="fas fa-battery-half mr-1"></i>Battery % Only
+            </button>
+            <button type="button" class="btn btn-outline-danger" data-view="temp">
+              <i class="fas fa-thermometer-half mr-1"></i>Thermal (°C)
+            </button>
+            <button type="button" class="btn btn-outline-primary" data-view="volt">
+              <i class="fas fa-bolt mr-1"></i>Voltage (V)
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="height: 300px; position: relative;">
+            <canvas id="batteryChart"></canvas>
+          </div>
+        </div>
+        <div class="card-footer bg-light py-2 text-muted small d-flex justify-content-between align-items-center flex-wrap" style="gap:10px;">
+          <span><i class="fas fa-info-circle text-info mr-1"></i>Chronological progression of battery charge level, temperature fluctuations, and operating voltage.</span>
+          <span class="d-flex" style="gap: 8px;">
+            <span class="badge badge-success"><i class="fas fa-battery-half mr-1"></i>Battery Level (%)</span>
+            <span class="badge badge-danger"><i class="fas fa-thermometer-half mr-1"></i>Temperature (°C)</span>
+            <span class="badge badge-primary"><i class="fas fa-bolt mr-1"></i>Voltage (V)</span>
+          </span>
+        </div>
+      </div>
+      <?php endif; ?>
 
         <div class="row">
         <?php foreach ($rows as $r):
@@ -220,3 +273,171 @@ $pluggedMap = [
 </div>
 <?php include __DIR__ . '/_adv_style.php'; ?>
 <?php include __DIR__ . '/_adv_delete_script.php'; ?>
+
+<?php if (!empty($chartLabels)): ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('batteryChart');
+    if (!ctx) return;
+
+    const labels = <?= json_encode($chartLabels) ?>;
+    const levels = <?= json_encode($chartLevels) ?>;
+    const temps  = <?= json_encode($chartTemps) ?>;
+    const volts  = <?= json_encode($chartVolts) ?>;
+
+    const chart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Battery Level (%)',
+                    data: levels,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.12)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    yAxisID: 'yLevel',
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Temperature (°C)',
+                    data: temps,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.05)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3,
+                    yAxisID: 'yTemp',
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Voltage (V)',
+                    data: volts,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.05)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3,
+                    yAxisID: 'yVolt',
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    hidden: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 14,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) {
+                                if (context.dataset.yAxisID === 'yLevel') {
+                                    label += context.parsed.y + '%';
+                                } else if (context.dataset.yAxisID === 'yTemp') {
+                                    label += context.parsed.y + ' °C';
+                                } else if (context.dataset.yAxisID === 'yVolt') {
+                                    label += context.parsed.y + ' V';
+                                } else {
+                                    label += context.parsed.y;
+                                }
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12 }
+                },
+                yLevel: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    min: 0,
+                    max: 100,
+                    title: { display: true, text: 'Battery (%)', color: '#28a745' },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                },
+                yTemp: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Temp (°C)', color: '#dc3545' },
+                    grid: { drawOnChartArea: false }
+                },
+                yVolt: {
+                    type: 'linear',
+                    display: false,
+                    position: 'right',
+                    title: { display: true, text: 'Voltage (V)', color: '#007bff' },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+
+    // Control buttons
+    const buttons = document.querySelectorAll('#batteryChartControls button');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            buttons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const view = this.getAttribute('data-view');
+
+            if (view === 'all') {
+                chart.data.datasets[0].hidden = false;
+                chart.data.datasets[1].hidden = false;
+                chart.data.datasets[2].hidden = true;
+                chart.options.scales.yLevel.display = true;
+                chart.options.scales.yTemp.display = true;
+                chart.options.scales.yVolt.display = false;
+            } else if (view === 'level') {
+                chart.data.datasets[0].hidden = false;
+                chart.data.datasets[1].hidden = true;
+                chart.data.datasets[2].hidden = true;
+                chart.options.scales.yLevel.display = true;
+                chart.options.scales.yTemp.display = false;
+                chart.options.scales.yVolt.display = false;
+            } else if (view === 'temp') {
+                chart.data.datasets[0].hidden = true;
+                chart.data.datasets[1].hidden = false;
+                chart.data.datasets[2].hidden = true;
+                chart.options.scales.yLevel.display = false;
+                chart.options.scales.yTemp.display = true;
+                chart.options.scales.yVolt.display = false;
+            } else if (view === 'volt') {
+                chart.data.datasets[0].hidden = true;
+                chart.data.datasets[1].hidden = true;
+                chart.data.datasets[2].hidden = false;
+                chart.options.scales.yLevel.display = false;
+                chart.options.scales.yTemp.display = false;
+                chart.options.scales.yVolt.display = true;
+            }
+            chart.update();
+        });
+    });
+});
+</script>
+<?php endif; ?>

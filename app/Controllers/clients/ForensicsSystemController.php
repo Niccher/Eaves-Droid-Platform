@@ -188,8 +188,19 @@ class ForensicsSystemController extends BaseClientController
     /** GET /advanced/battery_stats */
     public function battery_stats()
     {
+        $db = \Config\Database::connect();
+        $historyRows = $db->table('tbl_telemetry_battery_stats')
+            ->where('owner_id', $this->userId)
+            ->orderBy('extracted_at', 'DESC')
+            ->limit(60)
+            ->get()
+            ->getResultArray();
+
+        $history = array_reverse($historyRows);
+
         $data = array_merge($this->commonData('battery_stats', 'Battery Stats'), [
             'rows' => $this->finderModel->get_battery_stats($this->userId),
+            'history' => $history,
             'total' => $this->finderModel->get_count_BatteryStats($this->userId),
             'pager' => $this->finderModel->getPager(),
         ]);
