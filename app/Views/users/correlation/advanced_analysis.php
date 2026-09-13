@@ -120,6 +120,7 @@ $analysisFeatures = [
     ]
 ];
 ?>
+<div class="content-wrapper">
 <style>
     .btn-remote-cmd {
         border-radius: 10px;
@@ -169,7 +170,6 @@ $analysisFeatures = [
         border-radius: 50%;
     }
 </style>
-<div class="content-wrapper">
     <?php if (session()->getFlashdata('success')): ?>
     <div class="container-fluid mt-3">
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -339,9 +339,6 @@ $analysisFeatures = [
                     </div>
                 </div>
             </section>
-
-            </div>
-        </section>
         <!-- /.content -->
     </div>
     <!-- /.content-wrapper -->
