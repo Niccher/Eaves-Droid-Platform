@@ -50,7 +50,9 @@ class ApiAuthFilter implements FilterInterface
         // STEP 2: Validate token against DB
         // ─────────────────────────────────────────────────────────────────────
         $androidModel = new AndroidModel();
-        $tokenData    = $androidModel->token_test($token);
+        $tokenData = cache()->remember("api_token:{$token}", 300, function () use ($androidModel, $token) {
+            return $androidModel->token_test($token);
+        });
 
         if (!$tokenData) {
             return response()

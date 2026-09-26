@@ -70,4 +70,33 @@ class RedisService
             return false;
         }
     }
+
+    /**
+     * Get an item from the cache, or execute the given Closure and store the result.
+     *
+     * @param string $key
+     * @param int $ttl
+     * @param callable $callback
+     * @return mixed
+     */
+    public function remember(string $key, int $ttl, callable $callback)
+    {
+        if (!$this->client) {
+            return $callback();
+        }
+
+        $cached = $this->get($key);
+        if ($cached !== null) {
+            $decoded = json_decode($cached, true);
+            return (json_last_error() === JSON_ERROR_NONE) ? $decoded : $cached;
+        }
+
+        $value = $callback();
+        if ($value !== null) {
+            $encoded = is_string($value) ? $value : json_encode($value);
+            $this->setex($key, $ttl, $encoded);
+        }
+
+        return $value;
+    }
 }

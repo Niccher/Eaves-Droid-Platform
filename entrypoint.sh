@@ -22,23 +22,28 @@ if [ -n "$MYSQLHOST" ] || [ -n "$DB_HOST_CUSTOM" ]; then
     done
 
     if php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USER}', '${DB_PASS}');" 2>/dev/null; then
-        echo "MySQL is ready! Running database migrations & seeders..."
-        cd /var/www/html
-        php spark migrate --all 2>&1 || echo "WARNING: Migration encountered an issue. Check logs."
-        php spark db:seed DatabaseSeeder 2>&1 || echo "WARNING: Seeding encountered an issue. Check logs."
+        echo "MySQL is ready!"
+        if [ "$RUN_MIGRATIONS" = "true" ] || [ "$RUN_MIGRATIONS" = "1" ]; then
+            echo "Running database migrations & seeders..."
+            cd /var/www/html
+            php spark migrate --all 2>&1 || echo "WARNING: Migration encountered an issue. Check logs."
+            php spark db:seed DatabaseSeeder 2>&1 || echo "WARNING: Seeding encountered an issue. Check logs."
+        else
+            echo "Skipping migrations (RUN_MIGRATIONS not true)."
+        fi
     fi
 else
     echo "NOTICE: No external database host provided (MYSQLHOST is empty). Skipping DB migrations."
 fi
 
-echo "Migrations complete. Starting Apache..."
+echo "Migrations complete. Starting Apache and PHP-FPM..."
 
-# Ensure strictly one MPM module (mpm_prefork) is loaded at runtime
-rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+# Ensure strictly mpm_event module is loaded
+rm -f /etc/apache2/mods-enabled/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.conf \
       /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf
-if [ ! -f /etc/apache2/mods-enabled/mpm_prefork.load ]; then
-    ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load
-    ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf 2>/dev/null || true
+if [ ! -f /etc/apache2/mods-enabled/mpm_event.load ]; then
+    ln -sf /etc/apache2/mods-available/mpm_event.load /etc/apache2/mods-enabled/mpm_event.load
+    ln -sf /etc/apache2/mods-available/mpm_event.conf /etc/apache2/mods-enabled/mpm_event.conf 2>/dev/null || true
 fi
 
 LISTEN_PORT="${PORT:-80}"
@@ -90,4 +95,9 @@ echo "Starting background Redis upload worker..."
     done
 ) &
 
-exec apache2-foreground
+echo "Starting PHP-FPM..."
+php-fpm -D
+
+echo "Starting Apache in foreground..."
+source /etc/apache2/envvars
+exec apache2 -D FOREGROUND

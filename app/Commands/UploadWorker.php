@@ -34,6 +34,8 @@ class UploadWorker extends BaseCommand
         $telemetrySvc = new \App\Services\TelemetryReceiverService();
         $queueModel = new \App\Models\UploadQueueModel();
 
+        $backoff = 2;
+
         while (true) {
             try {
                 // Read from stream, blocking for up to 5 seconds
@@ -85,9 +87,13 @@ class UploadWorker extends BaseCommand
                         }
                     }
                 }
+                
+                // Reset backoff on successful loop iteration (even if no messages)
+                $backoff = 2;
             } catch (\Throwable $e) {
                 CLI::write('Worker error: ' . $e->getMessage(), 'red');
-                sleep(2); // Backoff on error
+                sleep($backoff);
+                $backoff = min($backoff * 2, 60); // Exponential backoff, cap at 60s
             }
         }
     }

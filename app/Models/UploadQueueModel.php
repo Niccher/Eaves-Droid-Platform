@@ -71,9 +71,15 @@ class UploadQueueModel extends Model
         }
     }
 
-    public function getPendingBatch(int $limit = 5): array
+    public function getPendingBatch(int $limit = 50): array
     {
-        return $this->where('status', 'pending')
+        return $this->groupStart()
+                ->where('status', 'pending')
+                ->orGroupStart()
+                    ->where('status', 'failed')
+                    ->where('attempts <', 3)
+                ->groupEnd()
+            ->groupEnd()
             ->orderBy('queued_at', 'ASC')
             ->limit($limit)
             ->findAll();

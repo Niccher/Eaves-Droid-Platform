@@ -109,9 +109,9 @@ class ProcessUploadQueue extends BaseCommand
                 return;
             }
 
-            $limit = (int)($params[0] ?? 5);
+            $limit = (int)($params[0] ?? 50);
             if ($limit < 1) {
-                $limit = 5;
+                $limit = 50;
             }
 
             CLI::write(" Checking for pending uploads (limit: {$limit})...", 'yellow');
@@ -144,6 +144,9 @@ class ProcessUploadQueue extends BaseCommand
             $processed = 0;
             $failed    = 0;
 
+            $deviceCounts = [];
+            $maxPerDevice = 5;
+
             foreach ($pending as $item) {
                 $queueId       = (int)$item['id'];
                 $filename      = $item['stored_filename'];
@@ -151,6 +154,15 @@ class ProcessUploadQueue extends BaseCommand
                 $ownerId       = (int)$item['owner_id'];
                 $fileRecordId  = $item['file_record_id'] ? (int)$item['file_record_id'] : null;
                 $devicePrintId = $item['device_print_id'] ?: $item['device_checksum'];
+
+                if (!isset($deviceCounts[$devicePrintId])) {
+                    $deviceCounts[$devicePrintId] = 0;
+                }
+
+                if ($deviceCounts[$devicePrintId] >= $maxPerDevice) {
+                    continue; // Skip this item for now, wait for next cron run to avoid starving others
+                }
+                $deviceCounts[$devicePrintId]++;
 
                 CLI::write(" [{$queueId}] Processing: {$filename} (category: {$category})", 'blue');
                 $output .= "[$queueId] Processing: {$filename} (category: {$category})" . PHP_EOL;

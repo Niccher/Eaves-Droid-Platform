@@ -59,6 +59,12 @@ class Session extends BaseConfig
      */
     public string $savePath = 'ci_sessions';
 
+    public function __construct()
+    {
+        parent::__construct();
+        $this->savePath = env('REDIS_URL', env('session.savePath', 'tcp://127.0.0.1:6379'));
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Session Match IP

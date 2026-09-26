@@ -21,7 +21,7 @@ class Cache extends BaseConfig
      * The name of the preferred handler that should be used. If for some reason
      * it is not available, the $backupHandler will be used in its place.
      */
-    public string $handler = 'file';
+    public string $handler = 'predis';
 
     /**
      * --------------------------------------------------------------------------
@@ -149,6 +149,16 @@ class Cache extends BaseConfig
         'timeout'  => 0,
         'database' => 0,
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->handler = env('cache.handler', 'predis');
+        $this->redis['host'] = env('redis.host', '127.0.0.1');
+        $this->redis['password'] = env('redis.password', null);
+        $this->redis['port'] = env('redis.port', 6379);
+        $this->redis['database'] = env('redis.database', 0);
+    }
 
     /**
      * --------------------------------------------------------------------------

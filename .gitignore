@@ -1,210 +1,37 @@
-#-------------------------
-# Operating Specific Junk Files
-#-------------------------
-
-# OS X
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# OS X Thumbnails
-._*
-
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Windows Installer files
-*.cab
-*.msi
-*.msm
-*.msp
-
-# Windows shortcuts
-*.lnk
-
-# Linux
-*~
-
-# KDE directory preferences
-.directory
-
-# Linux trash folder which might appear on any partition or disk
-.Trash-*
-
-#-------------------------
-# Environment Files
-#-------------------------
-# These should never be under version control,
-# as it poses a security risk.
+# Environments
 .env
 .env.*
 !.env.example
-.vagrant
-Vagrantfile
 
-#-------------------------
-# Temporary Files & Runtime Data
-#-------------------------
-writable/cache/*
-!writable/cache/.gitkeep
-!writable/cache/index.html
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
 
-writable/logs/*
-!writable/logs/.gitkeep
-!writable/logs/index.html
-
-writable/session/*
-!writable/session/.gitkeep
-!writable/session/index.html
-
-writable/uploads/*
-!writable/uploads/.gitkeep
-!writable/uploads/index.html
-writable/uploads/android_captured_audio/*
-!writable/uploads/android_captured_audio/.gitkeep
-writable/uploads/android_captured_files/*
-!writable/uploads/android_captured_files/.gitkeep
-writable/uploads/android_captured_images/*
-!writable/uploads/android_captured_images/.gitkeep
-writable/uploads/android_captured_screenshots/*
-!writable/uploads/android_captured_screenshots/.gitkeep
-writable/uploads/chat_attachments/*
-!writable/uploads/chat_attachments/.gitkeep
-
-writable/debugbar/*
-!writable/debugbar/.gitkeep
-!writable/debugbar/index.html
-
-writable/backups/*
-!writable/backups/.gitkeep
-
-writable/exports/*
-!writable/exports/.gitkeep
-!writable/exports/index.html
-
-writable/reports/*
-!writable/reports/.gitkeep
-!writable/reports/index.html
-
-writable/temp/*
-!writable/temp/.gitkeep
-!writable/temp/index.html
-
-writable/credentials/*
-!writable/credentials/.gitkeep
-
-php_errors.log
-
-#-------------------------
-# Credentials & Secrets
-#-------------------------
-# Firebase / Google service account credentials
-writable/credentials/firebase_service_account.json
-writable/firebase_credentials.json
-google-services.json
-GoogleService-Info.plist
-
-# Encryption / signing keys
-*.pem
-*.p12
-*.pfx
-
-#-------------------------
-# User Guide Temp Files
-#-------------------------
-user_guide_src/build/*
-user_guide_src/cilexer/build/*
-user_guide_src/cilexer/dist/*
-user_guide_src/cilexer/pycilexer.egg-info/*
-
-#-------------------------
-# Test Files
-#-------------------------
-tests/coverage*
-
-# Don't save phpunit under version control.
-phpunit
-
-#-------------------------
-# Composer
-#-------------------------
+# Dependencies
 vendor/
-
-#-------------------------
-# ML / Python artifacts
-#-------------------------
-# PHP-ML persisted model files
-writable/models_cache/
-*.pkl
-*.joblib
-*.model
+node_modules/
 __pycache__/
 *.pyc
-*.pyo
+.venv/
+venv/
+env/
 
-#-------------------------
-# Database dumps / pulled data
-#-------------------------
-*.sql.gz
-*.sql.bz2
-*_db_pulled
-*_db_dump
-
-#-------------------------
-# IDE / Development Files
-#-------------------------
-
-# Modules Testing
-_modules/*
-
-# phpenv local config
-.php-version
-
-# Jetbrains editors (PHPStorm, etc)
-.idea/
-*.iml
-
-# Netbeans
-nbproject/
+# Build
 build/
-nbbuild/
 dist/
-nbdist/
-nbactions.xml
-nb-configuration.xml
-.nb-gradle/
+*.apk
+*.aab
+*.jar
+*.war
 
-# Sublime Text
-*.tmlanguage.cache
-*.tmPreferences.cache
-*.stTheme.cache
-*.sublime-workspace
-*.sublime-project
-.phpintel
-/api/
+# Logs and DB
+logs/
+*.log
+*.sqlite
+*.sqlite3
 
-# Visual Studio Code
-.vscode/
-
-/results/
-/phpunit*.xml
-/.phpunit.*.cache
-
-writable/credentials/firebase_service_account.json
-writable/firebase_credentials.json
-
-# Ignore writable logs and debugbar
-writable/logs/*
-!writable/logs/index.html
-writable/debugbar/*
-!writable/debugbar/index.html
-
-# Local downloads & scratch scripts
-public/downloads/*
-update_plan_features.php
-
+# OS
+.DS_Store
+Thumbs.db

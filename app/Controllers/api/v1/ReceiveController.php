@@ -412,6 +412,16 @@ class ReceiveController extends BaseController
             return $this->failValidationError('Missing field: device_id');
         }
 
+        $token = $input['token'] ?? $this->request->getHeaderLine('Authorization');
+        if (str_starts_with($token, 'Bearer ')) {
+            $token = substr($token, 7);
+        }
+        
+        $androidModel = new \App\Models\AndroidModel();
+        if (empty($token) || !$androidModel->token_test($token)) {
+            return $this->failUnauthorized('Invalid or expired token');
+        }
+
         $db = \Config\Database::connect();
 
         $data = [
