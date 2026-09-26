@@ -18,3 +18,4 @@ hmmlearn==0.3.2
 llama-cpp-python==0.3.1
 statsmodels==0.14.4
 aiofiles==24.1.0
+redis==5.2.1

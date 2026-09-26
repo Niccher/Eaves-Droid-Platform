@@ -94,6 +94,21 @@ async def analyze(req: AnalyzeRequest):
     if not req.algorithms:
         raise HTTPException(status_code=400, detail="No algorithms specified")
 
+    if req.idempotency_key:
+        try:
+            from app.models.cache import get_redis_client
+            client = get_redis_client()
+            idem_key = f"idem:analyze:{req.idempotency_key}"
+            # set nx=True means it only sets if it doesn't exist
+            is_new = client.set(idem_key, "1", ex=3600, nx=True)
+            if not is_new:
+                # Duplicate request
+                raise HTTPException(status_code=409, detail="Duplicate request detected")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.warning(f"Failed to check idempotency key: {e}")
+
     job_id = req.job_id
     start = time.perf_counter()
 

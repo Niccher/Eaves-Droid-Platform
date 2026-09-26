@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     db_user: str = "root"
     db_password: str = "root_password"
 
+    # Redis Cache
+    redis_host: str = "redis"
+    redis_port: int = 6379
+    redis_db: int = 0
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

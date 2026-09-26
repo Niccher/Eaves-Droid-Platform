@@ -24,6 +24,7 @@ class AnalyzeRequest(BaseModel):
     scope: str = "full"
     incremental_since: str | None = None
     params: dict[str, str] = {}
+    idempotency_key: str | None = None
 
 
 class AnomalyResult(BaseModel):
@@ -74,6 +75,8 @@ class HealthResponse(BaseModel):
     database_latency_ms: float = 0.0
     database_tables_verified: int = 0
     database_total_tables: int = 0
+    redis: str = ""
+    redis_latency_ms: float = 0.0
     uptime_seconds: float = 0
 
 

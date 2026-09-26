@@ -62,6 +62,23 @@ def _check_database() -> tuple[str, float, int, int]:
         return "error", 0.0, 0, len(core_tables)
 
 
+def _check_redis() -> tuple[str, float]:
+    """
+    Check Redis connectivity.
+    Returns (status, latency_ms).
+    """
+    try:
+        from app.models.cache import get_redis_client
+        t0 = time.perf_counter()
+        client = get_redis_client()
+        if client.ping():
+            latency = round((time.perf_counter() - t0) * 1000, 2)
+            return "connected", latency
+        return "error", 0.0
+    except Exception:
+        return "error", 0.0
+
+
 _DETECTOR_MODULES = [
     ("app.detectors.sms_bert",        "SMS Phishing Heuristic"),
     ("app.detectors.calls_isolation",  "Isolation Forest (Calls)"),
@@ -102,6 +119,7 @@ async def health():
         pass
 
     db_status, db_latency, db_verified, db_total = _check_database()
+    redis_status, redis_latency = _check_redis()
 
     return HealthResponse(
         status="ok",
@@ -117,5 +135,7 @@ async def health():
         database_latency_ms=db_latency,
         database_tables_verified=db_verified,
         database_total_tables=db_total,
+        redis=redis_status,
+        redis_latency_ms=redis_latency,
         uptime_seconds=round(time.time() - _start_time, 1),
     )
