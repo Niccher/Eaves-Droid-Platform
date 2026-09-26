@@ -1,0 +1,89 @@
+site_name: Eaves Droid WebApp Documentation
+site_description: Engineering and user documentation for the Eaves Droid CodeIgniter 4 WebApp, Forensic Ingestion Server & Analytics Control Plane.
+site_author: Eaves Droid Engineering Team
+repo_url: https://github.com/Niccher/Eaves-Droid-WebApp
+repo_name: Niccher/Eaves-Droid-WebApp
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+
+nav:
+  - Overview:
+      - Engineering Portal: docs/README.md
+      - User Guide: README.md
+  - User Guide:
+      - Setup & Run: docs/user/setup-and-run.md
+      - Configuration: docs/user/configuration.md
+      - Troubleshooting: docs/user/troubleshooting.md
+  - Architecture:
+      - System Overview: docs/architecture/overview.md
+      - Inter-Service Communication: docs/architecture/communication.md
+      - Data & Storage: docs/architecture/data-and-storage.md
+      - Deployment: docs/architecture/deployment.md
+      - Threat Model: docs/architecture/threat-model.md
+  - API Specifications:
+      - Contract Reference: docs/api/contract.md
+  - Services:
+      - CodeIgniter 4 WebApp: docs/services/codeigniter.md
+      - FastAPI Microservice: docs/services/fastapi.md
+      - Android Client: docs/services/android.md
+      - Machine Learning Models: docs/services/ml.md
+  - Engineering:
+      - Local Development: docs/engineering/local-development.md
+      - Making Changes: docs/engineering/making-changes.md
+      - Database & Migrations: docs/engineering/database.md
+      - Testing: docs/engineering/testing.md
+      - CI & Automation: docs/engineering/ci.md
+      - Contributing: docs/engineering/contributing.md
+      - Troubleshooting: docs/engineering/troubleshooting.md
+      - Security & Access Control: docs/engineering/security.md
+      - Release Train: docs/engineering/release.md
+  - Operational Runbooks:
+      - Container Restart & Recovery: docs/runbooks/restart.md
+      - Backup & Restore: docs/runbooks/backup-and-restore.md
+  - Architecture Decisions (ADRs):
+      - "0001: Hybrid QR & Numeric Pairing": docs/adr/0001-hybrid-qr-numeric-pairing.md
+      - "0002: Unified Feed Aggregation": docs/adr/0002-unified-feed-aggregation.md
+      - "0003: On-Device OCR via ML Kit": docs/adr/0003-on-device-ocr-via-ml-kit.md
+      - "0004: Python FastAPI ML Failover": docs/adr/0004-python-fastapi-microservice-failover.md

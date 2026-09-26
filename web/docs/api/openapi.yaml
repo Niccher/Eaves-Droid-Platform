@@ -1,0 +1,112 @@
+openapi: 3.0.3
+info:
+  title: Eaves Droid WebApp API
+  description: Forensic Ingestion, Device Telemetry, ML Heartbeat & Billing API specification.
+  version: 2.5.0
+servers:
+  - url: http://localhost:9007
+    description: Local Development Server
+  - url: https://eaves-droid-webapp-production.up.railway.app
+    description: Railway Production Server
+
+paths:
+  /api/health:
+    get:
+      summary: Service Health Check
+      description: Returns health status of webapp and MySQL database connection.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  database:
+                    type: string
+                    example: connected
+
+  /api/v1/files/upload:
+    post:
+      summary: Forensic Data & Loot Ingestion
+      description: Ingests encrypted forensic log archives and device telemetry.
+      parameters:
+        - in: header
+          name: X-Auth-Token
+          schema:
+            type: string
+          required: true
+          description: Device API Token
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                device_info:
+                  type: string
+                loot_file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Ingestion and parsing successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  records_inserted:
+                    type: integer
+                    example: 42
+        '401':
+          description: Invalid or expired API token
+
+  /admin/ml/heartbeat:
+    get:
+      summary: ML Backend Live Telemetry Heartbeat
+      description: Polls microservice metrics, process CPU, container RAM, and table status.
+      responses:
+        '200':
+          description: Heartbeat metrics returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  online:
+                    type: boolean
+                  version:
+                    type: string
+                  latency_ms:
+                    type: number
+                  cpu_percent:
+                    type: number
+
+  /billing/pesapal/ipn:
+    post:
+      summary: Pesapal Payment IPN Webhook
+      description: Receives asynchronous transaction notifications from Pesapal v3.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                OrderTrackingId:
+                  type: string
+                OrderMerchantReference:
+                  type: string
+      responses:
+        '200':
+          description: IPN successfully processed
