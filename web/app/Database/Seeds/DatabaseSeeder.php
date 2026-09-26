@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call('PlansSeeder');
         $this->call('PlanVersionsSeeder');
         $this->call('FeatureTiersSeeder');
+        $this->call('MlSettingsSeeder');
         $this->call('CronJobsSeeder');
         $this->call('SystemVersionsSeeder');
         $this->call('SystemChangelogsSeeder');

@@ -1,0 +1,138 @@
+version: '3.8'
+
+# =============================================================================
+# Eaves Droid Platform - Monorepo Orchestration
+# =============================================================================
+# Usage:
+#   docker compose up --build -d
+#
+# Services:
+#   - mysql:       Primary relational database (MySQL 8.4)
+#   - redis:       Caching, task queue and rate-limiting store
+#   - web:         CodeIgniter 4 WebApp, Forensic Ingestion, Shield Auth & UI
+#   - ml:          FastAPI Python 3.12 Anomaly Detection Microservice (13+ detectors)
+#   - phpmyadmin:  Database administration dashboard
+# =============================================================================
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: eaves-mysql
+    ports:
+      - "${DB_PORT_FORWARD:-9306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-root_password}
+      MYSQL_DATABASE: ${DB_NAME:-db_eaves_droid}
+    command: --sql-mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - eaves-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: eaves-redis
+    ports:
+      - "${REDIS_PORT_FORWARD:-6379}:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - eaves-network
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: eaves-droid-web:latest
+    container_name: eaves-web
+    ports:
+      - "${WEB_PORT:-9007}:80"
+    environment:
+      CI_ENVIRONMENT: ${CI_ENVIRONMENT:-development}
+      app.baseURL: "http://localhost:${WEB_PORT:-9007}/"
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: ${DB_PASS:-root_password}
+      database.default.hostname: mysql
+      database.default.database: ${DB_NAME:-db_eaves_droid}
+      database.default.username: root
+      database.default.password: ${DB_PASS:-root_password}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ml_python_url: http://ml:9070
+      ML_INTERNAL_TOKEN: ${ML_INTERNAL_TOKEN:-default_secure_token_change_me_in_prod}
+      RUN_MIGRATIONS: "true"
+    volumes:
+      - ./web:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - eaves-network
+
+  ml:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    image: eaves-droid-ml:latest
+    container_name: eaves-ml
+    ports:
+      - "${ML_PORT:-9071}:9070"
+      - "9072:9072"
+      - "9073:9073"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASS:-root_password}
+      DB_NAME: ${DB_NAME:-db_eaves_droid}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      INTERNAL_TOKEN: ${ML_INTERNAL_TOKEN:-default_secure_token_change_me_in_prod}
+      LOG_LEVEL: ${ML_LOG_LEVEL:-info}
+    volumes:
+      - ./ml:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - eaves-network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: eaves-phpmyadmin
+    ports:
+      - "${PMA_PORT:-9000}:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_PASS:-root_password}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - eaves-network
+
+volumes:
+  mysql-data:
+
+networks:
+  eaves-network:
+    name: eaves-platform-network
+    driver: bridge

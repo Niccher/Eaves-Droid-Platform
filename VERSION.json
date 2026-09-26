@@ -1,0 +1,12 @@
+{
+    "version": "3.0.0",
+    "build": 30000,
+    "release_name": "Eaves Droid Platform Monorepo Consolidation",
+    "release_date": "2026-09-26",
+    "components": {
+        "platform": "3.0.0",
+        "webapp": "3.0.0",
+        "ml_engine": "3.0.0",
+        "android_min_compatible": "2.8.1"
+    }
+}

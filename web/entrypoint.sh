@@ -6,10 +6,11 @@ DB_HOST="${MYSQLHOST:-${DB_HOST:-mysql}}"
 DB_PORT="${MYSQLPORT:-${DB_PORT:-3306}}"
 DB_USER="${MYSQLUSER:-${DB_USER:-root}}"
 DB_PASS="${MYSQLPASSWORD:-${MYSQL_ROOT_PASSWORD:-${DB_PASS:-root_password}}}"
+RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
 
-if [ -n "$MYSQLHOST" ] || [ -n "$DB_HOST_CUSTOM" ]; then
+if [ -n "$DB_HOST" ] || [ -n "$MYSQLHOST" ] || [ -n "$DB_HOST_CUSTOM" ]; then
     echo "Waiting for MySQL to accept connections at ${DB_HOST}:${DB_PORT}..."
-    max_retries=10
+    max_retries=15
     count=0
     while ! php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USER}', '${DB_PASS}');" 2>/dev/null; do
         count=$((count + 1))
@@ -24,19 +25,19 @@ if [ -n "$MYSQLHOST" ] || [ -n "$DB_HOST_CUSTOM" ]; then
     if php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USER}', '${DB_PASS}');" 2>/dev/null; then
         echo "MySQL is ready!"
         if [ "$RUN_MIGRATIONS" = "true" ] || [ "$RUN_MIGRATIONS" = "1" ]; then
-            echo "Running database migrations & seeders..."
+            echo "Running database migrations & seeders (authoritative CodeIgniter deployment)..."
             cd /var/www/html
             php spark migrate --all 2>&1 || echo "WARNING: Migration encountered an issue. Check logs."
             php spark db:seed DatabaseSeeder 2>&1 || echo "WARNING: Seeding encountered an issue. Check logs."
         else
-            echo "Skipping migrations (RUN_MIGRATIONS not true)."
+            echo "Skipping migrations (RUN_MIGRATIONS is set to $RUN_MIGRATIONS)."
         fi
     fi
 else
-    echo "NOTICE: No external database host provided (MYSQLHOST is empty). Skipping DB migrations."
+    echo "NOTICE: No database host specified. Skipping DB migrations."
 fi
 
-echo "Migrations complete. Starting Apache and PHP-FPM..."
+echo "Migrations check complete. Starting Apache and PHP-FPM..."
 
 # Ensure strictly mpm_event module is loaded
 rm -f /etc/apache2/mods-enabled/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.conf \
@@ -49,7 +50,7 @@ fi
 LISTEN_PORT="${PORT:-80}"
 echo "Configuring Apache to listen on port ${LISTEN_PORT}..."
 
-cat <<EOF > /etc/apache2/ports.conf
+cat <<PORTS_EOF > /etc/apache2/ports.conf
 Listen ${LISTEN_PORT}
 
 <IfModule ssl_module>
@@ -59,9 +60,9 @@ Listen ${LISTEN_PORT}
 <IfModule gnutls_module>
 	Listen 443
 </IfModule>
-EOF
+PORTS_EOF
 
-cat <<EOF > /etc/apache2/sites-available/000-default.conf
+cat <<VHOST_EOF > /etc/apache2/sites-available/000-default.conf
 <VirtualHost *:${LISTEN_PORT}>
 	ServerAdmin webmaster@localhost
 	DocumentRoot /var/www/html/public
@@ -75,7 +76,7 @@ cat <<EOF > /etc/apache2/sites-available/000-default.conf
 	ErrorLog \${APACHE_LOG_DIR}/error.log
 	CustomLog \${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
-EOF
+VHOST_EOF
 
 grep -q "ServerName localhost" /etc/apache2/apache2.conf || echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
@@ -101,3 +102,4 @@ php-fpm -D
 echo "Starting Apache in foreground..."
 source /etc/apache2/envvars
 exec apache2 -D FOREGROUND
+
