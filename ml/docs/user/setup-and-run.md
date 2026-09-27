@@ -27,10 +27,10 @@ Start the container in detached mode:
 docker compose up --build -d
 ```
 
-### Step 3: Run Initial Database Migration
-If not already initialized by the platform, run the SQL migration against the shared MySQL container:
+### Step 3: Database Migrations
+Database tables for ML jobs (`ml_jobs`, `ml_results`, and `ml_analysis_tracking`) are automatically migrated and managed by CodeIgniter on container startup. To execute manually from the monorepo root:
 ```bash
-docker exec -i shared-mysql mysql -uroot -proot_password db_eaves_droid < migrations/001_ml_jobs_tables.sql
+docker compose exec web php spark migrate --all
 ```
 
 ### Step 4: Verify Service Health

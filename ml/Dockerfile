@@ -16,8 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY requirements.txt .
 
-# Install into a prefix directory so we can COPY just the packages to runtime.
-RUN pip install --prefix=/install --no-warn-script-location -r requirements.txt
+# Install with pre-built wheel repository for llama-cpp-python to avoid 15-minute C++ compile
+RUN pip install --prefix=/install --no-warn-script-location \
+    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu \
+    -r requirements.txt
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage 2 — runtime: slim final image, no compilers in the layer

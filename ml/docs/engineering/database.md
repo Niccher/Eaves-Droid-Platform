@@ -6,7 +6,7 @@ Details on the MySQL schema tables owned and managed by ML Eaves Droid.
 
 ## 1. Schema Tables
 
-Defined in `migrations/001_ml_jobs_tables.sql`:
+Managed authoritatively by CodeIgniter 4 migrations in `web/app/Database/Migrations/` (`20240807080026_create_ml_jobs_table.php`, `20240807080027_create_ml_results_table.php`, and `20240807080028_create_ml_analysis_tracking_table.php`):
 
 ```sql
 CREATE TABLE IF NOT EXISTS `ml_jobs` (

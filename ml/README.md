@@ -43,15 +43,17 @@ Software engineers: [docs/README.md](docs/README.md).
    ```bash
    cp .env.example .env
    ```
-4. Start the service container:
+4. Start the platform services:
    ```bash
    docker compose up --build -d
    ```
-5. Apply database table migrations if setting up for the first time:
+5. Database migrations are handled automatically by CodeIgniter on container boot:
    ```bash
-   docker exec -i shared-mysql mysql -uroot -proot_password db_eaves_droid < migrations/001_ml_jobs_tables.sql
+   # CodeIgniter runs migrations and seeds on startup.
+   # To run manually from the platform monorepo root:
+   docker compose exec web php spark migrate --all
    ```
-6. Open [http://localhost:9071/api/health](http://localhost:9071/api/health) to confirm the engine is healthy and all 13 detectors are loaded.
+6. Open [http://localhost:9071/api/health](http://localhost:9071/api/health) to confirm the engine is healthy and all detectors are loaded.
 7. Stop the service when needed:
    ```bash
    docker compose down
