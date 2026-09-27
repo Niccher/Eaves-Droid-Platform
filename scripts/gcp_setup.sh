@@ -52,13 +52,17 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
 # 3. Install Official Docker Engine & Docker Compose Plugin
 if ! command -v docker &> /dev/null; then
     log "Configuring Docker official repository..."
-    install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    OS_ID="$(. /etc/os-release && echo "$ID")"
+    if [ "$OS_ID" != "ubuntu" ] && [ "$OS_ID" != "debian" ]; then
+        OS_ID="debian"
+    fi
+    DISTRO_CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+
+    curl -fsSL "https://download.docker.com/linux/${OS_ID}/gpg" -o /etc/apt/keyrings/docker.asc
     chmod a+r /etc/apt/keyrings/docker.asc
 
-    DISTRO_CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
     echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${OS_ID} \
       ${DISTRO_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
     apt-get update -y
