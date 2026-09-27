@@ -38,6 +38,13 @@
             </ul>
 
             <ul class="navbar-nav ml-auto">
+                <?php if (class_exists(\App\Libraries\ResilientSessionHandler::class) && \App\Libraries\ResilientSessionHandler::isFallbackActive()): ?>
+                <li class="nav-item">
+                    <a href="<?= base_url('health') ?>" target="_blank" class="nav-link font-weight-bold" title="Redis Offline — Sessions and Cache Degraded to MySQL / File">
+                        <span class="badge badge-warning text-dark"><i class="fas fa-exclamation-triangle mr-1"></i> Storage Degraded: MySQL Fallback Active</span>
+                    </a>
+                </li>
+                <?php endif; ?>
                 <!-- Dark Mode Toggle -->
                 <li class="nav-item">
                     <a class="nav-link" href="#" id="darkModeToggle" role="button" title="Toggle Dark Mode">

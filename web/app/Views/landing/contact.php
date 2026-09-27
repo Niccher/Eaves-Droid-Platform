@@ -50,7 +50,7 @@
                         <div class="info-box-content">
                             <span class="info-box-text text-bold">GitHub Issues</span>
                             <span class="info-box-number small text-muted font-weight-light">Report bugs & feature requests</span>
-                            <span class="progress-description small"><a href="https://github.com/Niccher/Eaves-Droid-WebApp/issues" target="_blank" class="text-danger">Open an Issue →</a></span>
+                            <span class="progress-description small"><a href="https://github.com/Niccher/Eaves-Droid-Platform/issues" target="_blank" class="text-danger">Open an Issue →</a></span>
                         </div>
                     </div>
                 </div>

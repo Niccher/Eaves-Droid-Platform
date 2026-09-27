@@ -61,6 +61,8 @@ nav:
       - Inter-Service Communication: docs/architecture/communication.md
       - Data & Storage: docs/architecture/data-and-storage.md
       - Deployment Topology: docs/architecture/deployment.md
+      - GCP Deployment Guide: docs/architecture/deployment-gcp.md
+      - Resilience & Failover: docs/architecture/resilience-and-failover.md
       - Threat Model: docs/architecture/threat-model.md
   - Microservices:
       - CodeIgniter 4 WebApp: docs/services/codeigniter.md

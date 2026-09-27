@@ -12,10 +12,10 @@
                             <i class="fas fa-rocket mr-2"></i>Get Started
                         </a>
                         <a href="<?= url_to('demo-login') ?>" class="btn btn-outline-warning btn-lg px-4 mr-3 shadow-sm" style="background-color: rgba(255,255,255,0.1); border-color: #ffc107; color: #ffc107;">
-                            <i class="fas fa-magic mr-2"></i>Try Interactive Demo
+                            <i class="fas fa-magic mr-2"></i>Try Demo
                         </a>
-                        <a href="<?= url_to('how-to') ?>" class="btn btn-outline-light btn-lg px-4 shadow-sm">
-                            <i class="fas fa-play-circle mr-2"></i>How It Works
+                        <a href="https://github.com/Niccher/Eaves-Droid-Platform" target="_blank" rel="noopener" class="btn btn-outline-light btn-lg px-4 shadow-sm">
+                            <i class="fab fa-github mr-2"></i>GitHub
                         </a>
                     </div>
                     <div class="d-flex flex-wrap small opacity-75">
@@ -37,8 +37,8 @@
                                     <small class="text-muted">Data Extractors</small>
                                 </div>
                                 <div class="col-6 mb-3">
-                                    <h4 class="text-success font-weight-bold mb-0">3</h4>
-                                    <small class="text-muted">Open-Source Repos</small>
+                                    <h4 class="text-success font-weight-bold mb-0">Polyglot</h4>
+                                    <small class="text-muted">Unified Monorepo</small>
                                 </div>
                                 <div class="col-6">
                                     <h4 class="text-info font-weight-bold mb-0">17</h4>
@@ -46,7 +46,7 @@
                                 </div>
                                 <div class="col-6">
                                     <h4 class="text-warning font-weight-bold mb-0">24/7</h4>
-                                    <small class="text-muted">Self-Hosted</small>
+                                    <small class="text-muted">High Availability</small>
                                 </div>
                             </div>
                         </div>
@@ -329,18 +329,18 @@
                         <div class="card h-100 shadow-sm border-primary">
                             <div class="card-header bg-primary text-white text-center">
                                 <i class="fab fa-docker fa-3x mb-2"></i>
-                                <h4 class="mb-0 text-bold">Docker</h4>
+                                <h4 class="mb-0 text-bold">Docker Compose</h4>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted">One-command deployment with docker-compose. Includes the web app, PHP, MySQL, and the Python ML engine.</p>
-                                <pre class="bg-dark text-light p-3 rounded small mb-0"><code>docker compose up --build -d</code></pre>
+                                <p class="text-muted">One-command automated deployment pipeline. Builds and boots the web dashboard, PHP 8.3, MySQL 8.4, Redis 7, and Python ML engine.</p>
+                                <pre class="bg-dark text-light p-3 rounded small mb-0"><code>bash scripts/deploy.sh</code></pre>
                                 <hr>
                                 <ul class="list-unstyled small text-muted mb-0">
-                                    <li><i class="fas fa-check text-success mr-1"></i> Apache + PHP 8.3</li>
-                                    <li><i class="fas fa-check text-success mr-1"></i> MySQL 8.4</li>
-                                    <li><i class="fas fa-check text-success mr-1"></i> Python ML engine (FastAPI)</li>
-                                    <li><i class="fas fa-check text-success mr-1"></i> phpMyAdmin</li>
-                                    <li><i class="fas fa-check text-success mr-1"></i> Volume persistence</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Apache + PHP 8.3 (CodeIgniter 4)</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> MySQL 8.4 Database</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Python ML Engine (FastAPI)</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Redis 7 High-Availability Cache & Failover</li>
+                                    <li><i class="fas fa-check text-success mr-1"></i> Volume & Database Persistence</li>
                                 </ul>
                             </div>
                         </div>

@@ -153,11 +153,22 @@ class Cache extends BaseConfig
     public function __construct()
     {
         parent::__construct();
-        $this->handler = env('cache.handler', 'predis');
-        $this->redis['host'] = env('redis.host', '127.0.0.1');
-        $this->redis['password'] = env('redis.password', null);
-        $this->redis['port'] = env('redis.port', 6379);
-        $this->redis['database'] = env('redis.database', 0);
+
+        // High-Availability Dynamic Resilience Fallback
+        if (class_exists(\App\Libraries\ResilientSessionHandler::class)) {
+            $params = \App\Libraries\ResilientSessionHandler::getRedisParams();
+            $this->redis['host']     = $params['host'];
+            $this->redis['port']     = $params['port'];
+            $this->redis['password'] = !empty($params['pass']) ? $params['pass'] : null;
+
+            if (\App\Libraries\ResilientSessionHandler::isRedisAlive()) {
+                $this->handler       = extension_loaded('redis') ? 'redis' : 'predis';
+                $this->backupHandler = 'file';
+            } else {
+                $this->handler       = 'file';
+                $this->backupHandler = 'dummy';
+            }
+        }
     }
 
     /**

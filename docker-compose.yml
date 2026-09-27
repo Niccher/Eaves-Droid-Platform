@@ -7,10 +7,9 @@
 #
 # Services:
 #   - mysql:       Primary relational database (MySQL 8.4)
-#   - redis:       Caching, task queue and rate-limiting store
+#   - redis:       Caching, task queue and resilient session store
 #   - web:         CodeIgniter 4 WebApp, Forensic Ingestion, Shield Auth & UI
 #   - ml:          FastAPI Python 3.12 Anomaly Detection Microservice (13+ detectors)
-#   - phpmyadmin:  Database administration dashboard
 # =============================================================================
 
 services:
@@ -108,22 +107,6 @@ services:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_healthy
-    networks:
-      - eaves-network
-
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: eaves-phpmyadmin
-    ports:
-      - "${PMA_PORT:-9000}:80"
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: ${DB_PASS:-root_password}
-    depends_on:
-      mysql:
         condition: service_healthy
     networks:
       - eaves-network

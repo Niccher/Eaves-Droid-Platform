@@ -15,6 +15,8 @@ Welcome to the engineering documentation for the **Eaves Droid Platform** monore
 | **Inter-Service Communication** | Protocols, sequence flows, and Docker network DNS | [architecture/communication.md](architecture/communication.md) |
 | **Data & Storage** | Database schema, models, filesystem & ERD | [architecture/data-and-storage.md](architecture/data-and-storage.md) |
 | **Deployment Topology** | Docker Compose, Railway, Apache & PHP-FPM / Uvicorn | [architecture/deployment.md](architecture/deployment.md) |
+| **GCP Deployment Guide** | Google Compute Engine provisioning, firewall & bootstrap | [architecture/deployment-gcp.md](architecture/deployment-gcp.md) |
+| **Resilience & Failover** | Dual-Engine Redis/MySQL session fallback, 50ms probe & GC | [architecture/resilience-and-failover.md](architecture/resilience-and-failover.md) |
 | **Threat Model** | STRIDE security analysis, IDOR & mobile upload defenses | [architecture/threat-model.md](architecture/threat-model.md) |
 | **CodeIgniter 4 Service** | Web ingestion, controllers, models & PHP-ML failover | [services/codeigniter.md](services/codeigniter.md) |
 | **FastAPI Microservice** | Anomaly detection service, routers & job execution | [services/fastapi.md](services/fastapi.md) |

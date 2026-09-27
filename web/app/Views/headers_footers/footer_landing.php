@@ -12,10 +12,9 @@
                     </h5>
                     <p class="text-light" style="font-size: 1.1rem; line-height: 1.7; opacity: 0.9;">Eaves Droid is a cutting-edge mobile data intelligence platform that helps users collect, analyze, and visualize Android device data with AI-powered insights and enterprise-grade security.</p>
                     <div class="mt-4">
-                        <a href="#" class="text-light mr-4"><i class="fab fa-facebook fa-xl"></i></a>
+                        <a href="https://github.com/Niccher/Eaves-Droid-Platform" target="_blank" rel="noopener" class="text-light mr-4" title="GitHub Repository"><i class="fab fa-github fa-xl"></i></a>
                         <a href="#" class="text-light mr-4"><i class="fab fa-twitter fa-xl"></i></a>
                         <a href="#" class="text-light mr-4"><i class="fab fa-linkedin fa-xl"></i></a>
-                        <a href="#" class="text-light"><i class="fab fa-github fa-xl"></i></a>
                     </div>
                 </div>
                 <div class="col-md-3 mb-4 ml-auto">
@@ -30,8 +29,8 @@
                 <div class="col-md-3 mb-4">
                     <h6 class="text-white text-bold mb-4" style="font-size: 1.2rem;">Resources</h6>
                     <ul class="list-unstyled" style="font-size: 1.05rem;">
-                        <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">FAQ</a></li>
-                        <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">Terms of Service</a></li>
+                        <li class="mb-3"><a href="https://github.com/Niccher/Eaves-Droid-Platform" target="_blank" rel="noopener" class="text-light hover-primary"><i class="fab fa-github mr-1"></i>GitHub Repository</a></li>
+                        <li class="mb-3"><a href="<?= base_url('faqs_terms') ?>" class="text-light hover-primary">FAQ & Terms</a></li>
                         <li class="mb-3"><a href="<?= base_url('how_to') ?>" class="text-light hover-primary">How It Works</a></li>
                         <li class="mb-3"><a href="<?= base_url('privacy-policy') ?>" class="text-light hover-primary">Privacy Policy</a></li>
                     </ul>

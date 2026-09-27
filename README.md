@@ -26,10 +26,9 @@ Software engineers: [docs/README.md](docs/README.md).
 |-----------|----------------|-----------------|
 | **Web Dashboard** | http://localhost:9007 | Management UI & Forensic Analytics (Admin/SuperAdmin) |
 | **Data Ingestion API** | POST http://localhost:9007/api/v1/files/upload | Ingestion endpoint for encrypted Android telemetry |
-| **Web Health Check** | GET http://localhost:9007/api/health | HTTP 200 OK |
+| **Web Health & Resilience** | GET http://localhost:9007/health | Live dual-engine telemetry (Redis probe, MySQL fallback status) |
 | **ML Engine Health Check** | GET http://localhost:9071/api/health | ML Engine status & loaded detector count |
 | **ML Interactive Swagger** | http://localhost:9071/docs | OpenAPI documentation for anomaly job endpoints |
-| **Database Management** | http://localhost:9000 | phpMyAdmin (User: `root`, Password: `root_password`) |
 
 ---
 

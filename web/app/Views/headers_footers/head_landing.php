@@ -125,6 +125,9 @@
                     <li class="nav-item">
                         <a href="<?php echo base_url('contactus'); ?>" class="nav-link <?= (isset($pag) && $pag == 'contact') ? 'active' : '' ?>">Contact</a>
                     </li>
+                    <li class="nav-item">
+                        <a href="https://github.com/Niccher/Eaves-Droid-Platform" target="_blank" rel="noopener" class="nav-link" title="GitHub Repository"><i class="fab fa-github mr-1"></i>GitHub</a>
+                    </li>
                 </ul>
             </div>
 

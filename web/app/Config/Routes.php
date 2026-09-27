@@ -2086,6 +2086,9 @@ $routes->group('superadmin', [
 // 8. UTILITY & SYSTEM ROUTES
 // =================================================================
 
+$routes->get('health', 'HealthController::index');
+$routes->get('api/health', 'HealthController::index');
+
 /**
  * Health check endpoint.
  *
