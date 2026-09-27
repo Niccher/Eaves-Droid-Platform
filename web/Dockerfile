@@ -4,17 +4,13 @@ FROM php:8.3-fpm
 # ── System dependencies ────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
         apache2 \
-        libicu-dev \
-        libzip-dev \
-        libpng-dev \
-        libjpeg-dev \
-        libfreetype6-dev \
-        libxml2-dev \
         zip \
         unzip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) intl mysqli pdo_mysql zip gd xml dom \
     && rm -rf /var/lib/apt/lists/*
+
+# ── Pre-compiled PHP Extensions (fast binary download vs 10min source compilation)
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions intl mysqli pdo_mysql zip gd opcache xml dom
 
 # Enable Apache modules for PHP-FPM and mpm_event
 RUN a2enmod mpm_event proxy proxy_fcgi setenvif rewrite headers \
@@ -30,13 +26,14 @@ RUN { \
         echo "memory_limit = 512M"; \
     } > /usr/local/etc/php/conf.d/runtime-limits.ini
 
-RUN docker-php-ext-install opcache \
-    && { \
+RUN { \
         echo "opcache.enable=1"; \
-        echo "opcache.enable_cli=1"; \
-        echo "opcache.preload=/var/www/html/preload.php"; \
-        echo "opcache.preload_user=www-data"; \
-    } > /usr/local/etc/php/conf.d/opcache-preload.ini
+        echo "opcache.enable_cli=0"; \
+        echo "opcache.memory_consumption=256"; \
+        echo "opcache.interned_strings_buffer=16"; \
+        echo "opcache.max_accelerated_files=10000"; \
+        echo "opcache.validate_timestamps=0"; \
+    } > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
 # Move DocumentRoot to public/
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
