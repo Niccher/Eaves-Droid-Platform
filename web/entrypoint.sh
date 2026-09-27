@@ -8,6 +8,15 @@ DB_USER="${MYSQLUSER:-${DB_USER:-root}}"
 DB_PASS="${MYSQLPASSWORD:-${MYSQL_ROOT_PASSWORD:-${DB_PASS:-root_password}}}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
 
+# Ensure Composer dependencies exist (guards against volume mounts shadowing container vendor)
+if [ ! -f /var/www/html/vendor/autoload.php ] || [ ! -d /var/www/html/vendor/codeigniter4/framework ]; then
+    echo "NOTICE: /var/www/html/vendor is missing (shadowed by host mount). Restoring Composer dependencies..."
+    cd /var/www/html
+    if command -v composer &>/dev/null; then
+        composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-reqs
+    fi
+fi
+
 if [ -n "$DB_HOST" ] || [ -n "$MYSQLHOST" ] || [ -n "$DB_HOST_CUSTOM" ]; then
     echo "Waiting for MySQL to accept connections at ${DB_HOST}:${DB_PORT}..."
     max_retries=15

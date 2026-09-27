@@ -45,10 +45,9 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
 WORKDIR /var/www/html
 
 # ── Composer dependency layer ─────────────────────────────────────────────────
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-reqs \
-    && rm /usr/bin/composer
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-reqs
 
 # ── Application code ──────────────────────────────────────────────────────────
 COPY . /var/www/html

@@ -90,6 +90,13 @@ _DETECTOR_MODULES = [
 ]
 
 
+@router.get("/health")
+@router.get("/api/health")
+async def health_liveness():
+    """Unauthenticated liveness probe for Docker and deployment script health checks."""
+    return {"status": "ok", "service": "ml-eaves-droid", "uptime_seconds": round(time.time() - _start_time, 1)}
+
+
 @router.get("/api/v1/health", response_model=HealthResponse, dependencies=[Depends(verify_internal_token)])
 async def health():
     cs = cache_stats()
